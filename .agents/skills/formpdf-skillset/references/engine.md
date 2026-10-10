@@ -17,4 +17,4 @@
 
 ## Libraries per job
 
-pypdf for structure, organize, fields, protect, stamping; reportlab to draw stamps, numbers and annotation appearances; pypdfium2 to render, redact and extract pictures; pdfplumber for words, layout and tables; python-docx and python-pptx for exports; Pillow for pictures and contact sheets.
+pypdf for structure, organize, fields, protect, stamping; reportlab to draw stamps, numbers and annotation appearances; pypdfium2 to render, check redactions, rasterize scanned redactions and extract pictures; the content interpreter to remove what is under a redaction (`redact.py`); pdfplumber for words, layout and tables; python-docx and python-pptx for exports; Pillow for pictures and contact sheets.

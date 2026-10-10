@@ -28,6 +28,7 @@
 | `app/services/pdf/exports.py` | the shared reading of a PDF for export (`document`: blocks, running lines removed, list groups) and `to_html`, `to_rtf`, `to_xlsx` |
 | `app/services/pdf/links.py`, `attach.py`, `measure.py`, `frame.py` | links (`links`, `edit_links`), attached and pinned files (`attachments`, `edit_attachments`), measurements (`measure`, `measurements`, `snap_points`), top-left page frame to PDF space |
 | `app/services/pdf/items.py` | page items: added text (own layout over the font kit) and pictures (native encoding) as tagged forms with one placing stream each, existing pictures converted in place, crop, rotation, flips, z-order, comment order (`items`, `edit_items`), render without an item |
+| `app/services/pdf/redact.py` | true redaction over the content interpreter: glyphs, covered pixels, shapes, comments, fields and item text removed, forms copied on write, clip-out, re-read and render checks, overlay; `mark_redactions` |
 | `app/services/pdf/spell.py`, `app/dict/` | Hunspell-format dictionary reader, `spell` and `spell_fix`; SCOWL en_US with its notices, more languages in `~/Formpdf/dictionaries` |
 | `app/services/pdf/slides.py` | PDF to PowerPoint (`to_pptx`) and contact sheets (`contact_sheet`) |
 | `app/services/pdf/sanitize.py`, `search.py`, `create.py`, `compare.py` | hidden information, find (presets, regex), PDF from pictures and files, compare |

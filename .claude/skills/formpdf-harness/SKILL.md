@@ -4,7 +4,7 @@ description: "Does PDF work with formpdf through its MCP server. Use whenever th
 license: Apache-2.0
 metadata:
   author: formpdf
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # formpdf harness
@@ -15,7 +15,7 @@ formpdf is a PDF editor running on this computer: an engine on 127.0.0.1:8198 an
 
 1. **The person's file is never changed in place.** Every change makes a new version. On the open PDF the window switches to it live and the person can undo your whole turn; on a file by path a new file is written beside it. Only `save` writes the open PDF to disk, and only to the path the person asked for.
 2. **Look before you report.** After any change, `render_pages` the pages you touched and read the picture. A tool saying it worked does not mean the page reads well.
-3. **Say what will go before it goes.** Run `pdf {action: find}` with the same query or preset before `redact`, and tell the person the count and pages. Redaction turns the pages with a match into pictures.
+3. **Say what will go before it goes.** Run `pdf {action: find}` with the same query or preset before `redact`, and tell the person the count and pages. Redaction removes what is under each box for good; the rest of the page stays text. When the person wants to look first, `mark_redactions` and let them apply the marks.
 4. **One job, one call.** Prefer one `pdf` call with the right arguments over many small ones. Calls less than 90 seconds apart form one turn; `undo` reverts the whole turn.
 5. **Token-lean.** Ask for the pages you need (`pages: "3-5"`), use `find` instead of reading all text, render only changed pages (one sheet holds 12).
 

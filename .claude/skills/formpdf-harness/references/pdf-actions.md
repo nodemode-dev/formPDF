@@ -48,7 +48,8 @@ Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, pr
 - **page_numbers** `{position: bottom-center | bottom-right | bottom-left | top-center | top-right | top-left, format: "{n}" | "Page {n}" | "Page {n} of {total}" | "{n} / {total}", start, size, color, pages}`.
 - **watermark** `{text, opacity (0..1, default 0.15), angle (45), size (64), color, pages}`.
 - **crop** `{margins: {l, t, r, b} | box: {x, y, w, h} | auto: true, pages}`: sets the CropBox; the hidden area stays in the file.
-- **redact** `{query | preset (+ find options) | areas: [{page, x, y, w, h}], pages}`: true redaction; pages with something to redact become 200 dpi pictures with black boxes. No match writes nothing.
+- **redact** `{query | preset (+ find options) | areas: [{page, x, y, w, h}] | marked: true, color, overlay, mode: content | raster, pages}`: true redaction. The text, pictures (only the covered pixels), shapes, comments and form fields under each box are removed from the file and a box in `color` (default black) with optional `overlay` text is drawn; the rest of the page stays text. Redaction marks saved in the file are applied too; `marked: true` applies only those. The call stops and writes nothing if a check finds anything left under a box. `mode: raster` turns the marked pages into 200 dpi pictures instead, for scans. No match writes nothing.
+- **mark_redactions** `{areas: [{page, x, y, w, h}], color, overlay}`: writes redaction marks (Redact annotations) without removing anything, so the person can review them in the window; `redact {marked: true}` applies them.
 - **organize** `{order: [pages in the new order; pages left out are deleted], delete: [pages], rotate: 90 | 180 | 270 (with pages, default all), blank: [positions after which a blank page goes; 0 for the front]}`.
 - **protect** `{password, owner, permissions: {print, copy, modify, annotate, fill, assemble}}`: AES-256.
 - **unlock** `{password}`.
