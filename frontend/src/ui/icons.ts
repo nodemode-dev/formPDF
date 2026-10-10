@@ -170,6 +170,8 @@ export const ICONS: Record<string, string> = {
   fieldList: L('<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M7 8h10M7 12h10M7 16h10"/><rect x="5.5" y="10.3" width="13" height="3.4" rx=".6" stroke-width="1.2"/>'),
   fieldDate: L('<rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13h2M11 13h2M14.5 13h2M7.5 16.5h2M11 16.5h2"/>'),
   fileWord: L(`${PAGE}<path d="M8 11.5l1.3 6 1.7-4.5 1.7 4.5 1.3-6"/>`),
+  fileCode: L(`${PAGE}<path d="M10 12l-2 2.5 2 2.5M14 12l2 2.5-2 2.5"/>`),
+  fileSheet: L(`${PAGE}<path d="M8 11.5h8v6.5H8zM8 14.75h8M12 11.5v6.5"/>`),
 };
 
 export function icon(name: string, size = 16): string {

@@ -2,6 +2,7 @@ import asyncio
 import json
 import shutil
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
@@ -160,9 +161,10 @@ async def act(doc_id: str, name: str, body: dict) -> Response:
     finally:
         tmp.unlink(missing_ok=True)
     stem = Path(docs.meta(doc_id).get("name") or doc_id).stem
-    fname = (got or {}).get("filename") if isinstance(got, dict) else None
+    fname = ((got or {}).get("filename") if isinstance(got, dict) else None) or stem + a.ext
+    safe = fname.replace('"', "'").encode("latin-1", "replace").decode("latin-1")
     return Response(data, media_type=MEDIA.get(a.ext, "application/octet-stream"),
-                    headers={"Content-Disposition": f'attachment; filename="{fname or stem + a.ext}"'})
+                    headers={"Content-Disposition": f"attachment; filename=\"{safe}\"; filename*=UTF-8''{quote(fname)}"})
 
 
 @router.post("/pdf/merge")

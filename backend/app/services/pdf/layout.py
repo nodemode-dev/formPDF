@@ -2,7 +2,7 @@ import re
 from collections import Counter
 from statistics import median
 
-BULLET = re.compile(r"^([•●▪◦–\N{EM DASH}\-\*·]|\(?\d{1,3}[.)]|\(?[a-zA-Z][.)])\s")
+BULLET = re.compile(r"^([•●▪◦–\N{EM DASH}\-\*·]|\(cid:\d+\)|\(?\d{1,3}[.)]|\(?[a-zA-Z][.)])\s")
 MAX_DEPTH = 24
 CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\ud800-\udfff￾￿]")
 
@@ -365,3 +365,78 @@ def reflow(path, pages=None, passwords: list[str] | None = None) -> dict:
             out.append({"page": i, "blocks": blocks})
             page.close()
     return {"pages": out, "total": n, "body": base or 11.0}
+
+
+def list_item(text: str) -> tuple[str, str, str] | None:
+    m = BULLET.match(text or "")
+    if not m:
+        return None
+    marker = m.group(1)
+    kind = "ol" if re.match(r"\(?(\d{1,3}|[a-zA-Z])[.)]", marker) else "ul"
+    return kind, marker, text[m.end():]
+
+
+def strip_runs(runs: list[dict], n: int) -> list[dict]:
+    out, left = [], n
+    for r in runs:
+        t = r["text"]
+        if left > 0:
+            cut = min(left, len(t))
+            t, left = t[cut:], left - cut
+            if not out:
+                t = t.lstrip()
+        if t:
+            out.append({**r, "text": t})
+    return out
+
+
+def columns(blocks: list[dict], width: float) -> dict | None:
+    body = [b for b in blocks if b.get("kind") in ("para", "heading", "table", "image") and "x0" in b]
+    if len(body) < 4:
+        return None
+    left, right = min(b["x0"] for b in body), max(b["x1"] for b in body)
+    span = right - left
+    if span <= 0:
+        return None
+    narrow = [b for b in body if b["x1"] - b["x0"] < span * 0.58]
+    if len(narrow) < 3:
+        return None
+    groups: list[list[dict]] = []
+    for b in sorted(narrow, key=lambda b: b["x0"]):
+        if groups and b["x0"] < max(x["x1"] for x in groups[-1]) - 2:
+            groups[-1].append(b)
+        else:
+            groups.append([b])
+    if not 2 <= len(groups) <= 3 or min(len(g) for g in groups) < 1:
+        return None
+    tops = [(min(b["top"] for b in g), max(b["bottom"] for b in g)) for g in groups]
+    if max(t[0] for t in tops) >= min(t[1] for t in tops):
+        return None
+    if sum(1 for b in narrow) < 0.6 * len(body):
+        return None
+    gaps = [min(b["x0"] for b in groups[i + 1]) - max(b["x1"] for b in groups[i]) for i in range(len(groups) - 1)]
+    region_top = min(t[0] for t in tops)
+    region_bottom = max(t[1] for t in tops)
+    return {"count": len(groups), "gutter": max(6.0, min(gaps)), "top": region_top, "bottom": region_bottom, "left": left, "right": right}
+
+
+def _shape(text: str) -> str:
+    return re.sub(r"\d+", "#", re.sub(r"\s+", " ", text.strip().lower()))
+
+
+def running(pages: list[dict], share: float = 0.6) -> set[str]:
+    if len(pages) < 2:
+        return set()
+    seen: Counter = Counter()
+    for p in pages:
+        H = p["height"]
+        shapes = {_shape(b["text"]) for b in p["blocks"] if b.get("kind") in ("para", "heading") and b.get("text")
+                  and (b["bottom"] < H * 0.1 or b["top"] > H * 0.9) and len(b["text"]) <= 120}
+        seen.update(shapes)
+    need = max(2, int(len(pages) * share + 0.999))
+    return {s for s, c in seen.items() if c >= need}
+
+
+def is_running(b: dict, height: float, shapes: set[str]) -> bool:
+    return bool(shapes) and b.get("kind") in ("para", "heading") and bool(b.get("text")) and (b["bottom"] < height * 0.1 or b["top"] > height * 0.9) \
+        and _shape(b["text"]) in shapes
