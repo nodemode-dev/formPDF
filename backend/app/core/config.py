@@ -73,6 +73,11 @@ def fonts_dir() -> Path:
     return bundled if bundled.is_dir() else BACKEND_DIR / "app" / "fonts"
 
 
+def dict_dir() -> Path:
+    bundled = resource_dir() / "dict"
+    return bundled if bundled.is_dir() else BACKEND_DIR / "app" / "dict"
+
+
 def is_desktop() -> bool:
     return os.environ.get("FORMPDF_DESKTOP") == "1"
 

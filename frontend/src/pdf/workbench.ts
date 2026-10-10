@@ -845,8 +845,8 @@ class Workbench {
     setText(q(this.root, '.fs-pdfwb-stat'), `${info.pages} page${info.pages === 1 ? '' : 's'} · ${info.bytes >= 1048576 ? `${(info.bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(info.bytes / 1024))} KB`}`);
     if (!this.organizer.dirty || this.organizer.docId === '') this.organizer.reset(id, info.sizes);
     if (this.tab === 'organize') { setHidden(this.organizer.root, false); setHidden(this.viewer.scroller, true); }
-    if (this.fields.loadedFor && this.fields.loadedFor !== id) this.fields.reset();
-    if (this.tab === 'fill') void this.fields.load(id).catch(() => undefined);
+    if (this.fields.loadedFor && this.fields.loadedFor !== id) this.fields.reset(keep ? this.fields.pending() : {});
+    if (this.tab === 'fill' || this.fields.dirty) void this.fields.load(id).catch(() => undefined);
     if (this.tab === 'form') void this.forms.load(id).catch(() => undefined);
     if (this.finder.query) void this.finder.search(this.finder.query);
     this.panes.syncDoc();

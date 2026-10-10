@@ -1,5 +1,5 @@
 from . import docs
-from . import attach, exports, links, measure
+from . import attach, exports, links, measure, spell
 from .annot import annotate, comments
 from .core import (Locked, extract_images, extract_tables, extract_text, info, merge, page_count, pages_zip, parse_pages, render_png,
                    split, tables_xlsx)

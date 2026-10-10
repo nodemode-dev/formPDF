@@ -9,6 +9,15 @@ import { THEMES, readChoice, setAccent, setTheme, themeSwatchesHtml } from './th
 import { toast } from './toast';
 
 type Settings = Record<string, unknown>;
+
+export function langName(code: string): string {
+  try { return new Intl.DisplayNames(['en'], { type: 'language' }).of(code.replace('_', '-')) ?? code; } catch { return code; }
+}
+
+export function applyLang(code: string): void {
+  const tag = (code || 'en_US').replace('_', '-');
+  if (document.documentElement.lang !== tag) document.documentElement.lang = tag;
+}
 interface AgentHooks { agentsAllowed: () => boolean; setAgents: (on: boolean) => void }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -76,6 +85,8 @@ class PreferencesDialog extends Dialog {
   private readonly author: HTMLInputElement;
   private readonly units: HTMLElement;
   private readonly agents: HTMLInputElement;
+  private readonly lang: HTMLSelectElement;
+  private readonly words: HTMLTextAreaElement;
 
   constructor() {
     super('Preferences', 560);
@@ -88,6 +99,10 @@ class PreferencesDialog extends Dialog {
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Comments and stamps</div>
 <label class="fs-field"><span>Author</span><input class="fs-input fs-dlg-pref-author" type="text" spellcheck="false" placeholder="Your name, written on comments you apply"></label>
 <div class="fs-field"><span>Units</span><div class="fs-seg is-quiet" data-seg="units"><button type="button" data-v="pt">Points</button><button type="button" data-v="in">Inches</button><button type="button" data-v="cm">Centimetres</button></div></div>
+</section>
+<section class="fs-dlg-section"><div class="fs-dlg-section-title">Spelling</div>
+<label class="fs-field"><span>Language</span><select class="fs-input fs-dlg-pref-lang"><option value="en_US">${langName('en_US')}</option></select></label>
+<label class="fs-field is-top"><span>Your words</span><textarea class="fs-input fs-dlg-pref-words" rows="4" spellcheck="false" placeholder="One word per line. Check spelling accepts these, and Add to dictionary puts words here."></textarea></label>
 </section>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Agents</div>
 <div class="fs-field"><span>Access</span><label class="fs-check"><input type="checkbox" data-f="agents"><span>Let Claude Code, Codex and Cursor read and edit PDFs</span></label></div>
@@ -105,6 +120,8 @@ class PreferencesDialog extends Dialog {
     this.author = q<HTMLInputElement>(box, '.fs-dlg-pref-author');
     this.units = q(box, '[data-seg="units"]');
     this.agents = q<HTMLInputElement>(box, '[data-f="agents"]');
+    this.lang = q<HTMLSelectElement>(box, '.fs-dlg-pref-lang');
+    this.words = q<HTMLTextAreaElement>(box, '.fs-dlg-pref-words');
     for (const b of Array.from(this.themes.querySelectorAll<HTMLElement>('[data-theme-id]'))) { b.setAttribute('type', 'button'); b.setAttribute('aria-label', b.title); }
     this.button('Done', 'primary', () => this.close());
     this.themes.addEventListener('click', (e) => {
@@ -118,6 +135,8 @@ class PreferencesDialog extends Dialog {
     this.color.addEventListener('input', () => { setAccent(this.color.value); this.syncLook(); });
     this.author.addEventListener('change', () => this.persist({ author: this.author.value.trim() }));
     segOn(this.units, (v) => this.persist({ units: v }));
+    this.lang.addEventListener('change', () => { this.persist({ spellLang: this.lang.value }); applyLang(this.lang.value); });
+    this.words.addEventListener('change', () => this.persist({ dictionary: this.words.value.split(/\s*\n\s*/).filter(Boolean) }));
     this.agents.addEventListener('change', () => this.h?.setAgents(this.agents.checked));
   }
 
@@ -148,8 +167,21 @@ class PreferencesDialog extends Dialog {
     void api.settings().catch((): Settings => ({})).then((s) => {
       setValue(this.author, str(s.author));
       segSet(this.units, str(s.units) || 'pt');
+      const words = Array.isArray(s.dictionary) ? (s.dictionary as unknown[]).map(String).join('\n') : '';
+      if (this.words.value !== words) this.words.value = words;
+      if (str(s.spellLang)) { this.lang.dataset.want = str(s.spellLang); setValue(this.lang, str(s.spellLang)); }
     });
     void api.capabilities().then((c) => {
+      const langs = (c.spellLanguages as string[] | undefined) ?? [];
+      for (const code of langs) {
+        if (!this.lang.querySelector(`option[value="${CSS.escape(code)}"]`)) {
+          const o = document.createElement('option');
+          o.value = code;
+          o.textContent = langName(code);
+          this.lang.appendChild(o);
+        }
+      }
+      if (this.lang.dataset.want) setValue(this.lang, this.lang.dataset.want);
       const rows = (c.network as Array<{ id: string; name: string; state: string; note: string }> | undefined) ?? [];
       const fill = (n: HTMLElement, r: { name: string; state: string; note: string }): void => { setText(q(n, '.fs-dlg-net-name'), r.name); setText(q(n, '.fs-dlg-net-state'), r.state); setText(q(n, '.fs-dlg-net-note'), r.note); };
       patchList(q(this.body, '.fs-dlg-net'), rows, {

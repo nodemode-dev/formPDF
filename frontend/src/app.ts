@@ -4,7 +4,7 @@ import { LiveClient } from './live/socket';
 import type { CreateKind } from './pdf/intent';
 import { ensureWorkbench, openWorkbench, type AppHooks } from './pdf/workbench';
 import './tools';
-import { agentsDialog, helpDialog, preferencesDialog, shortcutsDialog } from './ui/app-dialogs';
+import { agentsDialog, applyLang, helpDialog, preferencesDialog, shortcutsDialog } from './ui/app-dialogs';
 import { Batch } from './ui/batch';
 import { comboOf, type Command } from './ui/commands';
 import { anyDialogOpen, promptName } from './ui/dialogs';
@@ -94,6 +94,7 @@ export async function startApp(): Promise<void> {
     const settings = await api.settings();
     agentsAllowed = !!settings.agentsAllowed;
     live.setAgents(agentsAllowed);
+    applyLang(typeof settings.spellLang === 'string' ? settings.spellLang : '');
   } catch { toast('The formpdf engine is not answering yet; retrying.', 'error'); }
   const files = new URLSearchParams(location.search).getAll('open').filter(Boolean);
   home.open();

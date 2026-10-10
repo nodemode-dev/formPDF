@@ -5,7 +5,7 @@ from fastapi import APIRouter
 
 from app.core import config
 from app.services import session
-from app.services.pdf import fontkit
+from app.services.pdf import fontkit, spell
 
 router = APIRouter()
 NETWORK = [
@@ -45,6 +45,7 @@ def capabilities() -> dict:
         "dataDir": str(config.data_dir()),
         "port": config.port(),
         "fonts": sum(len(f["styles"]) for f in fontkit.available()),
+        "spellLanguages": spell.languages(),
         "network": NETWORK,
     }
 
@@ -67,5 +68,9 @@ def get_settings() -> dict:
 
 @router.post("/settings")
 def set_settings(patch: dict) -> dict:
-    allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "author", "units"}}
+    allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "author", "units", "spellLang"}}
+    if isinstance(patch.get("dictionary"), list):
+        allowed["dictionary"] = sorted({str(w).strip()[:64] for w in patch["dictionary"] if str(w).strip()})[:5000]
+    if "spellLang" in allowed:
+        allowed["spellLang"] = str(allowed["spellLang"] or "")[:24]
     return config.write_settings(allowed)

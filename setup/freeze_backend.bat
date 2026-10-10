@@ -11,6 +11,7 @@ if not defined TRIPLE ( echo [formpdf] rustc not found, install Rust or set FORM
 if not exist frontend\dist\index.html ( call setup\build_frontend.bat || exit /b 1 )
 set "FONTS="
 if exist "%ROOT%\backend\app\fonts" set FONTS=--add-data "%ROOT%\backend\app\fonts;fonts"
+if exist "%ROOT%\backend\app\dict" set FONTS=%FONTS% --add-data "%ROOT%\backend\app\dict;dict"
 cd backend
 if exist build\pyinstaller rmdir /s /q build\pyinstaller
 if exist dist-engine rmdir /s /q dist-engine

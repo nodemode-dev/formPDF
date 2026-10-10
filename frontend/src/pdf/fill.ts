@@ -8,6 +8,7 @@ export class Fields {
   fields: Field[] = [];
   values = new Map<string, string>();
   loadedFor = '';
+  private carry: Record<string, string> = {};
   private layers = new Map<number, HTMLElement>();
   onChange: () => void = () => undefined;
   onSign: (f: Field) => void = () => undefined;
@@ -20,22 +21,43 @@ export class Fields {
     this.fields = res.fields;
     this.loadedFor = id;
     this.values.clear();
+    for (const [name, v] of Object.entries(this.carry)) if (res.fields.some((f) => f.name === name && f.value !== v)) this.values.set(name, v);
+    this.carry = {};
     this.renderAll();
     this.onChange();
   }
 
-  reset(): void {
+  reset(carry: Record<string, string> = {}): void {
     this.fields = [];
     this.loadedFor = '';
+    this.carry = carry;
     this.values.clear();
     this.renderAll();
   }
 
-  get dirty(): boolean { return this.values.size > 0; }
+  get dirty(): boolean { return this.values.size > 0 || Object.keys(this.carry).length > 0; }
 
-  pending(): Record<string, string> { return Object.fromEntries(this.values); }
+  pending(): Record<string, string> { return { ...this.carry, ...Object.fromEntries(this.values) }; }
 
-  discard(): void { this.values.clear(); this.renderAll(); this.onChange(); }
+  discard(): void { this.values.clear(); this.carry = {}; this.renderAll(); this.onChange(); }
+
+  current(name: string): string | undefined { return this.values.get(name) ?? this.fields.find((f) => f.name === name)?.value; }
+
+  setValue(name: string, v: string): void {
+    const f = this.fields.find((x) => x.name === name);
+    if (!f) return;
+    if (v === f.value) this.values.delete(name); else this.values.set(name, v);
+    this.fields.forEach((x, i) => {
+      if (x.name !== name) return;
+      for (const layer of this.layers.values()) {
+        const n = layer.querySelector<HTMLInputElement | HTMLTextAreaElement>(`input[data-i="${i}"], textarea[data-i="${i}"]`);
+        if (!n) continue;
+        if (n.value !== v) n.value = v;
+        setClass(n.parentElement as HTMLElement, 'is-changed', this.values.has(name));
+      }
+    });
+    this.onChange();
+  }
 
   mount(pv: PageView): void {
     let layer = this.layers.get(pv.index);
