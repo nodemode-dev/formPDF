@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.9.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.10.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -21,11 +21,11 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Collaboration and sharing | 1 of 2 · 50% |
 | Accessibility | 4.5 of 5 · 90% |
 | Import and export | 0 of 1 · 0% |
-| Print | 1 of 3 · 33% |
+| Print | 2.5 of 3 · 83% |
 | Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **62 of 72 · 86%** |
+| **Overall** | **63.5 of 72 · 88%** |
 
-Across the 72 scored rows formpdf has 58 full, 8 partial and 6 none.
+Across the 72 scored rows formpdf has 60 full, 7 partial and 5 none.
 
 ## Where formpdf leads
 
@@ -35,8 +35,8 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 - **Content editing.** formpdf edits the text and pictures a PDF already has and adds page text and pictures that stay editable; only generating pictures with AI is missing.
 - **Signing requests.** Signers and their order are tracked in the PDF, but sending and reminders go through the person's own email rather than a service.
-- **Print.** No PDF/A or PDF/X conversion and no preflight yet.
-- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
+- **Print production.** No CMYK conversion or transparency flattening, and PDF/X output is not validated by an outside tool.
+- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Create PDFs from Office files (Word, PowerPoint, Excel); Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
 
 ## Line by line
 
@@ -165,9 +165,9 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
-| Print PDFs, including several pages per sheet | yes | Partial | Print renders every page with pdf.js and hands it to the system print dialog (`workbench.ts print`, Tauri print_window or window.print); pages per sheet, booklet and scaling only where the system dialog offers them |
-| Print settings: paper size, grayscale, scaling | yes | Partial | no print settings of its own: paper, colour and scaling come from the system print dialog (`workbench.ts print`) |
-| Preflight and PDF/A, PDF/X standards | yes | None | nothing found: no preflight, output intents or PDF/A conversion in `services/pdf` |
+| Print PDFs, including several pages per sheet | yes | Full | Print tab (`tools/print.ts`, `pdf/printjob.ts`) over `services/pdf/printing.py`: pages per sheet (1 to 16) in four orders with borders, booklets with binding side, posters with overlap, cut marks and labels, comments and fields choice, a live preview of every sheet, printed through a print PDF sized with @page on every platform or saved |
+| Print settings: paper size, grayscale, scaling | yes | Full | fit, shrink, actual and custom scale, named or page-sized paper, orientation and margins (`printing.py options`); grayscale converted in the file by rewriting colours and pictures (`colour.py`), not left to the driver |
+| Preflight and PDF/A, PDF/X standards | yes | Partial | PDF/A-2b, 2u and 3b check and convert with ISO 19005 clauses, font embedding from Liberation and an sRGB output intent (`pdfa.py`; converted files pass veraPDF where formpdf says they conform); PDF/X-4 with a supplied printer profile; preflight profiles with fixups and a report (`preflight.py`); partial because there is no CMYK conversion, transparency flattening or PDF/X validation |
 
 ### Automation and agents
 

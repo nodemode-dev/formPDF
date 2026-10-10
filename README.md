@@ -20,7 +20,8 @@ Version 0.9.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 | Protect | Passwords and permissions, remove a password, find and redact (the content under each box is removed, the rest stays text; marks from other apps applied too), metadata, remove hidden information |
 | Convert | Make scanned pages searchable with OCR that runs on this computer; export to PowerPoint (one slide per page, words as real text boxes), Word (columns, lists, headers and footers kept), Excel, HTML, RTF, compress, pages to pictures |
 | Accessibility | Check against Acrobat's 32 rules with a fix for each repairable one and an HTML report; tag the PDF from its layout; edit the reading order on the page; alternate text figure by figure |
-| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (52 actions), render_pages, extract, save, undo |
+| Print | Pages per sheet, booklets and posters with a live sheet preview; real grayscale; PDF/A-2b, 2u and 3b check and convert; PDF/X-4 with your printer's profile; preflight with fixups and a report |
+| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (60 actions), render_pages, extract, save, undo |
 
 ## Install and run
 
@@ -67,7 +68,8 @@ docs/       MANUAL.md
 
 ## Known gaps
 
-- Against Acrobat, formpdf scores 62 of 72 (86%); docs/PARITY.md has every row. The largest gaps are PDF/A and preflight, Office to PDF, and automation.
+- Against Acrobat, formpdf scores 63.5 of 72 (88%); docs/PARITY.md has every row. The largest gaps are Office to PDF, automation and plug-ins, and AI tools.
+- Print production has no CMYK conversion or transparency flattening; PDF/X-4 needs your printer's ICC profile and is not checked by an outside validator.
 - Tagging works out structure from the layout; check the reading order and add alternate text afterwards. Editing page content after tagging leaves the new content untagged until you tag again.
 - OCR adds about 150 MB to an install (set `FORMPDF_NO_OCR=1` before `./formpdf install` to leave it out). On macOS, USB scanners are reached only when they also speak eSCL (AirScan); network scanners work everywhere.
 - Signature validation trusts only certificates you trusted in formpdf (your own IDs are trusted automatically) and never checks revocation online; signing requests are sent by your own email.

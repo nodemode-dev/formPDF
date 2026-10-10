@@ -106,9 +106,9 @@ a = "Import and export"
 row(a, "Create PDFs from Office files (Word, PowerPoint, Excel)", 1, N, "nothing found: `services/pdf/create.py from_files` takes pictures and PDFs only")
 
 a = "Print"
-row(a, "Print PDFs, including several pages per sheet", 1, P, "Print renders every page with pdf.js and hands it to the system print dialog (`workbench.ts print`, Tauri print_window or window.print); pages per sheet, booklet and scaling only where the system dialog offers them")
-row(a, "Print settings: paper size, grayscale, scaling", 1, P, "no print settings of its own: paper, colour and scaling come from the system print dialog (`workbench.ts print`)")
-row(a, "Preflight and PDF/A, PDF/X standards", 1, N, "nothing found: no preflight, output intents or PDF/A conversion in `services/pdf`")
+row(a, "Print PDFs, including several pages per sheet", 1, F, "Print tab (`tools/print.ts`, `pdf/printjob.ts`) over `services/pdf/printing.py`: pages per sheet (1 to 16) in four orders with borders, booklets with binding side, posters with overlap, cut marks and labels, comments and fields choice, a live preview of every sheet, printed through a print PDF sized with @page on every platform or saved")
+row(a, "Print settings: paper size, grayscale, scaling", 1, F, "fit, shrink, actual and custom scale, named or page-sized paper, orientation and margins (`printing.py options`); grayscale converted in the file by rewriting colours and pictures (`colour.py`), not left to the driver")
+row(a, "Preflight and PDF/A, PDF/X standards", 1, P, "PDF/A-2b, 2u and 3b check and convert with ISO 19005 clauses, font embedding from Liberation and an sRGB output intent (`pdfa.py`; converted files pass veraPDF where formpdf says they conform); PDF/X-4 with a supplied printer profile; preflight profiles with fixups and a report (`preflight.py`); partial because there is no CMYK conversion, transparency flattening or PDF/X validation")
 
 a = "Automation and agents"
 row(a, "Generate a presentation from PDFs and files with AI (PDF Spaces)", 1, N, "nothing found: formpdf has no deck editor and no built-in model; Export to PowerPoint converts pages, it does not draft a presentation")
