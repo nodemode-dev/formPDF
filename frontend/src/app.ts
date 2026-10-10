@@ -4,6 +4,7 @@ import { LiveClient } from './live/socket';
 import type { CreateKind } from './pdf/intent';
 import { ensureWorkbench, openWorkbench, type AppHooks } from './pdf/workbench';
 import { agentsDialog, helpDialog, preferencesDialog, shortcutsDialog } from './ui/app-dialogs';
+import { Batch } from './ui/batch';
 import { comboOf, type Command } from './ui/commands';
 import { anyDialogOpen, promptName } from './ui/dialogs';
 import { revealApp } from './ui/dom';
@@ -42,6 +43,7 @@ export async function startApp(): Promise<void> {
     { id: 'home-pictures', label: 'Create PDF from pictures…', words: ['images', 'scan', 'photos', 'jpg', 'png'], run: () => open({ create: 'pictures' }) },
     { id: 'home-merge', label: 'Merge PDFs…', words: ['combine', 'join', 'append'], run: () => open({ create: 'files' }) },
     { id: 'home-recent', label: 'Recent PDFs', words: ['history', 'last'], run: () => home.show('recent') },
+    { id: 'home-batch', label: 'Batch: run an action on many PDFs', words: ['batch', 'many files', 'bulk', 'folder', 'action wizard', 'bates'], run: () => home.show('batch') },
     { id: 'home-help', label: 'formpdf Help', keys: ['F1'], run: () => hooks.help() },
     { id: 'home-shortcuts', label: 'Keyboard shortcuts', keys: ['Mod+/'], run: () => hooks.shortcuts(bench.commands) },
     { id: 'home-prefs', label: 'Preferences…', keys: ['Mod+,'], words: ['settings', 'theme', 'dark', 'light'], run: () => hooks.preferences() },
@@ -65,6 +67,8 @@ export async function startApp(): Promise<void> {
     agents: hooks.agents,
     help: hooks.help,
   });
+
+  new Batch(home.root.querySelector<HTMLElement>('[data-page="batch"]') as HTMLElement);
 
   const bridge = new AgentBridge({ bench: () => bench, allow: () => setAgents(true) });
   live.onTool = (name, args) => bridge.run(name, args);

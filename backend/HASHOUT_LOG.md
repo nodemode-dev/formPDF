@@ -11,6 +11,7 @@ app/routers/pdf.py           /api/pdf: open, recent, every operation, exports, s
 app/routers/live.py          /api/live WebSocket: windows, their open document, window tool results
 app/routers/mcp.py           /mcp: the MCP server, tools, consent, turns, live landing
 app/routers/system.py        health, version, capabilities, settings
+app/routers/batch.py         /api/batch: upload copies, run one action on many files as a job, status, zip of results
 app/routers/media.py         extracted pictures
 app/services/bridge.py       window list, window document, window_call
 app/services/media.py        formpdf-owned picture store
@@ -38,6 +39,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 16. One action registry for MCP, the CLI, batch and the palette · services/pdf/actions.py
 17. The content interpreter · services/pdf/content/
 18. The font kit · services/pdf/fontkit.py, app/fonts/
+19. Batch jobs · routers/batch.py
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -116,3 +118,7 @@ Checked against pdfplumber on twelve PDFs (reportlab standard and TrueType subse
 ## 18. The font kit · _v0.2.0 (services/pdf/fontkit.py font_name, covers, pick, available; app/fonts/; formpdf_engine.py selfcheck)
 
 Text formpdf writes into a PDF (added text, edited paragraphs, OCR layers, Bates and headers later) must embed its font, or accents and non-Latin scripts are lost and extraction breaks. `app/fonts/` ships Inter 4.1, Noto Serif 2.015 and JetBrains Mono 2.304 in regular, bold, italic and bold italic with their OFL texts; `config.fonts_dir()` and the freeze script already pointed there, so the frozen engine carries them and `annot.text_font` now finds Inter instead of a system font. `font_name(family, bold, italic)` registers a family with reportlab on first use, which embeds a subset with a ToUnicode map, so fontTools is not needed yet; if a file is missing it falls back to the matching standard 14 font. `covers` checks a string against the font's character map and `pick` walks the families for one that covers it. No shipped family covers CJK; callers must say so (Beat Acrobat B8) until a CJK font is chosen. Checked: all twelve combinations write Greek, Cyrillic, accented Latin and Polish text that pdfplumber and the content interpreter extract unchanged, every font embedded as a subset. The selfcheck reports the number of font files found.
+
+## 19. Batch jobs · _v0.2.0 (routers/batch.py upload, run, _work, status, download, _target, _nest, _prune)
+
+Home > Batch runs one registered action (`Action.batch`) on many PDFs. Each file goes through `mcp.t_pdf` with `path` and an explicit `out`, the same code path agents and `./formpdf run` use, so batch behaves exactly like a file job: the input never changes. It calls `t_pdf` directly rather than `call_tool`, because the person started it in the window and the agent consent question does not apply. A run is a job in memory (`JOBS`, the newest 20 kept) worked through in an asyncio task kept in `TASKS` so it is not collected; the window polls GET /api/batch/{id} for per-file state, the message and the output paths, and GET /api/batch/{id}/zip zips what was written. Results go to a new folder `Exports/Batch <date time> <action label>`; output names follow the agents' `[stem]-[suffix].pdf` rule, and a second file with the same stem gets ` (2)`. Browser uploads are copied into `Formpdf/Batch/<random>/` because the window has no file paths in a browser; on each upload, copies older than a day are removed unless a running job uses them. Field names with dots from the batch form (`footer.center`, `bates.prefix`) are nested into the objects the actions take. Checked over HTTP: three files with Bates footers numbered ACME-000001 on, a refused non-batch action, a zip of three results, pruning of an old inbox folder.

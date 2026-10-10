@@ -14,7 +14,7 @@ export interface HomeHooks {
   help(): void;
 }
 
-type View = 'start' | 'recent';
+type View = 'start' | 'recent' | 'batch';
 
 const skeleton = `<div class="fs-card is-skeleton" data-key="__skeleton" aria-hidden="true"><span class="fs-card-preview fs-pdfwb-recent-prev"></span><span class="fs-card-body"><span class="fs-card-name">&nbsp;</span><span class="fs-card-meta">&nbsp;</span></span></div>`;
 const empty = `<div class="fs-card is-empty" hidden><span class="fs-card-preview fs-pdfwb-recent-prev is-blank">${icon('filePdf', 28)}</span><span class="fs-card-body"><span class="fs-card-name">No PDFs yet</span><span class="fs-card-meta">Open one, or make one from pictures</span></span></div>`;
@@ -33,6 +33,7 @@ export class Home {
 <button class="fs-home-nav-item" type="button" data-v="recent">${icon('filePdf', 16)}<span>Recent PDFs</span><span class="fs-badge is-count fs-recent-count">0</span></button>
 <button class="fs-home-nav-item" type="button" data-a="pictures">${icon('fileImage', 16)}<span>Create PDF from pictures</span></button>
 <button class="fs-home-nav-item" type="button" data-a="merge">${icon('merge', 16)}<span>Merge PDFs</span></button>
+<button class="fs-home-nav-item" type="button" data-v="batch">${icon('layers', 16)}<span>Batch</span></button>
 <div class="fs-home-nav-sep"></div>
 <div class="fs-home-nav-title">Agents</div>
 <button class="fs-home-nav-item" type="button" data-a="agents">${icon('agent', 16)}<span>Claude Code, Codex, Cursor</span></button>
@@ -54,6 +55,7 @@ export class Home {
 <section class="fs-home-section"><div class="fs-home-section-head"><h2 class="fs-home-section-title">Recent PDFs</h2><button class="fs-btn fs-btn-ghost fs-btn-sm" type="button" data-v="recent">See all</button></div><div class="fs-card-grid fs-home-recent">${skeleton}${empty}</div></section>
 </div>
 <div data-page="recent" hidden><div class="fs-home-head"><div><h1 class="fs-home-title">Recent PDFs</h1><p class="fs-home-sub">The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.</p></div></div><div class="fs-card-grid fs-home-recent-full">${skeleton}${empty}</div></div>
+<div data-page="batch" hidden></div>
 </div></section>`);
     document.getElementById('app')?.appendChild(this.root);
     this.wire();

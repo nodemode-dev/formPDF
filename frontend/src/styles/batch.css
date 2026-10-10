@@ -1,0 +1,25 @@
+.fs-batch-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.fs-batch-card { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--line-2); border-radius: 14px; background: var(--surface-2); }
+.fs-batch.is-drag-over .fs-batch-files { border-color: var(--accent-color); border-style: dashed; }
+.fs-batch-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-height: 30px; }
+.fs-batch-card-head .fs-home-section-title { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; }
+.fs-batch-head-btns { display: flex; gap: var(--space-2); }
+.fs-batch-files { grid-template-rows: auto 360px; }
+.fs-batch-list { grid-row: 2; grid-column: 1; display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.fs-batch-empty { grid-row: 2; grid-column: 1; align-self: center; }
+.fs-batch-row { display: grid; grid-template-columns: minmax(0, 1.2fr) 76px minmax(0, 1.5fr) 24px; align-items: center; gap: var(--space-2); flex: none; height: 36px; padding: 0 var(--space-2) 0 var(--space-3); border: 1px solid var(--line-1); border-radius: var(--radius-md); background: var(--surface-1); font-size: var(--fs-12); }
+.fs-batch-name { overflow: hidden; color: var(--text-primary); text-overflow: ellipsis; white-space: nowrap; }
+.fs-batch-state { color: var(--text-muted); }
+.fs-batch-text { overflow: hidden; color: var(--text-muted); text-overflow: ellipsis; white-space: nowrap; }
+.fs-batch-row.is-done .fs-batch-state { color: var(--accent-ink); }
+.fs-batch-row.is-failed .fs-batch-state, .fs-batch-row.is-failed .fs-batch-text { color: var(--danger, #e5484d); }
+.fs-batch-groups { display: grid; min-height: 280px; align-content: start; }
+.fs-batch-group { display: grid; gap: var(--space-3); align-content: start; }
+.fs-batch-group[hidden] { display: none; }
+.fs-batch-group input[type="color"] { width: 56px; padding: 3px; cursor: pointer; }
+.fs-batch-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1) var(--space-3); }
+.fs-batch-run { display: flex; align-items: center; gap: var(--space-3); min-height: 34px; }
+.fs-batch-progress { color: var(--text-secondary); font-size: var(--fs-12); font-variant-numeric: tabular-nums; }
+.fs-batch-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); min-height: 30px; }
+.fs-batch-out { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 900px) { .fs-batch-grid { grid-template-columns: minmax(0, 1fr); } }
