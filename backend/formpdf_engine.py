@@ -26,6 +26,9 @@ def selfcheck() -> int:
     from app.services.pdf import fontkit
 
     info["fonts"] = sum(len(f["styles"]) for f in fontkit.available())
+    from app.services.pdf import ocr
+
+    info["ocr"] = ocr.status()["available"]
     print(json.dumps(info))
     return 1 if missing else 0
 

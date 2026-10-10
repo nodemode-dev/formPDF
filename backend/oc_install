@@ -17,3 +17,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 else
   pip install -r requirements.txt
 fi
+if [ "${FORMPDF_NO_OCR:-}" != "1" ]; then
+  pip install -r requirements_ocr.txt || echo "[formpdf] Text recognition (OCR) could not be installed; everything else works. Run ./formpdf install again to retry." >&2
+fi

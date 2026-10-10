@@ -5,12 +5,14 @@ from fastapi import APIRouter
 
 from app.core import config
 from app.services import session
-from app.services.pdf import fontkit, spell
+from app.services.pdf import fontkit, ocr, spell
 
 router = APIRouter()
 NETWORK = [
     {"id": "engine", "name": "The engine and this window", "state": "local", "note": "They talk only on this computer, at 127.0.0.1. PDFs never leave it."},
     {"id": "updates", "name": "Update check (desktop app)", "state": "off", "note": "This build has no update key, so it never checks. When one is set, formpdf asks before checking."},
+    {"id": "ocr", "name": "Text recognition (OCR)", "state": "local", "note": "Runs on this computer with models installed alongside formpdf. Nothing is uploaded or downloaded."},
+    {"id": "scanners", "name": "Scanners", "state": "local", "note": "Only when you use Scan: formpdf looks for scanners on your local network and talks to the one you pick. Nothing goes past your network."},
 ]
 
 
@@ -57,6 +59,7 @@ def capabilities() -> dict:
         "port": config.port(),
         "fonts": sum(len(f["styles"]) for f in fontkit.available()),
         "spellLanguages": spell.languages(),
+        "ocr": ocr.status(),
         "network": NETWORK,
     }
 

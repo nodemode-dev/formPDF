@@ -12,6 +12,7 @@ ext="$(fp_exe)"
 extra=()
 if [ -d "$FORMPDF_ROOT/backend/app/fonts" ]; then extra+=(--add-data "$FORMPDF_ROOT/backend/app/fonts${sep}fonts"); fi
 if [ -d "$FORMPDF_ROOT/backend/app/dict" ]; then extra+=(--add-data "$FORMPDF_ROOT/backend/app/dict${sep}dict"); fi
+if python -c "import rapidocr, onnxruntime" 2>/dev/null; then extra+=(--collect-all rapidocr --collect-all onnxruntime --collect-all shapely --collect-all pyclipper); fi
 rm -rf build/pyinstaller dist-engine
 pyinstaller --noconfirm --clean --onefile --name formpdf-engine \
   --distpath dist-engine --workpath build/pyinstaller --specpath build/pyinstaller \

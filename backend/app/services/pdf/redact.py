@@ -365,7 +365,7 @@ def _verify(w: PdfWriter, n: int, areas, cleared: set[str]) -> str | None:
 
 
 @core.serial
-def _render_check(data: bytes, n: int, page_box, areas) -> str | None:
+def _render_check(data: bytes, n: int, page_box, areas, rot: int = 0) -> str | None:
     import pypdfium2 as pdfium
 
     doc = pdfium.PdfDocument(data)
@@ -373,10 +373,10 @@ def _render_check(data: bytes, n: int, page_box, areas) -> str | None:
         pg = doc[n - 1]
         scale = 2.0
         pil = core.render_pil(pg, scale).convert("RGB")
-        x0, _, _, y1 = page_box
         for ax0, ay0, ax1, ay1 in areas:
-            l, t = int((ax0 - x0) * scale) + 2, int((y1 - ay1) * scale) + 2
-            r, b = int((ax1 - x0) * scale) - 2, int((y1 - ay0) * scale) - 2
+            pts = [core.to_display(page_box, rot, x, y) for x, y in ((ax0, ay0), (ax1, ay1))]
+            l, t = int(min(p[0] for p in pts) * scale) + 2, int(min(p[1] for p in pts) * scale) + 2
+            r, b = int(max(p[0] for p in pts) * scale) - 2, int(max(p[1] for p in pts) * scale) - 2
             if r - l < 2 or b - t < 2:
                 continue
             region = pil.crop((max(0, l), max(0, t), min(pil.width, r), min(pil.height, b)))
@@ -460,7 +460,7 @@ def apply(src, out, areas: list[dict], *, passwords: list[str] | None = None, co
     buf = io.BytesIO()
     w.write(buf)
     for p, areas_pdf in overlays.items():
-        problem = _render_check(buf.getvalue(), p, core.view_box(w.pages[p - 1]), areas_pdf)
+        problem = _render_check(buf.getvalue(), p, core.view_box(w.pages[p - 1]), areas_pdf, core.rotation(w.pages[p - 1]))
         if problem:
             raise ValueError(f"Redaction stopped: {problem}. Nothing was changed.")
     for p, areas_pdf in overlays.items():

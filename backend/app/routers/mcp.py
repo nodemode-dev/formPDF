@@ -80,7 +80,8 @@ w, h, path | data, rot, flipH, flipV, crop: {l, t, r, b}}], update: [{id | page 
 from items), x, y, w, h, rot, flipH, flipV, crop, path | data (replace a picture), text, paras, font}], arrange: [{id | page and picture |
 page and paragraph, to: front | back | forward | backward}], comments: [{page, index, to}], remove: [id | {id} | {page, picture} |
 {page, paragraph}]} (page text and pictures that stay editable, including text already in the PDF, which keeps its own font where it can;
-crop is fractions of the picture).
+crop is fractions of the picture); ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
+computer and adds invisible, searchable text; tilted full-page scans are straightened; get_context says whether OCR is installed).
 Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}
 (one slide per page, words as text boxes); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.
 
@@ -467,7 +468,8 @@ def _detail(res: dict, extra: dict) -> str:
     n = res.get("pages")
     bits = [f"{n} page{'s' if n != 1 else ''}"] if n is not None else []
     for k, word in (("cropped", "cropped"), ("matches", "matches"), ("areas", "areas redacted"), ("created", "fields added"), ("flattened", "fields flattened"),
-                    ("added", "added"), ("deleted", "deleted"), ("fixed", "spelling fixes")):
+                    ("added", "added"), ("deleted", "deleted"), ("fixed", "spelling fixes"), ("recognised", "pages recognised"),
+                    ("words", "words"), ("straightened", "straightened"), ("skipped", "skipped")):
         v = res.get(k, extra.get(k))
         if v:
             bits.append(f"{v} {word}")
@@ -620,7 +622,12 @@ async def t_get_context(a: Agent, args: dict) -> dict:
     recent = docs.recent()[:10]
     if recent:
         lines.append("Recent: " + "; ".join(f"{r['name']} ({r['pages']} p, id {r['id']})" for r in recent))
-    return _ok("\n".join(lines), {"window": bridge.window_connected(), "agentsAllowed": allowed, "doc": win, "open": list(OPEN.values())[:10], "recent": recent})
+    from app.services.pdf import ocr
+
+    ocr_st = ocr.status()
+    lines.append("OCR: installed" if ocr_st["available"] else f"OCR: not installed ({ocr_st['reason']})")
+    return _ok("\n".join(lines), {"window": bridge.window_connected(), "agentsAllowed": allowed, "doc": win, "open": list(OPEN.values())[:10], "recent": recent,
+                                  "ocr": ocr_st["available"]})
 
 
 async def t_open_pdf(a: Agent, args: dict) -> dict:

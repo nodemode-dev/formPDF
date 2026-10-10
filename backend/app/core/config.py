@@ -78,6 +78,10 @@ def dict_dir() -> Path:
     return bundled if bundled.is_dir() else BACKEND_DIR / "app" / "dict"
 
 
+def models_dir() -> Path:
+    return data_dir() / "models"
+
+
 def is_desktop() -> bool:
     return os.environ.get("FORMPDF_DESKTOP") == "1"
 

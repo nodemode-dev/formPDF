@@ -30,6 +30,14 @@ The formpdf mark, the stamps and the agent skills are original work of this repo
 | pypdfium2 with PDFium | Apache-2.0 or BSD-3-Clause; PDFium BSD-3-Clause | engine, rendering, redaction and image extraction |
 | pdfplumber, pdfminer.six | MIT | engine, text, layout and tables |
 | reportlab | BSD | engine, PDF composition |
+| rapidocr 3.10.0 with the PP-OCRv6 small detection and recognition models and the PaddleOCR mobile direction classifier | Apache-2.0 (code by the RapidOCR Authors; model weights by Baidu and the PaddleOCR rights holders, see its MODEL_LICENSES.md) | engine, text recognition (optional; installed by default) |
+| onnxruntime | MIT | engine, runs the OCR models on this computer |
+| opencv-python-headless | Apache-2.0; its wheel bundles FFmpeg libraries (LGPL-2.1) and libgfortran (GPL-3.0 with the GCC Runtime Library Exception) as separate shared libraries, kept unmodified and replaceable; OpenBLAS BSD-3-Clause | engine, image handling for OCR |
+| shapely | BSD-3-Clause; bundles GEOS (LGPL-2.1) as a separate, unmodified shared library | engine, OCR box geometry |
+| pyclipper, PyYAML, colorlog, six | MIT | engine, OCR dependencies |
+| omegaconf (with ANTLR 4 runtime notice), numpy, protobuf | BSD-3-Clause (numpy also 0BSD, MIT, Zlib, CC0-1.0 parts) | engine, OCR dependencies |
+| flatbuffers, requests | Apache-2.0 | engine, OCR dependencies (requests is never used to reach the network: models are looked up on disk only) |
+| tqdm | MPL-2.0 and MIT, files unmodified | engine, OCR dependency |
 
 ## Build tools, not distributed
 

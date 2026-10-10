@@ -68,6 +68,17 @@ def view_box(page) -> tuple[float, float, float, float]:
     return x0, y0, x1, y1
 
 
+def to_display(box, rot: int, x: float, y: float) -> tuple[float, float]:
+    x0, y0, x1, y1 = box
+    if rot == 90:
+        return y - y0, x - x0
+    if rot == 180:
+        return x1 - x, y - y0
+    if rot == 270:
+        return y1 - y, x1 - x
+    return x - x0, y1 - y
+
+
 def rotation(page) -> int:
     try:
         r = int(page.rotation)

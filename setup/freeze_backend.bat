@@ -12,6 +12,7 @@ if not exist frontend\dist\index.html ( call setup\build_frontend.bat || exit /b
 set "FONTS="
 if exist "%ROOT%\backend\app\fonts" set FONTS=--add-data "%ROOT%\backend\app\fonts;fonts"
 if exist "%ROOT%\backend\app\dict" set FONTS=%FONTS% --add-data "%ROOT%\backend\app\dict;dict"
+python -c "import rapidocr, onnxruntime" >nul 2>nul && set FONTS=%FONTS% --collect-all rapidocr --collect-all onnxruntime --collect-all shapely --collect-all pyclipper
 cd backend
 if exist build\pyinstaller rmdir /s /q build\pyinstaller
 if exist dist-engine rmdir /s /q dist-engine

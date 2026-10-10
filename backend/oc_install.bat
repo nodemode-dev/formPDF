@@ -9,3 +9,4 @@ if not exist venv %PY% -m venv venv
 call venv\Scripts\activate.bat
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+if not "%FORMPDF_NO_OCR%"=="1" pip install -r requirements_ocr.txt || echo [formpdf] Text recognition (OCR) could not be installed; everything else works. Run formpdf.bat install again to retry.
