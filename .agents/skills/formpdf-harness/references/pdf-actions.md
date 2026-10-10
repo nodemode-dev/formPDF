@@ -1,14 +1,14 @@
 # pdf actions
 
-The `pdf` MCP tool, action by action, as built in formpdf 0.1.0. The action names formsld's `pdf` tool used (info, text, images, tables, merge, split, header_footer, crop, find, redact, to_docx) are unchanged; `to_deck` is replaced by `to_pptx`, and the workbench's own operations are added. All paths are absolute. A failure answers `pdf [action] failed: [reason]` with isError.
+The `pdf` MCP tool, action by action, as built in formpdf 0.3.0. The action names formsld's `pdf` tool used (info, text, images, tables, merge, split, header_footer, crop, find, redact, to_docx) are unchanged; `to_deck` is replaced by `to_pptx`, and the workbench's own operations are added. All paths are absolute. A failure answers `pdf [action] failed: [reason]` with isError.
 
 ## Contents
 
 - Where an action works
 - Page syntax
-- Read actions: info, text, images, tables, find, comments, fields, hidden, compare
-- Change actions: header_footer, page_numbers, watermark, crop, redact, organize, protect, unlock, metadata, compress, sanitize, fill, annotate, form, merge
-- Export actions: split, to_docx, to_pptx
+- Read actions: info, text, images, tables, find, comments, fields, hidden, compare, links, attachments, measurements, snap_points, spell
+- Change actions: header_footer, page_numbers, watermark, crop, redact, organize, protect, unlock, metadata, compress, sanitize, fill, annotate, form, merge, edit_links, edit_attachments, measure, spell_fix
+- Export actions: split, to_docx, to_pptx, to_html, to_rtf, to_xlsx
 
 ## Where an action works
 
@@ -18,7 +18,7 @@ The `pdf` MCP tool, action by action, as built in formpdf 0.1.0. The action name
 | `doc` (id or key) | that open PDF | a new version, shown live in the window as your turn |
 | neither | the window's open PDF, else the last PDF you opened | as with `doc` |
 
-Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, protected, unlocked, metadata, compressed, clean, filled, commented, form, merged.
+Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, protected, unlocked, metadata, compressed, clean, filled, commented, form, merged, linked, attached, measured, spelling.
 
 ## Page syntax
 
@@ -35,6 +35,11 @@ Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, pr
 - **fields**: form fields with name, type, page, value and options.
 - **hidden**: counts of metadata, javascript, attachments, comments, fields, layers, links, bookmarks, thumbnails, private, hidden_text.
 - **compare** `{other, otherIsNewer, pictures}`: pages changed, added, removed and the same, then up to 200 differences with before and after text. Nothing changes.
+- **links** `{pages}`: every link with page, index, box and target (web address, email or page). Use page and index to remove one.
+- **attachments** `{save: name, out}`: files attached to the document and files pinned to pages (page, index, name, size, description). With `save`, writes that file to `out` or `~/Formpdf/Exports`.
+- **measurements**: measurement comments (distance, perimeter, area) with page, index, value and unit, read from their stored scale.
+- **snap_points** `{pages}`: path ends, segment midpoints and crossings on the page, in points from the top left, for exact measuring.
+- **spell** `{scope: "comments,fields,pages", texts: [{id, text}], ignore: [words], lang, skip_caps, suggest}`: possible misspellings in the PDF's comments, form text fields, page text (scope) or texts you pass, each with where it is (comment page and index, field name, page, or your id), offset, context and up to six suggestions. Default scope is comments and fields. Words in all capitals, web and email addresses and the person's own dictionary are skipped.
 
 ## Change actions
 
@@ -53,9 +58,16 @@ Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, pr
 - **annotate** `{annotations: [...], highlight, color, flatten}`: annotations are `{page, kind, color, text, x, y, w, h}` for note, freetext, rect, ellipse; `{page, kind, rects: [[x, y, w, h]]}` for highlight, underline, strikeout; `{page, kind, points: [[x, y], [x, y]]}` for line and arrow. `highlight: "phrase"` highlights every match.
 - **form** `{create: [{type: text | multiline | checkbox | radio | dropdown | listbox | date | signature, page, x, y, w, h, name, options}], rename: {old: new}, delete: [names]}`.
 - **merge**: with `paths` and `out` (and no path or doc) merges those files into `out`; with `path` and `paths` writes `[stem]-merged.pdf`; on the open PDF appends `paths` to it live.
+- **edit_links** `{add: [{page, x, y, w, h, to}], remove: [{page, index}], auto, border}`: `to` is a web address, `mailto:` address or page number. `auto: true` links every web and email address found in the text. Run links first for indexes.
+- **edit_attachments** `{add: [{path, name, description, page, x, y}], remove: [names], unpin: [{page, index}]}`: without `page` the file is attached to the document; with `page` it is pinned there as a paperclip comment. A name already taken becomes `name (2).ext`.
+- **measure** `{add: [{page, kind: distance | perimeter | area, points: [[x, y], ...], unit, factor, label, color}], remove: [{page, index}]}`: measurement comments other readers show. `factor` is units per point (true size for the unit when omitted); distance takes two points, area at least three.
+- **spell_fix** `{fixes: [{where: comment, page, index, nm, offset, word, to} | {where: field, name, offset, word, to}]}`: replaces each word in comment text or a field value, using spell's output. Text boxes are redrawn with the corrected text.
 
 ## Export actions
 
 - **split** `{ranges, out: existing folder}`: one file per range named `[stem]-part[n]-[range].pdf`. Default folder: beside the input, or `~/Formpdf/Exports` for the open PDF.
-- **to_docx** `{pages, out}`: Word document with paragraphs in reading order, headings, pictures, tables and a page break after each page.
+- **to_docx** `{pages, out}`: Word document with paragraphs in reading order, headings, bullet and numbered lists, pictures and tables; two- and three-column pages become Word columns, running headers and footers go into the Word header and footer with a live page number, and each page starts a new page.
+- **to_html** `{pages, out, pictures}`: one self-contained web page, pictures inline, headings, lists and tables in reading order, running headers and footers left out.
+- **to_rtf** `{pages, out, pictures}`: rich text with the same content, for WordPad, TextEdit and older word processors.
+- **to_xlsx** `{pages, out, tables_only}`: one sheet per page in reading order; table numbers, money and percentages become real numbers with their formats. `tables_only` writes only the tables.
 - **to_pptx** `{pages, out, text}`: PowerPoint with one slide per page at the first page's size; each page is the slide picture (its text removed) with its words as real text boxes and its tables as PowerPoint tables. `text: false` gives pictures only.

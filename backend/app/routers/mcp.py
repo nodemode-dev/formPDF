@@ -51,9 +51,12 @@ pages is "3", "1-4", "2,5", "4-" (to the end); omit for every page. Coordinates 
 ## Actions (pdf tool)
 Read: info, text, images (pictures to the media folder, ids and sizes), tables (markdown), find {query | preset: email, phone, card, date;
 regex, caseSensitive, wholeWord}, comments (existing comments with replies and status), fields (form fields and values), hidden (hidden
-information counts), compare {other: path, otherIsNewer, pictures}.
+information counts), compare {other: path, otherIsNewer, pictures}, links (every link with page, index, box and target), attachments
+{save: name, out} (attached and pinned files; save writes one out), measurements (measurement comments with their values), snap_points
+{pages} (path ends, midpoints and crossings to measure from), spell {scope: "comments,fields,pages", texts: [{id, text}], ignore, lang,
+skip_caps} (possible misspellings with offset, context and suggestions).
 Change: header_footer {header: {left, center, right}, footer, tokens <<page>> <<pages>> <<date>> <<file>> <<bates>>, size, color, font,
-margins, start, apply: all | odd | even, bates: {prefix, start, digits}}; page_numbers {position: bottom-center | bottom-right | bottom-left |
+margins, start, apply: all | odd | even, bates: {prefix, suffix, start, digits}}; page_numbers {position: bottom-center | bottom-right | bottom-left |
 top-center | top-right | top-left, format: "{n}" | "Page {n} of {total}", start}; watermark {text, opacity 0..1, angle, size, color};
 crop {margins: {l, t, r, b} | box: {x, y, w, h} | auto: true}; redact {query | preset | areas: [{page, x, y, w, h}]} (true redaction:
 pages with a match become pictures); organize {order: [page numbers in the new order, pages left out are deleted], delete: [pages],
@@ -63,8 +66,13 @@ rotate: 90 | 180 | 270 (with pages, default all), blank: [positions after which 
 fill {values: {field name: value}, flatten}; annotate {annotations: [{page, kind: note | freetext | highlight | underline | strikeout |
 rect | ellipse | line | arrow, text, color, x, y, w, h, rects, points}], highlight: query, flatten}; form {create: [{type: text | multiline |
 checkbox | radio | dropdown | listbox | date | signature, page, x, y, w, h, name, options}], rename: {old: new}, delete: [names]};
-merge {paths: [PDFs to append]} (with path and paths and out, merges files instead).
-Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out}; to_pptx {out, text: true} (one slide per page, words as text boxes).
+merge {paths: [PDFs to append]} (with path and paths and out, merges files instead); edit_links {add: [{page, x, y, w, h, to: url |
+mailto: | page number}], remove: [{page, index}], auto: true (link every web and email address), border}; edit_attachments {add: [{path,
+name, description, page, x, y}] (a page pins the file there), remove: [names], unpin: [{page, index}]}; measure {add: [{page, kind:
+distance | perimeter | area, points: [[x, y], ...], unit, factor (units per point), label, color}], remove: [{page, index}]};
+spell_fix {fixes: [{where: comment, page, index, nm, offset, word, to} | {where: field, name, offset, word, to}]}.
+Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}
+(one slide per page, words as text boxes); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.
 
 ## Tips
 - Run find before redact and tell the person what will go. Crop hides, redact removes.

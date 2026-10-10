@@ -1,10 +1,10 @@
 ---
 name: formpdf-harness
-description: "Does PDF work with formpdf through its MCP server. Use whenever the person wants a PDF read, searched, compared, commented, filled, signed, stamped, given form fields, reorganized, split, merged, cropped, given headers, footers, page or Bates numbers or a watermark, mined for text, tables or pictures, redacted, cleaned of hidden information, protected or unlocked, compressed, or converted to Word or PowerPoint, and formpdf is mentioned or its tools (get_context, open_pdf, pdf, render_pages, extract, save, undo) are available. Covers the loop, every pdf action with its arguments, live edits in the window as an undoable turn versus file jobs by path, verification by rendering, consent and handoff. Also use when a formpdf tool fails and the next step is unclear. Not for changing formpdf's own source code (use formpdf-skillset)."
+description: "Does PDF work with formpdf through its MCP server. Use whenever the person wants a PDF read, searched, compared, commented, filled, signed, stamped, given form fields, reorganized, split, merged, cropped, given headers, footers, page or Bates numbers or a watermark, mined for text, tables or pictures, redacted, cleaned of hidden information, protected or unlocked, compressed, given links, attached files or measurements, spell checked, or converted to Word, PowerPoint, Excel, HTML or RTF, and formpdf is mentioned or its tools (get_context, open_pdf, pdf, render_pages, extract, save, undo) are available. Covers the loop, every pdf action with its arguments, live edits in the window as an undoable turn versus file jobs by path, verification by rendering, consent and handoff. Also use when a formpdf tool fails and the next step is unclear. Not for changing formpdf's own source code (use formpdf-skillset)."
 license: Apache-2.0
 metadata:
   author: formpdf
-  version: "0.1.0"
+  version: "0.3.0"
 ---
 
 # formpdf harness
@@ -44,7 +44,7 @@ Full arguments and results: `references/tools.md`. Every pdf action: `references
 ## Live or by path
 
 - **Live (no path):** changing actions replace the open PDF with the result in the window, labelled "Agent: [action]" in its history and status bar. The person sees it at once and can undo the turn (Edit, Undo agent turn, or Undo turn in the status bar). Nothing is on disk until save.
-- **By path:** the input file is untouched; the result is `[stem]-[action].pdf` beside it, or `out`. Export actions (`split`, `to_docx`, `to_pptx`) always write files: by path beside the input, live into `~/Formpdf/Exports` unless `out` is given.
+- **By path:** the input file is untouched; the result is `[stem]-[action].pdf` beside it, or `out`. Export actions (`split`, `to_docx`, `to_pptx`, `to_html`, `to_rtf`, `to_xlsx`) always write files: by path beside the input, live into `~/Formpdf/Exports` unless `out` is given.
 
 ## Consent
 
