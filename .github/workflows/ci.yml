@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: python -m compileall -q app formpdf_engine.py
+      - run: python formpdf_engine.py --selfcheck
+      - name: Boot the engine and probe it
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8198 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8198/api/health && break; sleep 1; done
+          curl -sf http://127.0.0.1:8198/api/health
+          curl -sf http://127.0.0.1:8198/api/version
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax
+        run: |
+          for f in formpdf formpdf_oc_install backend/oc_install backend/boot_backend frontend/oc_install frontend/boot_frontend setup/*; do
+            case "$f" in *.bat|*.py) continue ;; esac
+            bash -n "$f"
+          done
+      - name: No em dash or emoji in tracked text
+        run: |
+          python3 - <<'PY'
+          import subprocess, sys
+          bad = []
+          for path in subprocess.check_output(['git', 'ls-files'], text=True).split():
+              try:
+                  text = open(path, encoding='utf-8').read()
+              except (UnicodeDecodeError, IsADirectoryError, FileNotFoundError):
+                  continue
+              for ch in text:
+                  cp = ord(ch)
+                  if cp == 0x2014 or 0x1F000 <= cp <= 0x1FAFF or 0x2600 <= cp <= 0x27BF:
+                      bad.append(f'{path}: U+{cp:04X}')
+                      break
+          print('\n'.join(bad) or 'clean')
+          sys.exit(1 if bad else 0)
+          PY

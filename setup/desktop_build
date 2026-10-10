@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+"$FORMPDF_ROOT/setup/build_frontend"
+"$FORMPDF_ROOT/setup/freeze_backend"
+cd "$FORMPDF_ROOT"
+[ -f src-tauri/icons/icon.icns ] || frontend/node_modules/.bin/tauri icon assets/formpdf_icon.png
+frontend/node_modules/.bin/tauri build "$@"
+fp_say "bundles are in src-tauri/target/release/bundle"

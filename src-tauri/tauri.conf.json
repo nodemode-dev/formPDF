@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "formpdf",
+  "version": "0.0.0",
+  "identifier": "ai.nodemode.formpdf",
+  "build": {
+    "frontendDist": "../frontend/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "splash",
+        "title": "formpdf",
+        "url": "splash.html",
+        "width": 360,
+        "height": 180,
+        "resizable": false,
+        "decorations": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "A PDF editor",
+    "longDescription": "formpdf is a PDF editor in the NodeMode design system: read, comment, fill and sign, build forms, organize, split and merge, add headers, footers and Bates numbers, find and redact, protect, compress and export to Word or PowerPoint, with agent automation that edits the open PDF live.",
+    "copyright": "Copyright 2026 nodemode-ai.",
+    "externalBin": ["binaries/formpdf-engine"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "macOS": {
+      "minimumSystemVersion": "12.0",
+      "hardenedRuntime": true,
+      "entitlements": "entitlements.plist"
+    },
+    "fileAssociations": [
+      { "ext": ["pdf"], "name": "PDF Document", "description": "PDF document", "role": "Editor", "rank": "Alternate", "mimeType": "application/pdf" }
+    ],
+    "createUpdaterArtifacts": false
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": ["https://github.com/nodemode-ai/formpdf/releases/latest/download/latest.json"]
+    }
+  }
+}

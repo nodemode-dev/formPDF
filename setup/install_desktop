@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+fp_venv
+cd "$FORMPDF_ROOT/backend"
+if [ "$(fp_os)" = macos ]; then pip install -r requirements_desktop_macos.txt; else pip install -r requirements_desktop.txt; fi
+if ! command -v cargo >/dev/null 2>&1; then
+  fp_say "Rust is not installed. Install it from https://rustup.rs then rerun ./formpdf install-desktop"
+  exit 1
+fi
+if [ "$(fp_os)" = linux ] && ! pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+  fp_say "Tauri needs system libraries. On Debian or Ubuntu run:"
+  fp_say "sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf"
+  exit 1
+fi
+[ -x "$FORMPDF_ROOT/frontend/node_modules/.bin/tauri" ] || ( cd "$FORMPDF_ROOT/frontend" && npm install )
+fp_say "desktop toolchain ready: rustc $(rustc --version | awk '{print $2}')"

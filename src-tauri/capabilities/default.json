@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The windows load the engine's page from the loopback address; through Tauri the page prints a window and closes it.",
+  "windows": ["splash", "main"],
+  "remote": {
+    "urls": ["http://127.0.0.1:*", "http://localhost:*"]
+  },
+  "permissions": ["core:default", "core:window:allow-close", "allow-print-window"]
+}

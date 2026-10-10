@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+fp_venv
+python -c "import PyInstaller" 2>/dev/null || fp_die "PyInstaller missing, run ./formpdf install-desktop"
+triple="$(fp_target_triple)" || fp_die "rustc not found; install Rust or set FORMPDF_TARGET"
+[ -f "$FORMPDF_ROOT/frontend/dist/index.html" ] || "$FORMPDF_ROOT/setup/build_frontend"
+cd "$FORMPDF_ROOT/backend"
+sep=":"
+[ "$(fp_os)" = windows ] && sep=";"
+ext="$(fp_exe)"
+extra=()
+if [ -d "$FORMPDF_ROOT/backend/app/fonts" ]; then extra+=(--add-data "$FORMPDF_ROOT/backend/app/fonts${sep}fonts"); fi
+rm -rf build/pyinstaller dist-engine
+pyinstaller --noconfirm --clean --onefile --name formpdf-engine \
+  --distpath dist-engine --workpath build/pyinstaller --specpath build/pyinstaller \
+  --add-data "$FORMPDF_ROOT/frontend/dist${sep}frontend_dist" \
+  --collect-submodules app --collect-submodules uvicorn \
+  --collect-all pptx --collect-all pdfplumber --hidden-import pypdfium2 \
+  "${extra[@]}" \
+  "$FORMPDF_ROOT/backend/formpdf_engine.py"
+mkdir -p "$FORMPDF_ROOT/src-tauri/binaries"
+out="$FORMPDF_ROOT/src-tauri/binaries/formpdf-engine-${triple}${ext}"
+cp "dist-engine/formpdf-engine${ext}" "$out"
+"$out" --selfcheck
+fp_say "sidecar ready: $out"
