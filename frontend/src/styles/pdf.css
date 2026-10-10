@@ -188,6 +188,7 @@
 .fs-pdfwb-props { row-gap: 6px; }
 .fs-pdfwb-props > dd { white-space: normal; overflow-wrap: anywhere; }
 .fs-pdfwb-annots { margin-top: var(--space-2); }
+.fs-pdfwb-annots-area { height: 260px; overflow-y: auto; overscroll-behavior: contain; }
 .fs-pdfwb-arow { cursor: pointer; }
 .fs-pdfwb-dot { display: block; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-primary) 18%, transparent); }
 .fs-pdfwb-annots-empty { padding: 20px 8px; }
