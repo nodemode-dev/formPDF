@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.8.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.9.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -19,13 +19,13 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | PDF convert | 10.5 of 11 · 95% |
 | Review and comments | 1.5 of 2 · 75% |
 | Collaboration and sharing | 1 of 2 · 50% |
-| Accessibility | 0.5 of 5 · 10% |
+| Accessibility | 4.5 of 5 · 90% |
 | Import and export | 0 of 1 · 0% |
 | Print | 1 of 3 · 33% |
 | Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **58 of 72 · 81%** |
+| **Overall** | **62 of 72 · 86%** |
 
-Across the 72 scored rows formpdf has 54 full, 8 partial and 10 none.
+Across the 72 scored rows formpdf has 58 full, 8 partial and 6 none.
 
 ## Where formpdf leads
 
@@ -34,9 +34,9 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 ## Where formpdf trails most
 
 - **Content editing.** formpdf edits the text and pictures a PDF already has and adds page text and pictures that stay editable; only generating pictures with AI is missing.
-- **Accessibility.** No accessibility checker, no tagging and no reading-order editor for PDFs.
 - **Signing requests.** Signers and their order are tracked in the PDF, but sending and reminders go through the person's own email rather than a service.
-- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
+- **Print.** No PDF/A or PDF/X conversion and no preflight yet.
+- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
 
 ## Line by line
 
@@ -149,11 +149,11 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
-| Accessibility checker for PDFs | yes | None | nothing found: formsld's `services/lint.py` checks decks, not PDFs |
-| Reading Order tool for tagged PDFs | yes | None | nothing found: reading order is only inferred for Reading view (`layout.py xycut`), never written to tags |
-| Screen reader support in the app | yes | Partial | ARIA roles and labels on workbench buttons, panels and dialogs (`workbench.ts`, `panels.ts`, `form.ts` aria-label); page content is pdf.js canvas plus text layer; not audited |
-| Alternate text for figures | yes | None | nothing found: no structure-tree editing in `services/pdf` |
-| Tag a PDF for accessibility (autotag) | yes | None | nothing found: no PDF is tagged; edits through pypdf keep but never add /StructTreeRoot |
+| Accessibility checker for PDFs | yes | Full | Accessibility > Accessibility check and the accessibility action (`services/pdf/access.py check`): Acrobat's 32 rules in its seven groups with passed, failed, manual and skipped, page findings, a fix per repairable rule (`fix_accessibility`: tags, title, language, tab order, untagged comments and fields, field descriptions, table summaries, bookmarks) and an HTML report (`accessibility_report`) |
+| Reading Order tool for tagged PDFs | yes | Full | Accessibility > Reading order (`tools/access.ts`): numbered tagged regions on the pages, retag, move earlier or later, mark as background; `structure` and `edit_structure` for agents |
+| Screen reader support in the app | yes | Partial | labelled region, tabs pattern with arrow keys and labelled tab panels (`workbench.ts`), status region for long jobs, dialogs labelled with focus kept inside (`ui/dialogs.ts`), ARIA labels on buttons and fields; page content is pdf.js canvas plus text layer; partial because it has not been tried with VoiceOver or NVDA |
+| Alternate text for figures | yes | Full | Accessibility > Alternate text (`tools/access.ts`): figure by figure with a crop of the page, alternate text or decorative; `edit_structure {alt, decorative}` |
+| Tag a PDF for accessibility (autotag) | yes | Full | Accessibility > Tags and the autotag action (`services/pdf/access.py tag`): headings, paragraphs, lists, tables with header cells, figures with boxes, links, fields and comments in reading order from `layout.page_blocks`, running headers and footers as artifacts, marked content written stream by stream; renders unchanged and Poppler reads the tree |
 
 ### Import and export
 

@@ -96,11 +96,11 @@ row(a, "Share PDF links with permissions", 1, N, "nothing found: no hosted servi
 row(a, "Works offline on local files", 1, F, "local engine; working copies under the data folder (`services/pdf/docs.py root`) and Save writes the PDF back to disk (`routers/pdf.py /pdf/{doc_id}/save`)")
 
 a = "Accessibility"
-row(a, "Accessibility checker for PDFs", 1, N, "nothing found: formsld's `services/lint.py` checks decks, not PDFs")
-row(a, "Reading Order tool for tagged PDFs", 1, N, "nothing found: reading order is only inferred for Reading view (`layout.py xycut`), never written to tags")
-row(a, "Screen reader support in the app", 1, P, "ARIA roles and labels on workbench buttons, panels and dialogs (`workbench.ts`, `panels.ts`, `form.ts` aria-label); page content is pdf.js canvas plus text layer; not audited")
-row(a, "Alternate text for figures", 1, N, "nothing found: no structure-tree editing in `services/pdf`")
-row(a, "Tag a PDF for accessibility (autotag)", 1, N, "nothing found: no PDF is tagged; edits through pypdf keep but never add /StructTreeRoot")
+row(a, "Accessibility checker for PDFs", 1, F, "Accessibility > Accessibility check and the accessibility action (`services/pdf/access.py check`): Acrobat's 32 rules in its seven groups with passed, failed, manual and skipped, page findings, a fix per repairable rule (`fix_accessibility`: tags, title, language, tab order, untagged comments and fields, field descriptions, table summaries, bookmarks) and an HTML report (`accessibility_report`)")
+row(a, "Reading Order tool for tagged PDFs", 1, F, "Accessibility > Reading order (`tools/access.ts`): numbered tagged regions on the pages, retag, move earlier or later, mark as background; `structure` and `edit_structure` for agents")
+row(a, "Screen reader support in the app", 1, P, "labelled region, tabs pattern with arrow keys and labelled tab panels (`workbench.ts`), status region for long jobs, dialogs labelled with focus kept inside (`ui/dialogs.ts`), ARIA labels on buttons and fields; page content is pdf.js canvas plus text layer; partial because it has not been tried with VoiceOver or NVDA")
+row(a, "Alternate text for figures", 1, F, "Accessibility > Alternate text (`tools/access.ts`): figure by figure with a crop of the page, alternate text or decorative; `edit_structure {alt, decorative}`")
+row(a, "Tag a PDF for accessibility (autotag)", 1, F, "Accessibility > Tags and the autotag action (`services/pdf/access.py tag`): headings, paragraphs, lists, tables with header cells, figures with boxes, links, fields and comments in reading order from `layout.page_blocks`, running headers and footers as artifacts, marked content written stream by stream; renders unchanged and Poppler reads the tree")
 
 a = "Import and export"
 row(a, "Create PDFs from Office files (Word, PowerPoint, Excel)", 1, N, "nothing found: `services/pdf/create.py from_files` takes pictures and PDFs only")
