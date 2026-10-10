@@ -39,7 +39,7 @@
 .fs-pdfwb-bar.is-info { background: color-mix(in srgb, var(--accent-color) 8%, var(--surface-1)); border-bottom-color: var(--accent-line); }
 .fs-pdfwb-bar-icon { display: inline-flex; color: var(--warn); }
 .fs-pdfwb-agent { flex: none; justify-content: flex-end; gap: var(--space-2); width: 360px; min-width: 0; color: var(--accent-ink); }
-.fs-pdfwb-agentlabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-pdfwb-agentlabel { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fs-pdfwb-status .fs-pdfwb-agent .fs-btn { flex: none; height: 18px; padding: 0 6px; font-size: var(--fs-11); }
 .fs-pdfwb-bar.is-info .fs-pdfwb-bar-icon { color: var(--accent-ink); }
 .fs-pdfwb-bar-text { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

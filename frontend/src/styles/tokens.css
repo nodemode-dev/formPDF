@@ -186,15 +186,7 @@ body.nm-home .nm-canvas-surface { display: none !important; }
   --fs-titlebar-h: 44px;
   --fs-options-h: 44px;
   --fs-status-h: 28px;
-  --fs-strip-w: 232px;
-  --fs-props-w: 308px;
-  --fs-notes-h: 132px;
-  --fs-thumb-w: 168px;
-  --fs-handle: 8px;
-  --fs-sel: var(--accent-color);
-  --fs-guide: #ff4f7a;
   --fs-pasteboard: var(--canvas-bg);
-  --fs-slide-shadow: 0 10px 36px rgba(0,0,0,0.45);
   --z-toast: 3000;
 }
 
