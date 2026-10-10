@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+cd "$(dirname "$0")"
+act=venv/bin/activate
+[ -f "$act" ] || act=venv/Scripts/activate
+[ -f "$act" ] || { echo "[formpdf] backend venv missing, run ./formpdf install" >&2; exit 1; }
+# shellcheck disable=SC1090
+source "$act"
+exec uvicorn app.main:app --reload --host "${FORMPDF_HOST:-127.0.0.1}" --port "${FORMPDF_PORT:-8198}"
