@@ -8,8 +8,8 @@ import { toast } from './toast';
 
 export interface ActionField { name: string; label: string; type: string; default: unknown; options: string[]; hint: string }
 export interface ActionInfo { name: string; kind: string; label: string; words: string[]; ext: string; batch: boolean; fields: ActionField[] }
-interface Item { key: string; name: string; path: string; bytes: number; state: 'uploading' | 'ready' | 'waiting' | 'running' | 'done' | 'failed'; text: string; outputs: string[] }
-interface JobRow { key: string; name: string; state: Item['state']; text: string; outputs: string[] }
+interface Item { key: string; name: string; path: string; bytes: number; state: 'uploading' | 'ready' | 'waiting' | 'running' | 'done' | 'failed'; text: string; outputs: string[]; note?: string }
+interface JobRow { key: string; name: string; state: Item['state']; text: string; outputs: string[]; note?: string }
 interface Job { id: string; state: string; done: number; total: number; out: string; rows: JobRow[] }
 
 const STATE_LABEL: Record<Item['state'], string> = { uploading: 'Adding…', ready: 'Ready', waiting: 'Waiting', running: 'Working…', done: 'Done', failed: 'Failed' };
@@ -178,7 +178,7 @@ export class Batch {
     try {
       const res = await api.post<{ id: string; out: string; total: number }>('/api/batch/run', { action: this.select.value, args: this.args(), paths: ready.map((i) => i.path) });
       this.job = { id: res.id, state: 'running', done: 0, total: res.total, out: res.out, rows: [] };
-      for (const it of ready) { it.state = 'waiting'; it.text = ''; it.outputs = []; }
+      for (const it of ready) { it.state = 'waiting'; it.text = ''; it.outputs = []; it.note = undefined; }
       this.sync();
       this.poll(ready);
     } catch (err) { toast((err as Error).message, 'error'); }
@@ -191,7 +191,7 @@ export class Batch {
     void api.get<Job>(`/api/batch/${job.id}`).then((j) => {
       if (this.job?.id !== j.id) return;
       this.job = j;
-      j.rows.forEach((r, i) => { const it = ready[i]; if (it) { it.state = r.state; it.text = r.text; it.outputs = r.outputs; } });
+      j.rows.forEach((r, i) => { const it = ready[i]; if (it) { it.state = r.state; it.text = r.text; it.outputs = r.outputs; it.note = r.note; } });
       this.sync();
       if (j.state === 'running') this.timer = window.setTimeout(() => this.poll(ready), 500);
       else toast(`Batch finished: ${j.rows.filter((r) => r.state === 'done').length} of ${j.total} done`);
@@ -211,7 +211,7 @@ export class Batch {
     const fill = (n: HTMLElement, it: Item): void => {
       setText(q(n, '.fs-batch-name'), it.name);
       setText(q(n, '.fs-batch-state'), STATE_LABEL[it.state]);
-      setText(q(n, '.fs-batch-text'), it.state === 'done' && it.outputs[0] ? (it.outputs.length > 1 ? `${it.outputs.length} files` : it.outputs[0].split(/[\\/]/).pop() ?? '') : it.text || size(it.bytes));
+      setText(q(n, '.fs-batch-text'), it.state === 'done' && it.note ? it.note : it.state === 'done' && it.outputs[0] ? (it.outputs.length > 1 ? `${it.outputs.length} files` : it.outputs[0].split(/[\\/]/).pop() ?? '') : it.text || size(it.bytes));
       n.title = it.outputs[0] ?? it.text ?? it.name;
       for (const s of ['done', 'failed', 'running']) setClass(n, `is-${s}`, it.state === s);
     };

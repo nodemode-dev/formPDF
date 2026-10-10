@@ -1,4 +1,5 @@
 import asyncio
+import csv
 import io
 import re
 import shutil
@@ -113,10 +114,15 @@ async def run(body: dict) -> dict:
 async def _work(job: dict, act, paths: list[Path], args: dict, outdir: Path) -> None:
     agent = mcp.Agent("batch", "Batch")
     used: set[str] = set()
+    bates = _bates(act, args)
+    number = bates["start"] if bates else 0
+    ranges: list[tuple[str, str, str, str]] = []
     for row, p in zip(job["rows"], paths):
         row["state"] = "running"
         target = _target(outdir, act, p.stem, used)
         call = {**args, "action": act.name, "path": str(p), "out": str(target)}
+        if bates:
+            call["bates"] = {k: bates[k] for k in ("prefix", "suffix", "digits")} | {"start": number}
         try:
             res = await mcp.t_pdf(agent, call)
         except mcp.ToolError as exc:
@@ -128,9 +134,42 @@ async def _work(job: dict, act, paths: list[Path], args: dict, outdir: Path) -> 
         row["state"] = "failed" if res.get("isError") else "done"
         row["text"] = text[:400]
         row["outputs"] = [str(x) for x in (data.get("paths") or ([data["path"]] if data.get("path") else []))]
+        if bates and not res.get("isError"):
+            count = await asyncio.to_thread(_numbered, p, args)
+            if count:
+                ranges.append((p.name, Path(row["outputs"][0]).name if row["outputs"] else "", _bates_text(bates, number), _bates_text(bates, number + count - 1)))
+                row["note"] = f"{ranges[-1][2]} to {ranges[-1][3]}"
+                if bates["across"]:
+                    number += count
         job["done"] += 1
+    if ranges:
+        log = outdir / "Bates numbers.csv"
+        with open(log, "w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerows([("File", "Numbered copy", "First", "Last"), *ranges])
+        job["rows"][-1]["outputs"].append(str(log))
     job["state"] = "done"
     job["finished"] = time.time()
+
+
+def _bates(act, args: dict) -> dict | None:
+    raw = args.pop("bates", None) if act.name == "header_footer" else None
+    if not isinstance(raw, dict) or raw.get("on") in (False, None, "", 0, "false"):
+        return None
+    return {"prefix": str(raw.get("prefix") or ""), "suffix": str(raw.get("suffix") or ""), "digits": int(raw.get("digits") or 6),
+            "start": int(raw.get("start") or 1), "across": raw.get("across") not in (False, 0, "false")}
+
+
+def _bates_text(b: dict, n: int) -> str:
+    return f"{b['prefix']}{str(n).zfill(b['digits'])}{b['suffix']}"
+
+
+def _numbered(path: Path, args: dict) -> int:
+    from app.services import pdf as pdfsvc
+
+    n = pdfsvc.page_count(path)
+    idx = pdfsvc.parse_pages(args.get("pages"), n) if args.get("pages") else list(range(1, n + 1))
+    apply = str(args.get("apply") or "all")
+    return sum(1 for i in idx if apply == "all" or (apply == "odd") == (i % 2 == 1))
 
 
 @router.get("/batch/{job_id}")

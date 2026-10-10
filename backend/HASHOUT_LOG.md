@@ -44,6 +44,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 21. One route for registered actions · routers/pdf.py act
 22. Links · services/pdf/links.py, services/pdf/frame.py
 23. Attached files · services/pdf/attach.py
+24. Bates numbers across files · routers/batch.py _bates
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -144,3 +145,7 @@ POST /api/pdf/{id}/act/{name} runs any registered action that has a `run` handle
 ## 23. Attached files · _v0.3.0 (services/pdf/attach.py change, read, listing, get_file, _tree, _filespec, _pin_ap; routers/pdf.py attachment)
 
 Document-level files live in the catalog's EmbeddedFiles name tree. pypdf can add to it but not remove from it, so `change` flattens the tree (Names arrays and Kids, depth-capped), drops removed names, appends new files and writes one flat Names array sorted by name, which every reader accepts. A file whose name is taken becomes `name (2).ext` rather than replacing the first. Each file is a Filespec with F and UF names, an optional Desc, and an EmbeddedFile stream (Flate-compressed, MIME subtype, Size and ModDate in Params). A file with a page becomes a FileAttachment annotation (a pin) with a 20 point paperclip appearance of its own, because readers otherwise draw it differently or not at all. Files arrive as base64 (the window) or as a path (agents and the CLI), at most 200 MB each. `attachments` lists both kinds and, with `save`, writes one to a path or the Exports folder; the window downloads through GET /api/pdf/{id}/attachment by name, or by page and index for pins. Sanitize keeps its own removal path (entry 6).
+
+## 24. Bates numbers across files · _v0.3.0 (routers/batch.py _work, _bates, _bates_text, _numbered; services/pdf/actions.py header_footer fields)
+
+Acrobat's Bates numbering is a set operation: legal documents are numbered as one run. Batch with Add header and footer and Add Bates numbers now passes each file a start number that continues from the previous file, counting only the pages that file actually numbered (its page range and odd or even setting, the same sequence header_footer counts), and writes `Bates numbers.csv` (file, numbered copy, first, last) into the results folder and the zip. Each row's `note` shows its range. The form's `bates.on` and `bates.across` are batch-only switches and are removed before the call. `bates.on` also fixes a 0.2.0 fault: the batch form always sent start and digits, and header_footer treats any `bates` object as a request for Bates numbers, so every batch header and footer run was stamped with them.

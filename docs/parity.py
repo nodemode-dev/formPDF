@@ -65,7 +65,7 @@ row(a, "Split by ranges", 1, F, "`services/pdf/core.py split`")
 row(a, "Merge PDFs", 1, F, "`core.py merge`, `routers/pdf.py /pdf/merge`")
 row(a, "Crop pages", 1, F, "Edit > Crop pages by margins, a drawn box or white-margin detection (`edit.py crop`, `annotate.ts` crop tool, `POST /pdf/{id}/crop`)")
 row(a, "Page numbers, headers and footers, watermark", 1, F, "Edit > Header and footer with tokens and Bates numbering (`edit.py header_footer`), page numbers and watermark")
-row(a, "Bates numbering", 1, P, "`services/pdf/edit.py header_footer(bates)` with a <<bates>> token, prefix, start and digits from Edit > Header and footer, also MCP `pdf header_footer`; one file at a time, no numbering across a set of files")
+row(a, "Bates numbering", 1, F, "`services/pdf/edit.py header_footer(bates)` with a <<bates>> token, prefix, suffix, start and digits from Edit > Header and footer and MCP `pdf header_footer`; across a set of legal documents from Home > Batch (`routers/batch.py _bates, _numbered`): numbers continue from file to file in the order listed, each row shows its range, and Bates numbers.csv records file, numbered copy, first and last")
 
 a = "PDF protect and redact"
 row(a, "Password protection with permissions", 1, F, "`edit.py protect`, `panels.ts` Password and permissions")
