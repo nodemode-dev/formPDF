@@ -438,6 +438,12 @@
 .fs-pdfwb-cmeta { color: var(--text-muted); font-size: var(--fs-11); white-space: nowrap; }
 .fs-pdfwb-copts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
 .fs-pdfwb-copts > [hidden] { display: none; }
+.fs-scan { display: flex; flex-direction: column; gap: var(--space-3); }
+.fs-scan .fs-note { margin: 0; }
+.fs-scan-note { min-height: calc(3 * 1.45em); }
+.fs-scan-row { display: flex; align-items: flex-end; gap: var(--space-2); }
+.fs-scan-grow { flex: 1 1 auto; min-width: 0; }
+.fs-scan-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 
 @media (max-width: 1023px) {
   .fs-pdfwb-main { grid-template-columns: 0 minmax(0, 1fr) 292px; }

@@ -9,6 +9,7 @@ import { Annotator, DRAW_TOOLS, MARKUP_TOOLS, type Tool } from './annotate';
 import { deliver, isTauri, pdfApi, type Annot, type Derived, type NewFieldType, type Opened, type PdfInfo, type RecentItem } from './api';
 import { Comparer, ComparePanel } from './compare';
 import { askCreate } from './create';
+import { askScan } from './scan';
 import { Fields } from './fill';
 import { Finder } from './find';
 import { FIELD_ICON, FIELD_LABEL, FIELD_TYPES, FormBuilder, FormPanel } from './form';
@@ -20,7 +21,7 @@ import { mountTools, pageTools, renderedTools, syncTools, TAB_WORDS, type ToolHo
 import { Thumbs, Viewer, type Layout } from './viewer';
 
 export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void; palette(): void }
-export interface WorkbenchOptions { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; app: AppHooks; restore?: { page: number; tab: string; dirty: boolean } }
+export interface WorkbenchOptions { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; app: AppHooks; restore?: { page: number; tab: string; dirty: boolean } }
 export interface DocState { id: string; key: string; name: string; pages: number; page: number; dirty: boolean; tab: string; path: string | null; agentTurn: string | null }
 export interface AgentReply { ok: boolean; text: string; data?: Record<string, unknown> }
 
@@ -88,7 +89,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="application" aria-label
 </aside>
 <main class="fs-pdfwb-center">
 <div class="fs-pdfwb-empty">
-<div class="fs-home-hero fs-pdfwb-hero"><span class="fs-home-hero-icon">${icon('filePdf', 26)}</span><div class="fs-home-hero-text"><div class="fs-home-hero-title">Open a PDF</div><div class="fs-home-hero-sub">Read, search, comment and reply, fill and sign, add headers, footers and Bates numbers, crop and reorder pages, extract text, pictures and tables, find and redact, protect, and export to Word or PowerPoint. Drop a file anywhere here.</div></div><div class="fs-home-hero-actions"><button class="fs-btn fs-btn-primary" type="button" data-a="open">${icon('folderOpen', 14)}Open PDF</button><button class="fs-btn" type="button" data-a="create-pictures">${icon('fileImage', 14)}Create from pictures</button><button class="fs-btn" type="button" data-a="create-files">${icon('merge', 14)}Combine files</button></div></div>
+<div class="fs-home-hero fs-pdfwb-hero"><span class="fs-home-hero-icon">${icon('filePdf', 26)}</span><div class="fs-home-hero-text"><div class="fs-home-hero-title">Open a PDF</div><div class="fs-home-hero-sub">Read, search, comment and reply, fill and sign, add headers, footers and Bates numbers, crop and reorder pages, extract text, pictures and tables, find and redact, protect, and export to Word or PowerPoint. Drop a file anywhere here.</div></div><div class="fs-home-hero-actions"><button class="fs-btn fs-btn-primary" type="button" data-a="open">${icon('folderOpen', 14)}Open PDF</button><button class="fs-btn" type="button" data-a="create-pictures">${icon('fileImage', 14)}Create from pictures</button><button class="fs-btn" type="button" data-a="create-files">${icon('merge', 14)}Combine files</button><button class="fs-btn" type="button" data-a="scan">${icon('scanner', 14)}Scan</button></div></div>
 <section class="fs-home-section fs-pdfwb-recents" hidden><div class="fs-home-section-head"><h2 class="fs-home-section-title">Recent PDFs</h2></div><div class="fs-card-grid fs-pdfwb-recent-grid"></div></section>
 </div>
 <div class="fs-pdfwb-find" hidden><label class="fs-search">${icon('search', 14)}<input type="search" class="fs-pdfwb-findin" placeholder="Find in document" spellcheck="false" aria-label="Find in document"></label><span class="fs-pdfwb-findcount"></span><button class="fs-icon-btn is-sm" type="button" data-a="find-prev" title="Previous" aria-label="Previous match">${icon('chevronUp', 14)}</button><button class="fs-icon-btn is-sm" type="button" data-a="find-next" title="Next" aria-label="Next match">${icon('chevronDown', 14)}</button><button class="fs-icon-btn is-sm" type="button" data-a="find-close" title="Close" aria-label="Close search">${icon('close', 14)}</button></div>
@@ -209,6 +210,7 @@ class Workbench {
       { id: 'pdf-open', label: 'Open a PDF…', keys: ['Mod+O'], run: () => void this.pick(false).then((f) => { if (f[0]) void this.guard(() => this.openFile(f[0])); }) },
       { id: 'pdf-create-pictures', label: 'Create PDF from pictures…', run: () => void this.startCreate('pictures') },
       { id: 'pdf-create-files', label: 'Combine files into a PDF…', run: () => void this.startCreate('files') },
+      { id: 'pdf-scan', label: 'Scan…', words: ['scanner', 'scan to pdf', 'paper'], run: () => void this.startScan() },
       { id: 'pdf-compare', label: 'Compare with another PDF…', enabled: () => !!this.doc, run: () => void this.compareWith() },
       ...LAYOUTS.map(([v, l]) => ({ id: `pdf-layout-${v}`, label: l, checked: () => this.viewer.layout === v, run: () => this.setLayout(v as Layout, this.viewer.cover) })),
       { id: 'pdf-cover', label: 'Show cover page in two-page view', checked: () => this.viewer.cover, run: () => this.setLayout(this.viewer.layout, !this.viewer.cover) },
@@ -235,7 +237,7 @@ class Workbench {
     );
     this.cmds.add(...mountTools(this.panes.root, this.host));
     const menus: MenuDef[] = [
-      { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', '-', 'pdf-save', 'pdf-print', '-', 'pdf-close'] },
+      { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', 'pdf-scan', '-', 'pdf-save', 'pdf-print', '-', 'pdf-close'] },
       { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'pdf-find'] },
       { label: 'View', items: [...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare'] },
       { label: 'Tools', items: TABS.map(([t]) => `pdf-tab-${t}`) },
@@ -245,7 +247,7 @@ class Workbench {
     this.openMenu = new PopupMenu(this.cmds, null, true);
     this.openMenu.panel.classList.add('fs-pdfwb-menu');
     this.openMenu.onClose = () => { this.menuClosed = performance.now(); };
-    this.openMenu.setItems(['pdf-open', 'pdf-create-pictures', 'pdf-create-files', '-', 'pdf-compare']);
+    this.openMenu.setItems(['pdf-open', 'pdf-create-pictures', 'pdf-create-files', 'pdf-scan', '-', 'pdf-compare']);
     this.layoutMenu = new PopupMenu(this.cmds, null, true);
     this.layoutMenu.panel.classList.add('fs-pdfwb-menu');
     this.layoutMenu.onClose = () => { this.menuClosed = performance.now(); };
@@ -460,6 +462,25 @@ class Workbench {
     }).then(() => undefined));
   }
 
+  private async startScan(): Promise<void> {
+    const req = await askScan(this.doc?.id ?? '');
+    if (!req) { if (!this.doc) this.finishClose(); return; }
+    await this.guard(() => this.run(req.into ? 'Scanning into this PDF' : 'Scanning', async () => {
+      if (req.into) {
+        const id = await this.flush() ?? req.into;
+        const res = await pdfApi.scan<Derived>({ ...req, into: id });
+        await this.commit(res, 'Add scanned pages');
+        toast(`Added ${res.scanned} scanned page${res.scanned === 1 ? '' : 's'}${req.ocr ? ', searchable' : ''}.`);
+        return;
+      }
+      const o = await pdfApi.scan<Opened>(req);
+      await this.adopt(o);
+      this.savedId = '';
+      this.syncChrome();
+      toast(`Scanned ${o.scanned} page${o.scanned === 1 ? '' : 's'}${req.ocr ? ', searchable' : ''}. Save to keep it.`);
+    }).then(() => undefined));
+  }
+
   open(opts: WorkbenchOptions): void {
     this.opts = opts;
     const wasHidden = this.root.hidden;
@@ -469,8 +490,9 @@ class Workbench {
     if (opts.file) void this.guard(() => this.openFile(opts.file as File));
     else if (opts.path) { const path = opts.path; void this.guard(() => this.run('Opening', async () => this.adopt(await pdfApi.openPath(path)))); }
     else if (opts.recent) { const id = opts.recent; void this.guard(() => this.openRecent(id)); }
-    else if (!this.doc && !create) void this.loadRecents();
+    else if (!this.doc && !create && !opts.scan) void this.loadRecents();
     if (create) void this.startCreate(create, opts.files ?? []);
+    else if (opts.scan) void this.startScan();
   }
 
   private wire(): void {
@@ -580,6 +602,7 @@ class Workbench {
       case 'stamps': this.setTab('fill'); q(this.panes.root, '[data-part="stamps"]').scrollIntoView({ block: 'start' }); break;
       case 'create-pictures': void this.startCreate('pictures'); break;
       case 'create-files': void this.startCreate('files'); break;
+      case 'scan': void this.startScan(); break;
       case 'layout': this.act('layout', b.dataset.v); break;
       case 'cover-toggle': case 'reading': case 'rf-smaller': case 'rf-larger': case 'say-page': case 'say-end': case 'say-pause': case 'say-stop': case 'compare': this.act(b.dataset.a); break;
       case 'print': void this.print(); break;

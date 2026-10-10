@@ -9,6 +9,9 @@ export interface PdfInfo {
 }
 export interface Opened { id: string; name: string; pages: number; info: PdfInfo; key: string; path?: string | null }
 export interface Derived { id: string; pages: number; bytes: number; images?: number; before?: number; after?: number }
+export interface ScanDevice { id: string; name: string; kind: 'network' | 'usb'; address?: string }
+export interface ScanCaps { device: string; name: string; sources: string[]; dpis: number[]; color: boolean; gray: boolean }
+export interface ScanRequest { device?: string; address?: string; source: string; dpi: number; color: boolean; ocr: boolean; into?: string; name?: string }
 export interface RecentItem { key: string; id: string; name: string; pages: number; opened: number; path?: string }
 export type FieldType = 'text' | 'checkbox' | 'radio' | 'choice' | 'button' | 'signature';
 export interface Field { name: string; type: FieldType; page: number; x: number; y: number; w: number; h: number; value: string; readonly: boolean; required: boolean; multiline: boolean; on?: string; options?: string[]; maxLen?: number; tooltip?: string; format?: string }
@@ -116,6 +119,9 @@ export const pdfApi = {
   crop: (id: string, body: { box?: Rect; margins?: Margins; auto?: boolean; pages?: string }) => api.post<Derived & { cropped: number }>(`${base(id)}/crop`, body),
   find: (id: string, body: FindBody) => api.post<{ matches: Match[]; count: number; pages: number; truncated: boolean }>(`${base(id)}/find`, body),
   comments: (id: string) => api.get<{ comments: PdfComment[] }>(`${base(id)}/comments`),
+  scanDevices: () => api.get<{ devices: ScanDevice[] }>('/api/scan/devices'),
+  scanCaps: (body: { device?: string; address?: string }) => api.post<ScanCaps>('/api/scan/capabilities', body),
+  scan: <T = Opened | Derived>(body: ScanRequest) => api.post<T & { scanned: number }>('/api/scan/run', body),
   pptxUrl: (id: string, pages?: string, text = true) => `${base(id)}/pptx?text=${text ? 1 : 0}${pages && pages.trim() ? `&pages=${encodeURIComponent(pages.trim())}` : ''}`,
   save: (id: string, path: string) => api.post<{ path: string; bytes: number }>(`${base(id)}/save`, { path }),
   reflow: (id: string, pages: string) => api.get<{ pages: ReflowPage[]; total: number; body: number }>(`${base(id)}/reflow${q(pages)}`),

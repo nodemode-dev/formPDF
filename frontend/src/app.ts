@@ -44,6 +44,7 @@ export async function startApp(): Promise<void> {
     { id: 'home-path', label: 'Open a PDF by path…', words: ['file', 'location'], run: () => home.root.querySelector<HTMLElement>('[data-a="path"]')?.click() },
     { id: 'home-pictures', label: 'Create PDF from pictures…', words: ['images', 'scan', 'photos', 'jpg', 'png'], run: () => open({ create: 'pictures' }) },
     { id: 'home-merge', label: 'Merge PDFs…', words: ['combine', 'join', 'append'], run: () => open({ create: 'files' }) },
+    { id: 'home-scan', label: 'Scan…', words: ['scanner', 'scan to pdf', 'paper', 'feeder'], run: () => open({ scan: true }) },
     { id: 'home-recent', label: 'Recent PDFs', words: ['history', 'last'], run: () => home.show('recent') },
     { id: 'home-batch', label: 'Batch: run an action on many PDFs', words: ['batch', 'many files', 'bulk', 'folder', 'action wizard', 'bates'], run: () => home.show('batch') },
     { id: 'home-help', label: 'formpdf Help', keys: ['F1'], run: () => hooks.help() },
@@ -58,13 +59,14 @@ export async function startApp(): Promise<void> {
     run: (c) => { if (homeCmds.includes(c)) c.run(); else bench.commands.run(c.id); },
   });
   const bench = ensureWorkbench(hooks);
-  const open = (o: { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[] }): void => { openWorkbench({ ...o, app: hooks }); };
+  const open = (o: { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean }): void => { openWorkbench({ ...o, app: hooks }); };
 
   const home = new Home({
     openFiles: (files) => { if (files[0]) open({ file: files[0] }); },
     openPath: () => void promptName('Open a PDF by path', '', 'Open').then((p) => { if (p) open({ path: p }); }),
     openRecent: (id) => open({ recent: id }),
     create: (kind, files) => open({ create: kind, files }),
+    scan: () => open({ scan: true }),
     preferences: hooks.preferences,
     agents: hooks.agents,
     help: hooks.help,

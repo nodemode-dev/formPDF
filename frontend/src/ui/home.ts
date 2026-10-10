@@ -9,6 +9,7 @@ export interface HomeHooks {
   openPath(): void;
   openRecent(id: string): void;
   create(kind: 'pictures' | 'files', files?: File[]): void;
+  scan(): void;
   preferences(): void;
   agents(): void;
   help(): void;
@@ -33,6 +34,7 @@ export class Home {
 <button class="fs-home-nav-item" type="button" data-v="recent">${icon('filePdf', 16)}<span>Recent PDFs</span><span class="fs-badge is-count fs-recent-count">0</span></button>
 <button class="fs-home-nav-item" type="button" data-a="pictures">${icon('fileImage', 16)}<span>Create PDF from pictures</span></button>
 <button class="fs-home-nav-item" type="button" data-a="merge">${icon('merge', 16)}<span>Merge PDFs</span></button>
+<button class="fs-home-nav-item" type="button" data-a="scan">${icon('scanner', 16)}<span>Scan</span></button>
 <button class="fs-home-nav-item" type="button" data-v="batch">${icon('layers', 16)}<span>Batch</span></button>
 <div class="fs-home-nav-sep"></div>
 <div class="fs-home-nav-title">Agents</div>
@@ -77,6 +79,7 @@ export class Home {
       else if (a === 'path') this.hooks.openPath();
       else if (a === 'pictures') this.hooks.create('pictures');
       else if (a === 'merge') this.hooks.create('files');
+      else if (a === 'scan') this.hooks.scan();
       else if (a === 'prefs') this.hooks.preferences();
       else if (a === 'agents') this.hooks.agents();
       else if (a === 'help') this.hooks.help();

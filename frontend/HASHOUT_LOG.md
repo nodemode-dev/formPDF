@@ -43,6 +43,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 24. Redaction options and marks in the file · pdf/panels.ts Redact section
 25. Selecting and editing text already on the page · tools/content.ts
 26. Make searchable (OCR) · tools/ocr.ts
+27. Scan · pdf/scan.ts, pdf/workbench.ts startScan, ui/home.ts
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -167,3 +168,7 @@ The note names the font that edits will use: the document's own font when the en
 ## 26. Make searchable (OCR) · _v0.7.0 (tools/ocr.ts; pdf/panels.ts find and text hints)
 
 Convert > Make searchable (OCR) reads `capabilities.ocr` once and keeps the button disabled with the engine's sentence in the note when recognition is not installed, so the person learns what to do instead of meeting an error. Resolution, pages, skip pages with text, straighten and recognise again map to the action's fields; the call runs through `ctx.run` with a busy label that gives the page count and a rough time, and the result lands as a version with Undo like any other change. The note keeps the last result (pages, words, straightened, skipped) and has the fixed minimum height of tool notes, so its changing text never moves the controls. Find and Extract text now point to this section when a page has no text.
+
+## 27. Scan · _v0.7.0 (pdf/scan.ts ScanDialog, askScan, setOptions; pdf/workbench.ts startScan, pdf-scan command, hero and menus; ui/home.ts scan; app.ts home-scan; ui/icons.ts scanner; styles/pdf.css .fs-scan-*)
+
+Scan is reached from Home, the workbench's hero, File and the Open menu, and the palette. The dialog looks for scanners as it opens and lets the person type a network address instead; choosing either asks the scanner what it can do and fills Paper from and Resolution with what it offers. Every step that waits (looking, asking, a failure) writes one note line with a fixed minimum height, and option lists are replaced inside their own select, so the dialog never changes size. A sequence number drops answers that arrive after the person moved on. Make the scan searchable is ticked by default and disabled, unticked, when OCR is not installed; Add the pages to the end of the open PDF is enabled only with a PDF open. A new scan opens like a PDF created from pictures (unsaved until Save); scanning into the open PDF commits a version labelled Add scanned pages, so Undo removes them.
