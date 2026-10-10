@@ -107,16 +107,17 @@ export class Palette extends Dialog {
     const rank = (e: Entry): number => { const r = recent.indexOf(e.cmd.id); return r < 0 ? 0 : 12 - r; };
     out.sort((a, b) => Number(b.on) - Number(a.on) || b.score - a.score || rank(b) - rank(a) || a.label.localeCompare(b.label));
     this.entries = out.slice(0, LIMIT);
+    const fill = (n: HTMLElement, x: Entry): void => {
+      setText(q(n, '.fs-palette-label'), x.label);
+      setText(q(n, '.fs-palette-why'), x.why);
+      setText(q(n, '.fs-palette-keys'), x.keys);
+      setClass(n, 'is-off', !x.on);
+      n.setAttribute('aria-disabled', String(!x.on));
+    };
     patchList(this.list, this.entries, {
       key: (x) => x.cmd.id,
-      create: () => el(`<div class="fs-palette-item" role="option"><span class="fs-palette-label"></span><span class="fs-palette-why"></span><span class="fs-palette-keys"></span></div>`),
-      update: (n, x) => {
-        setText(q(n, '.fs-palette-label'), x.label);
-        setText(q(n, '.fs-palette-why'), x.why);
-        setText(q(n, '.fs-palette-keys'), x.keys);
-        setClass(n, 'is-off', !x.on);
-        n.setAttribute('aria-disabled', String(!x.on));
-      },
+      create: (x) => { const n = el(`<div class="fs-palette-item" role="option"><span class="fs-palette-label"></span><span class="fs-palette-why"></span><span class="fs-palette-keys"></span></div>`); fill(n, x); return n; },
+      update: fill,
     });
     setHidden(this.none, this.entries.length > 0);
     this.paintFocus(true);

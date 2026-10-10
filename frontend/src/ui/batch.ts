@@ -208,16 +208,17 @@ export class Batch {
   private sync(): void {
     setText(q(this.root, '.fs-batch-count'), String(this.items.length));
     setHidden(q(this.root, '.fs-batch-empty'), this.items.length > 0);
+    const fill = (n: HTMLElement, it: Item): void => {
+      setText(q(n, '.fs-batch-name'), it.name);
+      setText(q(n, '.fs-batch-state'), STATE_LABEL[it.state]);
+      setText(q(n, '.fs-batch-text'), it.state === 'done' && it.outputs[0] ? (it.outputs.length > 1 ? `${it.outputs.length} files` : it.outputs[0].split(/[\\/]/).pop() ?? '') : it.text || size(it.bytes));
+      n.title = it.outputs[0] ?? it.text ?? it.name;
+      for (const s of ['done', 'failed', 'running']) setClass(n, `is-${s}`, it.state === s);
+    };
     patchList(this.list, this.items, {
       key: (it) => it.key,
-      create: () => el(`<div class="fs-batch-row" role="listitem"><span class="fs-batch-name"></span><span class="fs-batch-state"></span><span class="fs-batch-text"></span><button class="fs-icon-btn is-sm" type="button" data-b="remove" title="Remove" aria-label="Remove from the batch">${icon('close', 12)}</button></div>`),
-      update: (n, it) => {
-        setText(q(n, '.fs-batch-name'), it.name);
-        setText(q(n, '.fs-batch-state'), STATE_LABEL[it.state]);
-        setText(q(n, '.fs-batch-text'), it.state === 'done' && it.outputs[0] ? (it.outputs.length > 1 ? `${it.outputs.length} files` : it.outputs[0].split(/[\\/]/).pop() ?? '') : it.text || size(it.bytes));
-        n.title = it.outputs[0] ?? it.text ?? it.name;
-        for (const s of ['done', 'failed', 'running']) setClass(n, `is-${s}`, it.state === s);
-      },
+      create: (it) => { const n = el(`<div class="fs-batch-row" role="listitem"><span class="fs-batch-name"></span><span class="fs-batch-state"></span><span class="fs-batch-text"></span><button class="fs-icon-btn is-sm" type="button" data-b="remove" title="Remove" aria-label="Remove from the batch">${icon('close', 12)}</button></div>`); fill(n, it); return n; },
+      update: fill,
     });
     const ready = this.items.filter((i) => i.path && i.state !== 'uploading').length;
     const uploading = this.items.some((i) => i.state === 'uploading');
