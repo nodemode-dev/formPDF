@@ -30,3 +30,57 @@
 .fs-pdf-measure .fs-msr-label rect { height: 12px; fill: #fff; stroke: #e11d48; stroke-width: 0.5; rx: 2px; }
 .fs-pdf-measure .fs-msr-label text { fill: #e11d48; font: 600 8.5px/1 Inter, system-ui, sans-serif; text-anchor: middle; }
 .fs-pdf-measure .fs-msr-snap { fill: none; stroke: var(--accent-color); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+@font-face { font-family: FkSans; src: url('/api/fonts/Inter-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: FkSans; src: url('/api/fonts/Inter-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: FkSans; src: url('/api/fonts/Inter-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: FkSans; src: url('/api/fonts/Inter-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: block; }
+@font-face { font-family: FkSerif; src: url('/api/fonts/NotoSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: FkSerif; src: url('/api/fonts/NotoSerif-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: FkSerif; src: url('/api/fonts/NotoSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: FkSerif; src: url('/api/fonts/NotoSerif-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: block; }
+@font-face { font-family: FkMono; src: url('/api/fonts/JetBrainsMono-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: FkMono; src: url('/api/fonts/JetBrainsMono-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: FkMono; src: url('/api/fonts/JetBrainsMono-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: FkMono; src: url('/api/fonts/JetBrainsMono-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: block; }
+.fs-cx-box { position: absolute; box-sizing: border-box; transform-origin: 50% 50%; outline: 1px dashed color-mix(in srgb, var(--accent-color) 55%, transparent); outline-offset: 0; }
+.fs-cx-box.is-selected { outline: 1.5px solid var(--accent-color); }
+.fs-cx-h { position: absolute; width: 9px; height: 9px; margin: -5px 0 0 -5px; box-sizing: border-box; border: 1.5px solid var(--accent-color); border-radius: 2px; background: #fff; pointer-events: auto; }
+.fs-cx-h[data-h="nw"] { left: 0; top: 0; cursor: nwse-resize; }
+.fs-cx-h[data-h="n"] { left: 50%; top: 0; cursor: ns-resize; }
+.fs-cx-h[data-h="ne"] { left: 100%; top: 0; cursor: nesw-resize; }
+.fs-cx-h[data-h="e"] { left: 100%; top: 50%; cursor: ew-resize; }
+.fs-cx-h[data-h="se"] { left: 100%; top: 100%; cursor: nwse-resize; }
+.fs-cx-h[data-h="s"] { left: 50%; top: 100%; cursor: ns-resize; }
+.fs-cx-h[data-h="sw"] { left: 0; top: 100%; cursor: nesw-resize; }
+.fs-cx-h[data-h="w"] { left: 0; top: 50%; cursor: ew-resize; }
+.fs-cx-h.is-rot { left: 50%; top: -22px; border-radius: 50%; cursor: grab; }
+.fs-cx-h.is-crop { border-radius: 0; background: var(--accent-color); }
+.fs-cx-full { position: absolute; box-sizing: border-box; outline: 1px dashed rgba(0, 0, 0, 0.45); background: rgba(0, 0, 0, 0.06); }
+.fs-cx-group { display: grid; gap: var(--space-2); }
+.fs-cx-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px 32px; gap: var(--space-2); align-items: center; }
+.fs-cx-num { text-align: right; }
+.fs-cx-color { width: 32px; height: 28px; padding: 0; border: 1px solid var(--line-2); border-radius: var(--radius-md); background: transparent; }
+.fs-cx-btns { display: flex; flex-wrap: wrap; gap: 2px; align-items: center; }
+.fs-cx-gap { width: var(--space-2); }
+.fs-rt-cover { position: absolute; background-repeat: no-repeat; pointer-events: none; }
+.fs-rt-frame { position: absolute; transform-origin: 50% 50%; pointer-events: auto; }
+.fs-rt-ed { min-height: inherit; box-sizing: border-box; outline: 1.5px solid var(--accent-color); outline-offset: 1px; white-space: pre-wrap; overflow-wrap: anywhere; font-kerning: none; font-variant-ligatures: none; font-synthesis: none; cursor: text; user-select: text; -webkit-user-select: text; counter-reset: n0 n1 n2 n3; }
+.fs-rt-ed[contenteditable="false"] { outline-style: dashed; cursor: progress; }
+.fs-rt-ed sup { font-size: 0.65em; vertical-align: 0.5077em; line-height: 0; }
+.fs-rt-ed sub { font-size: 0.65em; vertical-align: -0.1846em; line-height: 0; }
+.fs-rt-ed > div { position: relative; margin: 0; min-height: 1em; }
+.fs-rt-ed > div[data-level="1"] { margin-left: 1.5em; }
+.fs-rt-ed > div[data-level="2"] { margin-left: 3em; }
+.fs-rt-ed > div[data-level="3"] { margin-left: 4.5em; }
+.fs-rt-ed > div[data-list="bullet"], .fs-rt-ed > div[data-list="number"] { padding-left: 1.6em; }
+.fs-rt-ed > div[data-list="bullet"]::before { content: "\2022"; position: absolute; left: 0; }
+.fs-rt-ed > div[data-list="bullet"][data-level="1"]::before, .fs-rt-ed > div[data-list="bullet"][data-level="3"]::before { content: "\2013"; }
+.fs-rt-ed > div[data-list="none"] { counter-reset: n0 n1 n2 n3; }
+.fs-rt-ed > div[data-list="number"][data-level="0"] { counter-increment: n0; counter-reset: n1 n2 n3; }
+.fs-rt-ed > div[data-list="number"][data-level="1"] { counter-increment: n1; counter-reset: n2 n3; }
+.fs-rt-ed > div[data-list="number"][data-level="2"] { counter-increment: n2; counter-reset: n3; }
+.fs-rt-ed > div[data-list="number"][data-level="3"] { counter-increment: n3; }
+.fs-rt-ed > div[data-list="number"][data-level="0"]::before { content: counter(n0) "."; position: absolute; left: 0; }
+.fs-rt-ed > div[data-list="number"][data-level="1"]::before { content: counter(n1) "."; position: absolute; left: 0; }
+.fs-rt-ed > div[data-list="number"][data-level="2"]::before { content: counter(n2) "."; position: absolute; left: 0; }
+.fs-rt-ed > div[data-list="number"][data-level="3"]::before { content: counter(n3) "."; position: absolute; left: 0; }

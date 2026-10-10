@@ -303,7 +303,7 @@ export class Annotator {
     if (e.button !== 0 || this.tool === 'form') return;
     if (this.tool === 'custom') {
       const pv = this.viewer.pageAtClient(e.clientX, e.clientY);
-      if (!pv || !this.custom) return;
+      if (!pv || !this.custom || (e.target as HTMLElement).closest('.fs-rt-frame')) return;
       e.preventDefault();
       this.customPv = pv;
       this.viewer.host.setPointerCapture(e.pointerId);

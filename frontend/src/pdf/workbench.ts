@@ -16,7 +16,7 @@ import type { CreateKind } from './intent';
 import { Organizer, type OrgItem } from './organize';
 import { LAYOUTS, Panes, type Ctx, type Doc, type Tab } from './panels';
 import { recall, REFLOW_SIZES, Reflow, remember, Speaker } from './reading';
-import { mountTools, pageTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
+import { mountTools, pageTools, renderedTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
 import { Thumbs, Viewer, type Layout } from './viewer';
 
 export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void; palette(): void }
@@ -157,7 +157,7 @@ class Workbench {
       zoom: (pct) => { if (document.activeElement !== this.zoomIn) setValue(this.zoomIn, `${pct}%`); },
       mounted: (pv) => { this.annot.mount(pv); this.fields.mount(pv); this.forms.mount(pv); this.comparer.mount(pv); this.speaker.mount(pv); pageTools(pv, this.host); },
       textReady: (pv) => { this.finder.paint(pv); this.speaker.paint(pv); },
-      rendered: () => undefined,
+      rendered: (pv) => renderedTools(pv, this.host),
       link: (url) => this.openLink(url),
     });
     center.insertBefore(this.viewer.scroller, q(center, '.fs-pdfwb-find'));
@@ -195,7 +195,7 @@ class Workbench {
     this.cmpPanel.onClear = () => this.comparer.set(null);
     this.forms = new FormBuilder(this.viewer, {
       changed: () => { this.formPanel.sync(); this.syncChrome(); },
-      select: () => this.formPanel.syncSelection(),
+      select: () => { this.formPanel.syncSelection(); syncTools(this.host); },
       toolDone: () => this.setFormTool(null),
     });
     this.formPanel = new FormPanel(this.forms);
@@ -999,6 +999,7 @@ class Workbench {
   private get host(): ToolHost {
     return (this.toolHost ??= {
       ctx: this.ctx(),
+      forms: this.forms,
       doc: () => this.doc,
       setTab: (t) => this.setTab(t),
       useTool: (t) => {

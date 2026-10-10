@@ -27,6 +27,7 @@ export class FormBuilder {
   deletes = new Set<string>();
   loadedFor = '';
   selected: string | null = null;
+  readonly group = new Set<string>();
   tool: NewFieldType | null = null;
   active = false;
   private layers = new Map<number, HTMLElement>();
@@ -112,7 +113,12 @@ export class FormBuilder {
     for (let n = 1; ; n++) { const cand = `${PREFIX[type]}${n}`; if (!names.has(cand)) return cand; }
   }
 
+  chosen(): NewField[] {
+    return this.drafts.filter((d) => d.id === this.selected || this.group.has(d.id));
+  }
+
   select(key: string | null): void {
+    if (!key && this.group.size) { this.group.clear(); this.renderAll(); }
     if (this.selected === key) return;
     const prev = this.selected;
     this.selected = key;
@@ -245,7 +251,7 @@ export class FormBuilder {
     if (n.dataset.id !== key) n.dataset.id = key;
     setClass(n, 'is-existing', !!it.field);
     setClass(n, 'is-deleted', !!it.field && this.deletes.has(it.field.name));
-    setClass(n, 'is-selected', this.selected === key);
+    setClass(n, 'is-selected', this.selected === key || this.group.has(key));
     const label = it.draft ? (it.draft.type === 'radio' ? `${it.draft.name} · ${it.draft.export}` : it.draft.name) : (this.renames.get((it.field as Field).name) ?? (it.field as Field).name);
     setText(n.firstElementChild, label);
     if (n.title !== label) n.title = label;
@@ -268,6 +274,15 @@ export class FormBuilder {
     if (!this.tool && node?.dataset.id) {
       e.preventDefault();
       const id = node.dataset.id;
+      if (e.shiftKey && !id.startsWith('x:')) {
+        if (this.selected && !this.selected.startsWith('x:')) this.group.add(this.selected);
+        if (this.group.has(id)) this.group.delete(id); else this.group.add(id);
+        if (!this.selected || this.selected.startsWith('x:') || !this.group.has(this.selected)) this.selected = [...this.group][0] ?? null;
+        this.renderAll();
+        this.hooks.select();
+        return;
+      }
+      if (!this.group.has(id) && this.group.size) { this.group.clear(); this.renderAll(); }
       this.select(id);
       const d = this.drafts.find((x) => x.id === id);
       if (d && pv) {

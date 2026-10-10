@@ -1,6 +1,7 @@
 import type { Command } from '../ui/commands';
 import { el } from '../ui/dom';
 import type { PageTool } from './annotate';
+import type { FormBuilder } from './form';
 import type { Ctx, Doc, Tab } from './panels';
 import type { PageView } from './viewer';
 
@@ -8,6 +9,7 @@ export interface BarChoice { label: string; kind?: 'primary' | 'ghost' | 'danger
 
 export interface ToolHost {
   ctx: Ctx;
+  forms: FormBuilder;
   doc(): Doc | null;
   setTab(tab: Tab): void;
   useTool(tool: PageTool | null): void;
@@ -26,6 +28,7 @@ export interface Tool {
   sync?: (root: HTMLElement, host: ToolHost) => void;
   commands?: (host: ToolHost) => Command[];
   page?: (pv: PageView, host: ToolHost) => void;
+  rendered?: (pv: PageView, host: ToolHost) => void;
 }
 
 export const TAB_WORDS: Record<Tab, string[]> = {
@@ -71,6 +74,10 @@ export function mountTools(panes: HTMLElement, host: ToolHost): Command[] {
 
 export function pageTools(pv: PageView, host: ToolHost): void {
   for (const t of TOOLS) t.page?.(pv, host);
+}
+
+export function renderedTools(pv: PageView, host: ToolHost): void {
+  for (const t of TOOLS) t.rendered?.(pv, host);
 }
 
 export function syncTools(host: ToolHost): void {
