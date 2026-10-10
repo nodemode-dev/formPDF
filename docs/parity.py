@@ -70,7 +70,7 @@ row(a, "Bates numbering", 1, F, "`services/pdf/edit.py header_footer(bates)` wit
 a = "PDF protect and redact"
 row(a, "Password protection with permissions", 1, F, "`edit.py protect`, `panels.ts` Password and permissions")
 row(a, "Remove protection", 1, F, "`edit.py unlock`")
-row(a, "Redact marked areas", 1, P, "`edit.py redact` removes the content by re-rendering each redacted page as a picture, so the rest of that page loses its text")
+row(a, "Redact marked areas", 1, F, "`redact.py apply`: text, covered pixels, shapes, comments, fields and item text under each box removed, the rest stays text; marks in the file applied with their own fill and overlay text; re-read and render checks before writing; `mark_redactions`; Protect > Redact (fill, text on box, Scanned pages for `edit.py redact` raster)")
 row(a, "Find and redact text or patterns", 1, F, "Protect > Find text to redact: words, regex, email, phone, card and date presets (`search.py find`), redacted through `edit.py redact`; MCP `pdf redact`")
 row(a, "Remove metadata and hidden information", 1, F, "Protect > Remove hidden information (`sanitize.py scan, sanitize`: metadata, JavaScript, attachments, comments, flattened fields, hidden layers, links, bookmarks, thumbnails, private data, hidden text)")
 

@@ -17,9 +17,9 @@ Version 0.4.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 | Edit | Page text and pictures that stay editable (fonts, styles, alignment, lists; crop, rotate, flip), pictures already on the page moved and cropped, arrange and align; headers and footers with Bates numbers (across a set of files from Batch), crop, page numbers, watermark, links, attached files |
 | Organize | Rotate, delete, reorder, insert pages; split; merge |
 | Extract | Text (.txt, .md), pictures, tables (CSV, .xlsx) |
-| Protect | Passwords and permissions, remove a password, find and redact, metadata, remove hidden information |
+| Protect | Passwords and permissions, remove a password, find and redact (the content under each box is removed, the rest stays text; marks from other apps applied too), metadata, remove hidden information |
 | Convert | Export to PowerPoint (one slide per page, words as real text boxes), Word (columns, lists, headers and footers kept), Excel, HTML, RTF, compress, pages to pictures |
-| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (41 actions), render_pages, extract, save, undo |
+| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (42 actions), render_pages, extract, save, undo |
 
 ## Install and run
 
@@ -66,10 +66,10 @@ docs/       MANUAL.md
 
 ## Known gaps
 
-- Against Acrobat, formpdf scores 52.5 of 72 (73%); docs/PARITY.md has every row. The largest gaps are editing the text a PDF already has, accessibility (checker, tagging), certificate signatures and OCR.
+- Against Acrobat, formpdf scores 53 of 72 (74%); docs/PARITY.md has every row. The largest gaps are editing the text a PDF already has, accessibility (checker, tagging), certificate signatures and OCR.
 - No OCR: scanned pages have no text to search, extract or export as text boxes.
 - Signatures are pictures stamped on the page, not certificate (digital ID) signatures.
-- Text already in a PDF cannot be edited in place yet (pictures already in it can be moved, resized, cropped, rotated and arranged); redaction turns the affected pages into pictures.
+- Text already in a PDF cannot be edited in place yet (pictures already in it can be moved, resized, cropped, rotated and arranged).
 - No tagged PDF or accessibility checker; no shared review or signature requests.
 
 ## Licence

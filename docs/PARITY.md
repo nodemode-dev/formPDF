@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.4.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.5.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -15,7 +15,7 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Content editing | 11.5 of 14 · 82% |
 | PDF forms and signing | 4 of 6 · 67% |
 | PDF organize | 7 of 7 · 100% |
-| PDF protect and redact | 4.5 of 5 · 90% |
+| PDF protect and redact | 5 of 5 · 100% |
 | PDF convert | 8.5 of 11 · 77% |
 | Review and comments | 1.5 of 2 · 75% |
 | Collaboration and sharing | 1 of 2 · 50% |
@@ -23,9 +23,9 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Import and export | 0 of 1 · 0% |
 | Print | 1 of 3 · 33% |
 | Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **52.5 of 72 · 73%** |
+| **Overall** | **53 of 72 · 74%** |
 
-Across the 72 scored rows formpdf has 48 full, 9 partial and 15 none.
+Across the 72 scored rows formpdf has 49 full, 8 partial and 15 none.
 
 ## Where formpdf leads
 
@@ -111,7 +111,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | --- | --- | --- | --- |
 | Password protection with permissions | yes | Full | `edit.py protect`, `panels.ts` Password and permissions |
 | Remove protection | yes | Full | `edit.py unlock` |
-| Redact marked areas | yes | Partial | `edit.py redact` removes the content by re-rendering each redacted page as a picture, so the rest of that page loses its text |
+| Redact marked areas | yes | Full | `redact.py apply`: text, covered pixels, shapes, comments, fields and item text under each box removed, the rest stays text; marks in the file applied with their own fill and overlay text; re-read and render checks before writing; `mark_redactions`; Protect > Redact (fill, text on box, Scanned pages for `edit.py redact` raster) |
 | Find and redact text or patterns | yes | Full | Protect > Find text to redact: words, regex, email, phone, card and date presets (`search.py find`), redacted through `edit.py redact`; MCP `pdf redact` |
 | Remove metadata and hidden information | yes | Full | Protect > Remove hidden information (`sanitize.py scan, sanitize`: metadata, JavaScript, attachments, comments, flattened fields, hidden layers, links, bookmarks, thumbnails, private data, hidden text) |
 
