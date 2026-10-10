@@ -1,13 +1,13 @@
 # pdf actions
 
-The `pdf` MCP tool, action by action, as built in formpdf 0.3.0. The action names formsld's `pdf` tool used (info, text, images, tables, merge, split, header_footer, crop, find, redact, to_docx) are unchanged; `to_deck` is replaced by `to_pptx`, and the workbench's own operations are added. All paths are absolute. A failure answers `pdf [action] failed: [reason]` with isError.
+The `pdf` MCP tool, action by action, as built in formpdf 0.4.0. The action names formsld's `pdf` tool used (info, text, images, tables, merge, split, header_footer, crop, find, redact, to_docx) are unchanged; `to_deck` is replaced by `to_pptx`, and the workbench's own operations are added. All paths are absolute. A failure answers `pdf [action] failed: [reason]` with isError.
 
 ## Contents
 
 - Where an action works
 - Page syntax
-- Read actions: info, text, images, tables, find, comments, fields, hidden, compare, links, attachments, measurements, snap_points, spell
-- Change actions: header_footer, page_numbers, watermark, crop, redact, organize, protect, unlock, metadata, compress, sanitize, fill, annotate, form, merge, edit_links, edit_attachments, measure, spell_fix
+- Read actions: info, text, images, tables, find, comments, fields, hidden, compare, links, attachments, measurements, snap_points, spell, items
+- Change actions: header_footer, page_numbers, watermark, crop, redact, organize, protect, unlock, metadata, compress, sanitize, fill, annotate, form, merge, edit_links, edit_attachments, measure, spell_fix, edit_items
 - Export actions: split, to_docx, to_pptx, to_html, to_rtf, to_xlsx
 
 ## Where an action works
@@ -18,7 +18,7 @@ The `pdf` MCP tool, action by action, as built in formpdf 0.3.0. The action name
 | `doc` (id or key) | that open PDF | a new version, shown live in the window as your turn |
 | neither | the window's open PDF, else the last PDF you opened | as with `doc` |
 
-Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, protected, unlocked, metadata, compressed, clean, filled, commented, form, merged, linked, attached, measured, spelling.
+Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, protected, unlocked, metadata, compressed, clean, filled, commented, form, merged, linked, attached, measured, spelling, edited.
 
 ## Page syntax
 
@@ -40,6 +40,7 @@ Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, pr
 - **measurements**: measurement comments (distance, perimeter, area) with page, index, value and unit, read from their stored scale.
 - **snap_points** `{pages}`: path ends, segment midpoints and crossings on the page, in points from the top left, for exact measuring.
 - **spell** `{scope: "comments,fields,pages", texts: [{id, text}], ignore: [words], lang, skip_caps, suggest}`: possible misspellings in the PDF's comments, form text fields, page text (scope) or texts you pass, each with where it is (comment page and index, field name, page, or your id), offset, context and up to six suggestions. Default scope is comments and fields. Words in all capitals, web and email addresses and the person's own dictionary are skipped.
+- **items** `{pages}`: text and pictures added by formpdf (id, kind, page, x, y, w, h, rot, flips, z order; for text the font and paragraphs; for pictures the crop) and pictures already on the page (page, op, box, pixel size). Use the id, or page and op, with edit_items.
 
 ## Change actions
 
@@ -62,6 +63,7 @@ Suffixes: header-footer, numbered, watermarked, cropped, redacted, organized, pr
 - **edit_attachments** `{add: [{path, name, description, page, x, y}], remove: [names], unpin: [{page, index}]}`: without `page` the file is attached to the document; with `page` it is pinned there as a paperclip comment. A name already taken becomes `name (2).ext`.
 - **measure** `{add: [{page, kind: distance | perimeter | area, points: [[x, y], ...], unit, factor, label, color}], remove: [{page, index}]}`: measurement comments other readers show. `factor` is units per point (true size for the unit when omitted); distance takes two points, area at least three.
 - **spell_fix** `{fixes: [{where: comment, page, index, nm, offset, word, to} | {where: field, name, offset, word, to}]}`: replaces each word in comment text or a field value, using spell's output. Text boxes are redrawn with the corrected text.
+- **edit_items** `{add, update, arrange, comments, remove}`: page text and pictures that stay editable. `add`: `{kind: "text", page, x, y, w, text}` (plain text, one paragraph per line) or `paras: [{align: left | center | right | justify, list: none | bullet | number, level: 0..3, runs: [{t, b, i, u, s, sup, sub, color}]}]`, with `font: {family: sans | serif | mono, size, color, lineHeight}` and `rot`; the height follows the text. `{kind: "picture", page, x, y, w, h, path | data, rot, flipH, flipV, crop: {l, t, r, b}}` (crop as fractions of the picture). `update`: `{id, ...}` with any of those fields, or `{page, picture: op}` to change a picture already on the page (it becomes an item, `converted` in the result gives its id); a new crop alone keeps the picture's scale. `arrange`: `[{id | page and picture, to: front | back | forward | backward}]`. `comments`: `[{page, index, to}]` reorders comments. `remove`: ids, or `{page, picture}`. Result: `ids` of added items.
 
 ## Export actions
 

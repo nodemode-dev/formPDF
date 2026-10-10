@@ -27,6 +27,7 @@
 | `app/services/pdf/word.py` | PDF to Word (columns as Word sections, lists, running heads into header and footer) |
 | `app/services/pdf/exports.py` | the shared reading of a PDF for export (`document`: blocks, running lines removed, list groups) and `to_html`, `to_rtf`, `to_xlsx` |
 | `app/services/pdf/links.py`, `attach.py`, `measure.py`, `frame.py` | links (`links`, `edit_links`), attached and pinned files (`attachments`, `edit_attachments`), measurements (`measure`, `measurements`, `snap_points`), top-left page frame to PDF space |
+| `app/services/pdf/items.py` | page items: added text (own layout over the font kit) and pictures (native encoding) as tagged forms with one placing stream each, existing pictures converted in place, crop, rotation, flips, z-order, comment order (`items`, `edit_items`), render without an item |
 | `app/services/pdf/spell.py`, `app/dict/` | Hunspell-format dictionary reader, `spell` and `spell_fix`; SCOWL en_US with its notices, more languages in `~/Formpdf/dictionaries` |
 | `app/services/pdf/slides.py` | PDF to PowerPoint (`to_pptx`) and contact sheets (`contact_sheet`) |
 | `app/services/pdf/sanitize.py`, `search.py`, `create.py`, `compare.py` | hidden information, find (presets, regex), PDF from pictures and files, compare |
@@ -41,7 +42,7 @@
 | `ui/app-dialogs.ts` | Preferences (with the Network list), Agents, Help, Keyboard shortcuts |
 | `ui/palette.ts`, `ui/batch.ts`, `ui/resume.ts` | Mod+K palette, Home > Batch, Home's pick-up and recovery line |
 | `pdf/tools.ts` | tool registry: sections, commands and synonyms that tools add to the workbench; page tools (`useTool`) and per-page layers (`page`) |
-| `tools/` | registered tools: `links.ts`, `attachments.ts` (Edit), `measure.ts`, `spell.ts` (Comment), `exports.ts` (Convert), `overlay.ts` page layers, imported by `tools/index.ts` |
+| `tools/` | registered tools: `links.ts`, `attachments.ts`, `content.ts` with `richtext.ts` (Edit), `measure.ts`, `spell.ts` (Comment), `exports.ts` (Convert), `formalign.ts` (Prepare form), `overlay.ts` page layers, imported by `tools/index.ts`; `pdf/align.ts` is the shared align and distribute math |
 | `ui/dom.ts`, `icons.ts`, `menu.ts`, `commands.ts`, `dialogs.ts`, `dropdown.ts`, `toast.ts`, `themes.ts`, `brand.ts` | the form family toolkit and the formpdf mark |
 | `live/socket.ts`, `live/agent.ts` | WebSocket client, window tools (consent, state, open, commit, undo-turn, saved) |
 | `pdf/workbench.ts` | the workbench shell, menus, history of versions with agent turns, save, print, close guard |
