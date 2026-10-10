@@ -43,6 +43,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 20. Session restore and the network list · services/session.py, routers/live.py, routers/system.py
 21. One route for registered actions · routers/pdf.py act
 22. Links · services/pdf/links.py, services/pdf/frame.py
+23. Attached files · services/pdf/attach.py
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -139,3 +140,7 @@ POST /api/pdf/{id}/act/{name} runs any registered action that has a `run` handle
 ## 22. Links · _v0.3.0 (services/pdf/links.py target, read, change, URL; services/pdf/frame.py; routers/mcp.py _detail)
 
 `edit_links` adds Link annotations from boxes (points from the top left of the unrotated page, the frame redaction areas use; `frame.py` converts both ways through the view box), removes links by page and index as `links` lists them, and with `auto` links every web and email address in the text: the URL pattern runs through `search.find`, so matches carry PDFium's per-line boxes and a URL broken over two lines becomes two link boxes with one target. Boxes that overlap an existing or just-added link are skipped, so running it twice adds nothing. A target is a page number (a GoTo destination with Fit), an email address (mailto:), or a web address (www. and bare domains get https://); anything else, including `javascript:`, is refused, and non-ASCII URLs must use punycode because URI actions are 7-bit. Links are printable, invert on click, and borderless unless `border` asks for a thin blue one. `links` reads URI actions and page destinations (explicit, named, or GoTo) back as page numbers. The change result says `added` and `deleted`; `deleted`, not `removed`, because `_detail` already reads `removed` as sanitize's list of categories.
+
+## 23. Attached files · _v0.3.0 (services/pdf/attach.py change, read, listing, get_file, _tree, _filespec, _pin_ap; routers/pdf.py attachment)
+
+Document-level files live in the catalog's EmbeddedFiles name tree. pypdf can add to it but not remove from it, so `change` flattens the tree (Names arrays and Kids, depth-capped), drops removed names, appends new files and writes one flat Names array sorted by name, which every reader accepts. A file whose name is taken becomes `name (2).ext` rather than replacing the first. Each file is a Filespec with F and UF names, an optional Desc, and an EmbeddedFile stream (Flate-compressed, MIME subtype, Size and ModDate in Params). A file with a page becomes a FileAttachment annotation (a pin) with a 20 point paperclip appearance of its own, because readers otherwise draw it differently or not at all. Files arrive as base64 (the window) or as a path (agents and the CLI), at most 200 MB each. `attachments` lists both kinds and, with `save`, writes one to a path or the Exports folder; the window downloads through GET /api/pdf/{id}/attachment by name, or by page and index for pins. Sanitize keeps its own removal path (entry 6).

@@ -132,6 +132,15 @@ MEDIA = {".html": "text/html; charset=utf-8", ".rtf": "application/rtf", ".csv":
          ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 
 
+@router.get("/pdf/{doc_id}/attachment")
+async def attachment(doc_id: str, name: str = "", page: int = 0, index: int = 0) -> Response:
+    from app.services.pdf import attach
+
+    fname, data = await _run(lambda: attach.get_file(_path(doc_id), name=name or None, page=page or None, index=index, passwords=_pw(doc_id)))
+    safe = fname.replace('"', "'").encode("latin-1", "replace").decode("latin-1")
+    return Response(data, media_type="application/octet-stream", headers={"Content-Disposition": f'attachment; filename="{safe}"'})
+
+
 @router.post("/pdf/{doc_id}/act/{name}")
 async def act(doc_id: str, name: str, body: dict) -> Response:
     a = actions.get(name)

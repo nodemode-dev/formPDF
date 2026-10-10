@@ -6,3 +6,5 @@
 .fs-tool-list { min-height: 88px; max-height: 260px; overflow-y: auto; overscroll-behavior: contain; }
 .fs-tool-row { min-height: 40px; cursor: pointer; }
 .fs-tool-row .fs-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-tool-row .fs-row-main { display: grid; min-width: 0; }
+.fs-tool-acts { display: inline-flex; gap: 2px; }

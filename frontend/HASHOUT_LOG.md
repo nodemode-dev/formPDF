@@ -34,6 +34,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 15. Resume on Home and the network list · ui/resume.ts, ui/app-dialogs.ts
 16. Page tools and safe links · pdf/annotate.ts PageTool, pdf/tools.ts, tools/overlay.ts, pdf/workbench.ts openLink
 17. The Links tool · tools/links.ts
+18. The Attached files tool · tools/attachments.ts
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -108,3 +109,7 @@ Following a web link used to call `window.open` with whatever the PDF said. Link
 ## 17. The Links tool · _v0.3.0 (tools/links.ts; tools/index.ts; styles/tools.css)
 
 Edit > Links: Draw a link puts the page into a drag-a-box page tool (the box shows as a dashed overlay on the page while drawn and while pending), Goes to takes a web address, an email address or a page number (Enter adds), Link web addresses links every address in the text, and the list shows the links in the PDF with remove and click-to-show (scroll and pulse). Every change is one engine call that becomes a version, so Undo works. Two layout rules learned here: the note under the form has a reserved three-line height and both of its texts fit in it (a longer default text grew it by a line after Add and moved everything below), and the list keeps the order its rows already had and appends new links at the end, instead of re-sorting by page and pushing existing rows down. Both shifts arrived after the engine answered, more than 500 ms after the click, so they counted.
+
+## 18. The Attached files tool · _v0.3.0 (tools/attachments.ts)
+
+Edit > Attached files: Attach files picks any files and sends them as data URLs in one engine call (one version, one Undo step); Pin a file to the page picks one file, then a one-click page tool places its pin centred on the click and clamped to the page. The list shows document files and pins together, keeps its existing order when the PDF changes (the Links rule), and offers Save a copy (downloaded through `deliver`, so the desktop app asks for a path) and Remove. Clicking a pin row scrolls to it and pulses it.

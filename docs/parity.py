@@ -48,7 +48,7 @@ row(a, "Generate pictures with AI (Adobe Express)", 1, N, "nothing found")
 row(a, "Arrange objects: bring forward, send backward", 1, N, "nothing found: annotations and placed pictures have no z-order commands (`annotate.ts`)")
 row(a, "Align and distribute objects on a page", 1, N, "nothing found for page objects or form fields")
 row(a, "Rotate and flip pictures on PDF pages", 1, N, "nothing found: placed pictures follow the page rotation only; no rotate or flip")
-row(a, "Attach files to a PDF", 1, N, "nothing found: attachments are only counted and removed (`sanitize.py scan, sanitize`)")
+row(a, "Attach files to a PDF", 1, F, "Edit > Attached files (`frontend/src/tools/attachments.ts`): attach files of any type to the document, pin a file to a spot on a page (a FileAttachment comment with a paperclip), list, save a copy and remove; `services/pdf/attach.py change, read, get_file` (actions edit_attachments and attachments), GET /api/pdf/{id}/attachment; Remove hidden information still strips them")
 
 a = "PDF forms and signing"
 row(a, "Fill form fields", 1, F, "`frontend/src/pdf/fill.ts`, `services/pdf/edit.py read_fields, fill_fields`")
