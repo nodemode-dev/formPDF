@@ -18,6 +18,7 @@ The formpdf mark, the stamps and the agent skills are original work of this repo
 | Package | License | Notes |
 | --- | --- | --- |
 | Inter, JetBrains Mono and Caveat (via @fontsource) | SIL OFL 1.1 fonts, MIT packaging | interface, code and typed signature fonts |
+| Inter 4.1, Noto Serif 2.015 and JetBrains Mono 2.304 TrueType files, four styles each, with their licence texts | SIL OFL 1.1 | `backend/app/fonts/`: the engine's font kit, embedded as subsets in text formpdf writes into PDFs |
 | pdf.js (pdfjs-dist) | Apache-2.0 | PDF rendering, text layer, annotations and forms in the window |
 | @tauri-apps/api; tauri, tauri-plugin-shell, tauri-plugin-dialog, tauri-plugin-updater, tauri-plugin-single-instance, regex, serde, serde_json | MIT or Apache-2.0 | desktop shell |
 | fastapi, uvicorn, python-multipart | MIT, BSD-3-Clause, Apache-2.0 | engine |

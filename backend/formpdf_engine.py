@@ -23,6 +23,9 @@ def selfcheck() -> int:
 
     info["formpdf"] = __version__
     info["dist_bundled"] = os.path.isdir(os.path.join(resource_dir(), "frontend_dist"))
+    from app.services.pdf import fontkit
+
+    info["fonts"] = sum(len(f["styles"]) for f in fontkit.available())
     print(json.dumps(info))
     return 1 if missing else 0
 

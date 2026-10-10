@@ -37,6 +37,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 15. Compress without document info · services/pdf/edit.py compress
 16. One action registry for MCP, the CLI, batch and the palette · services/pdf/actions.py
 17. The content interpreter · services/pdf/content/
+18. The font kit · services/pdf/fontkit.py, app/fonts/
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -111,3 +112,7 @@ True redaction, editing text and pictures already on a page, OCR text placement 
 Checked against pdfplumber on twelve PDFs (reportlab standard and TrueType subset fonts, matplotlib Type3 and Type42, TeX Type1 with custom encodings, a Word-made math PDF, a browser-made PDF, formpdf's own outputs): every glyph origin and width matched to 0.000 pt, counts matched on every page, and text matched except where the font's own built-in Type1 or CFF encoding is the only source of Unicode (two glyphs in a TeX math font), which is not read yet. Writing every page back from its parsed operations rendered pixel-identical in PDFium and extracted the same text. No PDF in that set was tagged, so the MCID and Artifact paths have not run against a real file yet.
 
 `write_page` replaces a page's content with one new stream; `new_form` and `replace_form` add a changed copy of a form under a new resource name and leave the original for the other pages that share it (the caller renames the Do operand).
+
+## 18. The font kit · _v0.2.0 (services/pdf/fontkit.py font_name, covers, pick, available; app/fonts/; formpdf_engine.py selfcheck)
+
+Text formpdf writes into a PDF (added text, edited paragraphs, OCR layers, Bates and headers later) must embed its font, or accents and non-Latin scripts are lost and extraction breaks. `app/fonts/` ships Inter 4.1, Noto Serif 2.015 and JetBrains Mono 2.304 in regular, bold, italic and bold italic with their OFL texts; `config.fonts_dir()` and the freeze script already pointed there, so the frozen engine carries them and `annot.text_font` now finds Inter instead of a system font. `font_name(family, bold, italic)` registers a family with reportlab on first use, which embeds a subset with a ToUnicode map, so fontTools is not needed yet; if a file is missing it falls back to the matching standard 14 font. `covers` checks a string against the font's character map and `pick` walks the families for one that covers it. No shipped family covers CJK; callers must say so (Beat Acrobat B8) until a CJK font is chosen. Checked: all twelve combinations write Greek, Cyrillic, accented Latin and Polish text that pdfplumber and the content interpreter extract unchanged, every font embedded as a subset. The selfcheck reports the number of font files found.
