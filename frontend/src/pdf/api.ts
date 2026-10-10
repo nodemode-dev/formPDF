@@ -5,10 +5,17 @@ export interface OutlineItem { title: string; page: number | null; level: number
 export interface PdfInfo {
   bytes: number; encrypted: boolean; locked: boolean; pages: number; sizes: PageSize[]; outline: OutlineItem[]; fields: number;
   title?: string; author?: string; subject?: string; keywords?: string; creator?: string; producer?: string; created?: string | null; modified?: string | null;
-  version?: string; id?: string; name?: string; key?: string; path?: string | null; protected?: boolean; savePath?: string;
+  version?: string; id?: string; name?: string; key?: string; path?: string | null; protected?: boolean; savePath?: string; signed?: boolean;
 }
 export interface Opened { id: string; name: string; pages: number; info: PdfInfo; key: string; path?: string | null }
 export interface Derived { id: string; pages: number; bytes: number; images?: number; before?: number; after?: number }
+export interface Identity { id?: string; label?: string; name: string; email: string; org: string; issuer: string; selfSigned: boolean; from: string; to: string; fingerprint: string; der?: string }
+export interface SigEntry {
+  index: number; field: string; verdict: 'valid' | 'unknown' | 'invalid'; says: string[]; signer?: Identity; time?: string; timestamped?: boolean;
+  reason: string; location: string; certified: number; end: number; coversAll: boolean;
+}
+export interface SigRequestPerson { order: number; name: string; email: string; field: string; state: 'signed' | 'next' | 'waiting'; verdict?: string; signedBy?: string; time?: string }
+export interface SigReport { signatures: SigEntry[]; empty: Array<{ field: string; tooltip: string }>; request: { signers: SigRequestPerson[]; message: string; next: SigRequestPerson | null; done: boolean } | null }
 export interface ScanDevice { id: string; name: string; kind: 'network' | 'usb'; address?: string }
 export interface ScanCaps { device: string; name: string; sources: string[]; dpis: number[]; color: boolean; gray: boolean }
 export interface ScanRequest { device?: string; address?: string; source: string; dpi: number; color: boolean; ocr: boolean; into?: string; name?: string }
@@ -119,6 +126,23 @@ export const pdfApi = {
   crop: (id: string, body: { box?: Rect; margins?: Margins; auto?: boolean; pages?: string }) => api.post<Derived & { cropped: number }>(`${base(id)}/crop`, body),
   find: (id: string, body: FindBody) => api.post<{ matches: Match[]; count: number; pages: number; truncated: boolean }>(`${base(id)}/find`, body),
   comments: (id: string) => api.get<{ comments: PdfComment[] }>(`${base(id)}/comments`),
+  identities: () => api.get<{ identities: Identity[]; trusted: Identity[] }>('/api/identities'),
+  makeIdentity: (body: { name: string; email: string; org: string; password: string }) => api.post<Identity>('/api/identities', body),
+  importIdentity(file: File, password: string): Promise<Identity> {
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+    fd.append('password', password);
+    return form<Identity>('/api/identities/import', fd);
+  },
+  deleteIdentity: (id: string) => fetch(`/api/identities/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(() => undefined),
+  trust: (der: string) => api.post<{ fingerprint: string }>('/api/trust', { der }),
+  untrust: (fp: string) => fetch(`/api/trust/${encodeURIComponent(fp)}`, { method: 'DELETE' }).then(() => undefined),
+  signedVersionUrl: (id: string, index: number) => `${base(id)}/signatures/${index}/revision`,
+  joinCopy(id: string, file: File): Promise<Derived> {
+    const fd = new FormData();
+    fd.append('file', file, file.name);
+    return form<Derived>(`${base(id)}/request/join`, fd);
+  },
   scanDevices: () => api.get<{ devices: ScanDevice[] }>('/api/scan/devices'),
   scanCaps: (body: { device?: string; address?: string }) => api.post<ScanCaps>('/api/scan/capabilities', body),
   scan: <T = Opened | Derived>(body: ScanRequest) => api.post<T & { scanned: number }>('/api/scan/run', body),

@@ -58,6 +58,20 @@
 .fs-cx-full { position: absolute; box-sizing: border-box; outline: 1px dashed rgba(0, 0, 0, 0.45); background: rgba(0, 0, 0, 0.06); }
 .fs-cx-group { display: grid; gap: var(--space-2); }
 .fs-tool-note.fs-cx-note { min-height: calc(4 * 1.45em); }
+.fs-sig-draft { position: absolute; border: 1.5px dashed var(--accent-color); background: var(--accent-tint-strong); pointer-events: none; }
+.fs-sig-ico.is-ok { color: var(--ok); }
+.fs-sig-ico.is-warn { color: var(--warn); }
+.fs-sig-ico.is-bad { color: var(--danger); }
+.fs-sig-look { display: flex; gap: var(--space-2); align-items: center; }
+.fs-sig-look select { flex: 1 1 auto; min-width: 0; }
+.fs-sig-picnote { min-height: 1.45em; margin: 0; }
+.fs-sig-people { display: grid; gap: var(--space-2); }
+.fs-sig-person { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; }
+.fs-sig-order { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.fs-sig-msg { resize: vertical; min-height: 4.5em; }
+.fs-sig-dlg { display: flex; flex-direction: column; gap: var(--space-3); }
+.fs-sig-dlg .fs-note { margin: 0; }
+.fs-sig-err { color: var(--danger-text); min-height: 1.45em; }
 .fs-cx-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px 32px; gap: var(--space-2); align-items: center; }
 .fs-cx-num { text-align: right; }
 .fs-cx-color { width: 32px; height: 28px; padding: 0; border: 1px solid var(--line-2); border-radius: var(--radius-md); background: transparent; }

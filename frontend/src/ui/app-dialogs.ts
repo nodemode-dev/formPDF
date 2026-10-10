@@ -87,6 +87,7 @@ class PreferencesDialog extends Dialog {
   private readonly agents: HTMLInputElement;
   private readonly lang: HTMLSelectElement;
   private readonly words: HTMLTextAreaElement;
+  private readonly tsa: HTMLInputElement;
 
   constructor() {
     super('Preferences', 560);
@@ -103,6 +104,9 @@ class PreferencesDialog extends Dialog {
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Spelling</div>
 <label class="fs-field"><span>Language</span><select class="fs-input fs-dlg-pref-lang"><option value="en_US">${langName('en_US')}</option></select></label>
 <label class="fs-field is-top"><span>Your words</span><textarea class="fs-input fs-dlg-pref-words" rows="4" spellcheck="false" placeholder="One word per line. Check spelling accepts these, and Add to dictionary puts words here."></textarea></label>
+</section>
+<section class="fs-dlg-section"><div class="fs-dlg-section-title">Signing</div>
+<label class="fs-field"><span>Timestamp server</span><input class="fs-input fs-dlg-pref-tsa" type="url" spellcheck="false" placeholder="https://… (optional; used only when you tick Add a timestamp)"></label>
 </section>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Agents</div>
 <div class="fs-field"><span>Access</span><label class="fs-check"><input type="checkbox" data-f="agents"><span>Let Claude Code, Codex and Cursor read and edit PDFs</span></label></div>
@@ -122,6 +126,7 @@ class PreferencesDialog extends Dialog {
     this.agents = q<HTMLInputElement>(box, '[data-f="agents"]');
     this.lang = q<HTMLSelectElement>(box, '.fs-dlg-pref-lang');
     this.words = q<HTMLTextAreaElement>(box, '.fs-dlg-pref-words');
+    this.tsa = q<HTMLInputElement>(box, '.fs-dlg-pref-tsa');
     for (const b of Array.from(this.themes.querySelectorAll<HTMLElement>('[data-theme-id]'))) { b.setAttribute('type', 'button'); b.setAttribute('aria-label', b.title); }
     this.button('Done', 'primary', () => this.close());
     this.themes.addEventListener('click', (e) => {
@@ -138,6 +143,7 @@ class PreferencesDialog extends Dialog {
     this.lang.addEventListener('change', () => { this.persist({ spellLang: this.lang.value }); applyLang(this.lang.value); });
     this.words.addEventListener('change', () => this.persist({ dictionary: this.words.value.split(/\s*\n\s*/).filter(Boolean) }));
     this.agents.addEventListener('change', () => this.h?.setAgents(this.agents.checked));
+    this.tsa.addEventListener('change', () => this.persist({ timestampUrl: this.tsa.value.trim() }));
   }
 
   private persist(patch: Settings): void {
@@ -166,6 +172,7 @@ class PreferencesDialog extends Dialog {
     this.open(this.themes.querySelector<HTMLElement>('.is-active'));
     void api.settings().catch((): Settings => ({})).then((s) => {
       setValue(this.author, str(s.author));
+      setValue(this.tsa, str(s.timestampUrl));
       segSet(this.units, str(s.units) || 'pt');
       const words = Array.isArray(s.dictionary) ? (s.dictionary as unknown[]).map(String).join('\n') : '';
       if (this.words.value !== words) this.words.value = words;

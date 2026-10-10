@@ -83,7 +83,7 @@ export class Fields {
   private render(index: number): void {
     const layer = this.layers.get(index);
     if (!layer) return;
-    const list = this.fields.map((f, i) => ({ f, i })).filter((x) => x.f.page === index + 1 && x.f.type !== 'button');
+    const list = this.fields.map((f, i) => ({ f, i })).filter((x) => x.f.page === index + 1 && x.f.type !== 'button' && !(x.f.type === 'signature' && x.f.value));
     patchList(layer, list, {
       key: (x) => `${this.loadedFor}|${x.i}`,
       create: (x) => { const n = this.create(x.f, x.i); this.update(n, x.f); return n; },

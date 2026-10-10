@@ -6,3 +6,4 @@ import './spell';
 import './content';
 import './formalign';
 import './ocr';
+import './certsign';
