@@ -1,6 +1,6 @@
 # pdf actions
 
-The `pdf` MCP tool, action by action, as built in formpdf 0.8.0. The action names formsld's `pdf` tool used (info, text, images, tables, merge, split, header_footer, crop, find, redact, to_docx) are unchanged; `to_deck` is replaced by `to_pptx`, and the workbench's own operations are added. All paths are absolute. A failure answers `pdf [action] failed: [reason]` with isError.
+The `pdf` MCP tool, action by action, as built in formpdf 0.9.0. The action names formsld's `pdf` tool used (info, text, images, tables, merge, split, header_footer, crop, find, redact, to_docx) are unchanged; `to_deck` is replaced by `to_pptx`, and the workbench's own operations are added. All paths are absolute. A failure answers `pdf [action] failed: [reason]` with isError.
 
 ## Contents
 
