@@ -53,6 +53,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 30. Redaction removes content instead of rasterizing · services/pdf/redact.py (supersedes 2)
 31. Editing the text a PDF already has · services/pdf/textedit.py, items.py
 32. Text recognition (OCR) · services/pdf/ocr.py
+33. Connected scanners · services/scan.py, routers/scan.py
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -233,3 +234,11 @@ Straightening: the median angle of lines wider than 40 pixels is the skew. Above
 The text layer is drawn with reportlab on a canvas the size of the page as shown, then placed as a form with a matrix that maps shown coordinates back to the page's own for each `/Rotate` (`_placement`), so rotated scans read correctly. Every word gets its own text matrix: the em height is the box height over the font's ascent to descent span, the horizontal scale fits the font's natural width to the box, the baseline sits above the box bottom by the descent, words less than five degrees off level are drawn level, and a space follows each word except the last on a line. Text is render mode 3 (invisible). The font is the engine's font kit (Inter, falling back to the other families for letters it lacks) embedded as a subset with ToUnicode, so accented and Greek or Cyrillic text extracts; letters no bundled family has are drawn with the closest font and may extract wrongly. The layer stream carries `/FormpdfOCR` so formpdf can find and replace it, and textedit ignores invisible text when it groups paragraphs.
 
 Find, redaction, exports, reading mode and PowerPoint text boxes work on the recognised text because it is ordinary page text. Testing redaction on a rotated scan found that redaction's render check (entry 30) measured boxes in unrotated coordinates; `core.to_display` now maps a point to the page as shown for every rotation and the check uses it.
+
+## 33. Connected scanners · _v0.7.0 (services/scan.py; routers/scan.py; routers/system.py NETWORK; main.py)
+
+Three ways to reach a scanner, all without new dependencies. Network scanners speak eSCL (AirScan, Mopria), the HTTP protocol most scanners and multifunction printers sold in the last decade support on every platform: discovery sends one mDNS question for `_uscan._tcp` and `_uscans._tcp` from an ephemeral port with the unicast-response bit, collects answers for two seconds from private addresses only, and pairs PTR, SRV, TXT (`rs` resource path, `ty` model name) and A records with formpdf's own small DNS reader (name compression included), because the usual zeroconf library is LGPL and a browse is a few dozen lines. A person can also type an address. Every request goes through a proxy-less opener, only to private, link-local, loopback or `.local` hosts; anything else is refused with a sentence. Scanning reads `ScannerCapabilities` (glass, feeder, duplex, resolutions, colour), posts `ScanSettings` asking for JPEG, follows the job's `Location`, and reads `NextDocument` until the scanner answers 404, retrying on 503 while it warms up; the glass gives one page.
+
+Scanners connected by USB go through the system's own driver stack when it is present: SANE's `scanimage` on Linux (eSCL devices SANE also lists are left out so they appear once) and WIA through PowerShell on Windows, with resolution and colour or grey set on the item and the feeder read until it is empty. macOS USB scanners that do not offer eSCL over USB are not reached; Image Capture has no command line.
+
+`/api/scan/devices`, `/api/scan/capabilities` and `/api/scan/run` sit in their own router; a lock allows one scan at a time. A scan becomes a new PDF through `create.from_files` with pages fitted to the pictures, optionally made searchable by the OCR action, or is appended to the open PDF as a new version (OCR runs on the scanned pages only, before the merge). Preferences > Network lists text recognition and scanners as local.
