@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.5.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.6.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -12,7 +12,7 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | --- | --- |
 | PDF viewing | 5.5 of 6 · 92% |
 | PDF annotation | 7 of 7 · 100% |
-| Content editing | 11.5 of 14 · 82% |
+| Content editing | 13 of 14 · 93% |
 | PDF forms and signing | 4 of 6 · 67% |
 | PDF organize | 7 of 7 · 100% |
 | PDF protect and redact | 5 of 5 · 100% |
@@ -23,9 +23,9 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Import and export | 0 of 1 · 0% |
 | Print | 1 of 3 · 33% |
 | Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **53 of 72 · 74%** |
+| **Overall** | **54.5 of 72 · 76%** |
 
-Across the 72 scored rows formpdf has 49 full, 8 partial and 15 none.
+Across the 72 scored rows formpdf has 51 full, 7 partial and 14 none.
 
 ## Where formpdf leads
 
@@ -33,10 +33,10 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 ## Where formpdf trails most
 
-- **Content editing.** formpdf adds page text and pictures that stay editable, crops, rotates, arranges and aligns them and the pictures already on a page, adds links and attached files and checks spelling, but does not yet edit or reformat the text a PDF already has.
+- **Content editing.** formpdf edits the text and pictures a PDF already has and adds page text and pictures that stay editable; only generating pictures with AI is missing.
 - **Accessibility.** No accessibility checker, no tagging and no reading-order editor for PDFs.
 - **Signing and scanning.** No certificate signatures, signature requests, OCR or scanning.
-- Rows with nothing yet: Edit PDF text and pictures in place; Generate pictures with AI (Adobe Express); Certificate-based digital signatures; Request signatures from others; OCR for scanned pages; Scan paper documents to PDF; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
+- Rows with nothing yet: Generate pictures with AI (Adobe Express); Certificate-based digital signatures; Request signatures from others; OCR for scanned pages; Scan paper documents to PDF; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
 
 ## Line by line
 
@@ -67,9 +67,9 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
-| Edit PDF text and pictures in place | yes | None | nothing found: no tool edits text already on the page (`annotate.ts Tool` has markup and drawing tools only), and placed pictures are new annotations, not the page's own images |
+| Edit PDF text and pictures in place | yes | Full | Edit > Text and pictures > Select: any paragraph already on the page (`textedit.py detect`: lines, table walls, duplicate and invisible layers, alignment, bullets) is retyped in place, rewraps to its box and keeps its own font where the font has the letters (`items.py` orig fonts), or moves, widens, rotates and restyles; pictures already on the page move, resize, rotate, flip, crop, are replaced or deleted without re-encoding; MCP and CLI `edit_items {page, paragraph}` |
 | Add new text to PDF pages | yes | Full | Edit > Text and pictures > Add text (`tools/content.ts`, `tools/richtext.ts`): type on the page in a live editor, saved as page content that stays editable (`services/pdf/items.py`, actions items and edit_items in MCP and the CLI); double-click to edit again, move, resize the width, rotate; Make page text turns a comment text box into page text |
-| Edit PDF text formatting: font, size, colour, style | yes | Partial | for text formpdf adds: Inter, Noto Serif or JetBrains Mono, size, colour, bold, italic, underline, strike, super and subscript per run, line spacing (`tools/content.ts`, `items.py layout`); text already on the page is not editable yet (Phase 4) |
+| Edit PDF text formatting: font, size, colour, style | yes | Full | for added text and text already on the page: the document's font or Inter, Noto Serif or JetBrains Mono, size, colour, bold, italic, underline, strike, super and subscript per run, alignment, lists, line spacing (`tools/content.ts`, `items.py layout`, `textedit.py`); the pane names the font edits will use |
 | Bulleted and numbered lists in PDF text | yes | Full | in added page text: bulleted and numbered lists with hanging indents and four levels (Tab and Shift+Tab), numbering restarting after other paragraphs (`richtext.ts setList, indent`, `items.py layout`) |
 | Align PDF paragraphs: left, centre, right, justify | yes | Full | in added page text, per paragraph: left, centre, right and justify with the last line left (`richtext.ts`, `items.py layout`) |
 | Add links to PDF pages | yes | Full | Edit > Links (`frontend/src/tools/links.ts`): draw a box and link it to a web address, an email address or a page, link every web and email address in the text, list and remove links; `services/pdf/links.py change, read` (actions edit_links and links in MCP, the CLI and Batch); following a link offers http, https and mailto only, behind a prompt (`workbench.ts openLink`) |

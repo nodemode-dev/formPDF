@@ -14,7 +14,7 @@ Version 0.5.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 | Comment | Highlight, underline, strike through, notes, text boxes, ink, shapes, lines and arrows; replies and status; stamps; measure distance, perimeter and area; check spelling with your own words |
 | Fill & Sign | Fill form fields; draw or type a signature; dates, text and business or dynamic stamps |
 | Prepare form | Text, multi-line, check box, radio, dropdown, list box, date and signature fields |
-| Edit | Page text and pictures that stay editable (fonts, styles, alignment, lists; crop, rotate, flip), pictures already on the page moved and cropped, arrange and align; headers and footers with Bates numbers (across a set of files from Batch), crop, page numbers, watermark, links, attached files |
+| Edit | Edit the text a PDF already has in place, in its own font where possible; page text and pictures that stay editable (fonts, styles, alignment, lists; crop, rotate, flip, replace), pictures already on the page moved, cropped and replaced, arrange and align; headers and footers with Bates numbers (across a set of files from Batch), crop, page numbers, watermark, links, attached files |
 | Organize | Rotate, delete, reorder, insert pages; split; merge |
 | Extract | Text (.txt, .md), pictures, tables (CSV, .xlsx) |
 | Protect | Passwords and permissions, remove a password, find and redact (the content under each box is removed, the rest stays text; marks from other apps applied too), metadata, remove hidden information |
@@ -66,10 +66,10 @@ docs/       MANUAL.md
 
 ## Known gaps
 
-- Against Acrobat, formpdf scores 53 of 72 (74%); docs/PARITY.md has every row. The largest gaps are editing the text a PDF already has, accessibility (checker, tagging), certificate signatures and OCR.
+- Against Acrobat, formpdf scores 54.5 of 72 (76%); docs/PARITY.md has every row. The largest gaps are accessibility (checker, tagging), certificate signatures and OCR.
 - No OCR: scanned pages have no text to search, extract or export as text boxes.
 - Signatures are pictures stamped on the page, not certificate (digital ID) signatures.
-- Text already in a PDF cannot be edited in place yet (pictures already in it can be moved, resized, cropped, rotated and arranged).
+- Editing text already in a PDF re-sets the paragraph: kerning the PDF wrote by hand is replaced by the font's own spacing, and text inside form XObjects, Type 3 fonts and fonts without a character map cannot be edited.
 - No tagged PDF or accessibility checker; no shared review or signature requests.
 
 ## Licence
