@@ -1,4 +1,5 @@
 import asyncio
+import json
 import shutil
 from pathlib import Path
 
@@ -124,6 +125,35 @@ def forget(body: dict) -> dict:
 @router.get("/pdf/actions")
 def action_list() -> dict:
     return {"actions": actions.catalogue()}
+
+
+MEDIA = {".html": "text/html; charset=utf-8", ".rtf": "application/rtf", ".csv": "text/csv; charset=utf-8", ".zip": "application/zip",
+         ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+         ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+
+
+@router.post("/pdf/{doc_id}/act/{name}")
+async def act(doc_id: str, name: str, body: dict) -> Response:
+    a = actions.get(name)
+    if a is None or a.run is None:
+        raise HTTPException(404, f"There is no action {name}")
+    pages, pw = body.get("pages") or None, _pw(doc_id)
+    if a.kind == "change":
+        res = await _derive(doc_id, a.run, args=body, pages=pages, passwords=pw)
+        return Response(json.dumps(res), media_type="application/json")
+    if a.kind == "read":
+        text, data = await _run(a.run, _path(doc_id), args=body, pages=pages, passwords=pw)
+        return Response(json.dumps({"text": text, **(data or {})}, default=str), media_type="application/json")
+    tmp = docs.root() / f".act-{docs.new_id()}{a.ext}"
+    try:
+        got = await _run(a.run, _path(doc_id), tmp, args=body, pages=pages, passwords=pw)
+        data = await asyncio.to_thread(tmp.read_bytes)
+    finally:
+        tmp.unlink(missing_ok=True)
+    stem = Path(docs.meta(doc_id).get("name") or doc_id).stem
+    fname = (got or {}).get("filename") if isinstance(got, dict) else None
+    return Response(data, media_type=MEDIA.get(a.ext, "application/octet-stream"),
+                    headers={"Content-Disposition": f'attachment; filename="{fname or stem + a.ext}"'})
 
 
 @router.post("/pdf/merge")

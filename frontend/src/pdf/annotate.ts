@@ -3,9 +3,17 @@ import type { Annot, Area, Pt, Rect, StampSpec } from './api';
 import { stampSvg } from './stamps';
 import type { PageView, Viewer } from './viewer';
 
-export type Tool = 'select' | 'hand' | 'highlight' | 'underline' | 'strikeout' | 'note' | 'freetext' | 'ink' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'redact' | 'crop' | 'place' | 'form';
+export type Tool = 'select' | 'hand' | 'highlight' | 'underline' | 'strikeout' | 'note' | 'freetext' | 'ink' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'redact' | 'crop' | 'place' | 'form' | 'custom';
 export const MARKUP_TOOLS: readonly Tool[] = ['highlight', 'underline', 'strikeout'];
-export const DRAW_TOOLS: readonly Tool[] = ['note', 'freetext', 'ink', 'rect', 'ellipse', 'line', 'arrow', 'redact', 'crop', 'place', 'form'];
+export const DRAW_TOOLS: readonly Tool[] = ['note', 'freetext', 'ink', 'rect', 'ellipse', 'line', 'arrow', 'redact', 'crop', 'place', 'form', 'custom'];
+export interface PageTool {
+  hint: string;
+  down(pv: PageView, p: { x: number; y: number }, e: PointerEvent): void;
+  move?(pv: PageView, p: { x: number; y: number }, e: PointerEvent): void;
+  up?(pv: PageView, p: { x: number; y: number }, e: PointerEvent): void;
+  key?(e: KeyboardEvent): boolean;
+  cancel?(): void;
+}
 export type Placement = { kind: 'image'; image: string; aspect: number; width: number; label: string; flatten?: boolean } | { kind: 'freetext'; text: string; size: number; label: string }
   | { kind: 'stamp'; spec: StampSpec; color: string; w: number; h: number; label: string; flatten: boolean };
 export interface AnnotHooks { changed(label: string): void; select(id: string | null): void; areas(): void; toolDone(): void; crop(): void }
@@ -122,6 +130,8 @@ export class Annotator {
   style: Style = { color: '#FFD400', width: 2, opacity: 1, size: 12 };
   placement: Placement | null = null;
   flattenComments = false;
+  custom: PageTool | null = null;
+  private customPv: PageView | null = null;
   private layers = new Map<number, HTMLElement>();
   private session: Session | null = null;
   private move: Move | null = null;
@@ -231,6 +241,8 @@ export class Annotator {
   setTool(tool: Tool): void {
     this.commitEdit();
     this.cancel();
+    if (tool !== 'custom' && this.custom) { this.custom.cancel?.(); this.custom = null; }
+    this.customPv = null;
     this.tool = tool;
     if (tool !== 'select') this.select(null);
   }
@@ -289,6 +301,15 @@ export class Annotator {
 
   private down(e: PointerEvent): void {
     if (e.button !== 0 || this.tool === 'form') return;
+    if (this.tool === 'custom') {
+      const pv = this.viewer.pageAtClient(e.clientX, e.clientY);
+      if (!pv || !this.custom) return;
+      e.preventDefault();
+      this.customPv = pv;
+      this.viewer.host.setPointerCapture(e.pointerId);
+      this.custom.down(pv, this.viewer.toPage(pv, e.clientX, e.clientY), e);
+      return;
+    }
     const t = e.target as HTMLElement;
     if (t.closest('.fs-pdf-edit, .fs-pdf-field, .fs-pdf-notepop, .fs-pdf-fbox')) return;
     if (this.editing) this.commitEdit();
@@ -330,6 +351,11 @@ export class Annotator {
   }
 
   private moveTo(e: PointerEvent): void {
+    if (this.tool === 'custom') {
+      const pv = this.customPv ?? this.viewer.pageAtClient(e.clientX, e.clientY);
+      if (pv && this.custom?.move) this.custom.move(pv, this.viewer.toPage(pv, e.clientX, e.clientY), e);
+      return;
+    }
     if (this.pan) {
       this.viewer.scroller.scrollLeft = this.pan.left - (e.clientX - this.pan.x);
       this.viewer.scroller.scrollTop = this.pan.top - (e.clientY - this.pan.y);
@@ -384,6 +410,12 @@ export class Annotator {
 
   private up(e: PointerEvent): void {
     if (this.viewer.host.hasPointerCapture(e.pointerId)) this.viewer.host.releasePointerCapture(e.pointerId);
+    if (this.tool === 'custom') {
+      const pv = this.customPv;
+      this.customPv = null;
+      if (pv && this.custom?.up) this.custom.up(pv, this.viewer.toPage(pv, e.clientX, e.clientY), e);
+      return;
+    }
     if (this.pan) { this.pan = null; return; }
     if (this.move) {
       const m = this.move;

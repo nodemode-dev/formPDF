@@ -64,6 +64,7 @@ export interface ViewerHooks {
   mounted(pv: PageView): void;
   textReady(pv: PageView): void;
   rendered(pv: PageView): void;
+  link?(url: string): void;
 }
 
 export class Viewer {
@@ -471,7 +472,7 @@ export class Viewer {
         node.title = a.url ?? 'Go to destination';
         node.addEventListener('click', (e) => {
           e.preventDefault();
-          if (a.url) window.open(a.url, '_blank', 'noopener,noreferrer');
+          if (a.url) { if (this.hooks.link) this.hooks.link(a.url); else window.open(a.url, '_blank', 'noopener,noreferrer'); }
           else void this.navigate(a.dest);
         });
         return node;

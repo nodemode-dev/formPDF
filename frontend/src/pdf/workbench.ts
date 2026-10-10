@@ -16,7 +16,7 @@ import type { CreateKind } from './intent';
 import { Organizer, type OrgItem } from './organize';
 import { LAYOUTS, Panes, type Ctx, type Doc, type Tab } from './panels';
 import { recall, REFLOW_SIZES, Reflow, remember, Speaker } from './reading';
-import { mountTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
+import { mountTools, pageTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
 import { Thumbs, Viewer, type Layout } from './viewer';
 
 export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void; palette(): void }
@@ -155,9 +155,10 @@ class Workbench {
     this.viewer = new Viewer(center, {
       page: (n) => this.onPage(n),
       zoom: (pct) => { if (document.activeElement !== this.zoomIn) setValue(this.zoomIn, `${pct}%`); },
-      mounted: (pv) => { this.annot.mount(pv); this.fields.mount(pv); this.forms.mount(pv); this.comparer.mount(pv); this.speaker.mount(pv); },
+      mounted: (pv) => { this.annot.mount(pv); this.fields.mount(pv); this.forms.mount(pv); this.comparer.mount(pv); this.speaker.mount(pv); pageTools(pv, this.host); },
       textReady: (pv) => { this.finder.paint(pv); this.speaker.paint(pv); },
       rendered: () => undefined,
+      link: (url) => this.openLink(url),
     });
     center.insertBefore(this.viewer.scroller, q(center, '.fs-pdfwb-find'));
     this.thumbs = new Thumbs(this.viewer);
@@ -628,6 +629,7 @@ class Workbench {
       case 'Mod+0': return run(() => v.applyFit('width'));
     }
     if (typing) return;
+    if (this.annot.tool === 'custom' && this.annot.custom?.key?.(e)) { e.preventDefault(); return; }
     switch (combo) {
       case 'Mod+Z': return run(() => this.undo());
       case 'Shift+Mod+Z': case 'Mod+Y': return run(() => this.redo());
@@ -994,7 +996,23 @@ class Workbench {
   get hasDoc(): boolean { return !!this.doc; }
 
   private toolHost: ToolHost | null = null;
-  private get host(): ToolHost { return (this.toolHost ??= { ctx: this.ctx(), doc: () => this.doc, setTab: (t) => this.setTab(t) }); }
+  private get host(): ToolHost {
+    return (this.toolHost ??= {
+      ctx: this.ctx(),
+      doc: () => this.doc,
+      setTab: (t) => this.setTab(t),
+      useTool: (t) => {
+        const prev = this.annot.custom;
+        if (prev && prev !== t) { prev.cancel?.(); this.annot.custom = null; }
+        this.annot.custom = t;
+        this.setTool(t ? 'custom' : 'select');
+        if (t) setText(q(this.root, '.fs-pdfwb-hint'), t.hint);
+      },
+      activeTool: () => (this.annot.tool === 'custom' ? this.annot.custom : null),
+      bar: (text, choices) => this.bar({ text, tone: 'info', actions: choices.map((c) => ({ label: c.label, kind: c.kind, run: () => c.run() })) }),
+      hideBar: () => this.hideBar(),
+    });
+  }
 
   agentSaved(id: string): void {
     if (this.doc?.id === id) { this.savedId = id; this.syncChrome(); }
@@ -1279,6 +1297,27 @@ class Workbench {
   }
 
   private hideBar(): void { setHidden(q(this.root, '.fs-pdfwb-bar'), true); }
+
+  private openLink(url: string): void {
+    let u: URL | null = null;
+    try { u = new URL(url); } catch { u = null; }
+    if (!u || !['http:', 'https:', 'mailto:'].includes(u.protocol) || (u.protocol === 'mailto:' && /[?&](attach|attachment)=/i.test(u.search))) {
+      toast(`Not opened: ${url.slice(0, 80)} is not a web or email address formpdf opens.`, 'error');
+      return;
+    }
+    const target = u;
+    const host = target.protocol === 'mailto:' ? target.pathname.split('@').pop() ?? '' : target.hostname;
+    const odd = /(^|\.)xn--/i.test(host);
+    this.bar({
+      text: odd ? `This address uses look-alike letters (${host}). Open ${target.href.slice(0, 100)} anyway?` : `Open ${target.href.slice(0, 120)}?`,
+      tone: odd ? 'warn' : 'info',
+      actions: [
+        { label: target.protocol === 'mailto:' ? 'Write email' : 'Open', kind: 'primary', run: () => { this.hideBar(); window.open(target.href, '_blank', 'noopener,noreferrer'); } },
+        { label: 'Copy address', run: () => { this.hideBar(); void navigator.clipboard?.writeText(target.href).then(() => toast('Copied the address')).catch(() => undefined); } },
+        { label: 'Cancel', kind: 'ghost', run: () => this.hideBar() },
+      ],
+    });
+  }
 
   private syncChrome(): void {
     syncTools(this.host);

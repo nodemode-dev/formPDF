@@ -82,6 +82,17 @@ export const pdfApi = {
   recent: () => api.get<{ items: RecentItem[] }>('/api/pdf/recent'),
   forget: (key: string) => api.post<{ ok: boolean }>('/api/pdf/recent/forget', { key }),
   fileUrl: (id: string, download = false) => `${base(id)}/file${download ? '?download=1' : ''}`,
+  async act<T>(id: string, name: string, body: Record<string, unknown> = {}): Promise<T> {
+    const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) { let d = res.statusText; try { d = ((await res.json()) as { detail?: string }).detail ?? d; } catch { d = `${res.status} ${res.statusText}`; } throw new Error(d); }
+    return res.json() as Promise<T>;
+  },
+  async actFile(id: string, name: string, body: Record<string, unknown> = {}): Promise<{ blob: Blob; name: string }> {
+    const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) { let d = res.statusText; try { d = ((await res.json()) as { detail?: string }).detail ?? d; } catch { d = `${res.status} ${res.statusText}`; } throw new Error(d); }
+    const m = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '');
+    return { blob: await res.blob(), name: m?.[1] ?? name };
+  },
   renderUrl: (id: string, page: number, scale: number) => `${base(id)}/render/${page}?scale=${scale.toFixed(3)}`,
   zipUrl: (id: string, scale: number, pages?: string) => `${base(id)}/pages.zip?scale=${scale}${pages && pages.trim() ? `&pages=${encodeURIComponent(pages.trim())}` : ''}`,
   xlsxUrl: (id: string, pages?: string) => `${base(id)}/tables.xlsx${q(pages)}`,
