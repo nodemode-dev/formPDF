@@ -1,4 +1,7 @@
 import { api } from '../io/api';
+import { record } from './recorder';
+
+const rec = <T>(action: string, args: unknown) => (res: T): T => { record(action, args); return res; };
 
 export interface PageSize { w: number; h: number; rotate: number }
 export interface OutlineItem { title: string; page: number | null; level: number }
@@ -21,7 +24,7 @@ export interface ScanCaps { device: string; name: string; sources: string[]; dpi
 export interface ScanRequest { device?: string; address?: string; source: string; dpi: number; color: boolean; ocr: boolean; into?: string; name?: string }
 export interface RecentItem { key: string; id: string; name: string; pages: number; opened: number; path?: string }
 export type FieldType = 'text' | 'checkbox' | 'radio' | 'choice' | 'button' | 'signature';
-export interface Field { name: string; type: FieldType; page: number; x: number; y: number; w: number; h: number; value: string; readonly: boolean; required: boolean; multiline: boolean; on?: string; options?: string[]; maxLen?: number; tooltip?: string; format?: string }
+export interface Field { name: string; type: FieldType; page: number; x: number; y: number; w: number; h: number; value: string; readonly: boolean; required: boolean; multiline: boolean; on?: string; options?: string[]; maxLen?: number; tooltip?: string; format?: string; scripts?: { calculate?: string; format?: string; keystroke?: string; validate?: string }; calcOrder?: number }
 export type NewFieldType = 'text' | 'multiline' | 'checkbox' | 'radio' | 'dropdown' | 'listbox' | 'date' | 'signature';
 export interface NewField {
   id: string; type: NewFieldType; page: number; x: number; y: number; w: number; h: number; name: string; tooltip: string; required: boolean; readonly: boolean;
@@ -95,7 +98,9 @@ export const pdfApi = {
   async act<T>(id: string, name: string, body: Record<string, unknown> = {}): Promise<T> {
     const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!res.ok) { let d = res.statusText; try { d = ((await res.json()) as { detail?: string }).detail ?? d; } catch { d = `${res.status} ${res.statusText}`; } throw new Error(d); }
-    return res.json() as Promise<T>;
+    const out = await res.json() as T;
+    if (out && typeof out === 'object' && 'id' in out && !('text' in out) && !['run_list', 'edit_structure', 'sign'].includes(name)) record(name, body);
+    return out;
   },
   async actFile(id: string, name: string, body: Record<string, unknown> = {}): Promise<{ blob: Blob; name: string }> {
     const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -118,12 +123,12 @@ export const pdfApi = {
   protect: (id: string, body: { password: string; owner?: string; permissions: Record<string, boolean> }) => api.post<Derived>(`${base(id)}/protect`, body),
   unlock: (id: string, password: string) => api.post<Derived>(`${base(id)}/unlock`, { password }),
   redact: (id: string, areas: Area[], look: { color?: string; overlay?: string; mode?: 'content' | 'raster' } = {}) => api.post<Derived>(`${base(id)}/redact`, { areas, ...look }),
-  metadata: (id: string, body: { title?: string; author?: string; subject?: string; keywords?: string; strip?: boolean }) => api.post<Derived>(`${base(id)}/metadata`, body),
-  compress: (id: string, quality: number) => api.post<Derived>(`${base(id)}/compress`, { quality }),
-  pageNumbers: (id: string, body: { position: string; start: number; format: string; size?: number }) => api.post<Derived>(`${base(id)}/page-numbers`, body),
-  watermark: (id: string, body: { text: string; opacity: number; angle: number; size: number; color: string }) => api.post<Derived>(`${base(id)}/watermark`, body),
-  headerFooter: (id: string, body: HeaderFooter) => api.post<Derived>(`${base(id)}/header-footer`, body),
-  crop: (id: string, body: { box?: Rect; margins?: Margins; auto?: boolean; pages?: string }) => api.post<Derived & { cropped: number }>(`${base(id)}/crop`, body),
+  metadata: (id: string, body: { title?: string; author?: string; subject?: string; keywords?: string; strip?: boolean }) => api.post<Derived>(`${base(id)}/metadata`, body).then(rec('metadata', body)),
+  compress: (id: string, quality: number) => api.post<Derived>(`${base(id)}/compress`, { quality }).then(rec('compress', { quality })),
+  pageNumbers: (id: string, body: { position: string; start: number; format: string; size?: number }) => api.post<Derived>(`${base(id)}/page-numbers`, body).then(rec('page_numbers', body)),
+  watermark: (id: string, body: { text: string; opacity: number; angle: number; size: number; color: string }) => api.post<Derived>(`${base(id)}/watermark`, body).then(rec('watermark', body)),
+  headerFooter: (id: string, body: HeaderFooter) => api.post<Derived>(`${base(id)}/header-footer`, body).then(rec('header_footer', body)),
+  crop: (id: string, body: { box?: Rect; margins?: Margins; auto?: boolean; pages?: string }) => api.post<Derived & { cropped: number }>(`${base(id)}/crop`, body).then(rec('crop', body)),
   find: (id: string, body: FindBody) => api.post<{ matches: Match[]; count: number; pages: number; truncated: boolean }>(`${base(id)}/find`, body),
   comments: (id: string) => api.get<{ comments: PdfComment[] }>(`${base(id)}/comments`),
   identities: () => api.get<{ identities: Identity[]; trusted: Identity[] }>('/api/identities'),
@@ -151,7 +156,7 @@ export const pdfApi = {
   reflow: (id: string, pages: string) => api.get<{ pages: ReflowPage[]; total: number; body: number }>(`${base(id)}/reflow${q(pages)}`),
   docxUrl: (id: string, pages?: string) => `${base(id)}/docx${q(pages)}`,
   hidden: (id: string) => api.get<{ items: HiddenItem[] }>(`${base(id)}/hidden`),
-  sanitize: (id: string, remove: string[]) => api.post<Derived & { removed: string[]; flattened: number }>(`${base(id)}/sanitize`, { remove }),
+  sanitize: (id: string, remove: string[]) => api.post<Derived & { removed: string[]; flattened: number }>(`${base(id)}/sanitize`, { remove }).then(rec('sanitize', { remove })),
   form: (id: string, body: { create: Array<Omit<NewField, 'id'>>; rename: Record<string, string>; delete: string[] }) => api.post<Derived & { created: number; renamed: number; deleted: number }>(`${base(id)}/form`, body),
   compare: (id: string, other: string, opts: { otherIsNewer: boolean; pictures: boolean }) => api.post<CompareResult>(`${base(id)}/compare`, { other, ...opts }),
   create(files: File[], opts: CreateOptions): Promise<Opened> {

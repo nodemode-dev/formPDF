@@ -17,7 +17,8 @@ import type { CreateKind } from './intent';
 import { Organizer, type OrgItem } from './organize';
 import { LAYOUTS, Panes, type Ctx, type Doc, type Tab } from './panels';
 import { recall, REFLOW_SIZES, Reflow, remember, Speaker } from './reading';
-import { mountTools, pageTools, renderedTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
+import { loadPlugins } from './plugins';
+import { lateTools, mountTools, pageTools, renderedTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
 import { Thumbs, Viewer, type Layout } from './viewer';
 
 export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void; palette(): void }
@@ -254,11 +255,13 @@ class Workbench {
       { id: 'pdf-palette', label: 'Find a command or tool…', keys: ['Mod+K'], words: ['palette', 'search tools', 'all tools'], run: () => this.opts.app.palette() },
     );
     this.cmds.add(...mountTools(this.panes.root, this.host));
+    lateTools(this.panes.root, this.host, (cmds) => { this.cmds.add(...cmds); syncTools(this.host); });
+    void loadPlugins();
     const menus: MenuDef[] = [
       { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', 'pdf-scan', '-', 'pdf-save', 'pdf-print', '-', 'pdf-close'] },
       { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'pdf-find'] },
       { label: 'View', items: [...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare'] },
-      { label: 'Tools', items: TABS.map(([t]) => `pdf-tab-${t}`) },
+      { label: 'Tools', items: [...TABS.map(([t]) => `pdf-tab-${t}`), '-', 'tool-lists', 'tool-lists-record'] },
       { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
     ];
     this.menubar = new MenuBar(q(this.root, '.fs-pdfwb-menubar'), this.cmds, menus);

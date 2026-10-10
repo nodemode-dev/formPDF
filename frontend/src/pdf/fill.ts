@@ -1,5 +1,8 @@
+import { api } from '../io/api';
 import { el, patchList, setClass } from '../ui/dom';
+import { toast } from '../ui/toast';
 import { pdfApi, type Field } from './api';
+import { asText, buildRules, num, type Rules } from './formcalc';
 import type { PageView, Viewer } from './viewer';
 
 const calc = (v: number): string => `calc(var(--k) * ${Math.round(v * 100) / 100}px)`;
@@ -10,6 +13,7 @@ export class Fields {
   loadedFor = '';
   private carry: Record<string, string> = {};
   private layers = new Map<number, HTMLElement>();
+  private rules: Rules | null = null;
   onChange: () => void = () => undefined;
   onSign: (f: Field) => void = () => undefined;
 
@@ -18,7 +22,10 @@ export class Fields {
   async load(id: string): Promise<void> {
     if (this.loadedFor === id) return;
     const res = await pdfApi.fields(id);
+    const on = await api.settings().then((s) => s.formScripts !== false).catch(() => true);
     this.fields = res.fields;
+    this.rules = on && res.fields.some((f) => f.scripts) ? buildRules(res.fields) : null;
+    if (this.rules?.custom && this.loadedFor !== id) toast(`This form has ${this.rules.custom} custom script${this.rules.custom === 1 ? '' : 's'} that formpdf does not run; standard calculations and formatting work.`);
     this.loadedFor = id;
     this.values.clear();
     for (const [name, v] of Object.entries(this.carry)) if (res.fields.some((f) => f.name === name && f.value !== v)) this.values.set(name, v);
@@ -52,7 +59,8 @@ export class Fields {
       for (const layer of this.layers.values()) {
         const n = layer.querySelector<HTMLInputElement | HTMLTextAreaElement>(`input[data-i="${i}"], textarea[data-i="${i}"]`);
         if (!n) continue;
-        if (n.value !== v) n.value = v;
+        const shown = this.shown(f, v, n);
+        if (n.value !== shown) n.value = shown;
         setClass(n.parentElement as HTMLElement, 'is-changed', this.values.has(name));
       }
     });
@@ -64,7 +72,10 @@ export class Fields {
     if (!layer || !pv.space.contains(layer)) {
       layer = el('<div class="fs-pdf-fields"></div>');
       layer.addEventListener('input', (e) => this.input(e));
-      layer.addEventListener('change', (e) => this.input(e));
+      layer.addEventListener('change', (e) => { this.input(e); this.check(e.target as HTMLElement); });
+      layer.addEventListener('focusin', (e) => this.focus(e.target as HTMLElement, true));
+      layer.addEventListener('focusout', (e) => this.focus(e.target as HTMLElement, false));
+      layer.addEventListener('beforeinput', (e) => this.keystroke(e as InputEvent));
       layer.addEventListener('click', (e) => {
         const b = (e.target as HTMLElement).closest('[data-sign]') as HTMLElement | null;
         const f = b ? this.fields[Number(b.dataset.sign)] : undefined;
@@ -79,6 +90,61 @@ export class Fields {
   renderAll(): void { for (const i of this.layers.keys()) this.render(i); }
 
   private value(f: Field): string { return this.values.get(f.name) ?? f.value; }
+
+  private shown(f: Field, v: string, ctl: Element | null): string {
+    const fmt = this.rules?.format.get(f.name);
+    return fmt && document.activeElement !== ctl ? fmt(v) : v;
+  }
+
+  private ctlField(t: HTMLElement): Field | undefined {
+    return t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement ? this.fields[Number(t.dataset.i)] : undefined;
+  }
+
+  private focus(t: HTMLElement, on: boolean): void {
+    const f = this.ctlField(t);
+    if (!f || !this.rules?.format.has(f.name) || !(t instanceof HTMLInputElement)) return;
+    const v = this.value(f);
+    const want = on ? v : this.shown(f, v, null);
+    if (t.value !== want) t.value = want;
+  }
+
+  private keystroke(e: InputEvent): void {
+    const f = this.ctlField(e.target as HTMLElement);
+    const rule = f ? this.rules?.keystroke.get(f.name) : undefined;
+    if (!rule || e.data == null) return;
+    if (!(rule === 'number' ? /^[0-9.,\-]*$/ : /^[0-9\-() ]*$/).test(e.data)) e.preventDefault();
+  }
+
+  private check(t: HTMLElement): void {
+    const f = this.ctlField(t);
+    const rule = f ? this.rules?.validate.get(f.name) : undefined;
+    if (!f || !rule) return;
+    const msg = rule(this.value(f));
+    const box = t.parentElement as HTMLElement;
+    setClass(box, 'is-invalid', !!msg);
+    const tip = msg ?? (f.tooltip || f.name);
+    if (box.title !== tip) box.title = tip;
+    if (msg) toast(`${f.tooltip || f.name}: ${msg}`, 'error');
+  }
+
+  private recalc(): void {
+    const rules = this.rules;
+    if (!rules?.calc.length) return;
+    const get = (name: string): number => {
+      let total = 0;
+      const done = new Set<string>();
+      for (const f of this.fields) {
+        if ((f.name === name || f.name.startsWith(`${name}.`)) && !done.has(f.name)) { done.add(f.name); total += num(this.current(f.name) ?? ''); }
+      }
+      return total;
+    };
+    for (const c of rules.calc) {
+      const n = c.run(get);
+      if (n === null) continue;
+      const v = asText(n);
+      if (this.current(c.name) !== v) this.setValue(c.name, v);
+    }
+  }
 
   private render(index: number): void {
     const layer = this.layers.get(index);
@@ -121,7 +187,7 @@ export class Fields {
     const v = this.value(f);
     if (ctl instanceof HTMLInputElement) {
       if (ctl.type === 'checkbox' || ctl.type === 'radio') { const on = v === (f.on ?? 'Yes'); if (ctl.checked !== on) ctl.checked = on; }
-      else if (ctl.value !== v && document.activeElement !== ctl) ctl.value = v;
+      else if (document.activeElement !== ctl && ctl.value !== this.shown(f, v, ctl)) ctl.value = this.shown(f, v, ctl);
     } else if ((ctl instanceof HTMLTextAreaElement || ctl instanceof HTMLSelectElement) && ctl.value !== v && document.activeElement !== ctl) ctl.value = v;
     setClass(n, 'is-changed', this.values.has(f.name));
   }
@@ -137,6 +203,7 @@ export class Fields {
     if (v === f.value) this.values.delete(f.name); else this.values.set(f.name, v);
     if (f.type === 'radio') this.renderAll();
     else setClass(t.parentElement as HTMLElement, 'is-changed', this.values.has(f.name));
+    this.recalc();
     this.onChange();
   }
 

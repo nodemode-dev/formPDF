@@ -113,6 +113,24 @@
 .fs-prt-sheet.has-border .fs-prt-page { box-shadow: 0 0 0 1px #000; }
 .fs-prt-mark { position: absolute; background: #000; }
 .fs-note.fs-prt-note { min-height: calc(2 * 1.45em); margin: 0 0 var(--space-2); }
+.fs-pdf-field.is-invalid { outline: 1.5px solid var(--danger); outline-offset: 0; }
+.fs-lists { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: var(--space-3); height: 320px; }
+.fs-lists-names { overflow-y: auto; overscroll-behavior: contain; align-content: start; outline: 0; }
+.fs-lists-names .fs-row.is-selected { background: var(--accent-soft); }
+.fs-lists-names:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 1px; }
+.fs-lists-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.fs-lists-title { font-weight: 600; min-height: 1.45em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-lists-desc { min-height: calc(2 * 1.45em); margin: var(--space-1) 0; }
+.fs-lists-steps { flex: 1 1 auto; min-height: 0; margin: 0; padding-left: 1.4em; overflow-y: auto; }
+.fs-lists-steps > li { margin: 0 0 var(--space-1); }
+.fs-lists-step { display: block; }
+.fs-lists-args { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-11); }
+.fs-lists-help { margin: var(--space-2) 0 0; }
+.fs-plug-out { max-height: 360px; margin: 0; overflow: auto; white-space: pre-wrap; font: var(--fs-12)/1.45 var(--font-mono); }
+.fs-dlg-plugs { display: grid; gap: var(--space-2); min-height: 1.45em; }
+.fs-dlg-plug { align-items: flex-start; }
+.fs-dlg-plug-main { display: grid; min-width: 0; }
+.fs-dlg-plug-say { margin: 0; }
 .fs-cx-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px 32px; gap: var(--space-2); align-items: center; }
 .fs-cx-num { text-align: right; }
 .fs-cx-color { width: 32px; height: 28px; padding: 0; border: 1px solid var(--line-2); border-radius: var(--radius-md); background: transparent; }

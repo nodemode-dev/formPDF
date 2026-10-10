@@ -1,4 +1,5 @@
 import { api } from '../io/api';
+import { loadPlugins, type PluginInfo } from '../pdf/plugins';
 import { VERSION } from '../version';
 import { brandMark } from './brand';
 import { formatKeys, type Command, type Commands } from './commands';
@@ -88,6 +89,7 @@ class PreferencesDialog extends Dialog {
   private readonly lang: HTMLSelectElement;
   private readonly words: HTMLTextAreaElement;
   private readonly tsa: HTMLInputElement;
+  private readonly formScripts: HTMLInputElement;
 
   constructor() {
     super('Preferences', 560);
@@ -108,6 +110,13 @@ class PreferencesDialog extends Dialog {
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Signing</div>
 <label class="fs-field"><span>Timestamp server</span><input class="fs-input fs-dlg-pref-tsa" type="url" spellcheck="false" placeholder="https://… (optional; used only when you tick Add a timestamp)"></label>
 </section>
+<section class="fs-dlg-section"><div class="fs-dlg-section-title">Forms</div>
+<div class="fs-field"><span>Scripts</span><label class="fs-check"><input type="checkbox" data-f="formscripts"><span>Run form calculations, formatting and checks (Acrobat's standard ones only; other scripts never run)</span></label></div>
+</section>
+<section class="fs-dlg-section"><div class="fs-dlg-section-title">Plug-ins</div>
+<p class="fs-note fs-dlg-plug-note">Plug-ins are folders in the Formpdf plugins folder. A plug-in runs code on this computer with formpdf's access to your files, so it stays off until you allow it, and asks again if it changes.</p>
+<div class="fs-dlg-plugs"></div>
+</section>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Agents</div>
 <div class="fs-field"><span>Access</span><label class="fs-check"><input type="checkbox" data-f="agents"><span>Let Claude Code, Codex and Cursor read and edit PDFs</span></label></div>
 </section>
@@ -127,6 +136,13 @@ class PreferencesDialog extends Dialog {
     this.lang = q<HTMLSelectElement>(box, '.fs-dlg-pref-lang');
     this.words = q<HTMLTextAreaElement>(box, '.fs-dlg-pref-words');
     this.tsa = q<HTMLInputElement>(box, '.fs-dlg-pref-tsa');
+    this.formScripts = q<HTMLInputElement>(box, '[data-f="formscripts"]');
+    this.formScripts.addEventListener('change', () => this.persist({ formScripts: this.formScripts.checked }));
+    q(box, '.fs-dlg-plugs').addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      const id = t.closest<HTMLElement>('[data-key]')?.dataset.key;
+      if (id && t.matches('[data-plug]')) void this.allowPlugin(id, t.checked);
+    });
     for (const b of Array.from(this.themes.querySelectorAll<HTMLElement>('[data-theme-id]'))) { b.setAttribute('type', 'button'); b.setAttribute('aria-label', b.title); }
     this.button('Done', 'primary', () => this.close());
     this.themes.addEventListener('click', (e) => {
@@ -144,6 +160,32 @@ class PreferencesDialog extends Dialog {
     this.words.addEventListener('change', () => this.persist({ dictionary: this.words.value.split(/\s*\n\s*/).filter(Boolean) }));
     this.agents.addEventListener('change', () => this.h?.setAgents(this.agents.checked));
     this.tsa.addEventListener('change', () => this.persist({ timestampUrl: this.tsa.value.trim() }));
+  }
+
+  private async allowPlugin(id: string, allowed: boolean): Promise<void> {
+    try {
+      const p = await api.post<PluginInfo>(`/api/plugins/${encodeURIComponent(id)}`, { allowed });
+      toast(allowed ? (p.error ? `${p.name} did not start: ${p.error}` : `${p.name} is on.${p.window ? ' Its window part loads now.' : ''}`) : `${p.name} is off. Its window part leaves at the next start.`, p.error ? 'error' : 'info');
+      if (allowed && !p.error) void loadPlugins();
+    } catch (e) { toast(e instanceof Error ? e.message : String(e), 'error'); }
+    void this.loadPlugs();
+  }
+
+  private async loadPlugs(): Promise<void> {
+    let got: { plugins: PluginInfo[]; folder: string } = { plugins: [], folder: '' };
+    try { got = await api.get('/api/plugins'); } catch { return; }
+    const say = (p: PluginInfo): string => `${p.version ? `${p.version} · ` : ''}${p.state === 'new' ? 'New, not allowed yet' : p.state === 'changed' ? 'Changed since you allowed it; allow it again' : p.state === 'on' ? (p.error ? `Did not start: ${p.error}` : `On${p.actions.length ? ` · actions ${p.actions.join(', ')}` : ''}`) : 'Off'}${p.description ? ` · ${p.description}` : ''}`;
+    const fill = (n: HTMLElement, p: PluginInfo): void => {
+      setText(q(n, '.fs-dlg-plug-name'), p.name);
+      setText(q(n, '.fs-dlg-plug-say'), say(p));
+      setChecked(q<HTMLInputElement>(n, '[data-plug]'), p.state === 'on');
+    };
+    patchList(q(this.body, '.fs-dlg-plugs'), got.plugins, {
+      key: (p) => p.id,
+      create: (p) => { const n = el('<label class="fs-check fs-dlg-plug"><input type="checkbox" data-plug><span class="fs-dlg-plug-main"><span class="fs-dlg-plug-name"></span><span class="fs-note fs-dlg-plug-say"></span></span></label>'); fill(n, p); return n; },
+      update: fill,
+    });
+    setText(q(this.body, '.fs-dlg-plug-note'), `Plug-ins are folders in ${got.folder}. A plug-in runs code on this computer with formpdf's access to your files, so it stays off until you allow it, and asks again if it changes.${got.plugins.length ? '' : ' There are none yet.'}`);
   }
 
   private persist(patch: Settings): void {
@@ -170,9 +212,11 @@ class PreferencesDialog extends Dialog {
     this.syncLook();
     setChecked(this.agents, h.agentsAllowed());
     this.open(this.themes.querySelector<HTMLElement>('.is-active'));
+    void this.loadPlugs();
     void api.settings().catch((): Settings => ({})).then((s) => {
       setValue(this.author, str(s.author));
       setValue(this.tsa, str(s.timestampUrl));
+      setChecked(this.formScripts, s.formScripts !== false);
       segSet(this.units, str(s.units) || 'pt');
       const words = Array.isArray(s.dictionary) ? (s.dictionary as unknown[]).map(String).join('\n') : '';
       if (this.words.value !== words) this.words.value = words;

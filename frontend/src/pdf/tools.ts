@@ -48,9 +48,16 @@ export const TAB_WORDS: Record<Tab, string[]> = {
 const TOOLS: Tool[] = [];
 const mounted = new Map<string, HTMLElement>();
 
+let late: { panes: HTMLElement; host: ToolHost; add: (cmds: Command[]) => void } | null = null;
+
 export function registerTool(tool: Tool): void {
   if (TOOLS.some((t) => t.id === tool.id)) throw new Error(`duplicate tool: ${tool.id}`);
   TOOLS.push(tool);
+  if (late) late.add(mountTools(late.panes, late.host).filter((c) => (tool.commands?.(late!.host) ?? []).some((x) => x.id === c.id)));
+}
+
+export function lateTools(panes: HTMLElement, host: ToolHost, add: (cmds: Command[]) => void): void {
+  late = { panes, host, add };
 }
 
 export function tools(): readonly Tool[] { return TOOLS; }
