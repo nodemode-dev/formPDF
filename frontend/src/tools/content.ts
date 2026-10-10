@@ -12,8 +12,9 @@ import { plain, TextEditor, type Font, type Geo, type Para } from './richtext';
 type Crop = { l: number; t: number; r: number; b: number };
 interface Item { id: string; kind: 'text' | 'picture'; page: number; x: number; y: number; w: number; h: number; rot?: number; flipH?: boolean; flipV?: boolean; z: number; font?: Font; paras?: Para[]; crop?: Crop; iw?: number; ih?: number; merged?: boolean }
 interface Pic { page: number; op: number; x: number; y: number; w: number; h: number; rot: number; flipV: boolean; iw: number; ih: number }
-type Kind = 'text' | 'picture' | 'pic' | 'comment';
-interface Obj { key: string; kind: Kind; page: number; g: Geo; item?: Item; pic?: Pic; annot?: Annot }
+interface Txt { page: number; key: string; x: number; y: number; w: number; h: number; rot: number; font: Font; paras: Para[]; text: string; editable: boolean; fontName: string }
+type Kind = 'text' | 'picture' | 'pic' | 'ptext' | 'comment';
+interface Obj { key: string; kind: Kind; page: number; g: Geo; item?: Item; pic?: Pic; txt?: Txt; annot?: Annot }
 type Pt = { x: number; y: number };
 interface Drag { kind: 'move' | 'resize' | 'rotate' | 'crop' | 'width'; page: number; p0: Pt; handle: string; base: Map<string, Geo>; crop0: Crop; moved: boolean }
 type Mode = 'idle' | 'select' | 'text' | 'picture';
@@ -25,6 +26,8 @@ const STATE_CMD: Record<string, string> = { b: 'bold', i: 'italic', u: 'underlin
 
 let items: Item[] = [];
 let pics: Pic[] = [];
+let txts: Txt[] = [];
+let pending = 0;
 let loadedFor = '';
 const loaded = new Set<number>();
 const queued = new Set<number>();
@@ -47,6 +50,17 @@ const waiters = new Map<number, Array<() => void>>();
 const rad = (d: number): number => (d * Math.PI) / 180;
 const rot = (v: Pt, deg: number): Pt => { const r = rad(deg), c = Math.cos(r), s = Math.sin(r); return { x: v.x * c - v.y * s, y: v.x * s + v.y * c }; };
 const geoOfItem = (it: Item): Geo => ({ x: it.x, y: it.y, w: it.w, h: it.h, rot: it.rot ?? 0 });
+const txtKey = (t: Txt): string => `t:${t.page}:${t.key}`;
+const isText = (o: Obj): boolean => o.kind === 'text' || o.kind === 'ptext';
+const isEngine = (o: Obj): boolean => o.kind === 'text' || o.kind === 'picture' || o.kind === 'pic' || o.kind === 'ptext';
+const textOf = (o: Obj): { font: Font; paras: Para[] } | null => o.item?.font && o.item.paras ? { font: o.item.font, paras: o.item.paras } : o.txt ? { font: o.txt.font, paras: o.txt.paras } : null;
+
+function convKey(k: string): string {
+  if (k.startsWith('p:')) return k.slice(2);
+  if (!k.startsWith('t:')) return '';
+  const [page, ...rest] = k.slice(2).split(':');
+  return `${page}:t${rest.join(':')}`;
+}
 
 function bbox(g: Geo): { x: number; y: number; w: number; h: number } {
   const r = rad(g.rot), bw = g.w * Math.abs(Math.cos(r)) + g.h * Math.abs(Math.sin(r)), bh = g.w * Math.abs(Math.sin(r)) + g.h * Math.abs(Math.cos(r));
@@ -74,6 +88,7 @@ function objects(page: number, host: ToolHost): Obj[] {
   for (const p of pics) if (p.page === page) out.push({ key: `p:${p.page}:${p.op}`, kind: 'pic', page, g: { x: p.x, y: p.y, w: p.w, h: p.h, rot: p.rot }, pic: p });
   for (const it of items.filter((x) => x.page === page).sort((a, b) => a.z - b.z)) out.push({ key: `i:${it.id}`, kind: it.kind, page, g: geoOfItem(it), item: it });
   if (mode === 'select') {
+    for (const t of txts) if (t.page === page) out.push({ key: txtKey(t), kind: 'ptext', page, g: { x: t.x, y: t.y, w: t.w, h: t.h, rot: t.rot }, txt: t });
     for (const a of host.ctx.annot.items) if (a.page === page && a.kind !== 'reply') out.push({ key: `c:${a.id}`, kind: 'comment', page, g: { ...bounds(a), rot: 0 }, annot: a });
   }
   return out;
@@ -85,7 +100,8 @@ function allSelected(host: ToolHost): Obj[] {
     const it = k.startsWith('i:') ? items.find((x) => x.id === k.slice(2)) : null;
     const pic = k.startsWith('p:') ? pics.find((x) => `p:${x.page}:${x.op}` === k) : null;
     const a = k.startsWith('c:') ? host.ctx.annot.items.find((x) => x.id === k.slice(2)) : null;
-    const page = it?.page ?? pic?.page ?? a?.page;
+    const t = k.startsWith('t:') ? txts.find((x) => txtKey(x) === k) : null;
+    const page = it?.page ?? pic?.page ?? a?.page ?? t?.page;
     if (page) pages.add(page);
   }
   const out: Obj[] = [];
@@ -98,7 +114,7 @@ const geo = (o: Obj): Geo => preview.get(o.key) ?? o.g;
 function handlesFor(o: Obj, single: boolean): string {
   if (!single || o.kind === 'comment') return '';
   if (cropping === o.key) return ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((h) => `<span class="fs-cx-h is-crop" data-h="${h}"></span>`).join('');
-  const list = o.kind === 'text' ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+  const list = isText(o) ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
   return list.map((h) => `<span class="fs-cx-h" data-h="${h}"></span>`).join('') + '<span class="fs-cx-h is-rot" data-h="rot"></span>';
 }
 
@@ -145,12 +161,13 @@ async function flush(): Promise<void> {
   if (!host || !d || !pages.length) { flushing = false; return; }
   for (const p of pages) loaded.add(p);
   try {
-    const got = await pdfApi.act<{ items: Item[]; pictures: Pic[] }>(d.id, 'items', { pages: pages.join(',') });
+    const got = await pdfApi.act<{ items: Item[]; pictures: Pic[]; paragraphs?: Txt[] }>(d.id, 'items', { pages: pages.join(',') });
     if (host.doc()?.id !== d.id) { flushing = false; return; }
     const set = new Set(pages);
     items = [...items.filter((x) => !set.has(x.page)), ...got.items];
     pics = [...pics.filter((x) => !set.has(x.page)), ...got.pictures];
-    sel = sel.filter((k) => !k.startsWith('p:') || pics.some((x) => `p:${x.page}:${x.op}` === k));
+    txts = [...txts.filter((x) => !set.has(x.page)), ...(got.paragraphs ?? [])];
+    if (!pending) sel = sel.filter((k) => (!k.startsWith('p:') || pics.some((x) => `p:${x.page}:${x.op}` === k)) && (!k.startsWith('t:') || txts.some((x) => txtKey(x) === k)));
   } catch { for (const p of pages) loaded.delete(p); }
   flushing = false;
   if (queued.size) want([...queued][0]);
@@ -160,10 +177,10 @@ async function flush(): Promise<void> {
 
 function reload(host: ToolHost): void {
   const d = host.doc();
-  if (!d) { items = []; pics = []; loaded.clear(); loadedFor = ''; return; }
+  if (!d) { items = []; pics = []; txts = []; loaded.clear(); loadedFor = ''; return; }
   if (loadedFor === d.id) return;
   const keep = [...loaded];
-  if (loadedFor && d.key !== keyOf) { items = []; pics = []; sel = []; }
+  if (loadedFor && d.key !== keyOf) { items = []; pics = []; txts = []; sel = []; }
   loadedFor = d.id;
   keyOf = d.key;
   loaded.clear();
@@ -187,19 +204,22 @@ async function act(host: ToolHost, body: Record<string, unknown>, label: string,
   if (!d) return null;
   let out: (Derived & { ids?: string[]; converted?: Record<string, string> }) | null = null;
   await host.ctx.run(busy, async () => {
+    pending++;
     try {
       const res = await pdfApi.act<Derived & { ids?: string[]; converted?: Record<string, string> }>(d.id, 'edit_items', body);
       const painted = page ? waitRender(page) : null;
       await host.ctx.commit(res, label);
       out = res;
       if (painted) await painted;
-    } catch (err) { toast((err as Error).message, 'error'); }
+    } catch (err) { toast((err as Error).message, 'error'); } finally { pending--; }
   });
   return out;
 }
 
 function ref(o: Obj): Record<string, unknown> {
-  return o.item ? { id: o.item.id, page: o.page } : { page: o.page, picture: o.pic?.op };
+  if (o.item) return { id: o.item.id, page: o.page };
+  if (o.txt) return { page: o.page, paragraph: o.txt.key };
+  return { page: o.page, picture: o.pic?.op };
 }
 
 function adopt(changes: Map<string, Geo>, res: { converted?: Record<string, string> }, extra: Partial<Item> = {}): void {
@@ -213,14 +233,21 @@ function adopt(changes: Map<string, Geo>, res: { converted?: Record<string, stri
       if (!id || !p) continue;
       pics = pics.filter((x) => x !== p);
       items = [...items, { id, kind: 'picture', page: p.page, x: g.x, y: g.y, w: g.w, h: g.h, rot: g.rot, flipV: p.flipV, z: 0, crop: { ...NO_CROP }, ...extra }];
+    } else if (k.startsWith('t:')) {
+      const id = res.converted?.[convKey(k)];
+      const t = txts.find((x) => txtKey(x) === k);
+      if (!id || !t) continue;
+      txts = txts.filter((x) => x !== t);
+      items = [...items, { id, kind: 'text', page: t.page, x: g.x, y: g.y, w: g.w, h: t.h, rot: g.rot, z: 0, font: t.font, paras: t.paras, ...extra }];
     }
   }
 }
 
 function remap(res: { converted?: Record<string, string> } | null): void {
   if (!res?.converted) return;
-  sel = sel.map((k) => (k.startsWith('p:') && res.converted?.[k.slice(2)] ? `i:${res.converted[k.slice(2)]}` : k));
-  if (cropping?.startsWith('p:') && res.converted[cropping.slice(2)]) cropping = `i:${res.converted[cropping.slice(2)]}`;
+  const conv = (k: string): string => { const c = res.converted?.[convKey(k)]; return c ? `i:${c}` : k; };
+  sel = sel.map(conv);
+  if (cropping) cropping = conv(cropping);
 }
 
 async function applyGeo(host: ToolHost, changes: Map<string, Geo>, label: string): Promise<void> {
@@ -232,7 +259,7 @@ async function applyGeo(host: ToolHost, changes: Map<string, Geo>, label: string
       host.ctx.annot.update(o.annot.id, shifted(o.annot, g.x - o.g.x, g.y - o.g.y), label);
     } else {
       const u: Record<string, unknown> = { ...ref(o), x: round(g.x), y: round(g.y), rot: round(g.rot) };
-      if (o.kind !== 'text') { u.w = round(g.w); u.h = round(g.h); } else if (Math.abs(g.w - o.g.w) > 0.01) u.w = round(g.w);
+      if (!isText(o)) { u.w = round(g.w); u.h = round(g.h); } else if (Math.abs(g.w - o.g.w) > 0.01) u.w = round(g.w);
       updates.push(u);
     }
   }
@@ -259,7 +286,7 @@ function pick(o: Obj | null, add: boolean): void {
 
 function hit(page: number, p: Pt, host: ToolHost): Obj | null {
   const list = objects(page, host);
-  const sorted = [...list.filter((o) => o.kind === 'comment'), ...list.filter((o) => o.kind === 'text' || o.kind === 'picture').reverse(), ...list.filter((o) => o.kind === 'pic').reverse()];
+  const sorted = [...list.filter((o) => o.kind === 'comment'), ...list.filter((o) => o.kind === 'text' || o.kind === 'picture').reverse(), ...list.filter((o) => o.kind === 'ptext'), ...list.filter((o) => o.kind === 'pic').reverse()];
   return sorted.find((o) => inside(geo(o), p)) ?? null;
 }
 
@@ -269,11 +296,15 @@ async function editText(host: ToolHost, o: Obj | null, page: number, g: Geo): Pr
   const pv = host.ctx.viewer.pages[page - 1];
   if (!pv) return;
   const it = o?.item;
-  const f = it?.font ? { ...it.font } : { ...font };
+  const t = o?.txt;
+  if (t && !t.editable) { toast('This text has no character mapping in the PDF, so it cannot be edited as text. Recognise text (OCR) can replace it.', 'error'); return; }
+  const src = o ? textOf(o) : null;
+  const f = src ? { ...src.font } : { ...font };
   editing = { key: o?.key ?? null, page, geo: g, font0: JSON.stringify(f), busy: false };
   const size = host.ctx.viewer.sizes[page - 1] ?? { w: 612, h: 792 };
-  const under = it ? `/api/pdf/${encodeURIComponent(d.id)}/items/under?page=${page}&id=${encodeURIComponent(it.id)}&scale=2` : null;
-  await editor.show({ page: pv.space, geo: g, font: f, paras: it?.paras ?? [{ align: 'left', list: 'none', level: 0, runs: [{ t: '' }] }], under, pageW: size.w, pageH: size.h });
+  const base = `/api/pdf/${encodeURIComponent(d.id)}/items/under?page=${page}&scale=2`;
+  const under = it ? `${base}&id=${encodeURIComponent(it.id)}` : t ? `${base}&paragraph=${encodeURIComponent(t.key)}` : null;
+  await editor.show({ page: pv.space, geo: g, font: f, paras: src?.paras ?? [{ align: 'left', list: 'none', level: 0, runs: [{ t: '' }] }], under, pageW: size.w, pageH: size.h });
   sync();
 }
 
@@ -284,12 +315,19 @@ async function finishEdit(host: ToolHost): Promise<void> {
   const paras = editor.value();
   const f = { ...editor.font };
   const item = e.key ? items.find((x) => `i:${x.id}` === e.key) : undefined;
+  const txt = e.key ? txts.find((x) => txtKey(x) === e.key) : undefined;
   const empty = !plain(paras).trim();
   const same = !editor.changed() && JSON.stringify(f) === e.font0;
-  if ((same && item) || (empty && !item)) { editor.close(); editing = null; repaint(); return; }
+  if ((same && (item || txt)) || (empty && !item && !txt)) { editor.close(); editing = null; repaint(); return; }
   editor.freeze();
   let res: Awaited<ReturnType<typeof act>> = null;
-  if (empty && item) res = await act(host, { remove: [{ id: item.id, page: item.page }] }, 'Delete page text', 'Deleting', e.page);
+  if (txt) {
+    const r = { page: txt.page, paragraph: txt.key };
+    res = await act(host, empty ? { remove: [r] } : { update: [{ ...r, font: f, paras }] }, empty ? 'Delete page text' : 'Edit page text', empty ? 'Deleting' : 'Saving text', e.page);
+    const id = res?.converted?.[convKey(e.key ?? '')];
+    if (res) txts = txts.filter((x) => x !== txt);
+    if (id && !empty) sel = [`i:${id}`];
+  } else if (empty && item) res = await act(host, { remove: [{ id: item.id, page: item.page }] }, 'Delete page text', 'Deleting', e.page);
   else if (item) res = await act(host, { update: [{ id: item.id, page: item.page, font: f, paras }] }, 'Edit page text', 'Saving text', e.page);
   else res = await act(host, { add: [{ kind: 'text', page: e.page, x: round(e.geo.x), y: round(e.geo.y), w: round(e.geo.w), rot: 0, font: f, paras }] }, 'Add page text', 'Adding text', e.page);
   if (res?.ids?.length) sel = [`i:${res.ids[0]}`];
@@ -310,14 +348,14 @@ function selectTool(host: ToolHost): PageTool {
       const o = handle ? allSelected(host).find((x) => x.page === page) ?? null : hit(page, p, host);
       const dbl = !!o && o.key === lastDown.key && now - lastDown.t < 450 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 6;
       lastDown = { t: now, x: e.clientX, y: e.clientY, key: o?.key ?? '' };
-      if (dbl && o && o.kind === 'text') { sel = [o.key]; void editText(host, o, page, geo(o)); return; }
+      if (dbl && o && isText(o)) { sel = [o.key]; void editText(host, o, page, geo(o)); return; }
       if (dbl && o && (o.kind === 'picture' || o.kind === 'pic')) { startCrop(host, o.key); return; }
       if (!handle) pick(o, e.shiftKey);
       if (!o) return;
       const base = new Map<string, Geo>();
       for (const s of allSelected(host)) base.set(s.key, { ...geo(s) });
       const crop0 = (o.item?.crop ?? NO_CROP);
-      const kind: Drag['kind'] = handle === 'rot' ? 'rotate' : handle ? (cropping === o.key ? 'crop' : o.kind === 'text' ? 'width' : 'resize') : 'move';
+      const kind: Drag['kind'] = handle === 'rot' ? 'rotate' : handle ? (cropping === o.key ? 'crop' : isText(o) ? 'width' : 'resize') : 'move';
       if (!sel.includes(o.key)) return;
       drag = { kind, page, p0: p, handle: handle ?? '', base, crop0: { ...crop0 }, moved: false };
     },
@@ -433,7 +471,7 @@ function key(host: ToolHost, e: KeyboardEvent): boolean {
   if (arrow[e.key] && sel.length) { void nudge(host, arrow[e.key]); return true; }
   if (e.key === 'Enter' && sel.length === 1) {
     const o = allSelected(host)[0];
-    if (o?.kind === 'text') { void editText(host, o, o.page, geo(o)); return true; }
+    if (o && isText(o)) { void editText(host, o, o.page, geo(o)); return true; }
   }
   return false;
 }
@@ -448,7 +486,7 @@ async function nudge(host: ToolHost, d: Pt): Promise<void> {
 
 async function remove(host: ToolHost): Promise<void> {
   const objs = allSelected(host);
-  const engine = objs.filter((o) => o.kind === 'text' || o.kind === 'picture' || o.kind === 'pic').map(ref);
+  const engine = objs.filter(isEngine).map(ref);
   for (const o of objs) {
     if (o.annot) host.ctx.annot.remove(o.annot.id);
   }
@@ -460,7 +498,7 @@ async function remove(host: ToolHost): Promise<void> {
 
 async function arrange(host: ToolHost, to: 'front' | 'back' | 'forward' | 'backward'): Promise<void> {
   const objs = allSelected(host);
-  const engine = objs.filter((o) => o.kind === 'text' || o.kind === 'picture' || o.kind === 'pic');
+  const engine = objs.filter(isEngine);
   const notes = objs.filter((o) => o.annot);
   if (notes.length) {
     const list = [...host.ctx.annot.items];
@@ -503,6 +541,11 @@ async function pictureEdit(host: ToolHost, how: string): Promise<void> {
   const objs = allSelected(host).filter((o) => o.kind === 'picture' || o.kind === 'pic');
   if (!objs.length) return;
   if (how === 'crop') { if (cropping) await finishCrop(host, true); else startCrop(host, objs[0].key); return; }
+  if (how === 'replace') {
+    const o = objs[0];
+    readPicture((pic) => void act(host, { update: [{ ...ref(o), data: pic.data }] }, 'Replace picture', 'Replacing picture', o.page).then((res) => { remap(res); repaint(); }));
+    return;
+  }
   const updates = objs.map((o) => {
     const g = o.g;
     const u: Record<string, unknown> = { ...ref(o) };
@@ -535,7 +578,7 @@ async function textFormat(host: ToolHost, what: string, value?: string): Promise
     sync();
     return;
   }
-  const texts = allSelected(host).filter((o) => o.kind === 'text' && o.item);
+  const texts = allSelected(host).filter((o) => isText(o) && textOf(o));
   if (!texts.length) {
     if (what === 'family') font.family = value as Font['family'];
     if (what === 'size') font.size = Math.max(4, Math.min(288, Number(value) || 12));
@@ -545,9 +588,9 @@ async function textFormat(host: ToolHost, what: string, value?: string): Promise
     return;
   }
   const updates = texts.map((o) => {
-    const it = o.item as Item;
-    const f = { ...(it.font ?? font) };
-    let paras = it.paras ?? [];
+    const src = textOf(o) as { font: Font; paras: Para[] };
+    const f = { ...src.font };
+    let paras = src.paras;
     if (what === 'family') f.family = value as Font['family'];
     else if (what === 'size') f.size = Math.max(4, Math.min(288, Number(value) || 12));
     else if (what === 'line') f.lineHeight = Number(value) || 1.25;
@@ -559,9 +602,11 @@ async function textFormat(host: ToolHost, what: string, value?: string): Promise
       const on = paras.every((p) => p.runs.every((r) => !r.t.trim() || r[k]));
       paras = paras.map((p) => ({ ...p, runs: p.runs.map((r) => { const n = { ...r, [k]: !on }; if (!on && k === 'sup') n.sub = false; if (!on && k === 'sub') n.sup = false; return n; }) }));
     }
-    return { id: it.id, page: it.page, font: f, paras };
+    return { ...ref(o), font: f, paras };
   });
-  await act(host, { update: updates }, 'Format page text', 'Formatting');
+  const res = await act(host, { update: updates }, 'Format page text', 'Formatting');
+  if (res) txts = txts.filter((t) => !res.converted?.[convKey(txtKey(t))]);
+  remap(res);
   repaint();
 }
 
@@ -638,6 +683,10 @@ function pictureTool(host: ToolHost): PageTool {
 }
 
 function choosePicture(host: ToolHost): void {
+  readPicture((pic) => { picture = pic; setMode(host, 'picture'); });
+}
+
+function readPicture(done: (pic: { data: string; w: number; h: number; name: string }) => void): void {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/png,image/jpeg,image/gif,image/webp,image/bmp,image/tiff';
@@ -649,7 +698,7 @@ function choosePicture(host: ToolHost): void {
     r.onload = () => {
       const data = String(r.result);
       const img = new Image();
-      img.onload = () => { picture = { data, w: img.naturalWidth || 400, h: img.naturalHeight || 300, name: f.name }; setMode(host, 'picture'); };
+      img.onload = () => done({ data, w: img.naturalWidth || 400, h: img.naturalHeight || 300, name: f.name });
       img.onerror = () => toast(`${f.name} is not a picture formpdf can read`, 'error');
       img.src = data;
     };
@@ -663,7 +712,7 @@ function sync(): void {
   if (!root || !host) return;
   for (const b of Array.from(root.querySelectorAll<HTMLElement>('[data-m]'))) setClass(b, 'is-active', b.dataset.m === mode);
   const objs = allSelected(host);
-  const texts = objs.filter((o) => o.kind === 'text');
+  const texts = objs.filter(isText);
   const picsSel = objs.filter((o) => o.kind === 'picture' || o.kind === 'pic');
   const engine = objs;
   const samePage = new Set(objs.map((o) => o.page)).size <= 1;
@@ -675,7 +724,12 @@ function sync(): void {
   for (const b of Array.from(root.querySelectorAll<HTMLButtonElement>('[data-a]'))) setDisabled(b, !samePage || objs.length < (b.dataset.a?.startsWith('dist') ? 3 : 2) || !!editing);
   setDisabled(q<HTMLButtonElement>(root, '[data-t="delete"]'), !objs.length || !!editing);
   setDisabled(q<HTMLButtonElement>(root, '[data-t="convert"]'), !objs.some((o) => o.annot?.kind === 'freetext') || !!editing);
-  const f = editing ? editor.font : texts[0]?.item?.font ?? font;
+  const first = texts[0] ? textOf(texts[0]) : null;
+  const f = editing ? editor.font : first?.font ?? font;
+  const orig = (f as Font & { orig?: { name: string } }).orig?.name;
+  const label = { sans: 'Inter', serif: 'Noto Serif', mono: 'JetBrains Mono' }[f.family] ?? 'Inter';
+  const fontNote = orig ? ` Font: ${orig} from the document (missing letters use ${label}).`
+    : texts.some((o) => o.kind === 'ptext') ? ` Font: ${label}, as the document's font cannot be reused.` : '';
   const fam = q<HTMLSelectElement>(root, '[data-f="family"]');
   if (fam.value !== f.family) fam.value = f.family;
   const size = q<HTMLInputElement>(root, '[data-f="size"]');
@@ -683,8 +737,17 @@ function sync(): void {
   const color = q<HTMLInputElement>(root, '[data-f="color"]');
   if (color.value.toLowerCase() !== f.color.toLowerCase()) color.value = f.color.toLowerCase();
   const line = q<HTMLSelectElement>(root, '[data-f="line"]');
-  if (line.value !== String(f.lineHeight)) line.value = String(f.lineHeight);
-  const paras = editing ? null : texts[0]?.item?.paras;
+  if (line.value !== String(f.lineHeight)) {
+    const lh = String(f.lineHeight);
+    if (!Array.from(line.options).some((o) => o.value === lh)) {
+      const opt = line.querySelector<HTMLOptionElement>('option[data-custom]') ?? line.appendChild(document.createElement('option'));
+      opt.dataset.custom = '1';
+      opt.value = lh;
+      opt.textContent = (Math.round(f.lineHeight * 100) / 100).toFixed(2);
+    }
+    line.value = lh;
+  }
+  const paras = editing ? null : first?.paras;
   const alignNow = editing ? editor.align() : paras?.[0]?.align ?? '';
   const listNow = editing ? editor.list() : paras?.[0]?.list ?? '';
   for (const b of Array.from(root.querySelectorAll<HTMLElement>('[data-f="align"]'))) setClass(b, 'is-active', textOn && b.dataset.v === alignNow);
@@ -696,11 +759,11 @@ function sync(): void {
   }
   const n = objs.length;
   setText(q(root, '[data-t="note"]'),
-    editing ? 'Type the text. Format it with the controls below. Click outside it or press Esc when done.'
+    editing ? `Type, then click outside or press Esc.${fontNote}`
       : cropping ? 'Drag the handles to crop. Enter keeps the crop, Esc cancels.'
         : mode === 'text' ? 'Click on the page where the text goes.'
           : mode === 'picture' ? 'Click on the page where the picture goes.'
-            : mode === 'select' ? (n ? `${n} selected${!samePage ? ' on more than one page' : ''}. Drag to move, use the handles to resize or rotate.` : 'Click text, a picture or a comment to select it; Shift-click selects more.')
+            : mode === 'select' ? (n ? `${n} selected${!samePage ? ' on more than one page' : ''}. Drag to move; double-click text to edit.${fontNote}` : 'Click any text, a picture or a comment to select it; Shift-click selects more.')
               : 'Add text and pictures that stay editable, or select what is on the page to move, resize, rotate, crop, arrange and align it.');
 }
 
@@ -712,7 +775,7 @@ registerTool({
   title: 'Text and pictures',
   words: ['add text', 'edit text', 'add picture', 'image', 'crop picture', 'rotate picture', 'flip', 'arrange', 'bring to front', 'send to back', 'align objects', 'distribute', 'page text', 'list', 'justify'],
   section: () => `<div class="fs-seg is-quiet fs-tool-seg" role="group" aria-label="Text and pictures"><button type="button" data-m="select">${icon('cursor', 14)}Select</button><button type="button" data-m="text">${icon('textBox', 14)}Add text</button><button type="button" data-m="picture">${icon('image', 14)}Add picture</button></div>
-<p class="fs-note fs-tool-note" data-t="note"></p>
+<p class="fs-note fs-tool-note fs-cx-note" data-t="note"></p>
 <div class="fs-cx-group" data-g="text">
 <div class="fs-cx-row"><select class="fs-tool-unit" data-f="family" aria-label="Font"><option value="sans">Inter</option><option value="serif">Noto Serif</option><option value="mono">JetBrains Mono</option></select><input class="fs-input fs-cx-num" type="number" min="4" max="288" step="0.5" data-f="size" aria-label="Font size"><input class="fs-cx-color" type="color" data-f="color" aria-label="Text colour" title="Text colour"></div>
 <div class="fs-cx-btns">${btn('data-f="run" data-v="b"', 'bold', 'Bold')}${btn('data-f="run" data-v="i"', 'italic', 'Italic')}${btn('data-f="run" data-v="u"', 'underline', 'Underline')}${btn('data-f="run" data-v="s"', 'strike', 'Strike through')}${btn('data-f="run" data-v="sup"', 'superscript', 'Superscript')}${btn('data-f="run" data-v="sub"', 'subscript', 'Subscript')}</div>
@@ -720,7 +783,7 @@ registerTool({
 <label class="fs-field is-stack fs-tool-field"><span>Line spacing</span><select class="fs-tool-unit" data-f="line" aria-label="Line spacing"><option value="1">1.0</option><option value="1.15">1.15</option><option value="1.25">1.25</option><option value="1.5">1.5</option><option value="2">2.0</option></select></label>
 </div>
 <div class="fs-pdfwb-subhead">Picture</div>
-<div class="fs-cx-btns" data-g="picture">${btn('data-p="left"', 'undo', 'Rotate left')}${btn('data-p="right"', 'redo', 'Rotate right')}${btn('data-p="flipH"', 'flipH', 'Flip horizontally')}${btn('data-p="flipV"', 'flipV', 'Flip vertically')}${btn('data-p="crop"', 'crop', 'Crop (Enter keeps it)')}<button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-p="uncrop">Reset crop</button></div>
+<div class="fs-cx-btns" data-g="picture">${btn('data-p="left"', 'undo', 'Rotate left')}${btn('data-p="right"', 'redo', 'Rotate right')}${btn('data-p="flipH"', 'flipH', 'Flip horizontally')}${btn('data-p="flipV"', 'flipV', 'Flip vertically')}${btn('data-p="crop"', 'crop', 'Crop (Enter keeps it)')}<button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-p="uncrop">Reset crop</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-p="replace">Replace…</button></div>
 <div class="fs-pdfwb-subhead">Arrange</div>
 <div class="fs-cx-btns">${btn('data-z="front"', 'bringFront', 'Bring to front')}${btn('data-z="forward"', 'bringForward', 'Bring forward')}${btn('data-z="backward"', 'sendBackward', 'Send backward')}${btn('data-z="back"', 'sendBack', 'Send to back')}</div>
 <div class="fs-pdfwb-subhead">Align and distribute</div>
@@ -762,7 +825,7 @@ registerTool({
   },
   sync: (_root, host) => {
     const d = host.doc();
-    if (!d) { if (mode !== 'idle') mode = 'idle'; items = []; pics = []; sel = []; loaded.clear(); loadedFor = ''; return; }
+    if (!d) { if (mode !== 'idle') mode = 'idle'; items = []; pics = []; txts = []; sel = []; loaded.clear(); loadedFor = ''; return; }
     if (d.id !== loadedFor && mode !== 'idle') reload(host);
     if (mode !== 'idle' && host.activeTool() === null && !editing) { mode = 'idle'; sel = []; cropping = null; layers.repaint(); }
     sync();

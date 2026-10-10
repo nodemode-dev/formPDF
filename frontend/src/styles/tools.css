@@ -57,6 +57,7 @@
 .fs-cx-h.is-crop { border-radius: 0; background: var(--accent-color); }
 .fs-cx-full { position: absolute; box-sizing: border-box; outline: 1px dashed rgba(0, 0, 0, 0.45); background: rgba(0, 0, 0, 0.06); }
 .fs-cx-group { display: grid; gap: var(--space-2); }
+.fs-tool-note.fs-cx-note { min-height: calc(4 * 1.45em); }
 .fs-cx-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px 32px; gap: var(--space-2); align-items: center; }
 .fs-cx-num { text-align: right; }
 .fs-cx-color { width: 32px; height: 28px; padding: 0; border: 1px solid var(--line-2); border-radius: var(--radius-md); background: transparent; }

@@ -41,6 +41,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 22. Check spelling · tools/spell.ts
 23. Text and pictures on the page · tools/content.ts, tools/richtext.ts
 24. Redaction options and marks in the file · pdf/panels.ts Redact section
+25. Selecting and editing text already on the page · tools/content.ts
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -153,3 +154,11 @@ Arrange works on items through the engine and on comments not applied yet by reo
 ## 24. Redaction options and marks in the file · _v0.5.0 (pdf/panels.ts Redact section, redactLook, loadMarks, syncAreas; pdf/api.ts redact)
 
 The Redact section gained a fill colour, optional text on each box and a "Scanned pages" switch that sends `mode: "raster"`; both apply buttons (marked areas, and Redact all matches in Find text to redact) send the same look. Redaction marks already saved in the file (from another app or from `mark_redactions`) are counted when the Protect tab shows a document, with one comments request per document id (`marksFor`), and enable Apply on their own; the engine applies them with the drawn areas. The note line only changes text, so the section does not move. The warning now says what goes (text, pictures, shapes, comments and fields under each box) and that the rest of the page stays text.
+
+## 25. Selecting and editing text already on the page · _v0.6.0 (tools/content.ts Txt, objects, ref, adopt, remap, convKey, editText, finishEdit, textFormat, pictureEdit replace, readPicture, sync; styles/tools.css .fs-cx-note)
+
+In Select mode the engine's `paragraphs` load with the items and pictures of each visible page and become objects of kind `ptext` keyed `t:page:key`. They are hit after added items and before pictures already on the page, have only width handles like added text, and show a frame only when selected, so a page full of text is not covered in boxes. Everything that works on added text works on them: double-click or Enter opens the editor over a render of the page without that paragraph (`items/under?paragraph=`), the format controls send updates by `{page, paragraph}`, and drag, nudge, align, arrange and Delete send the same reference. Opening the editor makes no version; only finishing with a change sends one update that converts and edits together. `converted` maps the paragraph to the new item id (`convKey` builds "page:tkey"), and `adopt` and `remap` move it to the items list and the selection.
+
+A commit reloads the page's objects while the call is still waiting for the page to be redrawn; the reload used to drop selected `p:` and `t:` keys that no longer exist before `remap` could turn them into item ids, so the selection vanished after a move. `pending` counts calls in flight and the reload leaves the selection alone while it is above zero.
+
+The note names the font that edits will use: the document's own font when the engine can reuse it, with the bundled family for missing letters, or the bundled family when it cannot. The note keeps a fixed minimum height of four lines (`.fs-cx-note`) so a longer message never moves the controls below. A line spacing read from the page (1.455, say) is added to the Line spacing list as its own option instead of leaving the list blank. Replace… in the Picture row swaps the selected picture, added or already on the page, for a file, keeping its frame.
