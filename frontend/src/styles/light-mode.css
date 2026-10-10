@@ -1,0 +1,5 @@
+body.theme-light { --glass-shadow: 0 16px 40px rgba(96, 90, 70, 0.18), 0 2px 6px rgba(96, 90, 70, 0.12); }
+body.theme-light .fs-dialog, body.theme-light .fs-toast { box-shadow: var(--shadow-lg); }
+body.theme-light .fs-row-thumb, body.theme-light .fs-card-preview:not(.is-blank), body.theme-light .fs-asset { background: var(--bg-tertiary); }
+body.theme-light .fs-scrim { background: var(--bg-scrim); }
+body.theme-light .fs-present-btn, body.theme-light .fs-home-hero-actions .fs-btn-primary { box-shadow: none; }
