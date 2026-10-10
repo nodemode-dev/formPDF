@@ -2,6 +2,7 @@ import { el, q, setText } from './dom';
 import { icon } from './icons';
 
 let openCount = 0;
+let dialogSeq = 0;
 export const anyDialogOpen = (): boolean => openCount > 0;
 
 export class Dialog {
@@ -16,6 +17,8 @@ export class Dialog {
     this.scrim = el(`<div class="fs-scrim" hidden><div class="fs-dialog" role="dialog" aria-modal="true" tabindex="-1"><div class="fs-dialog-head"><span class="fs-dialog-title"></span><button class="fs-icon-btn" type="button" data-close title="Close" aria-label="Close">${icon('close', 16)}</button></div><div class="fs-dialog-body"></div><div class="fs-dialog-foot"></div></div></div>`);
     q<HTMLElement>(this.scrim, '.fs-dialog').style.setProperty('--fs-dialog-w', `${width}px`);
     this.titleEl = q(this.scrim, '.fs-dialog-title');
+    this.titleEl.id = `fs-dialog-title-${++dialogSeq}`;
+    q(this.scrim, '.fs-dialog').setAttribute('aria-labelledby', this.titleEl.id);
     this.body = q(this.scrim, '.fs-dialog-body');
     this.foot = q(this.scrim, '.fs-dialog-foot');
     setText(this.titleEl, title);
@@ -24,6 +27,14 @@ export class Dialog {
     this.scrim.addEventListener('keydown', (e) => {
       e.stopPropagation();
       if (e.key === 'Escape') { e.preventDefault(); this.close(); }
+      if (e.key === 'Tab') {
+        const all = Array.from(this.scrim.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])'))
+          .filter((n) => !(n as HTMLButtonElement).disabled && !n.closest('[hidden]') && n.getClientRects().length > 0);
+        if (!all.length) return;
+        const first = all[0], last = all[all.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !this.scrim.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     });
     document.getElementById('overlay-root')?.appendChild(this.scrim);
   }
