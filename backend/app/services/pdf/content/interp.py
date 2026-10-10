@@ -50,6 +50,7 @@ class Glyph:
     mcid: int | None
     artifact: bool
     color: tuple = ()
+    tz: float = 1.0
 
 
 @dataclass
@@ -279,7 +280,7 @@ class Interpreter:
             space = st.tw if (len(raw) == 1 and raw == b" ") else 0.0
             tx = (w0 * st.size + st.tc + space) * st.tz
             self.out.glyphs.append(Glyph(where, op_index, seq, code, raw, f.unicode(code), f.key, st.size, box, origin, tx, st.tr,
-                                         mark["mcid"], mark["artifact"], st.fill))
+                                         mark["mcid"], mark["artifact"], st.fill, st.tz))
             seq += 1
             tm = mult((1, 0, 0, 1, tx, 0), tm)
         return tm, seq

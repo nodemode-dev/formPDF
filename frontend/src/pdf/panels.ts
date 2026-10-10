@@ -100,6 +100,8 @@ export class Panes {
   private tab: Tab = 'view';
   private existing: PdfComment[] = [];
   private commentsFor = '';
+  private marksFor = '';
+  private filedMarks = 0;
   private commentsLoading = '';
   private openThread = '';
   private matches: Match[] = [];
@@ -151,7 +153,7 @@ ${sec('Tables', `<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" typ
 ${sec('Password', `${row('Password', '<input class="fs-input" type="password" data-a="pw1" autocomplete="new-password">')}${row('Confirm', '<input class="fs-input" type="password" data-a="pw2" autocomplete="new-password">')}${row('Owner', '<input class="fs-input" type="password" data-a="pw-owner" placeholder="Optional" autocomplete="new-password">')}<div class="fs-pdfwb-perms"><label class="fs-check"><input type="checkbox" data-perm="print" checked>Printing</label><label class="fs-check"><input type="checkbox" data-perm="copy" checked>Copying text</label><label class="fs-check"><input type="checkbox" data-perm="modify" checked>Editing</label><label class="fs-check"><input type="checkbox" data-perm="annotate" checked>Comments</label><label class="fs-check"><input type="checkbox" data-perm="fill" checked>Filling forms</label><label class="fs-check"><input type="checkbox" data-perm="assemble" checked>Page changes</label></div><p class="fs-note">AES-256. Readers need the password to open the file; the owner password unlocks the restrictions.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="protect">${icon('lockFile', 14)}Protect</button></div>`)}
 ${sec('Remove password', `${row('Password', '<input class="fs-input" type="password" data-a="unlock-pw" autocomplete="current-password">')}<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="unlock">${icon('unlock', 14)}Remove protection</button></div>`, 'data-part="unlock"')}
 ${sec('Find text to redact', `${row('Find', '<select data-a="fr-mode" aria-label="What to find"><option value="text">Words or phrase</option><option value="email">Email addresses</option><option value="phone">Phone numbers</option><option value="card">Credit card numbers</option><option value="date">Dates</option><option value="regex">Pattern (regular expression)</option></select>')}<div class="fs-pdfwb-frq"><label class="fs-search">${icon('search', 14)}<input type="search" data-a="fr-query" placeholder="Word or phrase" spellcheck="false" aria-label="Text to find"></label></div><div class="fs-pdfwb-fropts"><label class="fs-check"><input type="checkbox" data-a="fr-case">Match case</label><label class="fs-check"><input type="checkbox" data-a="fr-whole">Whole words</label></div><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="fr-find">${icon('find', 14)}Find</button></div><div class="fs-pdfwb-frhead" hidden><span class="fs-pdfwb-frcount"></span><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="fr-all">Select all</button></div><div class="fs-list fs-pdfwb-matches"></div><div class="fs-pdfwb-btns fs-pdfwb-frbtns" hidden><button class="fs-btn fs-btn-sm" type="button" data-a="fr-mark">${icon('eraser', 14)}Mark ticked</button><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="fr-redact">Redact all matches</button></div>`)}
-${sec('Redact', `<p class="fs-note fs-pdfwb-redactnote">Mark areas to black out, then apply.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="redact-tool">${icon('eraser', 14)}Mark areas</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-clear">Clear</button></div><p class="fs-pdfwb-warn">${icon('warning', 14)}<span>Redaction is permanent: every page with a marked area is turned into an image, so its text can no longer be selected, searched or copied.</span></p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="redact-apply">Apply redactions</button></div>`)}
+${sec('Redact', `<p class="fs-note fs-pdfwb-redactnote">Mark areas to black out, then apply.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="redact-tool">${icon('eraser', 14)}Mark areas</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-clear">Clear</button></div>${row('Fill', '<input type="color" class="fs-pdfwb-color" value="#000000" data-a="redact-color" aria-label="Fill colour">')}${row('Text on box', '<input class="fs-input" type="text" data-a="redact-overlay" maxlength="120" placeholder="None, or REDACTED" spellcheck="false">')}<label class="fs-check"><input type="checkbox" data-a="redact-scan">Scanned pages: flatten marked pages to pictures</label><p class="fs-pdfwb-warn">${icon('warning', 14)}<span>Redaction is permanent. The text, pictures, shapes, comments and form fields under each box are removed from the file, not covered; the rest of the page stays selectable and searchable. Redaction marks already in the file are applied too.</span></p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="redact-apply">Apply redactions</button></div>`)}
 ${sec('Metadata', `${row('Title', '<input class="fs-input" type="text" data-m="title">')}${row('Author', '<input class="fs-input" type="text" data-m="author">')}${row('Subject', '<input class="fs-input" type="text" data-m="subject">')}${row('Keywords', '<input class="fs-input" type="text" data-m="keywords">')}<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="meta-save">${icon('check', 14)}Save metadata</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="meta-strip">Remove all</button></div>`)}
 ${sec('Remove hidden information', `<p class="fs-note fs-pdfwb-hidnote">Find what this PDF carries besides its visible pages: metadata, scripts, attachments, comments, form fields, hidden layers and more.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="hid-scan">${icon('find', 14)}<span>Find hidden information</span></button><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="hid-remove" hidden>Remove ticked</button></div><div class="fs-pdfwb-hidlist" hidden>${HIDDEN_KEYS.map(([k, l]) => `<label class="fs-check fs-pdfwb-hidrow" data-hk="${k}"><input type="checkbox" data-a="hid-tick" data-k="${k}"><span class="fs-pdfwb-hidlabel">${l}</span><span class="fs-pdfwb-hidcount"></span></label>`).join('')}</div><p class="fs-note fs-pdfwb-hidhelp" hidden></p>`)}
 </div>
@@ -262,6 +264,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
       return;
     }
     void this.loadComments();
+    void this.loadMarks();
     this.syncHF();
     this.syncCrop();
     const i = d.info, n = this.ctx.viewer.currentPage(), s = i.sizes[n - 1];
@@ -367,6 +370,18 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     this.syncAnnots();
   }
 
+  private async loadMarks(): Promise<void> {
+    const d = this.ctx.doc();
+    if (!d || this.tab !== 'protect' || this.marksFor === d.id) return;
+    const id = d.id;
+    this.marksFor = id;
+    let n = 0;
+    try { n = (await pdfApi.comments(id)).comments.filter((c) => c.kind === 'redact').length; } catch { n = 0; }
+    if (this.ctx.doc()?.id !== id) return;
+    this.filedMarks = n;
+    this.syncAreas();
+  }
+
   private threadAt(t: HTMLElement): { key: string; annot?: Annot; stored?: PdfComment } | null {
     const key = (t.closest('.fs-pdfwb-thread') as HTMLElement | null)?.dataset.key;
     if (!key) return null;
@@ -432,14 +447,21 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
 
   syncAreas(): void {
     const areas = this.ctx.annot.areas, pages = new Set(areas.map((a) => a.page)).size;
-    setText(this.$('.fs-pdfwb-redactnote'), areas.length ? `${areas.length} area${areas.length === 1 ? '' : 's'} marked on ${pages} page${pages === 1 ? '' : 's'}.` : 'Mark areas to black out, then apply.');
-    setDisabled(this.$<HTMLButtonElement>('[data-a="redact-apply"]'), !areas.length);
+    const filed = this.marksFor && this.marksFor === this.ctx.doc()?.id ? this.filedMarks : 0;
+    const drawn = areas.length ? `${areas.length} area${areas.length === 1 ? '' : 's'} marked on ${pages} page${pages === 1 ? '' : 's'}` : '';
+    const saved = filed ? `${filed} redaction mark${filed === 1 ? '' : 's'} in the file` : '';
+    setText(this.$('.fs-pdfwb-redactnote'), drawn || saved ? `${[drawn, saved].filter(Boolean).join(', ')}.` : 'Mark areas to remove, then apply.');
+    setDisabled(this.$<HTMLButtonElement>('[data-a="redact-apply"]'), !areas.length && !filed);
     setDisabled(this.$<HTMLButtonElement>('[data-a="redact-clear"]'), !areas.length);
     setClass(this.$('[data-a="redact-tool"]'), 'is-on', this.ctx.annot.tool === 'redact');
     setClass(this.$('[data-a="crop-tool"]'), 'is-on', this.ctx.annot.tool === 'crop');
   }
 
   private hfVal(a: string): string { return this.$<HTMLInputElement>(`[data-a="${a}"]`).value; }
+
+  private redactLook(): { color: string; overlay: string; mode: 'content' | 'raster' } {
+    return { color: this.hfVal('redact-color'), overlay: this.hfVal('redact-overlay').trim(), mode: this.$<HTMLInputElement>('[data-a="redact-scan"]').checked ? 'raster' : 'content' };
+  }
 
   private hfDate(): string {
     const fmt = this.sval('hf-date'), now = new Date();
@@ -816,7 +838,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
       case 'redact-clear': c.annot.setAreas([]); return;
       case 'redact-apply': void c.run('Redacting', async () => {
         const id = await c.flush() ?? d.id;
-        const res = await pdfApi.redact(id, c.annot.areas);
+        const res = await pdfApi.redact(id, c.annot.areas, this.redactLook());
         c.annot.setAreas([]);
         c.tool('select');
         await c.commit(res, 'Redact');
@@ -875,7 +897,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
         const areas = [...c.annot.areas, ...this.matchAreas(this.matches)];
         if (!areas.length) return;
         const id = await c.flush() ?? d.id;
-        const res = await pdfApi.redact(id, areas);
+        const res = await pdfApi.redact(id, areas, this.redactLook());
         const n = this.matches.length;
         c.annot.setAreas([]);
         c.tool('select');

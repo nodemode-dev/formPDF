@@ -59,8 +59,9 @@ rotation, font and paragraphs, and pictures already on the page with the op that
 Change: header_footer {header: {left, center, right}, footer, tokens <<page>> <<pages>> <<date>> <<file>> <<bates>>, size, color, font,
 margins, start, apply: all | odd | even, bates: {prefix, suffix, start, digits}}; page_numbers {position: bottom-center | bottom-right | bottom-left |
 top-center | top-right | top-left, format: "{n}" | "Page {n} of {total}", start}; watermark {text, opacity 0..1, angle, size, color};
-crop {margins: {l, t, r, b} | box: {x, y, w, h} | auto: true}; redact {query | preset | areas: [{page, x, y, w, h}]} (true redaction:
-pages with a match become pictures); organize {order: [page numbers in the new order, pages left out are deleted], delete: [pages],
+crop {margins: {l, t, r, b} | box: {x, y, w, h} | auto: true}; redact {query | preset | areas: [{page, x, y, w, h}] | marked: true, color, overlay, mode: content | raster} (true redaction:
+text, pictures, shapes, comments and fields under each box are removed and the rest stays text; marks saved in the file are applied too;
+raster turns marked pages into pictures, for scans); mark_redactions {areas, color, overlay} (marks to review before redact); organize {order: [page numbers in the new order, pages left out are deleted], delete: [pages],
 rotate: 90 | 180 | 270 (with pages, default all), blank: [positions after which a blank page goes]}; protect {password, owner, permissions:
 {print, copy, modify, annotate, fill, assemble}}; unlock {password}; metadata {title, author, subject, keywords, strip}; compress {quality
 10..95}; sanitize {remove: [metadata, javascript, attachments, comments, fields, layers, links, bookmarks, thumbnails, private, hidden_text]};
@@ -386,17 +387,19 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages) -> dict
     elif action == "crop":
         fn, kw = pdfsvc.crop, dict(box=args.get("box"), margins=args.get("margins"), auto=bool(args.get("auto")), pages=pages, passwords=pw)
     elif action == "redact":
-        areas = args.get("areas")
-        if not areas:
-            if not args.get("query") and not args.get("preset"):
-                raise ToolError("redact needs areas, or a query or preset to redact every match.")
+        areas = args.get("areas") or []
+        if not areas and (args.get("query") or args.get("preset")):
             got = await asyncio.to_thread(lambda: pdfsvc.find(src.path, None if args.get("preset") else args.get("query"), passwords=pw, **_search(args, pages)))
             if not got["count"]:
                 return _ok("No matches, so nothing was redacted.", {"count": 0})
             areas, extra = pdfsvc.match_areas(got["matches"]), {"matches": got["count"]}
-        fn, kw = pdfsvc.redact, dict(passwords=pw)
+        elif not areas and not args.get("marked"):
+            raise ToolError("redact needs areas, a query or preset to redact every match, or marked: true to apply the redaction marks.")
+        mode = "raster" if args.get("mode") == "raster" else "content"
+        fn, kw = pdfsvc.redact, dict(passwords=pw, mode=mode, color=str(args.get("color") or "#000000"), overlay=str(args.get("overlay") or "")[:120])
         kw["areas"] = areas
-        extra["areas"] = len(areas)
+        if areas:
+            extra["areas"] = len(areas)
     elif action == "organize":
         n = await asyncio.to_thread(pdfsvc.page_count, src.path, pw)
         items = _organize_items(args, n)

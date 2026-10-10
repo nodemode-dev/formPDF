@@ -380,7 +380,12 @@ def unlock(src, out, *, password: str) -> int:
 
 
 @core.serial
-def redact(src, out, areas: list[dict], *, passwords: list[str] | None = None, dpi: int = 200) -> int:
+def redact(src, out, areas: list[dict], *, passwords: list[str] | None = None, dpi: int = 200, mode: str = "content", color: str = "#000000",
+           overlay: str = "") -> int:
+    if mode != "raster":
+        from .redact import apply
+
+        return apply(src, out, areas, passwords=passwords, color=color, overlay=overlay)
     import pypdfium2 as pdfium
     from PIL import ImageDraw
 
@@ -408,6 +413,9 @@ def redact(src, out, areas: list[dict], *, passwords: list[str] | None = None, d
         except Exception:
             pass
         scale = dpi / 72
+        from .redact import _rgb
+
+        ink = tuple(round(c * 255) for c in _rgb(color))
         for p, boxes in by_page.items():
             page = w.pages[p - 1]
             x0, y0, x1, y1 = core.view_box(page)
@@ -430,7 +438,7 @@ def redact(src, out, areas: list[dict], *, passwords: list[str] | None = None, d
                         px, py = py, W - px
                     pts.append((px, py))
                 (ax, ay), (bx2, by2) = pts
-                draw.rectangle([min(ax, bx2) * sx - 1, min(ay, by2) * sy - 1, max(ax, bx2) * sx + 1, max(ay, by2) * sy + 1], fill=(0, 0, 0))
+                draw.rectangle([min(ax, bx2) * sx - 1, min(ay, by2) * sy - 1, max(ax, bx2) * sx + 1, max(ay, by2) * sy + 1], fill=ink)
             Dw, Dh = (H, W) if rot % 180 else (W, H)
             buf = io.BytesIO()
             c = rlcanvas.Canvas(buf, pagesize=(Dw, Dh))

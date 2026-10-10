@@ -46,6 +46,11 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 23. Attached files · services/pdf/attach.py
 24. Bates numbers across files · routers/batch.py _bates
 25. Measurements · services/pdf/measure.py, content/interp.py Draw.points
+26. HTML, RTF and Excel exports · services/pdf/exports.py
+27. Word export keeps columns, lists and running heads · services/pdf/word.py
+28. Spelling · services/pdf/spell.py
+29. Page items: text and pictures that stay editable · services/pdf/items.py
+30. Redaction removes content instead of rasterizing · services/pdf/redact.py (supersedes 2)
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -53,7 +58,7 @@ Every opened PDF becomes a working copy `Pdf/pdf_xxxxxxxxxx.pdf` with a meta fil
 
 ## 2. True redaction rasterizes · _v0.1.0 (services/pdf/edit.py redact)
 
-Redaction renders the marked pages with pypdfium2, burns black boxes in and replaces those pages with images, so nothing under a box survives; the UI and the agent guide both say those pages become images.
+Redaction renders the marked pages with pypdfium2, burns black boxes in and replaces those pages with images, so nothing under a box survives; the UI and the agent guide both say those pages become images. Superseded in 0.5.0 by entry 30; this path remains as `mode: "raster"` for scanned pages.
 
 ## 3. Find text in a PDF and redact it · _v0.1.0 (services/pdf/search.py pattern, find, areas; routers/pdf.py find)
 
@@ -192,3 +197,11 @@ Pictures are never re-encoded for geometry: a JPEG is embedded as is (DCTDecode,
 A picture already on the page (an image drawn by a top-level Do in the page's own content) is converted the first time it is changed: its Do is removed, the stream is split there, and an item that draws the same image object is inserted between the halves with `ctx` set to the graphics state's matrix at that point, so its placement is computed as the item's matrix times the inverse of `ctx`. It keeps its place in the stacking order and its clip. The box, rotation and flip come from that matrix. Several pictures converted in one call are done from the last to the first, so earlier indexes stay valid; `converted` maps "page:op" to the new ids. A move or rotation that leaves the size and content alone reuses the item's form instead of laying out and embedding the font again.
 
 `edit_items` also reorders comments in a page's `/Annots` (`comments: [{page, index, to}]`). `GET /api/pdf/{id}/items/under` renders a page without one item (or one existing picture) for the window's editor to lay over the page while text is being edited. `GET /api/fonts/{file}` serves the engine's TrueType files, only those in the font folder, so the editor types in the same fonts the page will use. Redaction (Phase 3) must also strip the text kept in `/FormpdfItem`.
+
+## 30. Redaction removes content instead of rasterizing · _v0.5.0 (services/pdf/redact.py apply, mark, _rewrite, _text_op, _clear_image, _verify, _render_check; services/pdf/edit.py redact; content/interp.py Glyph.tz)
+
+`redact` now removes what is under each box and leaves the rest of the page as it was, still text. Areas come from the call plus every `/Redact` annotation in the file (each mark keeps its own `/IC` fill and `/OverlayText`); `mark_redactions` writes those annotations so a person or an agent can review the marks before anything goes. Per page, the content interpreter walks the page and its forms, and each stream is rewritten deepest form first. A glyph goes when its centre is inside a box or at least 40 percent of its box overlaps one; a `TJ` keeps its other glyphs and replaces each removed one by the displacement it advanced (`-(advance / tz) / size * 1000`), so nothing after it moves; `'` and `"` become their pre-operators plus a `TJ`. Images that touch a box are decoded, the covered pixels set to the fill, and the image re-encoded under a new name (`_rN`; DCT stays DCT, everything else Flate, soft masks kept), so the original stays only where another page still uses it. Inline images, paths and shadings wholly inside a box are dropped. A form that changed is copied under a new name rather than edited, because other pages may draw the same form. Marked-content spans that lost glyphs lose `/ActualText`, `/Alt` and `/E`. Resources are pruned to what the rewritten streams still draw.
+
+Around the page's content, the boxes are clipped out with an even-odd clip of the page rectangle minus each box, so anything the interpreter could not attribute (a Type 3 glyph procedure, a pattern) does not paint there either. Comments overlapping a box go with their pop-ups and replies; widgets go and their fields are scrubbed from the AcroForm; page items whose box touches a box lose `/FormpdfItem`, so the old text does not survive in the JSON copy.
+
+Two checks run before writing, and a failure stops the whole call with nothing written: the interpreter walks the rewritten page again and no non-space glyph may sit under a box and no image may touch one unless it is a cleared copy; then PDFium renders each page and the inside of every box must be one colour. Only then are the fill boxes and overlay text (Helvetica, sized to fit, white on dark fills) drawn on top, and orphaned objects removed. `mode: "raster"` keeps the old behaviour for scanned pages (entry 2) and now takes the fill colour.

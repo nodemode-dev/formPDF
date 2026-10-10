@@ -37,6 +37,10 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 18. The Attached files tool · tools/attachments.ts
 19. Toasts and the comment list never move anything · ui/toast.ts, pdf/panels.ts
 20. The Measure tool · tools/measure.ts
+21. Web page, rich text and Excel · tools/exports.ts
+22. Check spelling · tools/spell.ts
+23. Text and pictures on the page · tools/content.ts, tools/richtext.ts
+24. Redaction options and marks in the file · pdf/panels.ts Redact section
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -145,3 +149,7 @@ Edit > Text and pictures has three modes on one page tool: Select, Add text and 
 Text is edited in a contenteditable box laid over the page in page units (`calc(var(--k) * ...)`), in the engine's own fonts served from `/api/fonts` (font-display block, loaded with `document.fonts.load` before the editor appears), with kerning and ligatures off and the same line height, list indents and super and subscript offsets as `items.py layout`, so the page wraps where the editor did. While an existing item is edited, a picture of the page without that item (`items/under`) covers it, so the old text is not seen under the new; the cover and the editor are added in the same frame after both the picture and the fonts are ready. Run styles use execCommand with styleWithCSS off (b, i, u, strike, sup, sub, font color); paragraphs are the editor's div children with text-align and data-list and data-level, and `readParas` turns them into runs by walking tags and inline styles rather than computed styles (text-decoration is not inherited in computed style). Toolbar buttons prevent default on pointerdown so the selection stays in the editor; the selects and inputs restore the saved range after they change. The custom page tool ignores pointerdowns inside the editor (one guard in Annotator) so the caret and selection work normally.
 
 Arrange works on items through the engine and on comments not applied yet by reordering the Annotator's list. Align and distribute use one function (`pdf/align.ts`) over axis-aligned bounding boxes: in Edit for items, pictures and comments, and in Prepare form for new fields, where Shift-click now adds fields to a group (`FormBuilder.group`, `chosen()`) and the form builder's select hook syncs the registered tools so the Align fields buttons enable. Make page text replaces a comment text box with page text at the same place and size.
+
+## 24. Redaction options and marks in the file · _v0.5.0 (pdf/panels.ts Redact section, redactLook, loadMarks, syncAreas; pdf/api.ts redact)
+
+The Redact section gained a fill colour, optional text on each box and a "Scanned pages" switch that sends `mode: "raster"`; both apply buttons (marked areas, and Redact all matches in Find text to redact) send the same look. Redaction marks already saved in the file (from another app or from `mark_redactions`) are counted when the Protect tab shows a document, with one comments request per document id (`marksFor`), and enable Apply on their own; the engine applies them with the drawn areas. The note line only changes text, so the section does not move. The warning now says what goes (text, pictures, shapes, comments and fields under each box) and that the rest of the page stays text.

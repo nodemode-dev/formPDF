@@ -326,7 +326,9 @@ async def redact(doc_id: str, body: dict) -> dict:
     areas = body.get("areas")
     if not isinstance(areas, list):
         raise HTTPException(400, "areas must be a list")
-    return await _derive(doc_id, pdfsvc.redact, areas, passwords=_pw(doc_id))
+    mode = "raster" if body.get("mode") == "raster" else "content"
+    return await _derive(doc_id, pdfsvc.redact, areas, passwords=_pw(doc_id), mode=mode, color=str(body.get("color") or "#000000"),
+                         overlay=str(body.get("overlay") or "")[:120])
 
 
 @router.post("/pdf/{doc_id}/metadata")

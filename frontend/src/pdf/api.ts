@@ -107,7 +107,7 @@ export const pdfApi = {
   split: (id: string, ranges: string[]) => api.post<{ ids: string[]; parts: Array<{ id: string; range: string; name: string; pages: number }> }>(`${base(id)}/split`, { ranges }),
   protect: (id: string, body: { password: string; owner?: string; permissions: Record<string, boolean> }) => api.post<Derived>(`${base(id)}/protect`, body),
   unlock: (id: string, password: string) => api.post<Derived>(`${base(id)}/unlock`, { password }),
-  redact: (id: string, areas: Area[]) => api.post<Derived>(`${base(id)}/redact`, { areas }),
+  redact: (id: string, areas: Area[], look: { color?: string; overlay?: string; mode?: 'content' | 'raster' } = {}) => api.post<Derived>(`${base(id)}/redact`, { areas, ...look }),
   metadata: (id: string, body: { title?: string; author?: string; subject?: string; keywords?: string; strip?: boolean }) => api.post<Derived>(`${base(id)}/metadata`, body),
   compress: (id: string, quality: number) => api.post<Derived>(`${base(id)}/compress`, { quality }),
   pageNumbers: (id: string, body: { position: string; start: number; format: string; size?: number }) => api.post<Derived>(`${base(id)}/page-numbers`, body),
