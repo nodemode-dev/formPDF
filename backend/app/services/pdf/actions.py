@@ -28,7 +28,7 @@ class Action:
 
     @property
     def batch(self) -> bool:
-        return self.kind != "read" and self.name not in ("merge", "fill", "annotate", "form", "organize", "unlock", "spell_fix", "measure", "edit_attachments")
+        return self.kind != "read" and self.name not in ("merge", "fill", "annotate", "form", "organize", "unlock", "spell_fix", "measure", "edit_attachments", "edit_items")
 
     def describe(self) -> dict:
         return {"name": self.name, "kind": self.kind, "label": self.label, "words": list(self.words), "ext": self.ext, "batch": self.batch,

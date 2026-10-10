@@ -32,6 +32,17 @@ def version() -> dict:
     return {"app": config.APP_NAME, "version": config.VERSION, "python": sys.version.split()[0], "platform": platform.system().lower()}
 
 
+@router.get("/fonts/{name}")
+def font_file(name: str):
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+
+    allowed = {p.name: p for p in config.fonts_dir().glob("*.ttf")}
+    if name not in allowed:
+        raise HTTPException(404, "No such font")
+    return FileResponse(allowed[name], media_type="font/ttf", headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+
 @router.get("/capabilities")
 def capabilities() -> dict:
     return {
