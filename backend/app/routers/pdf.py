@@ -357,6 +357,27 @@ async def pages_zip(doc_id: str, scale: float = 2.0, pages: str | None = None):
     return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{stem}-pages.zip"'})
 
 
+@router.get("/pdf/{doc_id}/pptx")
+async def to_pptx(doc_id: str, pages: str | None = None, text: int = 1, dpi: float = 150):
+    src = _path(doc_id)
+    tmp = docs.root() / f".pptx-{docs.new_id()}.pptx"
+    try:
+        got = await _run(pdfsvc.to_pptx, src, tmp, pages=pages, passwords=_pw(doc_id), dpi=max(72.0, min(300.0, dpi)), text=bool(text))
+        data = await asyncio.to_thread(tmp.read_bytes)
+    finally:
+        tmp.unlink(missing_ok=True)
+    stem = Path(docs.meta(doc_id).get("name") or doc_id).stem
+    return Response(data, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    headers={"Content-Disposition": f'attachment; filename="{stem}.pptx"', "X-Slides": str(got["slides"]),
+                             "X-Text-Boxes": str(got["textboxes"])})
+
+
+@router.get("/pdf/{doc_id}/sheet")
+async def sheet(doc_id: str, pages: str | None = None, width: int = 1600):
+    data, _ = await _run(pdfsvc.contact_sheet, _path(doc_id), pages, _pw(doc_id), max(400, min(3200, width)))
+    return Response(data, media_type="image/png")
+
+
 @router.get("/pdf/{doc_id}/reflow")
 async def reflow(doc_id: str, pages: str | None = None) -> dict:
     return await _run(pdfsvc.reflow, _path(doc_id), pages, _pw(doc_id))
