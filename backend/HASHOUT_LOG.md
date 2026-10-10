@@ -1,0 +1,96 @@
+# backend HASHOUT_LOG
+
+Living log for the formpdf engine, _v0.1.0. The code carries almost no comments; the reasons live here, anchored by file and symbol. Entries 2 to 7 were carried across from formsld 0.5.1 (its backend entries 8, 19, 20, 21, 27 and 3) and renumbered; the rest record the extraction. Read the map and the TOC first.
+
+## Org navi map
+
+```
+app/main.py                  app, CORS, discovery file (~/Formpdf/engine.json), routers, static dist
+app/core/                    config.py (ports 5198 and 8198, FORMPDF_* env, data folders, settings), ids.py
+app/routers/pdf.py           /api/pdf: open, recent, every operation, exports, save
+app/routers/live.py          /api/live WebSocket: windows, their open document, window tool results
+app/routers/mcp.py           /mcp: the MCP server, tools, consent, turns, live landing
+app/routers/system.py        health, version, capabilities, settings
+app/routers/media.py         extracted pictures
+app/services/bridge.py       window list, window document, window_call
+app/services/media.py        formpdf-owned picture store
+app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare
+```
+
+## TOC
+
+1. Versions, never edits in place · services/pdf/docs.py, routers/pdf.py _derive
+2. True redaction rasterizes · services/pdf/edit.py
+3. Find text in a PDF and redact it · services/pdf/search.py
+4. Headers, footers, Bates numbers and cropping · services/pdf/edit.py
+5. PDF comment threads · services/pdf/annot.py
+6. PDF reflow, Word, forms, sanitising and compare · services/pdf/layout.py and friends
+7. Lenient MCP protocol versions · routers/mcp.py
+8. What moved out of formsld and what stayed · the whole engine
+9. A small picture store instead of formsld's media service · services/media.py
+10. PDF to PowerPoint with real text boxes · services/pdf/slides.py to_pptx
+11. Contact sheets for agents · services/pdf/slides.py contact_sheet
+12. The MCP split: seven tools, one pdf tool with actions · routers/mcp.py
+13. Live agent changes land in the window as a turn · routers/mcp.py _land, routers/live.py
+14. Consent for every action that writes · routers/mcp.py _mutating
+15. Compress without document info · services/pdf/edit.py compress
+
+## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
+
+Every opened PDF becomes a working copy `Pdf/pdf_xxxxxxxxxx.pdf` with a meta file (name, original path, root key, protection). Every operation writes a new id derived from its source, re-applies protection and discards the output on failure; nothing is deleted on success. The window's Undo, the agent's undo and the recents all rely on old versions staying where they are, so do not prune them while a session is open.
+
+## 2. True redaction rasterizes · _v0.1.0 (services/pdf/edit.py redact)
+
+Redaction renders the marked pages with pypdfium2, burns black boxes in and replaces those pages with images, so nothing under a box survives; the UI and the agent guide both say those pages become images.
+
+## 3. Find text in a PDF and redact it · _v0.1.0 (services/pdf/search.py pattern, find, areas; routers/pdf.py find)
+
+Search runs over PDFium's text page, so matches carry real character boxes even across line breaks; each match returns its page, the matched text, trimmed context and one rect per line in top-left page points (the frame the redaction areas already use). Presets are regexes with a check function where a regex alone over-matches: phone numbers need 7 to 15 digits, card numbers pass Luhn, dates accept numeric and month-name forms. Results stop at 2000 matches with `truncated` set. `areas()` pads each rect by a point so redaction covers descenders.
+
+## 4. Headers, footers, Bates numbers and cropping · _v0.1.0 (services/pdf/edit.py header_footer, crop, _content_margins)
+
+Header and footer text is drawn with reportlab on an overlay per page and merged, honouring each page's rotation and view box, with `<<page>>`, `<<pages>>`, `<<date>>`, `<<file>>` and `<<bates>>` tokens, a page range, odd or even pages and a start number. Bates numbers are a prefix plus a zero-padded counter. Crop writes `/CropBox` only, so content outside stays in the file and the crop can be undone; that is why the panel points to Redact for removal. Remove white margins renders each page and finds the content bounds, padded by 4 points.
+
+## 5. PDF comment threads · _v0.1.0 (services/pdf/annot.py _thread, comments; routers/pdf.py get_comments)
+
+Replies are Text annotations with `/IRT` pointing at the parent and the reply flag set, so Acrobat and other readers show them as a thread. Status is a separate hidden Text annotation with `/State` and `/StateModel /Review`, as Acrobat writes it. `comments()` reads both back: replies are followed up their `/IRT` chain to the root comment, and the latest review state per comment wins.
+
+## 6. PDF reflow, Word, forms, sanitising and compare · _v0.1.0 (services/pdf/layout.py, word.py, forms.py, sanitize.py, create.py, compare.py)
+
+Reading order is an XY-cut that prefers vertical gutters and merges bands that share one, so aligned paragraph gaps do not interleave columns; tables and pictures take part in the cut. Words use pdfplumber with `x_tolerance_ratio=0.15` because the 3 pt default glues tight words. Form fields get upright appearance streams with `/Matrix` and `/MK /R` for rotated pages, `NeedAppearances`, Acrobat's AFDate actions for date fields, and radio groups as a parent with widget kids. Sanitising flattens widgets by painting their normal appearance, drops hidden layers by filtering `/OC` marked content, drops text drawn in render mode 3, and prunes orphans so removed data leaves the file. Compare pairs pages by exact text first, then aligns the rest by word-set similarity.
+
+## 7. Lenient MCP protocol versions · _v0.1.0 (routers/mcp.py mcp)
+
+2026-07-28 and 2025-11-25 are advertised, and 2025-06-18, 2025-03-26 and 2024-11-05 are accepted at initialize because older Cursor and Codex builds disconnect otherwise. Clients that send no session id share an "anon-[client name]" key so their turns still group.
+
+## 8. What moved out of formsld and what stayed · _v0.1.0 (app/)
+
+Moved unchanged apart from branding: services/pdf (core, edit, annot, forms, layout, word, sanitize, search, create, compare, docs), routers/pdf.py, the system and media routes, the discovery file, the MCP protocol handling and stdio bridge. Removed: the deck store and ops, compiler, autodraft, intake, templates, pptx reader and writer, lint, exports, the deck routes, `core.to_deck`, `core.images_deck` and the `/to-deck` and `/images-deck` routes. formsld's backend entry 13 (page text in reading order for deck notes) went with to_deck; its insight lives on in layout.py, which already orders words by position.
+
+## 9. A small picture store instead of formsld's media service · _v0.1.0 (services/media.py)
+
+`core.extract_images` needs somewhere to put pictures with stable ids so the window can show them and agents can name them. formsld's media service also handled video, audio, fonts and deck references; formpdf keeps only the image part (sniffing, size probing, content-hash ids, `~/Formpdf/Media`) as its own module, so no import reaches back into a slides codebase.
+
+## 10. PDF to PowerPoint with real text boxes · _v0.1.0 (services/pdf/slides.py to_pptx, _textless, _textbox, _table; routers/pdf.py to_pptx)
+
+One slide per page at the first page's size (PowerPoint allows one slide size per file; clamped to 1 to 56 inches, other pages fitted and centred). The slide picture is the page rendered from a copy whose text-showing operators (Tj, TJ, quote and double quote, keeping their line moves) are stripped, so the words are not doubled under the text boxes; when stripping fails the full render is used. Paragraphs and headings from `layout.page_blocks` become text boxes at their boxes with zero insets, a 3 percent width allowance, wrapping only for multi-line paragraphs, and runs with size, weight, style, colour and font; tables become PowerPoint tables with the No Style, No Grid style and no fills so the page's own rules show through. Known limits: text inside form XObjects and annotation appearances stays in the picture, and rotated words are not placed as boxes.
+
+## 11. Contact sheets for agents · _v0.1.0 (services/pdf/slides.py contact_sheet; routers/pdf.py sheet)
+
+Up to 12 pages in one PNG, one to four columns by count, each labelled "Page N" under it on a dark ground, 1600 px wide by default. One image per call keeps an agent's verification step to one tool result instead of one per page.
+
+## 12. The MCP split: seven tools, one pdf tool with actions · _v0.1.0 (routers/mcp.py TOOLS, t_pdf, _read, _change, _export)
+
+formsld exposed PDF work as one `pdf` tool next to 24 deck tools. formpdf keeps that tool and its action names (so agents and the formsld skills transfer), replaces `to_deck` with `to_pptx`, and adds the workbench's operations as actions; around it sit get_context, open_pdf, render_pages, extract, save and undo. One action-style tool keeps the tool list short for clients that cap tool counts, and the actions split into read, change and export lists that drive consent and output naming.
+
+## 13. Live agent changes land in the window as a turn · _v0.1.0 (routers/mcp.py _source, _land, t_undo; routers/live.py handle doc; services/bridge.py window_doc)
+
+The window reports its open document (id, key, page, unsaved changes, whether the newest state is an agent's) over /api/live whenever its chrome syncs. A change without a path derives a new version from the window's current id and calls the `commit` window tool with the turn id and the agent's name; the window refuses if its document moved on meanwhile. A turn is every mutating call from one session less than 90 s apart. With no window, the engine keeps its own version list per document key in `OPEN` and undo steps back over the newest turn there.
+
+## 14. Consent for every action that writes · _v0.1.0 (routers/mcp.py _mutating, _consent)
+
+A review of formsld 0.5.1 found that only `pdf to_deck` asked for consent while redact, crop, header_footer, merge, split and to_docx wrote files freely. In formpdf every change and export action, open_pdf, save and undo go through `_consent`: the window asks once (120 s), Allow persists `agentsAllowed`, Not now is cached for 120 s. With no window connected (headless, CLI) there is nobody to ask and calls proceed.
+
+## 15. Compress without document info · _v0.1.0 (services/pdf/edit.py compress)
+
+pypdf's `compress_identical_objects(remove_orphans=True)` dereferences the writer's `/Info` and raises AttributeError when there is none, which is the state after Remove hidden information strips metadata. Compress skips the identical-object pass in that case; pictures and streams are still recompressed.

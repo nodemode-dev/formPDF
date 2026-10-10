@@ -1,0 +1,76 @@
+# formpdf
+
+A PDF editor in the form family: an open alternative to Adobe Acrobat that runs on your computer, built so that Claude Code, Codex or Cursor can do PDF work in the open window while you watch, with every agent turn undoable at once.
+
+Version 0.0.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
+
+## What it does
+
+| Area | In this version |
+| --- | --- |
+| Home | Open a PDF by picker, drop or path; recent PDFs with forget; create a PDF from pictures; merge PDFs |
+| View | Single, continuous, two-page and cover layouts; reading mode; read aloud; find; compare two PDFs; document properties |
+| Comment | Highlight, underline, strike through, notes, text boxes, ink, shapes, lines and arrows; replies and status; stamps |
+| Fill & Sign | Fill form fields; draw or type a signature; dates, text and business or dynamic stamps |
+| Prepare form | Text, multi-line, check box, radio, dropdown, list box, date and signature fields |
+| Edit | Headers and footers with Bates numbers, crop, page numbers, watermark |
+| Organize | Rotate, delete, reorder, insert pages; split; merge |
+| Extract | Text (.txt, .md), pictures, tables (CSV, .xlsx) |
+| Protect | Passwords and permissions, remove a password, find and redact, metadata, remove hidden information |
+| Convert | Export to PowerPoint (one slide per page, words as real text boxes), Word, compress, pages to pictures |
+| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (27 actions), render_pages, extract, save, undo |
+
+## Install and run
+
+```
+./formpdf install      # backend venv and frontend packages
+./formpdf              # engine on 127.0.0.1:8198, app on http://localhost:5198
+```
+
+Windows: `formpdf.bat install` then `formpdf.bat`. One-click installers: `formpdf_oc_install` and `formpdf_oc_install.bat`. You need Python 3.12+ and Node 20.19+ or 22.12+; `./formpdf doctor` checks them. `./formpdf build` then `./formpdf serve` serves the built app from the engine alone.
+
+## Desktop
+
+```
+./formpdf install-desktop   # PyInstaller and the Rust and Tauri toolchain check
+./formpdf desktop dev
+./formpdf desktop build     # freezes the engine sidecar, bundles .app/.dmg, .msi/.exe, .deb/.AppImage
+```
+
+The desktop app opens .pdf files (Open With formpdf, or a double-click once associated). CI builds all three platforms in `.github/workflows/desktop.yml`.
+
+## Agents
+
+```
+./formpdf agents install   # writes .mcp.json, .codex/config.toml, .cursor/mcp.json and installs the skills
+```
+
+Claude Code alone: `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`. Claude Desktop and other stdio clients: `./formpdf mcp`. Then ask, for example: "Use formpdf: add Bates numbers ACME-000001 to the PDF I have open and redact every email address." Changes land live in the window; Edit > Undo agent turn takes back the whole turn. The skills `formpdf-harness` (doing PDF work) and `formpdf-skillset` (developing formpdf) live in `.claude/skills`.
+
+Without the window: `./formpdf run page_numbers report.pdf --format "Page {n} of {total}"`; `./formpdf run actions` lists every action.
+
+## Data
+
+Everything stays in `~/Formpdf` (override with `FORMPDF_DATA_DIR`): `Pdf/` working copies and the recent list, `Media/` extracted pictures, `Exports/` files written by Save and agents, `settings.json`, and `engine.json` while the engine runs. `FORMPDF_PORT` moves the engine off 8198.
+
+## Layout
+
+```
+backend/    FastAPI engine: PDF services, /api/pdf, live channel, MCP server
+frontend/   Vanilla TypeScript and Vite app: Home, the PDF workbench, ui toolkit, styles
+setup/      install, boot, build, serve, freeze, desktop, doctor, clean, run, mcp_stdio, agents (with .bat twins)
+src-tauri/  desktop shell and the engine sidecar
+docs/       MANUAL.md
+```
+
+## Known gaps
+
+- The parity table against Acrobat is in docs/PARITY.md.
+- No OCR: scanned pages have no text to search, extract or export as text boxes.
+- Signatures are pictures stamped on the page, not certificate (digital ID) signatures.
+- Text and pictures already in a PDF cannot be edited in place; redaction turns the affected pages into pictures.
+- No tagged PDF or accessibility checker; no shared review or signature requests.
+
+## Licence
+
+Apache-2.0 (see LICENSE). formpdf was extracted from formsld 0.5.1; third-party notices are in NOTICE.md.
