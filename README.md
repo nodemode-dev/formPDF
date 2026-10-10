@@ -11,15 +11,15 @@ Version 0.2.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 | Home | Open a PDF by picker, drop or path; recent PDFs with forget; create a PDF from pictures; merge PDFs; Batch (one action on many PDFs, results in a new folder); pick up where you left off, including unsaved changes after a crash |
 | Everywhere | Mod+K finds any command or tool in your own words and says why one cannot run yet; Preferences lists every network connection (none leave this computer) |
 | View | Single, continuous, two-page and cover layouts; reading mode; read aloud; find; compare two PDFs; document properties |
-| Comment | Highlight, underline, strike through, notes, text boxes, ink, shapes, lines and arrows; replies and status; stamps |
+| Comment | Highlight, underline, strike through, notes, text boxes, ink, shapes, lines and arrows; replies and status; stamps; measure distance, perimeter and area; check spelling with your own words |
 | Fill & Sign | Fill form fields; draw or type a signature; dates, text and business or dynamic stamps |
 | Prepare form | Text, multi-line, check box, radio, dropdown, list box, date and signature fields |
-| Edit | Headers and footers with Bates numbers, crop, page numbers, watermark |
+| Edit | Headers and footers with Bates numbers (across a set of files from Batch), crop, page numbers, watermark, links, attached files |
 | Organize | Rotate, delete, reorder, insert pages; split; merge |
 | Extract | Text (.txt, .md), pictures, tables (CSV, .xlsx) |
 | Protect | Passwords and permissions, remove a password, find and redact, metadata, remove hidden information |
-| Convert | Export to PowerPoint (one slide per page, words as real text boxes), Word, compress, pages to pictures |
-| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (27 actions), render_pages, extract, save, undo |
+| Convert | Export to PowerPoint (one slide per page, words as real text boxes), Word (columns, lists, headers and footers kept), Excel, HTML, RTF, compress, pages to pictures |
+| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (39 actions), render_pages, extract, save, undo |
 
 ## Install and run
 
@@ -66,7 +66,7 @@ docs/       MANUAL.md
 
 ## Known gaps
 
-- Against Acrobat, formpdf scores 39.5 of 72 (55%); docs/PARITY.md has every row. The largest gap is editing a PDF's own text and pictures in place, then accessibility (checker, tagging), certificate signatures and OCR.
+- Against Acrobat, formpdf scores 45.5 of 72 (63%); docs/PARITY.md has every row. The largest gap is editing a PDF's own text and pictures in place, then accessibility (checker, tagging), certificate signatures and OCR.
 - No OCR: scanned pages have no text to search, extract or export as text boxes.
 - Signatures are pictures stamped on the page, not certificate (digital ID) signatures.
 - Text and pictures already in a PDF cannot be edited in place; redaction turns the affected pages into pictures.

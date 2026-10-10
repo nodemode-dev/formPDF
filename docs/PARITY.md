@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.1.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.3.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -11,21 +11,21 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Area | vs Acrobat |
 | --- | --- |
 | PDF viewing | 5.5 of 6 · 92% |
-| PDF annotation | 6 of 7 · 86% |
-| Content editing | 2 of 14 · 14% |
+| PDF annotation | 7 of 7 · 100% |
+| Content editing | 4.5 of 14 · 32% |
 | PDF forms and signing | 4 of 6 · 67% |
-| PDF organize | 6.5 of 7 · 93% |
+| PDF organize | 7 of 7 · 100% |
 | PDF protect and redact | 4.5 of 5 · 90% |
-| PDF convert | 6.5 of 11 · 59% |
+| PDF convert | 8.5 of 11 · 77% |
 | Review and comments | 1.5 of 2 · 75% |
 | Collaboration and sharing | 1 of 2 · 50% |
 | Accessibility | 0.5 of 5 · 10% |
 | Import and export | 0 of 1 · 0% |
 | Print | 1 of 3 · 33% |
 | Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **39.5 of 72 · 55%** |
+| **Overall** | **45.5 of 72 · 63%** |
 
-Across the 72 scored rows formpdf has 32 full, 15 partial and 25 none.
+Across the 72 scored rows formpdf has 40 full, 11 partial and 21 none.
 
 ## Where formpdf leads
 
@@ -33,10 +33,10 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 ## Where formpdf trails most
 
-- **Content editing.** formpdf adds text boxes, notes, stamps and signatures on top of a page, but does not yet edit the PDF's own text and pictures in place, reformat existing text, add or crop pictures as page content, or add links.
+- **Content editing.** formpdf adds text boxes, notes, stamps, signatures, links and attached files and checks spelling, but does not yet edit the PDF's own text and pictures in place, reformat existing text, or add or crop pictures as page content.
 - **Accessibility.** No accessibility checker, no tagging and no reading-order editor for PDFs.
 - **Signing and scanning.** No certificate signatures, signature requests, OCR or scanning.
-- Rows with nothing yet: Measure distance, perimeter and area; Edit PDF text and pictures in place; Bulleted and numbered lists in PDF text; Align PDF paragraphs: left, centre, right, justify; Add links to PDF pages; Crop pictures on PDF pages; Generate pictures with AI (Adobe Express); Arrange objects: bring forward, send backward; Align and distribute objects on a page; Rotate and flip pictures on PDF pages; Attach files to a PDF; Certificate-based digital signatures; Request signatures from others; Export to HTML or RTF; OCR for scanned pages; Scan paper documents to PDF; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
+- Rows with nothing yet: Edit PDF text and pictures in place; Bulleted and numbered lists in PDF text; Align PDF paragraphs: left, centre, right, justify; Crop pictures on PDF pages; Generate pictures with AI (Adobe Express); Arrange objects: bring forward, send backward; Align and distribute objects on a page; Rotate and flip pictures on PDF pages; Certificate-based digital signatures; Request signatures from others; OCR for scanned pages; Scan paper documents to PDF; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
 
 ## Line by line
 
@@ -61,7 +61,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Stamps | yes | Full | `pdf/stamps.ts STAMPS` (standard, dynamic with name and date, sign-here, marks, picture stamps), `annot.py _stamp` Stamp annotations with appearance streams |
 | Comment list with replies and status | yes | Full | Comment panel threads with replies and status (`panels.ts syncAnnots`), written as /IRT reply and /State annotations (`annot.py _thread`), read by `GET /pdf/{id}/comments` |
 | Flatten annotations into the page | yes | Full | `panels.ts` Flatten into the page, `annot.py annotate(flatten)` |
-| Measure distance, perimeter and area | yes | None | nothing found: no measuring tool in `annotate.ts Tool` or `services/pdf/annot.py KINDS` |
+| Measure distance, perimeter and area | yes | Full | Comment > Measure (`frontend/src/tools/measure.ts`): distance, perimeter and area with a live value, units, calibration from a known length, snapping to path ends, midpoints and crossings, 45 degree steps, a list with remove and CSV export; saved as Line, PolyLine and Polygon measurement annotations with a Measure dictionary and their own appearance (`services/pdf/measure.py change, read, snap`; actions measure, measurements, snap_points) |
 
 ### Content editing
 
@@ -72,15 +72,15 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Edit PDF text formatting: font, size, colour, style | yes | Partial | only for text formpdf adds (`annotate.ts` freetext size select and colour palette, `annot.py font_for`); no font choice, bold, italic or underline, and no tool edits text already on the page (`annotate.ts Tool` has markup and drawing tools only) |
 | Bulleted and numbered lists in PDF text | yes | None | nothing found |
 | Align PDF paragraphs: left, centre, right, justify | yes | None | nothing found: added text boxes are left-aligned (`annot.py _text_block`); only new form fields have an alignment (`pdf/form.ts` Align) |
-| Add links to PDF pages | yes | None | nothing found: `viewer.ts` follows existing links, but no tool creates a link |
-| Spell check edited text and comments | yes | Partial | browser spell check on comment and text-box editing (`annotate.ts` textarea spellcheck) and multi-line form fields (`fill.ts`); no dictionaries or language settings |
+| Add links to PDF pages | yes | Full | Edit > Links (`frontend/src/tools/links.ts`): draw a box and link it to a web address, an email address or a page, link every web and email address in the text, list and remove links; `services/pdf/links.py change, read` (actions edit_links and links in MCP, the CLI and Batch); following a link offers http, https and mailto only, behind a prompt (`workbench.ts openLink`) |
+| Spell check edited text and comments | yes | Full | Comment > Check spelling (`tools/spell.ts`, F7) over PDF comments, text boxes, form field text and comments not applied yet, with suggestions, Change, Change all, Ignore, Ignore all and Add to dictionary; engine `spell.py` reads Hunspell dictionaries (SCOWL en_US bundled, more in Formpdf/dictionaries), MCP `pdf spell` and `spell_fix`; Preferences > Spelling sets the language and your words |
 | Add pictures to PDF pages | yes | Partial | Stamps > From a picture (`panels.ts` stamp-image) places a PNG, JPEG, WebP, GIF or BMP and `annot.py draw` image writes it (flattened or as a stamp comment); re-encoded to PNG at most 1600 px, and not editable as a page image afterwards |
 | Crop pictures on PDF pages | yes | None | nothing found: placed pictures resize only (`annotate.ts`); no crop for any image |
 | Generate pictures with AI (Adobe Express) | yes | None | nothing found |
 | Arrange objects: bring forward, send backward | yes | None | nothing found: annotations and placed pictures have no z-order commands (`annotate.ts`) |
 | Align and distribute objects on a page | yes | None | nothing found for page objects or form fields |
 | Rotate and flip pictures on PDF pages | yes | None | nothing found: placed pictures follow the page rotation only; no rotate or flip |
-| Attach files to a PDF | yes | None | nothing found: attachments are only counted and removed (`sanitize.py scan, sanitize`) |
+| Attach files to a PDF | yes | Full | Edit > Attached files (`frontend/src/tools/attachments.ts`): attach files of any type to the document, pin a file to a spot on a page (a FileAttachment comment with a paperclip), list, save a copy and remove; `services/pdf/attach.py change, read, get_file` (actions edit_attachments and attachments), GET /api/pdf/{id}/attachment; Remove hidden information still strips them |
 
 ### PDF forms and signing
 
@@ -103,7 +103,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Merge PDFs | yes | Full | `core.py merge`, `routers/pdf.py /pdf/merge` |
 | Crop pages | yes | Full | Edit > Crop pages by margins, a drawn box or white-margin detection (`edit.py crop`, `annotate.ts` crop tool, `POST /pdf/{id}/crop`) |
 | Page numbers, headers and footers, watermark | yes | Full | Edit > Header and footer with tokens and Bates numbering (`edit.py header_footer`), page numbers and watermark |
-| Bates numbering | yes | Partial | `services/pdf/edit.py header_footer(bates)` with a <<bates>> token, prefix, start and digits from Edit > Header and footer, also MCP `pdf header_footer`; one file at a time, no numbering across a set of files |
+| Bates numbering | yes | Full | `services/pdf/edit.py header_footer(bates)` with a <<bates>> token, prefix, suffix, start and digits from Edit > Header and footer and MCP `pdf header_footer`; across a set of legal documents from Home > Batch (`routers/batch.py _bates, _numbered`): numbers continue from file to file in the order listed, each row shows its range, and Bates numbers.csv records file, numbered copy, first and last |
 
 ### PDF protect and redact
 
@@ -121,12 +121,12 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | --- | --- | --- | --- |
 | Export to PowerPoint (.pptx) | yes | Partial | Convert > Export to PowerPoint and the to_pptx action (`services/pdf/slides.py to_pptx`): one slide per page, the page drawn as a picture with its text removed, words placed as real text boxes and detected tables as PowerPoint tables; rotated words and text in form XObjects stay in the picture, and shapes and pictures are not rebuilt as objects |
 | Extract text as .txt or .md | yes | Full | `core.py extract_text`, `panels.ts` text-txt, text-md |
-| Export to HTML or RTF | yes | None | nothing found: text leaves only as .txt or .md (`panels.ts` text-txt, text-md) and Word (`word.py to_docx`) |
+| Export to HTML or RTF | yes | Full | Convert > Web page, rich text and Excel (`tools/exports.ts`), MCP `pdf to_html` and `to_rtf` (`exports.py`): one self-contained HTML file with pictures inline, or RTF with lists, tables and pictures; headings, lists and tables in reading order with running headers and footers left out |
 | Extract pictures | yes | Full | `core.py extract_images` |
-| Tables to Excel | yes | Partial | `core.py extract_tables, tables_xlsx` (detected tables only, not page layout) |
+| Tables to Excel | yes | Full | Convert > Save as Excel and MCP `pdf to_xlsx` (`exports.py`): one sheet per page in reading order, table numbers, money and percentages stored as real numbers with their formats, a tables-only option; Extract > Tables (`core.py tables_xlsx`) still exports detected tables |
 | Pages to pictures | yes | Full | `services/pdf/core.py pages_zip`, `render_png`, Convert > pages as PNG at 72, 144, 216 or 300 dpi; PNG only |
 | Compress | yes | Full | `edit.py compress` |
-| PDF to Word | yes | Partial | Convert > Word (`word.py to_docx`: headings, styled paragraphs, pictures, tables, page breaks), MCP `pdf to_docx`; multi-column pages flow into one column |
+| PDF to Word | yes | Full | Convert > Word (`word.py to_docx`: headings, styled paragraphs, Word bullet and numbered lists, pictures, tables, column sections, running headers and footers in the Word header and footer with a PAGE field), MCP `pdf to_docx` |
 | OCR for scanned pages | yes | None | nothing found: no OCR engine in requirements or `services/pdf`; `panels.ts` tells the person scanned pages need OCR first |
 | Create a PDF from pictures | yes | Full | `create.py from_files` (one page per picture, fit, A4 or Letter, margins, orientation; PDFs combined in order), `pdf/create.ts` from Home and the Open menu |
 | Scan paper documents to PDF | yes | None | nothing found: no scanner acquisition |
