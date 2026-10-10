@@ -276,7 +276,8 @@ def read_fields(path, passwords: list[str] | None = None) -> list[dict]:
             rx0, rx1 = sorted((rx0, rx1))
             ry0, ry1 = sorted((ry0, ry1))
             item = {"name": _name(a), "type": kind, "page": pi + 1, "x": round(rx0 - x0, 2), "y": round(y1 - ry1, 2),
-                    "w": round(rx1 - rx0, 2), "h": round(ry1 - ry0, 2), "value": _plain(_inherit(a, "/V")),
+                    "w": round(rx1 - rx0, 2), "h": round(ry1 - ry0, 2),
+                    "value": ("signed" if _inherit(a, "/V") is not None else "") if kind == "signature" else _plain(_inherit(a, "/V")),
                     "readonly": bool(ff & 1), "required": bool(ff & 2), "multiline": kind == "text" and bool(ff & (1 << 12))}
             if kind in ("checkbox", "radio"):
                 normal = (a["/AP"].get_object().get("/N") if "/AP" in a else None) or {}
@@ -329,7 +330,7 @@ def fill_fields(src, out, values: dict, *, flatten: bool = False, passwords: lis
         elif f["type"] not in ("button", "signature"):
             current[name] = f["value"]
     target = {**current, **mapped} if flatten else mapped
-    w = PdfWriter(clone_from=r)
+    w = PdfWriter(clone_from=r) if flatten else core.writer(src, passwords)
     if target:
         w.update_page_form_field_values(None, target, auto_regenerate=True, flatten=flatten)
     for page in w.pages:
@@ -344,6 +345,8 @@ def fill_fields(src, out, values: dict, *, flatten: bool = False, passwords: lis
         w.remove_annotations(subtypes="/Widget")
         if "/AcroForm" in w._root_object:
             del w._root_object["/AcroForm"]
+    else:
+        core.keep_pages(w, set())
     return _write(w, out)
 
 

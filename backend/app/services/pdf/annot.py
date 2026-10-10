@@ -668,7 +668,7 @@ def annotate(src, out, annotations: list[dict], *, flatten: bool = False, passwo
         raise ValueError("There are no annotations to apply")
     if len(annotations) > MAX_ANNOTS:
         raise ValueError(f"Apply at most {MAX_ANNOTS} annotations at a time")
-    w = PdfWriter(clone_from=core.reader(src, passwords))
+    w = core.writer(src, passwords) if not flatten else PdfWriter(clone_from=core.reader(src, passwords))
     geo = []
     for page in w.pages:
         x0, y0, x1, y1 = core.view_box(page)
@@ -714,6 +714,7 @@ def annotate(src, out, annotations: list[dict], *, flatten: bool = False, passwo
             added = w.add_annotation(a["page"] - 1, _annot(a, [llx + bb[0], lly + bb[1], llx + bb[2], lly + bb[3]], ap, llx, lly, H, author))
             if a["replies"] or a["status"]:
                 _thread(w, a["page"] - 1, added.indirect_reference, a["replies"], a["status"], author, blank)
+    touched: set[int] = set()
     for req in asks:
         texts = _replies([req.get("text")])
         status = _status(req.get("status"))
@@ -721,6 +722,8 @@ def annotate(src, out, annotations: list[dict], *, flatten: bool = False, passwo
             raise ValueError("A reply needs text or a status")
         page, parent = _target(w, req)
         _thread(w, page, parent, texts, status, author, blank)
+        touched.add(page)
+    core.keep_pages(w, touched | {a["page"] - 1 for a in items})
     with open(out, "wb") as fh:
         w.write(fh)
     return len(w.pages)

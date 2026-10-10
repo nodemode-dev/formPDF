@@ -53,6 +53,11 @@ def _reprotect(src_id: str, new_id: str) -> None:
     if not prot:
         return
     out = docs.path_of(new_id)
+    from pypdf import PdfReader
+
+    if PdfReader(str(out)).is_encrypted:
+        docs.update_meta(new_id, protect=prot)
+        return
     tmp = out.with_suffix(".enc.tmp")
     pdfsvc.protect(out, tmp, password=prot.get("password", ""), owner=prot.get("owner"), permissions=prot.get("permissions"))
     tmp.replace(out)

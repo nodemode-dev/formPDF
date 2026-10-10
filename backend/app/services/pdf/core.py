@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 from pypdf import PdfReader, PdfWriter
+from pypdf.generic import RectangleObject
 
 MAX_IMAGES = 400
 PDFIUM = threading.RLock()
@@ -44,6 +45,49 @@ def reader(path, passwords: list[str] | None = None) -> PdfReader:
     return r
 
 
+def signed(r) -> bool:
+    form = r.trailer["/Root"].get("/AcroForm")
+    if form is None:
+        return False
+    stack = list(form.get_object().get("/Fields") or [])
+    seen = 0
+    while stack and seen < 5000:
+        seen += 1
+        f = stack.pop().get_object()
+        if f.get("/FT") == "/Sig" and f.get("/V") is not None:
+            return True
+        stack += list(f.get("/Kids") or [])
+    return False
+
+
+def writer(src, passwords: list[str] | None = None) -> PdfWriter:
+    r = reader(src, passwords)
+    if r.is_encrypted or not signed(r):
+        return PdfWriter(clone_from=r)
+    w = PdfWriter(str(src), incremental=True)
+    raw = PdfReader(str(src))
+    for p in w.pages:
+        ref = p.indirect_reference
+        orig = raw.get_object(ref.idnum) if ref is not None else None
+        if orig is None:
+            continue
+        for key in [k for k in p.keys() if k not in orig]:
+            del p[key]
+    return w
+
+
+def keep_pages(w: PdfWriter, touched: set[int]) -> None:
+    if not getattr(w, "incremental", False):
+        return
+    for i, p in enumerate(w.pages):
+        ref = p.indirect_reference
+        if i in touched or ref is None:
+            continue
+        k = ref.idnum - 1
+        if 0 <= k < len(w._original_hash) and w._objects[k] is not None:
+            w._original_hash[k] = w._objects[k].hash_bin()
+
+
 def pdfium_doc(path, passwords: list[str] | None = None):
     import pypdfium2 as pdfium
 
@@ -57,7 +101,8 @@ def pdfium_doc(path, passwords: list[str] | None = None):
 
 
 def view_box(page) -> tuple[float, float, float, float]:
-    m, c = page.mediabox, page.cropbox
+    m = page.mediabox
+    c = RectangleObject(page["/CropBox"]) if "/CropBox" in page else m
     mx0, mx1 = sorted((float(m.left), float(m.right)))
     my0, my1 = sorted((float(m.bottom), float(m.top)))
     cx0, cx1 = sorted((float(c.left), float(c.right)))
@@ -191,6 +236,10 @@ def info(path, passwords: list[str] | None = None) -> dict:
         out["fields"] = len(r.get_fields() or {})
     except Exception:
         out["fields"] = 0
+    try:
+        out["signed"] = signed(r)
+    except Exception:
+        out["signed"] = False
     out["version"] = (r.pdf_header or "").replace("%PDF-", "")
     return out
 
