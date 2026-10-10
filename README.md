@@ -65,7 +65,7 @@ docs/       MANUAL.md
 
 ## Known gaps
 
-- The parity table against Acrobat is in docs/PARITY.md.
+- Against Acrobat, formpdf scores 39.5 of 72 (55%); docs/PARITY.md has every row. The largest gap is editing a PDF's own text and pictures in place, then accessibility (checker, tagging), certificate signatures and OCR.
 - No OCR: scanned pages have no text to search, extract or export as text boxes.
 - Signatures are pictures stamped on the page, not certificate (digital ID) signatures.
 - Text and pictures already in a PDF cannot be edited in place; redaction turns the affected pages into pictures.
