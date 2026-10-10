@@ -37,6 +37,7 @@
 | `app/services/pdf/access.py` | accessibility: `autotag` (layout blocks to a structure tree, marked content written stream by stream), `accessibility` (Acrobat's 32 checks), `fix_accessibility`, `structure` and `edit_structure` (regions, alternate text, reading order, decorative), `accessibility_report` (HTML) |
 | `app/services/pdf/printing.py`, `colour.py` | print imposition (`print_layout` plan, `print_pdf`: pages per sheet, booklet, poster) and colour conversion to gray or RGB, also used to scan which colour spaces a file uses |
 | `app/services/pdf/pdfa.py`, `preflight.py`, `app/fonts/Liberation*` | PDF/A check and convert (2b, 2u, 3b), PDF/X-4 with a supplied profile, font embedding from Liberation; preflight profiles, fixups and report |
+| `app/services/lists.py`, `plugins.py`, `app/routers/lists.py` | action lists (`run_list`, built-in and saved lists in `data/actions`) and plug-ins (`data/plugins/[id]`, consent by hash, `api.action` registers ordinary actions); sample in `docs/plugins/word-count` |
 | `app/services/pdf/spell.py`, `app/dict/` | Hunspell-format dictionary reader, `spell` and `spell_fix`; SCOWL en_US with its notices, more languages in `~/Formpdf/dictionaries` |
 | `app/services/pdf/slides.py` | PDF to PowerPoint (`to_pptx`) and contact sheets (`contact_sheet`) |
 | `app/services/pdf/sanitize.py`, `search.py`, `create.py`, `compare.py` | hidden information, find (presets, regex), PDF from pictures and files, compare |
@@ -51,13 +52,13 @@
 | `ui/app-dialogs.ts` | Preferences (with the Network list), Agents, Help, Keyboard shortcuts |
 | `ui/palette.ts`, `ui/batch.ts`, `ui/resume.ts` | Mod+K palette, Home > Batch, Home's pick-up and recovery line |
 | `pdf/tools.ts` | tool registry: sections, commands and synonyms that tools add to the workbench; page tools (`useTool`) and per-page layers (`page`) |
-| `tools/` | registered tools: `links.ts`, `attachments.ts`, `content.ts` with `richtext.ts` (Edit), `measure.ts`, `spell.ts` (Comment), `exports.ts` (Convert), `formalign.ts` (Prepare form), `certsign.ts` (Fill & Sign: digital IDs, certificate signing, signature list, signing requests), `access.ts` (the Accessibility tab: check, tags, reading order, alternate text), `print.ts` with `pdf/printjob.ts` (the Print tab: layout and preview, PDF/A and PDF/X, preflight; printing a print PDF), `overlay.ts` page layers, imported by `tools/index.ts`; `pdf/align.ts` is the shared align and distribute math |
+| `tools/` | registered tools: `links.ts`, `attachments.ts`, `content.ts` with `richtext.ts` (Edit), `measure.ts`, `spell.ts` (Comment), `exports.ts` (Convert), `formalign.ts` (Prepare form), `certsign.ts` (Fill & Sign: digital IDs, certificate signing, signature list, signing requests), `access.ts` (the Accessibility tab: check, tags, reading order, alternate text), `print.ts` with `pdf/printjob.ts` (the Print tab: layout and preview, PDF/A and PDF/X, preflight; printing a print PDF), `lists.ts` with `pdf/recorder.ts` (Tools > Action lists and recording), `overlay.ts` page layers, imported by `tools/index.ts`; `pdf/align.ts` is the shared align and distribute math |
 | `ui/dom.ts`, `icons.ts`, `menu.ts`, `commands.ts`, `dialogs.ts`, `dropdown.ts`, `toast.ts`, `themes.ts`, `brand.ts` | the form family toolkit and the formpdf mark |
 | `live/socket.ts`, `live/agent.ts` | WebSocket client, window tools (consent, state, open, commit, undo-turn, saved) |
 | `pdf/workbench.ts` | the workbench shell, menus, history of versions with agent turns, save, print, close guard |
 | `pdf/panels.ts` | side panes for every tab |
 | `pdf/viewer.ts` | pdf.js viewer, layouts, zoom, thumbnails in fixed slots |
-| `pdf/annotate.ts`, `stamps.ts`, `fill.ts`, `form.ts`, `organize.ts`, `compare.ts`, `create.ts`, `find.ts`, `reading.ts`, `api.ts` | tools per tab and the REST client |
+| `pdf/annotate.ts`, `stamps.ts`, `fill.ts`, `form.ts`, `organize.ts`, `compare.ts`, `create.ts`, `find.ts`, `reading.ts`, `api.ts` | tools per tab and the REST client; `pdf/formcalc.ts` runs standard form calculations, formats, keystrokes and range checks for `fill.ts`; `pdf/plugins.ts` loads plug-in actions and window files |
 | `styles/` | tokens, shell, panels, dialogs, app-dialogs, pdf, light mode, scrollbars, fonts |
 
 ## Desktop and setup

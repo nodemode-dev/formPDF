@@ -66,6 +66,14 @@ Convert > PowerPoint writes a .pptx with one slide per page. The slides take the
 
 Mod+K, on Home or in the workbench (also Help > Find a command or tool), opens one search over every command and tool. Type what you want to do in your own words: "bates", "black out", "powerpoint", "bulk" or "rotate" find the tab or command that does it, and the word that matched shows beside it. Commands that cannot run right now stay in the list, dimmed, with the reason (Open a PDF first, Nothing to undo yet). Up and Down move, Enter runs, Esc closes; the commands you use most rise to the top.
 
+## Action lists and plug-ins
+
+Tools > Action lists runs a sequence of actions on the open PDF as one change you can undo. Five lists come with formpdf: Prepare for distribution (removes metadata, scripts, attached files, private data and thumbnails, then compresses), Optimise scans (makes scanned pages searchable, straightens them, compresses), Mark confidential (watermark and a confidential footer with page numbers), Make accessible (tags the PDF and applies every accessibility fix that needs no person) and Archive as PDF/A. To make your own, choose Tools > Record an action list, make the changes you want in any tab, then Stop and save in the bar at the top and give the list a name; Cancel throws the recording away. Saved lists can be deleted; they also run from Home > Batch (Run an action list) over many files, from agents and from the CLI (`./formpdf run run_list report.pdf --set list="Mark confidential"`).
+
+Plug-ins add actions and tool sections. A plug-in is a folder in `~/Formpdf/plugins` with a `plugin.json`, an engine file in Python and a window file in JavaScript; `docs/plugins/word-count` is a sample to copy there. Nothing in a plug-in runs until you turn it on in Preferences > Plug-ins, and a plug-in turns itself off again if any of its files change. A plug-in runs with the same access to your files as formpdf, so turn on only plug-ins you trust. Its actions appear in the Mod+K search, in Batch, in action lists and for agents.
+
+Forms with calculations, number, percent, date and phone formats, keystroke limits and range checks written with Acrobat's standard functions work as you fill them: totals update as you type, formatted values show when you leave a field, and a value out of range is marked with the reason. formpdf never runs a form's own JavaScript; a form with custom scripts says how many it skipped. Preferences > Forms turns calculations off.
+
 ## Keyboard shortcuts
 
 | Group | Command | Keys |
@@ -167,7 +175,7 @@ Edit > Undo agent turn (Alt+Mod+Z), or **Undo turn** next to the agent's last ch
 
 ## Preferences
 
-Help > Preferences (Mod+,): Appearance (theme and accent colour, the same fourteen themes as the form family, light and dark), Comments and stamps (the author name written on comments you apply, units), Spelling (the dictionary language and Your words, one per line, which Check spelling accepts; more languages are Hunspell .dic and .aff pairs placed in `~/Formpdf/dictionaries/<code>/`), Signing (a timestamp server address, used only when you tick Add a timestamp while signing), Agents (let Claude Code, Codex and Cursor read and edit PDFs), and Network (every connection formpdf could make and whether it does: today the engine and the window talk only on this computer, and the desktop update check is off).
+Help > Preferences (Mod+,): Appearance (theme and accent colour, the same fourteen themes as the form family, light and dark), Comments and stamps (the author name written on comments you apply, units), Spelling (the dictionary language and Your words, one per line, which Check spelling accepts; more languages are Hunspell .dic and .aff pairs placed in `~/Formpdf/dictionaries/<code>/`), Signing (a timestamp server address, used only when you tick Add a timestamp while signing), Forms (run standard form calculations, formats and checks), Plug-ins (each plug-in in the plugins folder with its state and any error, and a switch to turn it on or off), Agents (let Claude Code, Codex and Cursor read and edit PDFs), and Network (every connection formpdf could make and whether it does: today the engine and the window talk only on this computer, and the desktop update check is off).
 
 ## The data folder
 
@@ -182,6 +190,8 @@ Exports/Batch [date] [action]/   results of a batch run
 Batch/                   copies of PDFs added to Batch in a browser, removed after a day
 settings.json            preferences, including your spelling words
 dictionaries/            extra Hunspell dictionaries, one folder per language (de_DE/de_DE.dic and .aff)
+actions/                 your saved action lists, one .json each
+plugins/                 plug-ins, one folder each with its plugin.json
 session.json             the PDF open in the window, for picking up again after a restart or crash
 engine.json              the running engine's port and process, removed when it stops
 ```
