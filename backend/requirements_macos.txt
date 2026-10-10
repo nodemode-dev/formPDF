@@ -10,3 +10,4 @@ pypdf
 pypdfium2
 pdfplumber
 reportlab
+pyhanko

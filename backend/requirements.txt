@@ -10,3 +10,4 @@ pypdf==5.9.0
 pypdfium2==5.13.0
 pdfplumber==0.11.10
 reportlab==5.0.1
+pyhanko==0.37.0

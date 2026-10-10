@@ -38,6 +38,12 @@ The formpdf mark, the stamps and the agent skills are original work of this repo
 | omegaconf (with ANTLR 4 runtime notice), numpy, protobuf | BSD-3-Clause (numpy also 0BSD, MIT, Zlib, CC0-1.0 parts) | engine, OCR dependencies |
 | flatbuffers, requests | Apache-2.0 | engine, OCR dependencies (requests is never used to reach the network: models are looked up on disk only) |
 | tqdm | MPL-2.0 and MIT, files unmodified | engine, OCR dependency |
+| pyHanko 0.37.0, pyhanko-certvalidator, asn1crypto, oscrypto, uritools, tzlocal, attrs | MIT | engine, digital signatures: signing, timestamps and validation |
+| cryptography | Apache-2.0 or BSD-3-Clause | engine, digital IDs and signature maths |
+| cffi, pycparser, idna | MIT-0, BSD-3-Clause, BSD-3-Clause | engine, signing dependencies |
+| aiohttp, aiosignal, frozenlist, multidict, propcache, yarl | Apache-2.0 (aiohttp also MIT parts) | engine, signing dependencies (reached only for a timestamp server the person sets) |
+| aiohappyeyeballs | PSF-2.0 | engine, signing dependency |
+| certifi | MPL-2.0, files unmodified | engine, signing dependency |
 
 ## Build tools, not distributed
 

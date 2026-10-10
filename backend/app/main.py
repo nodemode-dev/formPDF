@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core import config
-from app.routers import batch, live, mcp, media, pdf, scan, system
+from app.routers import batch, identity, live, mcp, media, pdf, scan, system
 
 
 def _write_discovery() -> None:
@@ -42,6 +42,7 @@ app.include_router(media.router, prefix="/api")
 app.include_router(pdf.router, prefix="/api")
 app.include_router(batch.router, prefix="/api")
 app.include_router(scan.router, prefix="/api")
+app.include_router(identity.router, prefix="/api")
 app.include_router(live.router)
 app.include_router(mcp.router)
 

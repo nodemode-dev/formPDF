@@ -1,7 +1,7 @@
 import platform
 import sys
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.core import config
 from app.services import session
@@ -12,6 +12,7 @@ NETWORK = [
     {"id": "engine", "name": "The engine and this window", "state": "local", "note": "They talk only on this computer, at 127.0.0.1. PDFs never leave it."},
     {"id": "updates", "name": "Update check (desktop app)", "state": "off", "note": "This build has no update key, so it never checks. When one is set, formpdf asks before checking."},
     {"id": "ocr", "name": "Text recognition (OCR)", "state": "local", "note": "Runs on this computer with models installed alongside formpdf. Nothing is uploaded or downloaded."},
+    {"id": "timestamp", "name": "Timestamp server (signing)", "state": "off", "note": "Only when you set a server in Preferences and tick Add a timestamp while signing: formpdf sends that server a fingerprint of the signature, never the PDF."},
     {"id": "scanners", "name": "Scanners", "state": "local", "note": "Only when you use Scan: formpdf looks for scanners on your local network and talks to the one you pick. Nothing goes past your network."},
 ]
 
@@ -82,7 +83,12 @@ def get_settings() -> dict:
 
 @router.post("/settings")
 def set_settings(patch: dict) -> dict:
-    allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "author", "units", "spellLang"}}
+    allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "author", "units", "spellLang", "timestampUrl"}}
+    if "timestampUrl" in allowed:
+        url = str(allowed["timestampUrl"] or "").strip()[:300]
+        if url and not url.startswith(("https://", "http://")):
+            raise HTTPException(400, "A timestamp server address starts with https://")
+        allowed["timestampUrl"] = url
     if isinstance(patch.get("dictionary"), list):
         allowed["dictionary"] = sorted({str(w).strip()[:64] for w in patch["dictionary"] if str(w).strip()})[:5000]
     if "spellLang" in allowed:
