@@ -8,3 +8,4 @@ import './formalign';
 import './ocr';
 import './certsign';
 import './access';
+import './print';

@@ -33,7 +33,7 @@ const LOCAL = {
   fitWidth: '<path d="M3.5 4.5v15M20.5 4.5v15M7 12h10M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5"/>',
   underline: '<path d="M7 4.5v6a5 5 0 0 0 10 0v-6M5.5 20h13"/>',
 };
-const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility']];
+const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print']];
 const LAYOUT_KEY = 'fs-pdf-layout';
 const SAY_KEY = 'fs-pdf-say';
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
@@ -81,6 +81,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF
 <div class="fs-tb fs-pdfwb-set" data-for="protect" hidden>${toolBtn('select', 'Select', icon('cursor', 16))}${toolBtn('redact', 'Mark areas to redact', icon('eraser', 16))}</div>
 <div class="fs-tb fs-pdfwb-set" data-for="convert" hidden><span class="fs-pdfwb-settext">PowerPoint, Word, Excel, web pages, smaller files and pictures.</span></div>
 <div class="fs-tb fs-pdfwb-set" data-for="access" hidden><span class="fs-pdfwb-settext">Check, tag, set the reading order and describe pictures for screen readers.</span></div>
+<div class="fs-tb fs-pdfwb-set" data-for="print" hidden><span class="fs-pdfwb-settext">Pages per sheet, booklets, posters, grayscale, PDF/A, PDF/X and preflight.</span></div>
 </div>
 <div class="fs-pdfwb-bar" hidden role="alert"><span class="fs-pdfwb-bar-icon">${icon('warning', 16)}</span><span class="fs-pdfwb-bar-text"></span><input class="fs-input fs-pdfwb-bar-input" hidden spellcheck="false"><div class="fs-pdfwb-bar-actions"></div></div>
 <div class="fs-pdfwb-main">
@@ -148,7 +149,6 @@ class Workbench {
   private busy = 0;
   private busyOff: (() => void) | null = null;
   private loadSeq = 0;
-  private printing = false;
 
   constructor() {
     this.root = el(SHELL);
@@ -1195,49 +1195,9 @@ class Workbench {
   }
 
   private async print(): Promise<void> {
-    if (!this.doc || this.printing) return;
-    this.printing = true;
-    const urls: string[] = [];
-    const host = el('<div class="fs-pdf-print" aria-hidden="true"></div>');
-    try {
-      await this.run('Preparing to print', async () => {
-        await this.flush();
-        const doc = this.viewer.doc;
-        if (!doc) return;
-        for (let i = 1; i <= doc.numPages; i++) {
-          const page = await doc.getPage(i);
-          const base = page.getViewport({ scale: 1 });
-          const viewport = page.getViewport({ scale: Math.min(150 / 72, 2400 / Math.max(base.width, base.height)) });
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.floor(viewport.width);
-          canvas.height = Math.floor(viewport.height);
-          await page.render({ canvas, viewport, intent: 'print' }).promise;
-          const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92));
-          canvas.width = 0;
-          if (!blob) continue;
-          const url = URL.createObjectURL(blob);
-          urls.push(url);
-          const img = el<HTMLImageElement>(`<img alt="" src="${url}">`);
-          if (viewport.width > viewport.height) img.classList.add('is-wide');
-          host.appendChild(img);
-        }
-        document.body.appendChild(host);
-        await Promise.all(Array.from(host.querySelectorAll('img')).map((img) => img.decode().catch(() => undefined)));
-      });
-      if (!host.isConnected) return;
-      document.body.classList.add('fs-printing-pdf');
-      if (isTauri()) {
-        const done = new Promise<void>((r) => { window.addEventListener('afterprint', () => r(), { once: true }); window.setTimeout(r, 30000); });
-        const core = await import('@tauri-apps/api/core');
-        await core.invoke('print_window', { label: 'main' }).catch(() => window.print());
-        await done;
-      } else window.print();
-    } finally {
-      document.body.classList.remove('fs-printing-pdf');
-      host.remove();
-      for (const u of urls) URL.revokeObjectURL(u);
-      this.printing = false;
-    }
+    if (!this.doc) return;
+    this.setTab('print');
+    q<HTMLButtonElement>(this.panes.root, '[data-section="print-layout"] [data-p="print"]').focus();
   }
 
   private close(): void {

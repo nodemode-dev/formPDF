@@ -102,6 +102,17 @@
 .fs-acc-pic { flex: none; background-repeat: no-repeat; background-color: #fff; box-shadow: 0 0 0 1px var(--line-2); }
 .fs-acc-pic[hidden] { display: none; }
 .fs-input.fs-acc-alt { width: 100%; min-height: 4.5em; margin-top: var(--space-2); resize: vertical; box-sizing: border-box; }
+.fs-tool-seg.fs-prt-seg { gap: 4px; margin-bottom: var(--space-2); }
+.fs-prt-seg .fs-btn.is-on { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-ink); }
+.fs-prt-preview { display: flex; align-items: center; justify-content: center; height: 250px; border: 1px solid var(--line-1); border-radius: var(--radius-md); background: var(--surface-1); overflow: hidden; }
+.fs-prt-sheet { position: relative; flex: none; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); }
+.fs-prt-sheet[hidden] { display: none; }
+.fs-prt-cells, .fs-prt-marks { position: absolute; inset: 0; }
+.fs-prt-clip { position: absolute; overflow: hidden; }
+.fs-prt-page { position: absolute; background-color: #fff; background-repeat: no-repeat; background-size: 100% 100%; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.25); }
+.fs-prt-sheet.has-border .fs-prt-page { box-shadow: 0 0 0 1px #000; }
+.fs-prt-mark { position: absolute; background: #000; }
+.fs-note.fs-prt-note { min-height: calc(2 * 1.45em); margin: 0 0 var(--space-2); }
 .fs-cx-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px 32px; gap: var(--space-2); align-items: center; }
 .fs-cx-num { text-align: right; }
 .fs-cx-color { width: 32px; height: 28px; padding: 0; border: 1px solid var(--line-2); border-radius: var(--radius-md); background: transparent; }

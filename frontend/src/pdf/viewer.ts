@@ -19,6 +19,10 @@ class BinaryData {
   }
 }
 
+export function openDocument(data: Uint8Array): Promise<PDFDocumentProxy> {
+  return getDocument({ data, BinaryDataFactory: BinaryData, useWorkerFetch: false, enableXfa: false }).promise;
+}
+
 export const CSS_UNITS = 96 / 72;
 const MAX_PIXELS = 16777216;
 const KEEP_CANVASES = 24;
