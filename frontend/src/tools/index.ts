@@ -5,3 +5,4 @@ import './exports';
 import './spell';
 import './content';
 import './formalign';
+import './ocr';

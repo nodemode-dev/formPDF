@@ -42,6 +42,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 23. Text and pictures on the page · tools/content.ts, tools/richtext.ts
 24. Redaction options and marks in the file · pdf/panels.ts Redact section
 25. Selecting and editing text already on the page · tools/content.ts
+26. Make searchable (OCR) · tools/ocr.ts
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -162,3 +163,7 @@ In Select mode the engine's `paragraphs` load with the items and pictures of eac
 A commit reloads the page's objects while the call is still waiting for the page to be redrawn; the reload used to drop selected `p:` and `t:` keys that no longer exist before `remap` could turn them into item ids, so the selection vanished after a move. `pending` counts calls in flight and the reload leaves the selection alone while it is above zero.
 
 The note names the font that edits will use: the document's own font when the engine can reuse it, with the bundled family for missing letters, or the bundled family when it cannot. The note keeps a fixed minimum height of four lines (`.fs-cx-note`) so a longer message never moves the controls below. A line spacing read from the page (1.455, say) is added to the Line spacing list as its own option instead of leaving the list blank. Replace… in the Picture row swaps the selected picture, added or already on the page, for a file, keeping its frame.
+
+## 26. Make searchable (OCR) · _v0.7.0 (tools/ocr.ts; pdf/panels.ts find and text hints)
+
+Convert > Make searchable (OCR) reads `capabilities.ocr` once and keeps the button disabled with the engine's sentence in the note when recognition is not installed, so the person learns what to do instead of meeting an error. Resolution, pages, skip pages with text, straighten and recognise again map to the action's fields; the call runs through `ctx.run` with a busy label that gives the page count and a rough time, and the result lands as a version with Undo like any other change. The note keeps the last result (pages, words, straightened, skipped) and has the fixed minimum height of tool notes, so its changing text never moves the controls. Find and Extract text now point to this section when a page has no text.

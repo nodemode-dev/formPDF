@@ -791,7 +791,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
         ta.dataset.md = res.pages.map((p) => `## Page ${p.page}\n\n${p.text}`).join('\n\n');
         setHidden(ta, false);
         setHidden(this.$('.fs-pdfwb-textbtns'), false);
-        if (!ta.value.trim()) toast('These pages have no selectable text. Scanned pages need OCR first.');
+        if (!ta.value.trim()) toast('These pages have no selectable text. Convert > Make searchable (OCR) recognises scanned pages.');
       }); return;
       case 'text-copy': void navigator.clipboard.writeText(this.$<HTMLTextAreaElement>('.fs-pdfwb-text').value).then(() => toast('Text copied')); return;
       case 'text-txt': void c.deliver(new Blob([this.$<HTMLTextAreaElement>('.fs-pdfwb-text').value], { type: 'text/plain' }), `${stem(d.name)}.txt`); return;
@@ -888,7 +888,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
           this.matchesKey = d.key;
           this.stale = false;
           this.syncMatches();
-          if (!res.count) toast(mode === 'text' || mode === 'regex' ? 'No matches. Scanned pages have no text to search.' : 'Nothing like that found in the text of this PDF.');
+          if (!res.count) toast(mode === 'text' || mode === 'regex' ? 'No matches. Scanned pages have no text to search until Convert > Make searchable (OCR) recognises them.' : 'Nothing like that found in the text of this PDF.');
           else if (res.truncated) toast(`Showing the first ${res.count} matches`);
         });
         return;
