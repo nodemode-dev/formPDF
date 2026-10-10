@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.7.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.8.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -13,7 +13,7 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | PDF viewing | 5.5 of 6 · 92% |
 | PDF annotation | 7 of 7 · 100% |
 | Content editing | 13 of 14 · 93% |
-| PDF forms and signing | 4 of 6 · 67% |
+| PDF forms and signing | 5.5 of 6 · 92% |
 | PDF organize | 7 of 7 · 100% |
 | PDF protect and redact | 5 of 5 · 100% |
 | PDF convert | 10.5 of 11 · 95% |
@@ -23,9 +23,9 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Import and export | 0 of 1 · 0% |
 | Print | 1 of 3 · 33% |
 | Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **56.5 of 72 · 78%** |
+| **Overall** | **58 of 72 · 81%** |
 
-Across the 72 scored rows formpdf has 53 full, 7 partial and 12 none.
+Across the 72 scored rows formpdf has 54 full, 8 partial and 10 none.
 
 ## Where formpdf leads
 
@@ -35,8 +35,8 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 - **Content editing.** formpdf edits the text and pictures a PDF already has and adds page text and pictures that stay editable; only generating pictures with AI is missing.
 - **Accessibility.** No accessibility checker, no tagging and no reading-order editor for PDFs.
-- **Signing.** No certificate signatures or signature requests.
-- Rows with nothing yet: Generate pictures with AI (Adobe Express); Certificate-based digital signatures; Request signatures from others; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
+- **Signing requests.** Signers and their order are tracked in the PDF, but sending and reminders go through the person's own email rather than a service.
+- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
 
 ## Line by line
 
@@ -89,8 +89,8 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Fill form fields | yes | Full | `frontend/src/pdf/fill.ts`, `services/pdf/edit.py read_fields, fill_fields` |
 | Flatten a filled form | yes | Full | `edit.py fill_fields(flatten)` |
 | Place a drawn or typed signature | yes | Full | `panels.ts` signature pad (Draw, Type), `placeSignature` |
-| Certificate-based digital signatures | yes | None | nothing found: no certificate or PKCS#7 code in `services/pdf`; the Signature field type in `pdf/form.ts FormBuilder` only creates an empty /Sig field |
-| Request signatures from others | yes | None | nothing found: no sending or signer workflow |
+| Certificate-based digital signatures | yes | Full | Fill & Sign > Sign with a digital ID (`tools/certsign.ts`) and the sign and signatures actions (`services/pdf/sign.py`, pyHanko): digital IDs made here or imported from .p12 and .pfx, PAdES signatures into a field or a drawn box with a text or picture appearance, certification with forms, comments or no changes allowed, field locking, RFC 3161 timestamps from a server the person sets; validation against certificates trusted on this computer with plain-sentence verdicts and formpdf's own change analysis, signed versions saved out; comments and form filling save incrementally so signatures stay valid |
+| Request signatures from others | yes | Partial | Fill & Sign > Request signatures and the request_signatures action (`services/pdf/sign.py`): ordered signers assigned to signature fields, status with who is next, an email link, and signed copies joined back as versions; partial because Acrobat sends, reminds and collects through its cloud service and formpdf leaves sending to the person's own email |
 | Create form fields | yes | Full | Prepare form tab (`pdf/form.ts FormBuilder`: text, multi-line, check box, radio groups, dropdown, list box, date, signature; rename, delete), `forms.py prepare` writes AcroForm fields with appearance streams |
 
 ### PDF organize

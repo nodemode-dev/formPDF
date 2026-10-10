@@ -54,8 +54,8 @@ a = "PDF forms and signing"
 row(a, "Fill form fields", 1, F, "`frontend/src/pdf/fill.ts`, `services/pdf/edit.py read_fields, fill_fields`")
 row(a, "Flatten a filled form", 1, F, "`edit.py fill_fields(flatten)`")
 row(a, "Place a drawn or typed signature", 1, F, "`panels.ts` signature pad (Draw, Type), `placeSignature`")
-row(a, "Certificate-based digital signatures", 1, N, "nothing found: no certificate or PKCS#7 code in `services/pdf`; the Signature field type in `pdf/form.ts FormBuilder` only creates an empty /Sig field")
-row(a, "Request signatures from others", 1, N, "nothing found: no sending or signer workflow")
+row(a, "Certificate-based digital signatures", 1, F, "Fill & Sign > Sign with a digital ID (`tools/certsign.ts`) and the sign and signatures actions (`services/pdf/sign.py`, pyHanko): digital IDs made here or imported from .p12 and .pfx, PAdES signatures into a field or a drawn box with a text or picture appearance, certification with forms, comments or no changes allowed, field locking, RFC 3161 timestamps from a server the person sets; validation against certificates trusted on this computer with plain-sentence verdicts and formpdf's own change analysis, signed versions saved out; comments and form filling save incrementally so signatures stay valid")
+row(a, "Request signatures from others", 1, P, "Fill & Sign > Request signatures and the request_signatures action (`services/pdf/sign.py`): ordered signers assigned to signature fields, status with who is next, an email link, and signed copies joined back as versions; partial because Acrobat sends, reminds and collects through its cloud service and formpdf leaves sending to the person's own email")
 row(a, "Create form fields", 1, F, "Prepare form tab (`pdf/form.ts FormBuilder`: text, multi-line, check box, radio groups, dropdown, list box, date, signature; rename, delete), `forms.py prepare` writes AcroForm fields with appearance streams")
 
 a = "PDF organize"
