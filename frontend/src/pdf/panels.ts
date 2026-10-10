@@ -9,7 +9,7 @@ import { recall, remember } from './reading';
 import { dynamicLine, paletteHtml, STAMPS, stampSize } from './stamps';
 import type { Viewer } from './viewer';
 
-export type Tab = 'view' | 'comment' | 'fill' | 'form' | 'edit' | 'organize' | 'extract' | 'protect' | 'convert';
+export type Tab = 'view' | 'comment' | 'fill' | 'form' | 'edit' | 'organize' | 'extract' | 'protect' | 'convert' | 'access';
 export interface Doc { id: string; name: string; info: PdfInfo; key: string }
 export interface Ctx {
   viewer: Viewer; annot: Annotator; fields: Fields; organizer: Organizer;
@@ -163,6 +163,7 @@ ${sec('Word document', `<p class="fs-note">Paragraphs in reading order with thei
 ${sec('Compress', `${row('Quality', '<input class="fs-slider" type="range" min="20" max="95" value="70" data-a="cq"><span class="fs-unit fs-pdfwb-cqv">70</span>')}<p class="fs-note fs-pdfwb-cnote">Recompresses large pictures and removes duplicate objects.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="compress">Compress</button></div>`)}
 ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria-label="Scale"><option value="1">72 dpi</option><option value="2" selected>144 dpi</option><option value="3">216 dpi</option><option value="4.1667">300 dpi</option></select>')}${row('Pages', '<input class="fs-input" type="text" data-a="png-pages" placeholder="All pages">')}<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="png-zip">${icon('fileImage', 14)}Download PNG zip</button></div>`)}
 </div>
+<div class="fs-pdfwb-pane" data-for="access" hidden></div>
 </div>`);
     q(this.root, '.fs-pdfwb-sigdraw').appendChild(this.pad.root);
     this.pad.onChange = () => this.syncSig();

@@ -33,7 +33,7 @@ const LOCAL = {
   fitWidth: '<path d="M3.5 4.5v15M20.5 4.5v15M7 12h10M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5"/>',
   underline: '<path d="M7 4.5v6a5 5 0 0 0 10 0v-6M5.5 20h13"/>',
 };
-const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert']];
+const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility']];
 const LAYOUT_KEY = 'fs-pdf-layout';
 const SAY_KEY = 'fs-pdf-say';
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
@@ -52,7 +52,7 @@ const toolBtn = (t: Tool, label: string, ic: string): string => `<button class="
 interface State { id: string; annots: Annot[]; label: string; turn?: string; agent?: string }
 interface BarAction { label: string; kind?: 'primary' | 'ghost' | 'danger'; run: (value: string) => void }
 
-const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="application" aria-label="PDF workbench" data-tab="view" data-tool="select" hidden>
+const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF workbench" data-tab="view" data-tool="select" hidden>
 <header class="fs-pdfwb-title">
 <div class="fs-brand" role="button" tabindex="0" title="Home" data-a="home">${brandMark(20)}<span class="fs-brand-name">formpdf</span></div>
 <nav class="fs-menubar fs-pdfwb-menubar" aria-label="Main menu"></nav>
@@ -80,6 +80,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="application" aria-label
 <div class="fs-tb fs-pdfwb-set" data-for="extract" hidden><span class="fs-pdfwb-settext">Text, pictures and tables, from all pages or a range.</span></div>
 <div class="fs-tb fs-pdfwb-set" data-for="protect" hidden>${toolBtn('select', 'Select', icon('cursor', 16))}${toolBtn('redact', 'Mark areas to redact', icon('eraser', 16))}</div>
 <div class="fs-tb fs-pdfwb-set" data-for="convert" hidden><span class="fs-pdfwb-settext">PowerPoint, Word, Excel, web pages, smaller files and pictures.</span></div>
+<div class="fs-tb fs-pdfwb-set" data-for="access" hidden><span class="fs-pdfwb-settext">Check, tag, set the reading order and describe pictures for screen readers.</span></div>
 </div>
 <div class="fs-pdfwb-bar" hidden role="alert"><span class="fs-pdfwb-bar-icon">${icon('warning', 16)}</span><span class="fs-pdfwb-bar-text"></span><input class="fs-input fs-pdfwb-bar-input" hidden spellcheck="false"><div class="fs-pdfwb-bar-actions"></div></div>
 <div class="fs-pdfwb-main">
@@ -98,7 +99,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="application" aria-label
 <aside class="fs-pdfwb-panel"></aside>
 </div>
 <footer class="fs-status fs-pdfwb-status">
-<div class="fs-status-left"><span class="fs-st fs-pdfwb-stat"></span><span class="fs-st fs-st-busy">${icon('loading', 12).replace('class="icon"', 'class="icon spin"')}<span class="fs-pdfwb-busy"></span></span><span class="fs-st-hint fs-pdfwb-hint"></span><span class="fs-st fs-st-agent fs-pdfwb-agent" hidden>${icon('agent', 12)}<span class="fs-pdfwb-agentlabel"></span><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="undo-agent" title="Undo the agent's last turn">Undo turn</button></span></div>
+<div class="fs-status-left"><span class="fs-st fs-pdfwb-stat"></span><span class="fs-st fs-st-busy">${icon('loading', 12).replace('class="icon"', 'class="icon spin"')}<span class="fs-pdfwb-busy" role="status"></span></span><span class="fs-st-hint fs-pdfwb-hint"></span><span class="fs-st fs-st-agent fs-pdfwb-agent" hidden>${icon('agent', 12)}<span class="fs-pdfwb-agentlabel"></span><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="undo-agent" title="Undo the agent's last turn">Undo turn</button></span></div>
 <div class="fs-status-right">
 <span class="fs-pdfwb-pagebox"><input class="fs-pdfwb-pagein" type="text" inputmode="numeric" aria-label="Page number" value="1"><span class="fs-pdfwb-pageof">of 0</span></span>
 <button class="fs-icon-btn fs-pdfwb-layoutbtn" type="button" data-a="layout-menu" title="Page display" aria-label="Page display" aria-haspopup="menu">${icon('pageScroll', 14)}</button>
@@ -206,6 +207,23 @@ class Workbench {
     q(this.root, '.fs-pdfwb-panel').appendChild(this.panes.root);
     q(this.panes.root, '.fs-pdfwb-cmphost').appendChild(this.cmpPanel.root);
     q(this.panes.root, '.fs-pdfwb-pane[data-for="form"]').appendChild(this.formPanel.root);
+    for (const [t, l] of TABS) {
+      const pane = q(this.panes.root, `.fs-pdfwb-pane[data-for="${t}"]`);
+      pane.setAttribute('role', 'tabpanel');
+      pane.setAttribute('aria-label', l);
+    }
+    q(this.root, '.fs-pdfwb-tabs').addEventListener('keydown', (e) => {
+      const tabs = Array.from(this.root.querySelectorAll<HTMLButtonElement>('.fs-pdfwb-tab')).filter((b) => !b.disabled);
+      const at = tabs.indexOf(document.activeElement as HTMLButtonElement);
+      if (at < 0) return;
+      const to = e.key === 'ArrowRight' ? (at + 1) % tabs.length : e.key === 'ArrowLeft' ? (at - 1 + tabs.length) % tabs.length
+        : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : -1;
+      if (to < 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      tabs[to].focus();
+      this.setTab(tabs[to].dataset.tab as Tab);
+    });
     this.cmds.add(
       { id: 'pdf-open', label: 'Open a PDF…', keys: ['Mod+O'], run: () => void this.pick(false).then((f) => { if (f[0]) void this.guard(() => this.openFile(f[0])); }) },
       { id: 'pdf-create-pictures', label: 'Create PDF from pictures…', run: () => void this.startCreate('pictures') },
@@ -688,7 +706,7 @@ class Workbench {
     if (tab !== 'view' && this.reading) this.setReading(false);
     this.tab = tab;
     this.root.dataset.tab = tab;
-    for (const b of Array.from(this.root.querySelectorAll<HTMLElement>('.fs-pdfwb-tab'))) { setClass(b, 'is-on', b.dataset.tab === tab); b.setAttribute('aria-selected', String(b.dataset.tab === tab)); }
+    for (const b of Array.from(this.root.querySelectorAll<HTMLElement>('.fs-pdfwb-tab'))) { setClass(b, 'is-on', b.dataset.tab === tab); b.setAttribute('aria-selected', String(b.dataset.tab === tab)); b.tabIndex = b.dataset.tab === tab ? 0 : -1; }
     for (const s of Array.from(this.root.querySelectorAll<HTMLElement>('.fs-pdfwb-set'))) setHidden(s, s.dataset.for !== tab);
     const org = tab === 'organize';
     if (org) this.viewer.park();

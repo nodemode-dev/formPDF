@@ -41,6 +41,7 @@ export const TAB_WORDS: Record<Tab, string[]> = {
   extract: ['copy text', 'text', 'markdown', 'tables', 'csv', 'excel', 'pictures', 'images'],
   protect: ['password', 'encrypt', 'redact', 'black out', 'remove text', 'metadata', 'sanitize', 'hidden information', 'permissions'],
   convert: ['word', 'docx', 'powerpoint', 'pptx', 'slides', 'compress', 'reduce size', 'png', 'pictures', 'export'],
+  access: ['accessibility', 'a11y', 'screen reader', 'tags', 'reading order', 'alt text', 'alternate text', 'pdf/ua', 'wcag', 'section 508'],
 };
 
 const TOOLS: Tool[] = [];

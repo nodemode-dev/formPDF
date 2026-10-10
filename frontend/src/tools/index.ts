@@ -7,3 +7,4 @@ import './content';
 import './formalign';
 import './ocr';
 import './certsign';
+import './access';
