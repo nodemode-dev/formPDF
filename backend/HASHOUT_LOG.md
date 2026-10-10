@@ -14,7 +14,7 @@ app/routers/system.py        health, version, capabilities, settings
 app/routers/media.py         extracted pictures
 app/services/bridge.py       window list, window document, window_call
 app/services/media.py        formpdf-owned picture store
-app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare
+app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare, actions (registry)
 ```
 
 ## TOC
@@ -34,6 +34,7 @@ app/services/pdf/            docs, core, edit, annot, forms, layout, word, slide
 13. Live agent changes land in the window as a turn · routers/mcp.py _land, routers/live.py
 14. Consent for every action that writes · routers/mcp.py _mutating
 15. Compress without document info · services/pdf/edit.py compress
+16. One action registry for MCP, the CLI, batch and the palette · services/pdf/actions.py
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -94,3 +95,7 @@ A review of formsld 0.5.1 found that only `pdf to_deck` asked for consent while 
 ## 15. Compress without document info · _v0.1.0 (services/pdf/edit.py compress)
 
 pypdf's `compress_identical_objects(remove_orphans=True)` dereferences the writer's `/Info` and raises AttributeError when there is none, which is the state after Remove hidden information strips metadata. Compress skips the identical-object pass in that case; pictures and streams are still recompressed.
+
+## 16. One action registry for MCP, the CLI, batch and the palette · _v0.2.0 (services/pdf/actions.py; routers/mcp.py READ_ACTIONS to LABEL, _change, _export, _read; routers/pdf.py action_list)
+
+The parity plan adds about forty actions, and each one has to reach the window, the MCP `pdf` tool, `./formpdf run`, Home batch and the command palette. Before this, the action names, labels and output suffixes lived as literals in mcp.py, so every new action meant edits in several places that could drift. `actions.py` is now the one table: name, kind (read, change, export), label, suffix, synonyms for the palette, an output extension, and the fields a batch form shows. mcp.py's names are the registry's live lists and dicts (same objects), so the tool's action enum and consent rules follow registration without rebuilding. The 27 built-in actions keep their hand-written branches in `_change`, `_export` and `_read`; an action registered with a `run` handler (later phases, plug-ins) falls through to it: change and export handlers take `(src, out, *, args, pages, passwords)`, read handlers take `(src, *, args, pages, passwords)` and return text plus data. `batch` is false for read actions and for actions that need per-file choices (merge, fill, annotate, form, organize, unlock). GET /api/pdf/actions serves the catalogue.

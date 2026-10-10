@@ -13,7 +13,7 @@ from app.routers import pdf as routes
 from app.routers.live import local_origin
 from app.services import bridge
 from app.services import pdf as pdfsvc
-from app.services.pdf import docs
+from app.services.pdf import actions, docs
 
 router = APIRouter()
 VERSIONS = ["2026-07-28", "2025-11-25"]
@@ -26,18 +26,12 @@ INSTRUCTIONS = ("formpdf edits PDFs on this computer; the person watches the ope
                 "pdf {action} for the job: without path it changes the open PDF live as your turn, with path it writes a new file; "
                 "render_pages to look at the result; extract for text, tables or pictures; save {path} when the person wants a file; "
                 "undo reverts your last turn. Actions and arguments: resource formpdf://guide.")
-READ_ACTIONS = ["info", "text", "images", "tables", "find", "comments", "fields", "hidden", "compare"]
-CHANGE_ACTIONS = ["header_footer", "page_numbers", "watermark", "crop", "redact", "organize", "protect", "unlock", "metadata", "compress",
-                  "sanitize", "fill", "annotate", "form", "merge"]
-EXPORT_ACTIONS = ["split", "to_docx", "to_pptx"]
-ACTIONS = READ_ACTIONS + CHANGE_ACTIONS + EXPORT_ACTIONS
-SUFFIX = {"header_footer": "header-footer", "page_numbers": "numbered", "watermark": "watermarked", "crop": "cropped", "redact": "redacted",
-          "organize": "organized", "protect": "protected", "unlock": "unlocked", "metadata": "metadata", "compress": "compressed",
-          "sanitize": "clean", "fill": "filled", "annotate": "commented", "form": "form", "merge": "merged"}
-LABEL = {"header_footer": "Add header and footer", "page_numbers": "Add page numbers", "watermark": "Add watermark", "crop": "Crop pages",
-         "redact": "Redact", "organize": "Organize pages", "protect": "Protect with password", "unlock": "Remove password", "metadata": "Edit metadata",
-         "compress": "Compress", "sanitize": "Remove hidden information", "fill": "Fill form", "annotate": "Add comments", "form": "Prepare form",
-         "merge": "Merge PDFs"}
+READ_ACTIONS = actions.READ
+CHANGE_ACTIONS = actions.CHANGE
+EXPORT_ACTIONS = actions.EXPORT
+ACTIONS = actions.ALL
+SUFFIX = actions.SUFFIX
+LABEL = actions.LABEL
 GUIDE = """# formpdf agent guide
 
 ## Loop
@@ -420,6 +414,8 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages) -> dict
         fn, kw = pdfsvc.prepare_form, dict(create=args.get("create") or [], rename=args.get("rename") or {}, delete=args.get("delete") or [], passwords=pw)
     elif action == "merge":
         return await _merge(a, src, args)
+    elif actions.get(action) and actions.get(action).run:
+        fn, kw = actions.get(action).run, dict(args=args, pages=pages, passwords=pw)
     else:
         raise ToolError(f"Unknown action {action}.")
     label = LABEL[action]
@@ -507,6 +503,17 @@ async def _export(src: Source, action: str, args: dict, pages) -> dict:
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
         return _ok("Wrote " + ", ".join(final), {"paths": final})
+    plug = actions.get(action)
+    if plug and plug.run:
+        out = _out_file(src, args.get("out"), plug.suffix or action, plug.ext or ".pdf")
+        tmp = out.with_name(f".{out.name}.tmp{out.suffix}")
+        try:
+            got = await asyncio.to_thread(lambda: plug.run(src.path, tmp, args=args, pages=pages, passwords=pw))
+            tmp.replace(out)
+        finally:
+            tmp.unlink(missing_ok=True)
+        got = got if isinstance(got, dict) else {}
+        return _ok(f"{plug.label}: wrote {out}.", {"path": str(out), **{k: v for k, v in got.items() if isinstance(v, (int, float, str, list))}})
     ext = ".docx" if action == "to_docx" else ".pptx"
     out = _out_file(src, args.get("out"), "", ext)
     tmp = out.with_name(f".{out.name}.tmp{ext}")
@@ -569,6 +576,10 @@ async def _read(src: Source, action: str, args: dict, pages) -> dict:
         lines = [f"{c['kind']} · p{c.get('page')} · {_clip(c.get('before') or '', 80)} -> {_clip(c.get('after') or '', 80)}" for c in got["changes"][:200]]
         return _ok(f"{s['changed']} pages changed, {s['added']} added, {s['removed']} removed, {s['same']} the same; {len(got['changes'])} differences:\n" + "\n".join(lines),
                    {"summary": s, "count": len(got["changes"])})
+    plug = actions.get(action)
+    if plug and plug.run:
+        text, data = await asyncio.to_thread(lambda: plug.run(src.path, args=args, pages=pages, passwords=pw))
+        return _ok(_text_out(str(text)), data if isinstance(data, dict) else None)
     raise ToolError(f"Unknown action {action}.")
 
 

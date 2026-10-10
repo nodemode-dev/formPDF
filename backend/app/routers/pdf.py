@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, Response
 
 from app.core import config
 from app.services import pdf as pdfsvc
-from app.services.pdf import docs
+from app.services.pdf import actions, docs
 
 router = APIRouter()
 IMMUTABLE = {"Cache-Control": "private, max-age=31536000, immutable"}
@@ -119,6 +119,11 @@ def recent() -> dict:
 def forget(body: dict) -> dict:
     docs.forget(str(body.get("key") or ""))
     return {"ok": True}
+
+
+@router.get("/pdf/actions")
+def action_list() -> dict:
+    return {"actions": actions.catalogue()}
 
 
 @router.post("/pdf/merge")
