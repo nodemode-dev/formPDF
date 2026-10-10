@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "formpdf": {
+      "command": "python3",
+      "args": [
+        "${workspaceFolder}/setup/mcp_stdio.py"
+      ]
+    }
+  }
+}

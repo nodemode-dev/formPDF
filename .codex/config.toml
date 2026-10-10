@@ -1,0 +1,5 @@
+[mcp_servers.formpdf]
+command = "sh"
+args = ["-c", "exec python3 \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/setup/mcp_stdio.py\""]
+startup_timeout_sec = 30
+tool_timeout_sec = 300

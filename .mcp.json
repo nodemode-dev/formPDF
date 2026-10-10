@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "formpdf": {
+      "type": "http",
+      "url": "http://127.0.0.1:8198/mcp"
+    },
+    "formpdf-stdio": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/setup/mcp_stdio.py"
+      ]
+    }
+  }
+}
