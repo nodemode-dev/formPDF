@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core import config
-from app.routers import batch, identity, live, mcp, media, pdf, scan, system
+from app.routers import batch, identity, lists, live, mcp, media, pdf, scan, system
+from app.services import plugins
 
 
 def _write_discovery() -> None:
@@ -31,6 +32,7 @@ def _clear_discovery() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     _write_discovery()
+    plugins.start()
     yield
     _clear_discovery()
 
@@ -43,6 +45,7 @@ app.include_router(pdf.router, prefix="/api")
 app.include_router(batch.router, prefix="/api")
 app.include_router(scan.router, prefix="/api")
 app.include_router(identity.router, prefix="/api")
+app.include_router(lists.router, prefix="/api")
 app.include_router(live.router)
 app.include_router(mcp.router)
 

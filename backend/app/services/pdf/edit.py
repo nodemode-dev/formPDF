@@ -254,6 +254,9 @@ def _plain(v) -> str:
 def read_fields(path, passwords: list[str] | None = None) -> list[dict]:
     r = core.reader(path, passwords)
     out = []
+    form = r.trailer["/Root"].get("/AcroForm")
+    form = form.get_object() if form is not None else {}
+    co = [_name(x) for x in (form.get("/CO") or [])]
     for pi, page in enumerate(r.pages):
         x0, y0, x1, y1 = core.view_box(page)
         for ref in page.get("/Annots") or []:
@@ -304,6 +307,25 @@ def read_fields(path, passwords: list[str] | None = None) -> list[dict]:
                 m = re.search(r'AFDate_FormatEx\("([^"]{1,40})"\)', js)
                 if m:
                     item["format"] = m.group(1)
+            if kind in ("text", "choice"):
+                scripts = {}
+                aa = _inherit(a, "/AA")
+                aa = aa.get_object() if aa is not None else {}
+                for key, label in (("/C", "calculate"), ("/F", "format"), ("/K", "keystroke"), ("/V", "validate")):
+                    try:
+                        act = aa.get(key)
+                        act = act.get_object() if act is not None else None
+                        code = act.get("/JS") if act is not None else None
+                        code = code.get_object() if hasattr(code, "get_object") else code
+                        text = code.get_data().decode("latin-1") if hasattr(code, "get_data") else str(code or "")
+                    except Exception:
+                        text = ""
+                    if text.strip():
+                        scripts[label] = text[:4000]
+                if scripts:
+                    item["scripts"] = scripts
+                    if item["name"] in co:
+                        item["calcOrder"] = co.index(item["name"])
             out.append(item)
     return out
 

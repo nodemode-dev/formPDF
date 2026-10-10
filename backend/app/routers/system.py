@@ -83,7 +83,9 @@ def get_settings() -> dict:
 
 @router.post("/settings")
 def set_settings(patch: dict) -> dict:
-    allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "author", "units", "spellLang", "timestampUrl"}}
+    allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "author", "units", "spellLang", "timestampUrl", "formScripts"}}
+    if "formScripts" in allowed:
+        allowed["formScripts"] = bool(allowed["formScripts"])
     if "timestampUrl" in allowed:
         url = str(allowed["timestampUrl"] or "").strip()[:300]
         if url and not url.startswith(("https://", "http://")):

@@ -60,6 +60,18 @@ def register(action: Action) -> Action:
     return action
 
 
+def unregister(name: str) -> None:
+    action = REGISTRY.pop(name, None)
+    if action is None:
+        return
+    lst = _LISTS[action.kind]
+    if name in lst:
+        lst.remove(name)
+    ALL[:] = READ + CHANGE + EXPORT
+    LABEL.pop(name, None)
+    SUFFIX.pop(name, None)
+
+
 def get(name: str) -> Action | None:
     return REGISTRY.get(name)
 
