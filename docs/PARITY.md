@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.3.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.4.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -12,7 +12,7 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | --- | --- |
 | PDF viewing | 5.5 of 6 · 92% |
 | PDF annotation | 7 of 7 · 100% |
-| Content editing | 4.5 of 14 · 32% |
+| Content editing | 11.5 of 14 · 82% |
 | PDF forms and signing | 4 of 6 · 67% |
 | PDF organize | 7 of 7 · 100% |
 | PDF protect and redact | 4.5 of 5 · 90% |
@@ -23,9 +23,9 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Import and export | 0 of 1 · 0% |
 | Print | 1 of 3 · 33% |
 | Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **45.5 of 72 · 63%** |
+| **Overall** | **52.5 of 72 · 73%** |
 
-Across the 72 scored rows formpdf has 40 full, 11 partial and 21 none.
+Across the 72 scored rows formpdf has 48 full, 9 partial and 15 none.
 
 ## Where formpdf leads
 
@@ -33,10 +33,10 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 ## Where formpdf trails most
 
-- **Content editing.** formpdf adds text boxes, notes, stamps, signatures, links and attached files and checks spelling, but does not yet edit the PDF's own text and pictures in place, reformat existing text, or add or crop pictures as page content.
+- **Content editing.** formpdf adds page text and pictures that stay editable, crops, rotates, arranges and aligns them and the pictures already on a page, adds links and attached files and checks spelling, but does not yet edit or reformat the text a PDF already has.
 - **Accessibility.** No accessibility checker, no tagging and no reading-order editor for PDFs.
 - **Signing and scanning.** No certificate signatures, signature requests, OCR or scanning.
-- Rows with nothing yet: Edit PDF text and pictures in place; Bulleted and numbered lists in PDF text; Align PDF paragraphs: left, centre, right, justify; Crop pictures on PDF pages; Generate pictures with AI (Adobe Express); Arrange objects: bring forward, send backward; Align and distribute objects on a page; Rotate and flip pictures on PDF pages; Certificate-based digital signatures; Request signatures from others; OCR for scanned pages; Scan paper documents to PDF; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
+- Rows with nothing yet: Edit PDF text and pictures in place; Generate pictures with AI (Adobe Express); Certificate-based digital signatures; Request signatures from others; OCR for scanned pages; Scan paper documents to PDF; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
 
 ## Line by line
 
@@ -68,18 +68,18 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
 | Edit PDF text and pictures in place | yes | None | nothing found: no tool edits text already on the page (`annotate.ts Tool` has markup and drawing tools only), and placed pictures are new annotations, not the page's own images |
-| Add new text to PDF pages | yes | Partial | Fill & Sign > Add text and the Comment text box (`annotate.ts` freetext, `annot.py draw`) flattened into the page; size and colour only, one font, not editable as text after Apply |
-| Edit PDF text formatting: font, size, colour, style | yes | Partial | only for text formpdf adds (`annotate.ts` freetext size select and colour palette, `annot.py font_for`); no font choice, bold, italic or underline, and no tool edits text already on the page (`annotate.ts Tool` has markup and drawing tools only) |
-| Bulleted and numbered lists in PDF text | yes | None | nothing found |
-| Align PDF paragraphs: left, centre, right, justify | yes | None | nothing found: added text boxes are left-aligned (`annot.py _text_block`); only new form fields have an alignment (`pdf/form.ts` Align) |
+| Add new text to PDF pages | yes | Full | Edit > Text and pictures > Add text (`tools/content.ts`, `tools/richtext.ts`): type on the page in a live editor, saved as page content that stays editable (`services/pdf/items.py`, actions items and edit_items in MCP and the CLI); double-click to edit again, move, resize the width, rotate; Make page text turns a comment text box into page text |
+| Edit PDF text formatting: font, size, colour, style | yes | Partial | for text formpdf adds: Inter, Noto Serif or JetBrains Mono, size, colour, bold, italic, underline, strike, super and subscript per run, line spacing (`tools/content.ts`, `items.py layout`); text already on the page is not editable yet (Phase 4) |
+| Bulleted and numbered lists in PDF text | yes | Full | in added page text: bulleted and numbered lists with hanging indents and four levels (Tab and Shift+Tab), numbering restarting after other paragraphs (`richtext.ts setList, indent`, `items.py layout`) |
+| Align PDF paragraphs: left, centre, right, justify | yes | Full | in added page text, per paragraph: left, centre, right and justify with the last line left (`richtext.ts`, `items.py layout`) |
 | Add links to PDF pages | yes | Full | Edit > Links (`frontend/src/tools/links.ts`): draw a box and link it to a web address, an email address or a page, link every web and email address in the text, list and remove links; `services/pdf/links.py change, read` (actions edit_links and links in MCP, the CLI and Batch); following a link offers http, https and mailto only, behind a prompt (`workbench.ts openLink`) |
 | Spell check edited text and comments | yes | Full | Comment > Check spelling (`tools/spell.ts`, F7) over PDF comments, text boxes, form field text and comments not applied yet, with suggestions, Change, Change all, Ignore, Ignore all and Add to dictionary; engine `spell.py` reads Hunspell dictionaries (SCOWL en_US bundled, more in Formpdf/dictionaries), MCP `pdf spell` and `spell_fix`; Preferences > Spelling sets the language and your words |
-| Add pictures to PDF pages | yes | Partial | Stamps > From a picture (`panels.ts` stamp-image) places a PNG, JPEG, WebP, GIF or BMP and `annot.py draw` image writes it (flattened or as a stamp comment); re-encoded to PNG at most 1600 px, and not editable as a page image afterwards |
-| Crop pictures on PDF pages | yes | None | nothing found: placed pictures resize only (`annotate.ts`); no crop for any image |
+| Add pictures to PDF pages | yes | Full | Edit > Text and pictures > Add picture (`tools/content.ts`): PNG, JPEG, GIF, WebP, BMP or TIFF placed as page content at full resolution, JPEG kept as JPEG, EXIF orientation honoured, editable afterwards (`items.py image_object`) |
+| Crop pictures on PDF pages | yes | Full | Select a picture added by formpdf or already on the page, Crop and drag the handles (Enter keeps it), Reset crop; a clip in the picture's form, never a re-encode (`items.py _picture_form`, `Page.convert`) |
 | Generate pictures with AI (Adobe Express) | yes | None | nothing found |
-| Arrange objects: bring forward, send backward | yes | None | nothing found: annotations and placed pictures have no z-order commands (`annotate.ts`) |
-| Align and distribute objects on a page | yes | None | nothing found for page objects or form fields |
-| Rotate and flip pictures on PDF pages | yes | None | nothing found: placed pictures follow the page rotation only; no rotate or flip |
+| Arrange objects: bring forward, send backward | yes | Full | Bring to front, Bring forward, Send backward, Send to back (Mod+], Mod+[ with Shift for front and back) for page text, pictures (added or already on the page) and comments (`tools/content.ts arrange`; `items.py Page.arrange`, edit_items comments for comments already in the PDF) |
+| Align and distribute objects on a page | yes | Full | align left, centre, right, top, middle, bottom and distribute across or down for selected page text, pictures and comments (Edit > Text and pictures) and for new form fields (Prepare form > Align fields, Shift-click to select several) (`pdf/align.ts`, `tools/formalign.ts`) |
+| Rotate and flip pictures on PDF pages | yes | Full | rotate by any angle with the rotate handle (Shift for 15 degree steps) or by 90 degrees, flip horizontally or vertically, for pictures added by formpdf and pictures already on the page, by transform only (`items.py placement`) |
 | Attach files to a PDF | yes | Full | Edit > Attached files (`frontend/src/tools/attachments.ts`): attach files of any type to the document, pin a file to a spot on a page (a FileAttachment comment with a paperclip), list, save a copy and remove; `services/pdf/attach.py change, read, get_file` (actions edit_attachments and attachments), GET /api/pdf/{id}/attachment; Remove hidden information still strips them |
 
 ### PDF forms and signing

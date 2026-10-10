@@ -14,12 +14,12 @@ Version 0.3.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 | Comment | Highlight, underline, strike through, notes, text boxes, ink, shapes, lines and arrows; replies and status; stamps; measure distance, perimeter and area; check spelling with your own words |
 | Fill & Sign | Fill form fields; draw or type a signature; dates, text and business or dynamic stamps |
 | Prepare form | Text, multi-line, check box, radio, dropdown, list box, date and signature fields |
-| Edit | Headers and footers with Bates numbers (across a set of files from Batch), crop, page numbers, watermark, links, attached files |
+| Edit | Page text and pictures that stay editable (fonts, styles, alignment, lists; crop, rotate, flip), pictures already on the page moved and cropped, arrange and align; headers and footers with Bates numbers (across a set of files from Batch), crop, page numbers, watermark, links, attached files |
 | Organize | Rotate, delete, reorder, insert pages; split; merge |
 | Extract | Text (.txt, .md), pictures, tables (CSV, .xlsx) |
 | Protect | Passwords and permissions, remove a password, find and redact, metadata, remove hidden information |
 | Convert | Export to PowerPoint (one slide per page, words as real text boxes), Word (columns, lists, headers and footers kept), Excel, HTML, RTF, compress, pages to pictures |
-| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (39 actions), render_pages, extract, save, undo |
+| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (41 actions), render_pages, extract, save, undo |
 
 ## Install and run
 
@@ -66,10 +66,10 @@ docs/       MANUAL.md
 
 ## Known gaps
 
-- Against Acrobat, formpdf scores 45.5 of 72 (63%); docs/PARITY.md has every row. The largest gap is editing a PDF's own text and pictures in place, then accessibility (checker, tagging), certificate signatures and OCR.
+- Against Acrobat, formpdf scores 52.5 of 72 (73%); docs/PARITY.md has every row. The largest gaps are editing the text a PDF already has, accessibility (checker, tagging), certificate signatures and OCR.
 - No OCR: scanned pages have no text to search, extract or export as text boxes.
 - Signatures are pictures stamped on the page, not certificate (digital ID) signatures.
-- Text and pictures already in a PDF cannot be edited in place; redaction turns the affected pages into pictures.
+- Text already in a PDF cannot be edited in place yet (pictures already in it can be moved, resized, cropped, rotated and arranged); redaction turns the affected pages into pictures.
 - No tagged PDF or accessibility checker; no shared review or signature requests.
 
 ## Licence
