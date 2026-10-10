@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.10.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.11.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -22,10 +22,10 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Accessibility | 4.5 of 5 · 90% |
 | Import and export | 0 of 1 · 0% |
 | Print | 2.5 of 3 · 83% |
-| Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **63.5 of 72 · 88%** |
+| Automation and agents | 1.5 of 3 · 50% |
+| **Overall** | **64.5 of 72 · 90%** |
 
-Across the 72 scored rows formpdf has 60 full, 7 partial and 5 none.
+Across the 72 scored rows formpdf has 61 full, 7 partial and 4 none.
 
 ## Where formpdf leads
 
@@ -36,7 +36,8 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 - **Content editing.** formpdf edits the text and pictures a PDF already has and adds page text and pictures that stay editable; only generating pictures with AI is missing.
 - **Signing requests.** Signers and their order are tracked in the PDF, but sending and reminders go through the person's own email rather than a service.
 - **Print production.** No CMYK conversion or transparency flattening, and PDF/X output is not validated by an outside tool.
-- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Create PDFs from Office files (Word, PowerPoint, Excel); Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
+- **Form JavaScript.** Standard Acrobat calculations, formats and checks run, but no PDF JavaScript is executed, so custom form scripts do nothing.
+- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Create PDFs from Office files (Word, PowerPoint, Excel); Generate a presentation from PDFs and files with AI (PDF Spaces).
 
 ## Line by line
 
@@ -174,8 +175,8 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
 | Generate a presentation from PDFs and files with AI (PDF Spaces) | yes | None | nothing found: formpdf has no deck editor and no built-in model; Export to PowerPoint converts pages, it does not draft a presentation |
-| JavaScript and guided actions | yes | Partial | no JavaScript (`sanitize.py` only removes it) and no in-app action sequences; repeatable steps only from outside, through the MCP pdf actions or the CLI |
-| Plug-ins and add-ons | yes | None | nothing found |
+| JavaScript and guided actions | yes | Partial | action lists: five built in, recorded from the window's own changes, saved, run on the open PDF as one undoable version, in Batch, by agents and from the CLI (`lists.py run_list`, `tools/lists.ts`, `pdf/recorder.ts`); form calculations, formats, keystrokes and range checks written with Acrobat's standard functions run as the person fills (`pdf/formcalc.ts`); partial because no PDF JavaScript is executed, so custom form scripts, document scripts and a console are not available |
+| Plug-ins and add-ons | yes | Full | plug-in folders with an engine file and a window file, off until the person allows them and off again when they change (`plugins.py`); a plug-in registers ordinary actions that reach the MCP tool, the palette, Batch, action lists and the CLI, and adds tool sections to any tab (`pdf/plugins.ts`, `pdf/tools.ts registerTool`); sample in `docs/plugins/word-count` |
 | MCP server for outside agents (HTTP and stdio) | no | Full | `backend/app/routers/mcp.py` HTTP server on 127.0.0.1:8198/mcp and `setup/mcp_stdio.py` stdio bridge (engine found through ~/Formpdf/engine.json); tools get_context, open_pdf, pdf, render_pages, extract, save, undo |
 | Agent edits land live in the open window and undo per turn | no | Full | a change from `mcp.py t_pdf` without an out path replaces the PDF open in the window live (`live/agent.ts`, `pdf/workbench.ts`), labelled Agent: in its history; Undo turn in the status bar, Edit > Undo agent turn (Alt+Mod+Z) and the MCP `undo` tool return the version before the turn; the agent's change is refused if the person edited meanwhile |
 | Agent sees its pages | no | Full | `render_pages` returns a contact sheet of chosen pages (`services/pdf/slides.py`, pdfium) and `extract` returns text, tables and pictures (`core.py extract_text, extract_tables, extract_images`) |
