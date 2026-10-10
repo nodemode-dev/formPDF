@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -e
+FORMPDF_CALLER_DIR="$PWD"
+export FORMPDF_CALLER_DIR
+cd "$(dirname "$0")"
+usage() {
+  printf 'formpdf %s · PDF editor\n' "$(sed -n "s/^export const VERSION = '\(.*\)';$/\1/p" frontend/src/version.ts 2>/dev/null)"
+  cat << 'EOT'
+
+usage: ./formpdf [command] [options]
+
+  (none) | boot       boot backend (8198) and frontend (5198) together
+  install             install backend and frontend
+  install-desktop     install PyInstaller and check the Rust and Tauri toolchain
+  backend             boot the backend only
+  frontend            boot the frontend only
+  build               production build of the frontend into frontend/dist
+  serve               serve the built frontend from the backend on 127.0.0.1:8198
+  freeze              freeze the backend into the Tauri sidecar binary
+  desktop dev|build   run or bundle the desktop app
+  doctor              check the toolchain, installs and ports
+  mcp                 formpdf over MCP's stdio transport, for Claude Desktop and other MCP clients
+  agents install|sync set up Claude Code, Codex and Cursor (install), or refresh the skills (sync)
+  run <action> [args] a PDF job headlessly, without the window (./formpdf run actions lists them)
+  clean [--all]       remove build output (--all also venv and node_modules)
+  help                this text
+EOT
+}
+cmd="${1:-boot}"
+[ $# -gt 0 ] && shift
+case "$cmd" in
+  boot|dev) exec setup/boot_all "$@" ;;
+  install) exec setup/install_all "$@" ;;
+  install-desktop) exec setup/install_desktop "$@" ;;
+  backend) exec setup/boot_backend "$@" ;;
+  frontend) exec setup/boot_frontend "$@" ;;
+  build) exec setup/build_frontend "$@" ;;
+  serve) exec setup/serve "$@" ;;
+  freeze) exec setup/freeze_backend "$@" ;;
+  desktop)
+    sub="${1:-dev}"
+    [ $# -gt 0 ] && shift
+    case "$sub" in
+      dev) exec setup/desktop_dev "$@" ;;
+      build) exec setup/desktop_build "$@" ;;
+      *) usage; exit 2 ;;
+    esac ;;
+  doctor) exec setup/doctor "$@" ;;
+  mcp) exec python3 setup/mcp_stdio.py "$@" ;;
+  agents) exec python3 setup/agents.py "$@" ;;
+  run) exec setup/run "$@" ;;
+  clean) exec setup/clean "$@" ;;
+  help|-h|--help) usage ;;
+  *) printf '[formpdf] unknown command: %s\n\n' "$cmd"; usage; exit 2 ;;
+esac

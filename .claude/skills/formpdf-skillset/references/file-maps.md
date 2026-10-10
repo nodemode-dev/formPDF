@@ -1,0 +1,48 @@
+# File maps
+
+## Engine (backend/)
+
+| Path | Role |
+| --- | --- |
+| `app/main.py` | FastAPI app, CORS, discovery file `~/Formpdf/engine.json` (port, pid), routers, static `FORMPDF_DIST` |
+| `app/core/config.py` | ports (5198, 8198), `FORMPDF_*` env, data folders (Pdf, Media, Exports), settings.json |
+| `app/core/ids.py` | short ids, picture ids by content hash |
+| `app/routers/pdf.py` | `/api/pdf/*`: open, open-path, recent, forget, merge, write, create, and per document file, info, text, images, tables(.xlsx), fields, annotate, organize, split, protect, unlock, redact, metadata, compress, page-numbers, watermark, header-footer, crop, find, comments, render, pages.zip, pptx, sheet, reflow, docx, hidden, sanitize, form, compare, save |
+| `app/routers/live.py` | `/api/live` WebSocket: windows say hello, report their open document, answer window tools |
+| `app/routers/mcp.py` | `/mcp` MCP server: 7 tools, the guide resource, the pdf-job prompt, consent, turns, live landing of agent versions |
+| `app/routers/system.py`, `media.py` | health, version, capabilities, settings; extracted pictures |
+| `app/services/bridge.py` | window list, the window's open document, `window_call` |
+| `app/services/media.py` | formpdf-owned picture store for extracted images (replaces formsld's media service) |
+| `app/services/pdf/docs.py` | working copies `Pdf/pdf_xxxxxxxxxx.pdf` with meta (name, path, root key, protect), `derive`, recents (24) |
+| `app/services/pdf/core.py` | info, text, images, tables, merge, split, render, pages zip, the `PDFIUM` lock (`serial`) |
+| `app/services/pdf/edit.py` | organize, fields, protect, unlock, redact, metadata, compress, page numbers, watermark, header and footer, crop |
+| `app/services/pdf/annot.py` | comments with replies and status, stamps, signatures, reading existing comments |
+| `app/services/pdf/forms.py` | Prepare form: create, rename, delete fields |
+| `app/services/pdf/layout.py` | reading order (XY cut), paragraphs, headings, runs; reflow for reading mode |
+| `app/services/pdf/word.py` | PDF to Word |
+| `app/services/pdf/slides.py` | PDF to PowerPoint (`to_pptx`) and contact sheets (`contact_sheet`) |
+| `app/services/pdf/sanitize.py`, `search.py`, `create.py`, `compare.py` | hidden information, find (presets, regex), PDF from pictures and files, compare |
+| `formpdf_engine.py` | frozen entry: `--selfcheck`, free port, bundled dist |
+
+## Window (frontend/src/)
+
+| Path | Role |
+| --- | --- |
+| `main.ts`, `app.ts` | composition root: Home, the workbench, live client, agent bridge, dialogs, global keys |
+| `ui/home.ts` | Home: open, open by path, recent PDFs with forget, create from pictures, merge, agents, preferences |
+| `ui/app-dialogs.ts` | Preferences, Agents, Help, Keyboard shortcuts |
+| `ui/dom.ts`, `icons.ts`, `menu.ts`, `commands.ts`, `dialogs.ts`, `dropdown.ts`, `toast.ts`, `themes.ts`, `brand.ts` | the form family toolkit and the formpdf mark |
+| `live/socket.ts`, `live/agent.ts` | WebSocket client, window tools (consent, state, open, commit, undo-turn, saved) |
+| `pdf/workbench.ts` | the workbench shell, menus, history of versions with agent turns, save, print, close guard |
+| `pdf/panels.ts` | side panes for every tab |
+| `pdf/viewer.ts` | pdf.js viewer, layouts, zoom, thumbnails in fixed slots |
+| `pdf/annotate.ts`, `stamps.ts`, `fill.ts`, `form.ts`, `organize.ts`, `compare.ts`, `create.ts`, `find.ts`, `reading.ts`, `api.ts` | tools per tab and the REST client |
+| `styles/` | tokens, shell, panels, dialogs, app-dialogs, pdf, light mode, scrollbars, fonts |
+
+## Desktop and setup
+
+| Path | Role |
+| --- | --- |
+| `src-tauri/src/main.rs` | spawns the sidecar, waits for its port, opens the window; opens `.pdf` files (arguments, single instance, macOS open events) |
+| `src-tauri/tauri.conf.json`, `capabilities/default.json` | product formpdf, identifier `ai.nodemode.formpdf`, `.pdf` association, permissions |
+| `setup/` | install, boot, build, serve, freeze, desktop, doctor, clean, run (CLI), mcp_stdio, agents (with `.bat` twins) |

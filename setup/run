@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+FORMPDF_CALLER_DIR="${FORMPDF_CALLER_DIR:-$PWD}"
+export FORMPDF_CALLER_DIR
+fp_venv
+cd "$FORMPDF_ROOT"
+exec python setup/cli.py "$@"

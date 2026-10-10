@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+fp_say "installing backend"
+( cd "$FORMPDF_ROOT/backend" && ./oc_install "$@" )
+fp_say "installing frontend"
+( cd "$FORMPDF_ROOT/frontend" && ./oc_install "$@" )
+fp_say "done. Boot with ./formpdf"

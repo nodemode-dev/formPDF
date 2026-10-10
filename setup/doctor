@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/lib.sh"
+fail=0
+ok() { printf '  ok     %s\n' "$1"; }
+bad() { printf '  FAIL   %s · %s\n' "$1" "$2"; fail=1; }
+warn() { printf '  warn   %s · %s\n' "$1" "$2"; }
+fp_say "doctor · $(fp_os)"
+if command -v node >/dev/null 2>&1 && node -e 'const [m,n]=process.versions.node.split(".").map(Number);process.exit((m===20&&n>=19)||(m===22&&n>=12)||m>=23?0:1)'; then ok "node $(node -v)"; else bad "node" "Node 20.19+ or 22.12+ is required"; fi
+if command -v npm >/dev/null 2>&1; then ok "npm"; else bad "npm" "install npm"; fi
+if py="$(fp_python)"; then ok "python $("$py" -V 2>&1 | awk '{print $2}')"; else bad "python" "Python 3.12+ is required"; fi
+vpy="$FORMPDF_ROOT/backend/venv/bin/python"
+[ -x "$vpy" ] || vpy="$FORMPDF_ROOT/backend/venv/Scripts/python.exe"
+if [ -x "$vpy" ]; then ok "backend venv"; else warn "backend venv" "run ./formpdf install"; fi
+if [ -d "$FORMPDF_ROOT/frontend/node_modules" ]; then ok "frontend node_modules"; else warn "frontend deps" "run ./formpdf install"; fi
+if [ -x "$vpy" ]; then
+  for pair in pptx:python-pptx pypdf:pypdf pypdfium2:pypdfium2 pdfplumber:pdfplumber docx:python-docx openpyxl:openpyxl PIL:Pillow reportlab:reportlab; do
+    if "$vpy" -c "import ${pair%%:*}" >/dev/null 2>&1; then ok "${pair#*:}"; else warn "${pair#*:}" "missing from the venv, rerun ./formpdf install"; fi
+  done
+fi
+if command -v cargo >/dev/null 2>&1; then ok "rust $(rustc --version | awk '{print $2}') for desktop builds"; else warn "rust" "desktop builds need https://rustup.rs"; fi
+for port in 5198 "${FORMPDF_PORT:-8198}"; do
+  if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then warn "port $port" "already in use"; else ok "port $port free"; fi
+done
+if [ "$fail" = 0 ]; then fp_say "ready"; else fp_say "fix the FAIL lines above"; fi
+exit "$fail"

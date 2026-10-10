@@ -1,0 +1,50 @@
+{
+  "skill_name": "formpdf-harness",
+  "notes": "Run with the formpdf engine and window open (./formpdf) and the formpdf MCP server connected. Fixture paths are examples.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "number-and-watermark-the-open-pdf",
+      "prompt": "Add page numbers like 'Page 3 of 12' bottom right and a light DRAFT watermark to the PDF I have open.",
+      "expected_behavior": [
+        "Calls get_context and uses the open PDF without asking for a path",
+        "One pdf page_numbers call with format 'Page {n} of {total}' and position bottom-right, one pdf watermark call with text DRAFT and a low opacity",
+        "Calls render_pages on a page or two and describes what it sees",
+        "Tells the person the change is live, undoable as one turn, and not saved yet"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "redact-emails-in-a-file",
+      "prompt": "Redact every email address in ~/work/contract.pdf and give me a separate file.",
+      "expected_behavior": [
+        "Runs pdf find with preset email and path first and reports the count and pages",
+        "Runs pdf redact with preset email and the same path, so the input is untouched and contract-redacted.pdf is written beside it",
+        "Mentions that redacted pages become pictures",
+        "Quotes the output path exactly"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "pdf-to-powerpoint",
+      "prompt": "turn slides.pdf into an editable powerpoint",
+      "expected_behavior": [
+        "Uses pdf to_pptx (not a deck tool) with the absolute path",
+        "Reports slides, size and text boxes from the answer, and the .pptx path"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "undo-after-mistake",
+      "prompt": "That crop cut off the header, put it back.",
+      "expected_behavior": [
+        "Calls undo (not a new crop with zero margins)",
+        "Renders the page to confirm the header is back"
+      ]
+    }
+  ],
+  "trigger_tests": {
+    "should_trigger": ["merge these PDFs with formpdf", "use formpdf to fill this form", "Bates number the exhibits in formpdf"],
+    "should_not_trigger": ["fix the thumbnail layout shift in formpdf's viewer", "make me a slide deck"]
+  }
+}

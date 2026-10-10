@@ -38,7 +38,7 @@
 .fs-pdfwb-bar { display: flex; align-items: center; gap: var(--space-3); min-width: 0; padding: var(--space-2) var(--space-3); background: color-mix(in srgb, var(--warn) 12%, var(--surface-1)); border-bottom: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line-1)); color: var(--text-primary); font-size: var(--fs-13); }
 .fs-pdfwb-bar.is-info { background: color-mix(in srgb, var(--accent-color) 8%, var(--surface-1)); border-bottom-color: var(--accent-line); }
 .fs-pdfwb-bar-icon { display: inline-flex; color: var(--warn); }
-.fs-pdfwb-agent { gap: var(--space-2); max-width: 420px; min-width: 0; color: var(--accent-ink); }
+.fs-pdfwb-agent { flex: none; justify-content: flex-end; gap: var(--space-2); width: 360px; min-width: 0; color: var(--accent-ink); }
 .fs-pdfwb-agentlabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fs-pdfwb-status .fs-pdfwb-agent .fs-btn { flex: none; height: 18px; padding: 0 6px; font-size: var(--fs-11); }
 .fs-pdfwb-bar.is-info .fs-pdfwb-bar-icon { color: var(--accent-ink); }
@@ -290,7 +290,8 @@
 @keyframes fs-pdf-pulse { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .fs-pdf-pulse { animation-duration: 1ms; animation-delay: 1200ms; } }
 
-.fs-pdfwb-status .fs-st-busy { min-width: 0; }
+.fs-pdfwb-status .fs-st-busy { flex: none; width: 190px; min-width: 0; overflow: hidden; }
+.fs-pdfwb-busy { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fs-pdfwb-stat { min-width: 128px; }
 .fs-pdfwb-pagebox { display: inline-flex; align-items: center; gap: 6px; }
 .fs-pdfwb-pagein, .fs-pdfwb-zoomin { height: 20px; padding: 0 6px; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: var(--surface-field); color: var(--text-primary); font-family: var(--font-mono); font-size: var(--fs-11); text-align: right; outline: 0; }

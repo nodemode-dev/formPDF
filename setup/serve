@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+[ -f "$FORMPDF_ROOT/frontend/dist/index.html" ] || "$FORMPDF_ROOT/setup/build_frontend"
+fp_venv
+cd "$FORMPDF_ROOT/backend"
+export FORMPDF_DIST="$FORMPDF_ROOT/frontend/dist"
+fp_say "serving http://${FORMPDF_HOST:-127.0.0.1}:${FORMPDF_PORT:-8198}"
+exec uvicorn app.main:app --host "${FORMPDF_HOST:-127.0.0.1}" --port "${FORMPDF_PORT:-8198}"
