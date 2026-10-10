@@ -7,12 +7,12 @@ Living log for the formpdf window, _v0.1.0. The code carries almost no comments;
 ```
 src/main.ts                 entry: startApp
 src/app.ts                  composition root: Home, the workbench, live client, agent bridge, dialogs, global keys
-src/pdf/                    workbench.ts (shell, menus, history, agent turns), panels.ts (panes), viewer.ts, annotate.ts,
+src/pdf/                    workbench.ts (shell, menus, history, agent turns), panels.ts (panes), tools.ts (tool registry), viewer.ts, annotate.ts,
                             stamps.ts, fill.ts, form.ts, organize.ts, compare.ts, create.ts, find.ts, reading.ts, api.ts, intent.ts
 src/live/                   socket.ts (LiveClient for /api/live), agent.ts (window tools and consent)
 src/io/api.ts               REST helpers for settings and capabilities
-src/ui/                     toolkit (dom, dialogs, menu, dropdown, commands, icons, themes, toast), brand.ts, home.ts, app-dialogs.ts
-src/styles/                 tokens.css (the only z-index source), shell, panels, dialogs, app-dialogs, pdf, light-mode, scrollbars, fonts
+src/ui/                     toolkit (dom, dialogs, menu, dropdown, commands, icons, themes, toast, palette), brand.ts, home.ts, app-dialogs.ts
+src/styles/                 tokens.css (the only z-index source), shell, panels, dialogs, app-dialogs, palette, pdf, light-mode, scrollbars, fonts
 ```
 
 ## TOC
@@ -29,6 +29,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 10. Thumbnails in fixed slots and other shift fixes · pdf/viewer.ts Thumbs.sync, styles/pdf.css, pdf/panels.ts
 11. Export to PowerPoint replaces PDF to deck · pdf/panels.ts, pdf/api.ts
 12. The formpdf mark · ui/brand.ts
+13. Command palette and the tool registry · ui/palette.ts, pdf/tools.ts
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -77,3 +78,9 @@ The Convert tab's PDF to deck section (pages as slides or rebuild into a templat
 ## 12. The formpdf mark · _v0.1.0 (ui/brand.ts MARK; assets/formpdf_mark.svg)
 
 Same family construction as the formsld mark (dark tile, red bloom, light paper with the cool to warm gradient, the stepped paint stroke with three trailing pixels, two text bars), with the paper drawn as a page with a folded corner and a text line in place of the easel. Favicon, apple-touch icon, splash and the Tauri icon set are rendered from it.
+
+## 13. Command palette and the tool registry · _v0.2.0 (ui/palette.ts Palette, scoreCommand; pdf/tools.ts registerTool, mountTools, syncTools, TAB_WORDS; app.ts homeCmds; pdf/workbench.ts pdf-palette, host)
+
+Acrobat hides tools behind an All tools page; the palette (Mod+K on Home and in the workbench, Help > Find a command or tool) searches every command by label and by synonyms, so "bates", "black out" or "powerpoint" find the tab that does it, and the matched synonym shows beside the result. Disabled commands stay listed, dimmed, with a reason from the command's optional `why` (Undo says Nothing to undo yet) or a fallback that knows whether a PDF is open. Ranking: enabled first, then match strength (exact, prefix, word start, substring, synonym, subsequence), then the twelve most recently run ids from localStorage (wrapped in try/catch; the palette works without it). It is a Dialog subclass so `anyDialogOpen` keeps global keys quiet while it is open; the head is hidden by CSS, the list has a fixed 336 px height so typing never resizes the box, rows are patched by command id, and focus moves by class only. On Home it lists Home's own commands plus the workbench commands that make sense without the workbench; in the workbench it lists the workbench's.
+
+`pdf/tools.ts` is the seam the parity phases build on: a tool registers its tab, an optional pane section (HTML plus mount and sync callbacks) and its commands with synonyms. The workbench mounts every registered tool once after its panes exist, appends the section to that tab's pane, adds the commands to its command set (so menus, shortcuts and the palette see them), and calls each tool's sync from `syncChrome`. Existing panes in panels.ts stay where they are; new tools never edit them. No tool is registered in 0.2.0, so the mount and sync paths first run in 0.3.0.

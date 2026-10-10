@@ -8,6 +8,8 @@ export interface Command {
   run: () => void;
   enabled?: () => boolean;
   checked?: () => boolean;
+  words?: string[];
+  why?: () => string;
 }
 
 const CODE_KEYS: Record<string, string> = {

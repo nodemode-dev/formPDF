@@ -16,9 +16,10 @@ import type { CreateKind } from './intent';
 import { Organizer, type OrgItem } from './organize';
 import { LAYOUTS, Panes, type Ctx, type Doc, type Tab } from './panels';
 import { recall, REFLOW_SIZES, Reflow, remember, Speaker } from './reading';
+import { mountTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
 import { Thumbs, Viewer, type Layout } from './viewer';
 
-export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void }
+export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void; palette(): void }
 export interface WorkbenchOptions { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; app: AppHooks }
 export interface DocState { id: string; key: string; name: string; pages: number; page: number; dirty: boolean; tab: string; path: string | null; agentTurn: string | null }
 export interface AgentReply { ok: boolean; text: string; data?: Record<string, unknown> }
@@ -132,7 +133,7 @@ class Workbench {
   private menuClosed = 0;
   private voicesKey = '';
   private spokenPage = 0;
-  private opts: WorkbenchOptions = { app: { home: () => undefined, shown: () => undefined, help: () => undefined, shortcuts: () => undefined, preferences: () => undefined, agents: () => undefined, doc: () => undefined } };
+  private opts: WorkbenchOptions = { app: { home: () => undefined, shown: () => undefined, help: () => undefined, shortcuts: () => undefined, preferences: () => undefined, agents: () => undefined, doc: () => undefined, palette: () => undefined } };
   private readonly menubar: MenuBar;
   private agentTimer = 0;
   private reported = '';
@@ -215,27 +216,29 @@ class Workbench {
       { id: 'pdf-save', label: 'Save', keys: ['Mod+S'], enabled: () => !!this.doc, run: () => void this.save() },
       { id: 'pdf-print', label: 'Print…', keys: ['Mod+P'], enabled: () => !!this.doc, run: () => void this.print() },
       { id: 'pdf-close', label: 'Close PDF', enabled: () => !!this.doc, run: () => this.close() },
-      { id: 'pdf-undo', label: () => (this.history[this.hi - 1] ? `Undo ${this.history[this.hi].label}` : 'Undo'), keys: ['Mod+Z'], enabled: () => this.hi > 0, run: () => this.undo() },
-      { id: 'pdf-redo', label: () => (this.history[this.hi + 1] ? `Redo ${this.history[this.hi + 1].label}` : 'Redo'), keys: ['Shift+Mod+Z', 'Mod+Y'], enabled: () => this.hi < this.history.length - 1, run: () => this.redo() },
-      { id: 'pdf-undo-agent', label: 'Undo agent turn', keys: ['Alt+Mod+Z'], enabled: () => this.agentTarget() >= 0, run: () => void this.undoAgent() },
+      { id: 'pdf-undo', label: () => (this.history[this.hi - 1] ? `Undo ${this.history[this.hi].label}` : 'Undo'), keys: ['Mod+Z'], enabled: () => this.hi > 0, why: () => (this.doc ? 'Nothing to undo yet' : 'Open a PDF first'), run: () => this.undo() },
+      { id: 'pdf-redo', label: () => (this.history[this.hi + 1] ? `Redo ${this.history[this.hi + 1].label}` : 'Redo'), keys: ['Shift+Mod+Z', 'Mod+Y'], enabled: () => this.hi < this.history.length - 1, why: () => (this.doc ? 'Nothing to redo' : 'Open a PDF first'), run: () => this.redo() },
+      { id: 'pdf-undo-agent', label: 'Undo agent turn', keys: ['Alt+Mod+Z'], enabled: () => this.agentTarget() >= 0, why: () => 'No agent change to undo', run: () => void this.undoAgent() },
       { id: 'pdf-find', label: 'Find…', keys: ['Mod+F'], enabled: () => !!this.doc, run: () => this.openFind() },
       { id: 'pdf-zoom-in', label: 'Zoom in', keys: ['Mod+='], enabled: () => !!this.doc, run: () => this.viewer.zoomStep(1) },
       { id: 'pdf-zoom-out', label: 'Zoom out', keys: ['Mod+-'], enabled: () => !!this.doc, run: () => this.viewer.zoomStep(-1) },
       { id: 'pdf-fit-width', label: 'Fit width', keys: ['Mod+0'], enabled: () => !!this.doc, run: () => this.viewer.applyFit('width') },
       { id: 'pdf-fit-page', label: 'Fit page', enabled: () => !!this.doc, run: () => this.viewer.applyFit('page') },
       { id: 'pdf-rotate', label: 'Rotate view', enabled: () => !!this.doc, run: () => this.viewer.rotateView(90) },
-      ...TABS.map(([t, l]) => ({ id: `pdf-tab-${t}`, label: l, checked: () => this.tab === t, enabled: () => !!this.doc || t === 'view', run: () => this.setTab(t) })),
+      ...TABS.map(([t, l]) => ({ id: `pdf-tab-${t}`, label: l, words: TAB_WORDS[t], checked: () => this.tab === t, enabled: () => !!this.doc || t === 'view', run: () => this.setTab(t) })),
       { id: 'pdf-agents', label: 'Agents and MCP…', run: () => this.opts.app.agents() },
       { id: 'pdf-help', label: 'formpdf Help', keys: ['F1'], run: () => this.opts.app.help() },
       { id: 'pdf-shortcuts', label: 'Keyboard shortcuts', keys: ['Mod+/'], run: () => this.opts.app.shortcuts(this.cmds) },
       { id: 'pdf-preferences', label: 'Preferences…', keys: ['Mod+,'], run: () => this.opts.app.preferences() },
+      { id: 'pdf-palette', label: 'Find a command or tool…', keys: ['Mod+K'], words: ['palette', 'search tools', 'all tools'], run: () => this.opts.app.palette() },
     );
+    this.cmds.add(...mountTools(this.panes.root, this.host));
     const menus: MenuDef[] = [
       { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', '-', 'pdf-save', 'pdf-print', '-', 'pdf-close'] },
       { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'pdf-find'] },
       { label: 'View', items: [...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare'] },
       { label: 'Tools', items: TABS.map(([t]) => `pdf-tab-${t}`) },
-      { label: 'Help', items: ['pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
+      { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
     ];
     this.menubar = new MenuBar(q(this.root, '.fs-pdfwb-menubar'), this.cmds, menus);
     this.openMenu = new PopupMenu(this.cmds, null, true);
@@ -614,7 +617,7 @@ class Workbench {
       if (combo === 'Escape') { e.preventDefault(); this.openMenu.close(); this.layoutMenu.close(); this.menubar.close(); }
       return;
     }
-    if (['F1', 'Mod+/', 'Mod+,', 'Alt+Mod+H', 'Alt+Mod+Z'].includes(combo)) { const cmd = this.cmds.forCombo(combo); if (cmd) { run(() => this.cmds.run(cmd.id)); return; } }
+    if (['F1', 'Mod+/', 'Mod+,', 'Alt+Mod+H', 'Alt+Mod+Z', 'Mod+K'].includes(combo)) { const cmd = this.cmds.forCombo(combo); if (cmd) { run(() => this.cmds.run(cmd.id)); return; } }
     switch (combo) {
       case 'Mod+F': return run(() => { if (this.reading) this.setReading(false); this.openFind(); });
       case 'Mod+S': return run(() => void this.save());
@@ -981,6 +984,11 @@ class Workbench {
 
   get commands(): Commands { return this.cmds; }
 
+  get hasDoc(): boolean { return !!this.doc; }
+
+  private toolHost: ToolHost | null = null;
+  private get host(): ToolHost { return (this.toolHost ??= { ctx: this.ctx(), doc: () => this.doc, setTab: (t) => this.setTab(t) }); }
+
   agentSaved(id: string): void {
     if (this.doc?.id === id) { this.savedId = id; this.syncChrome(); }
   }
@@ -1266,6 +1274,7 @@ class Workbench {
   private hideBar(): void { setHidden(q(this.root, '.fs-pdfwb-bar'), true); }
 
   private syncChrome(): void {
+    syncTools(this.host);
     const has = !!this.doc;
     setClass(this.root, 'has-doc', has);
     const can = this.history[this.hi - 1], next = this.history[this.hi + 1];
