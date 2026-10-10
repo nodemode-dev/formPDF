@@ -30,6 +30,8 @@
 | `app/services/pdf/items.py` | page items: added text (own layout over the font kit) and pictures (native encoding) as tagged forms with one placing stream each, existing pictures converted in place, crop, rotation, flips, z-order, comment order (`items`, `edit_items`), render without an item |
 | `app/services/pdf/redact.py` | true redaction over the content interpreter: glyphs, covered pixels, shapes, comments, fields and item text removed, forms copied on write, clip-out, re-read and render checks, overlay; `mark_redactions` |
 | `app/services/pdf/textedit.py` | text already on a page: paragraph detection (runs, lines, table walls, duplicate and invisible layers, alignment, bullets), conversion of paragraphs into page items in one pass with the document's font reused where it can encode the text |
+| `app/services/pdf/ocr.py` | text recognition with RapidOCR on onnxruntime: status and model lookup (Formpdf/models/ocr, then the package), render capped at the scan's resolution, straightening, invisible per-word text layer tagged `/FormpdfOCR`, rotated pages (`ocr`) |
+| `app/services/scan.py`, `app/routers/scan.py` | scanners: mDNS browse and eSCL client for network scanners, SANE and WIA for connected ones; `/api/scan/devices`, `/capabilities`, `/run` (new PDF or added to the open one, optional OCR) |
 | `app/services/pdf/spell.py`, `app/dict/` | Hunspell-format dictionary reader, `spell` and `spell_fix`; SCOWL en_US with its notices, more languages in `~/Formpdf/dictionaries` |
 | `app/services/pdf/slides.py` | PDF to PowerPoint (`to_pptx`) and contact sheets (`contact_sheet`) |
 | `app/services/pdf/sanitize.py`, `search.py`, `create.py`, `compare.py` | hidden information, find (presets, regex), PDF from pictures and files, compare |
