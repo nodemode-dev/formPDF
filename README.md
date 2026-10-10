@@ -8,7 +8,7 @@ Version 0.6.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 
 | Area | In this version |
 | --- | --- |
-| Home | Open a PDF by picker, drop or path; recent PDFs with forget; create a PDF from pictures; merge PDFs; Batch (one action on many PDFs, results in a new folder); pick up where you left off, including unsaved changes after a crash |
+| Home | Open a PDF by picker, drop or path; recent PDFs with forget; create a PDF from pictures; merge PDFs; scan from network and connected scanners; Batch (one action on many PDFs, results in a new folder); pick up where you left off, including unsaved changes after a crash |
 | Everywhere | Mod+K finds any command or tool in your own words and says why one cannot run yet; Preferences lists every network connection (none leave this computer) |
 | View | Single, continuous, two-page and cover layouts; reading mode; read aloud; find; compare two PDFs; document properties |
 | Comment | Highlight, underline, strike through, notes, text boxes, ink, shapes, lines and arrows; replies and status; stamps; measure distance, perimeter and area; check spelling with your own words |
@@ -18,8 +18,8 @@ Version 0.6.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 | Organize | Rotate, delete, reorder, insert pages; split; merge |
 | Extract | Text (.txt, .md), pictures, tables (CSV, .xlsx) |
 | Protect | Passwords and permissions, remove a password, find and redact (the content under each box is removed, the rest stays text; marks from other apps applied too), metadata, remove hidden information |
-| Convert | Export to PowerPoint (one slide per page, words as real text boxes), Word (columns, lists, headers and footers kept), Excel, HTML, RTF, compress, pages to pictures |
-| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (42 actions), render_pages, extract, save, undo |
+| Convert | Make scanned pages searchable with OCR that runs on this computer; export to PowerPoint (one slide per page, words as real text boxes), Word (columns, lists, headers and footers kept), Excel, HTML, RTF, compress, pages to pictures |
+| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (43 actions), render_pages, extract, save, undo |
 
 ## Install and run
 
@@ -66,8 +66,8 @@ docs/       MANUAL.md
 
 ## Known gaps
 
-- Against Acrobat, formpdf scores 54.5 of 72 (76%); docs/PARITY.md has every row. The largest gaps are accessibility (checker, tagging), certificate signatures and OCR.
-- No OCR: scanned pages have no text to search, extract or export as text boxes.
+- Against Acrobat, formpdf scores 56.5 of 72 (78%); docs/PARITY.md has every row. The largest gaps are accessibility (checker, tagging) and certificate signatures.
+- OCR adds about 150 MB to an install (set `FORMPDF_NO_OCR=1` before `./formpdf install` to leave it out). On macOS, USB scanners are reached only when they also speak eSCL (AirScan); network scanners work everywhere.
 - Signatures are pictures stamped on the page, not certificate (digital ID) signatures.
 - Editing text already in a PDF re-sets the paragraph: kerning the PDF wrote by hand is replaced by the font's own spacing, and text inside form XObjects, Type 3 fonts and fonts without a character map cannot be edited.
 - No tagged PDF or accessibility checker; no shared review or signature requests.

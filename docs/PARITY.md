@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.6.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.7.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -16,16 +16,16 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | PDF forms and signing | 4 of 6 · 67% |
 | PDF organize | 7 of 7 · 100% |
 | PDF protect and redact | 5 of 5 · 100% |
-| PDF convert | 8.5 of 11 · 77% |
+| PDF convert | 10.5 of 11 · 95% |
 | Review and comments | 1.5 of 2 · 75% |
 | Collaboration and sharing | 1 of 2 · 50% |
 | Accessibility | 0.5 of 5 · 10% |
 | Import and export | 0 of 1 · 0% |
 | Print | 1 of 3 · 33% |
 | Automation and agents | 0.5 of 3 · 17% |
-| **Overall** | **54.5 of 72 · 76%** |
+| **Overall** | **56.5 of 72 · 78%** |
 
-Across the 72 scored rows formpdf has 51 full, 7 partial and 14 none.
+Across the 72 scored rows formpdf has 53 full, 7 partial and 12 none.
 
 ## Where formpdf leads
 
@@ -35,8 +35,8 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 - **Content editing.** formpdf edits the text and pictures a PDF already has and adds page text and pictures that stay editable; only generating pictures with AI is missing.
 - **Accessibility.** No accessibility checker, no tagging and no reading-order editor for PDFs.
-- **Signing and scanning.** No certificate signatures, signature requests, OCR or scanning.
-- Rows with nothing yet: Generate pictures with AI (Adobe Express); Certificate-based digital signatures; Request signatures from others; OCR for scanned pages; Scan paper documents to PDF; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
+- **Signing.** No certificate signatures or signature requests.
+- Rows with nothing yet: Generate pictures with AI (Adobe Express); Certificate-based digital signatures; Request signatures from others; Share PDF links with permissions; Accessibility checker for PDFs; Reading Order tool for tagged PDFs; Alternate text for figures; Tag a PDF for accessibility (autotag); Create PDFs from Office files (Word, PowerPoint, Excel); Preflight and PDF/A, PDF/X standards; Generate a presentation from PDFs and files with AI (PDF Spaces); Plug-ins and add-ons.
 
 ## Line by line
 
@@ -127,9 +127,9 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Pages to pictures | yes | Full | `services/pdf/core.py pages_zip`, `render_png`, Convert > pages as PNG at 72, 144, 216 or 300 dpi; PNG only |
 | Compress | yes | Full | `edit.py compress` |
 | PDF to Word | yes | Full | Convert > Word (`word.py to_docx`: headings, styled paragraphs, Word bullet and numbered lists, pictures, tables, column sections, running headers and footers in the Word header and footer with a PAGE field), MCP `pdf to_docx` |
-| OCR for scanned pages | yes | None | nothing found: no OCR engine in requirements or `services/pdf`; `panels.ts` tells the person scanned pages need OCR first |
+| OCR for scanned pages | yes | Full | Convert > Make searchable (OCR) and the ocr action (`services/pdf/ocr.py`): RapidOCR with PaddleOCR's Apache-2.0 models on onnxruntime, on this computer; skips pages with text, caps the render at the scan's resolution, straightens tilted scans, writes an invisible per-word text layer in an embedded Unicode font that find, redaction and exports use, rotated pages included; Batch, MCP and CLI |
 | Create a PDF from pictures | yes | Full | `create.py from_files` (one page per picture, fit, A4 or Letter, margins, orientation; PDFs combined in order), `pdf/create.ts` from Home and the Open menu |
-| Scan paper documents to PDF | yes | None | nothing found: no scanner acquisition |
+| Scan paper documents to PDF | yes | Full | Home and File > Scan (`pdf/scan.ts`, `services/scan.py`): network scanners found over mDNS and driven with eSCL (glass, feeder, both sides, resolution, colour), USB scanners through SANE on Linux and WIA on Windows; into a new PDF or added to the open one, made searchable on the way |
 
 ### Review and comments
 

@@ -83,9 +83,9 @@ row(a, "Tables to Excel", 1, F, "Convert > Save as Excel and MCP `pdf to_xlsx` (
 row(a, "Pages to pictures", 1, F, "`services/pdf/core.py pages_zip`, `render_png`, Convert > pages as PNG at 72, 144, 216 or 300 dpi; PNG only")
 row(a, "Compress", 1, F, "`edit.py compress`")
 row(a, "PDF to Word", 1, F, "Convert > Word (`word.py to_docx`: headings, styled paragraphs, Word bullet and numbered lists, pictures, tables, column sections, running headers and footers in the Word header and footer with a PAGE field), MCP `pdf to_docx`")
-row(a, "OCR for scanned pages", 1, N, "nothing found: no OCR engine in requirements or `services/pdf`; `panels.ts` tells the person scanned pages need OCR first")
+row(a, "OCR for scanned pages", 1, F, "Convert > Make searchable (OCR) and the ocr action (`services/pdf/ocr.py`): RapidOCR with PaddleOCR's Apache-2.0 models on onnxruntime, on this computer; skips pages with text, caps the render at the scan's resolution, straightens tilted scans, writes an invisible per-word text layer in an embedded Unicode font that find, redaction and exports use, rotated pages included; Batch, MCP and CLI")
 row(a, "Create a PDF from pictures", 1, F, "`create.py from_files` (one page per picture, fit, A4 or Letter, margins, orientation; PDFs combined in order), `pdf/create.ts` from Home and the Open menu")
-row(a, "Scan paper documents to PDF", 1, N, "nothing found: no scanner acquisition")
+row(a, "Scan paper documents to PDF", 1, F, "Home and File > Scan (`pdf/scan.ts`, `services/scan.py`): network scanners found over mDNS and driven with eSCL (glass, feeder, both sides, resolution, colour), USB scanners through SANE on Linux and WIA on Windows; into a new PDF or added to the open one, made searchable on the way")
 
 a = "Review and comments"
 row(a, "Compare two versions of a PDF", 1, F, "`pdf/compare.ts Comparer`, `services/pdf/compare.py compare`: View > Compare against an older or newer PDF, word-level insertions, changes and deletions marked on the page with optional picture changes, every difference listed with before and after text; no summary report file")
