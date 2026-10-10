@@ -446,7 +446,8 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages) -> dict
 def _detail(res: dict, extra: dict) -> str:
     n = res.get("pages")
     bits = [f"{n} page{'s' if n != 1 else ''}"] if n is not None else []
-    for k, word in (("cropped", "cropped"), ("matches", "matches"), ("areas", "areas redacted"), ("created", "fields added"), ("flattened", "fields flattened")):
+    for k, word in (("cropped", "cropped"), ("matches", "matches"), ("areas", "areas redacted"), ("created", "fields added"), ("flattened", "fields flattened"),
+                    ("added", "added"), ("deleted", "deleted")):
         v = res.get(k, extra.get(k))
         if v:
             bits.append(f"{v} {word}")

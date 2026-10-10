@@ -41,6 +41,8 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 18. The font kit · services/pdf/fontkit.py, app/fonts/
 19. Batch jobs · routers/batch.py
 20. Session restore and the network list · services/session.py, routers/live.py, routers/system.py
+21. One route for registered actions · routers/pdf.py act
+22. Links · services/pdf/links.py, services/pdf/frame.py
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -129,3 +131,11 @@ Home > Batch runs one registered action (`Action.batch`) on many PDFs. Each file
 Every change already lands as an immutable working-copy version (entry 1), so a crash loses only what was never applied; what was missing was knowing which version the window had open. The window already reports its open document over /api/live, so the engine writes it to `~/Formpdf/session.json` as it arrives (id, key, name, page, tab, dirty, pages), at most every two seconds unless the id, tab or dirty state changes. A window that closes its PDF on purpose sends no document after having one, which clears the session; a fresh window's first empty report does not, because it never had one, which is how the file survives a reload or a crash to be read by the next start. GET /api/session returns the document only when its working copy still exists, with `recover` true when it had unsaved changes; POST /api/session/dismiss clears it. The page is approximate: the window reports page moves only alongside other changes.
 
 Beat Acrobat B1 needs the network story in one place. `NETWORK` in system.py lists every connection formpdf could make and its state, served in /api/capabilities: today only the local engine link and the desktop update check, which is off because no update key is configured. Features that add a connection (timestamp servers, AI providers, update checks) append their row here. Capabilities also report the font count.
+
+## 21. One route for registered actions · _v0.3.0 (routers/pdf.py act, MEDIA)
+
+POST /api/pdf/{id}/act/{name} runs any registered action that has a `run` handler on a working copy: a change derives a new version through `_derive` (so protection is re-applied and failures discard the output, entry 1), a read returns its text and data as JSON, an export runs into a temporary file with the action's extension and streams it back with a filename (a handler may name the file by returning `filename`). New tools therefore need no route of their own: the window calls the same handler the MCP tool, the CLI and Batch call.
+
+## 22. Links · _v0.3.0 (services/pdf/links.py target, read, change, URL; services/pdf/frame.py; routers/mcp.py _detail)
+
+`edit_links` adds Link annotations from boxes (points from the top left of the unrotated page, the frame redaction areas use; `frame.py` converts both ways through the view box), removes links by page and index as `links` lists them, and with `auto` links every web and email address in the text: the URL pattern runs through `search.find`, so matches carry PDFium's per-line boxes and a URL broken over two lines becomes two link boxes with one target. Boxes that overlap an existing or just-added link are skipped, so running it twice adds nothing. A target is a page number (a GoTo destination with Fit), an email address (mailto:), or a web address (www. and bare domains get https://); anything else, including `javascript:`, is refused, and non-ASCII URLs must use punycode because URI actions are 7-bit. Links are printable, invert on click, and borderless unless `border` asks for a thin blue one. `links` reads URI actions and page destinations (explicit, named, or GoTo) back as page numbers. The change result says `added` and `deleted`; `deleted`, not `removed`, because `_detail` already reads `removed` as sanitize's list of categories.

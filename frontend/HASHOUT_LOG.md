@@ -32,6 +32,8 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 13. Command palette and the tool registry · ui/palette.ts, pdf/tools.ts
 14. Batch on Home · ui/batch.ts
 15. Resume on Home and the network list · ui/resume.ts, ui/app-dialogs.ts
+16. Page tools and safe links · pdf/annotate.ts PageTool, pdf/tools.ts, tools/overlay.ts, pdf/workbench.ts openLink
+17. The Links tool · tools/links.ts
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -96,3 +98,13 @@ Batch is a Home page (nav item and the palette's "Batch: run an action on many P
 At start, Home asks GET /api/session. When the last window closed with unsaved changes it says "formpdf closed with unsaved changes in [name]. Reopen them · Discard"; otherwise "Pick up where you left off: [name]. Reopen · Dismiss". The line replaces the start page subtitle's content in place, so nothing moves: the subtitle is now one line with an ellipsis (`is-line`) and the two choices are text-styled buttons with the line's own height. Reopen opens that working copy with `restore`: the workbench switches to the saved tab, goes to the saved page, and, for a recovery, clears `savedId` so the Edited badge and the save-before-close guard apply again. Comments, field values and organize steps that were staged but never applied live only in memory and are not recovered.
 
 Preferences gained a Network section listing every connection from /api/capabilities with its state and a sentence; its list has a reserved minimum height so the rows arriving after the dialog opens do not move the Done button.
+
+## 16. Page tools and safe links · _v0.3.0 (pdf/annotate.ts PageTool, Annotator.custom; pdf/tools.ts ToolHost, pageTools; tools/overlay.ts PageLayers; pdf/workbench.ts host, openLink; pdf/viewer.ts ViewerHooks.link; pdf/api.ts act, actFile)
+
+Registered tools that draw on pages (links, measuring, attachment pins) need pointer input on the page, which the Annotator owns. Rather than give each tool its own listeners, the Annotator gained one `custom` tool slot: while `tool` is `custom`, pointer down, move and up are handed to the active `PageTool` with page coordinates (points from the top left of the unrotated page), and switching tool cancels it. The workbench passes keys to it first (Enter, Backspace) and Esc still returns to Select. `ToolHost` gives tools `useTool`, the inline bar, the tab switch and the Ctx; `page` on a registered tool runs whenever a page view mounts so `PageLayers` can keep one overlay per page inside the page space (positioned with `calc(var(--k) * Npx)` like every other layer, so zoom and rotation need no code). Section and layer elements use `data-section` and `data-layer`, because `data-tool` already holds the workbench's tool mode. `pdfApi.act` and `actFile` call the engine's route for registered actions.
+
+Following a web link used to call `window.open` with whatever the PDF said. Links now go through `openLink`: only http, https and mailto (without an attach parameter) are offered, in the inline bar with Open, Copy address and Cancel, and hosts with punycode labels (`xn--`) are named as look-alike letters. Page links still jump directly.
+
+## 17. The Links tool · _v0.3.0 (tools/links.ts; tools/index.ts; styles/tools.css)
+
+Edit > Links: Draw a link puts the page into a drag-a-box page tool (the box shows as a dashed overlay on the page while drawn and while pending), Goes to takes a web address, an email address or a page number (Enter adds), Link web addresses links every address in the text, and the list shows the links in the PDF with remove and click-to-show (scroll and pulse). Every change is one engine call that becomes a version, so Undo works. Two layout rules learned here: the note under the form has a reserved three-line height and both of its texts fit in it (a longer default text grew it by a line after Add and moved everything below), and the list keeps the order its rows already had and appends new links at the end, instead of re-sorting by page and pushing existing rows down. Both shifts arrived after the engine answered, more than 500 ms after the click, so they counted.

@@ -1,0 +1,8 @@
+.fs-pdf-tool { position: absolute; inset: 0; pointer-events: none; }
+.fs-pdf-linkbox { position: absolute; border: 1.5px dashed var(--accent-color); background: color-mix(in srgb, var(--accent-color) 12%, transparent); }
+.fs-pdf-linkbox[hidden] { display: none; }
+.fs-tool-field { margin-top: var(--space-2); }
+.fs-tool-note { min-height: calc(3 * 1.45em); }
+.fs-tool-list { min-height: 88px; max-height: 260px; overflow-y: auto; overscroll-behavior: contain; }
+.fs-tool-row { min-height: 40px; cursor: pointer; }
+.fs-tool-row .fs-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
