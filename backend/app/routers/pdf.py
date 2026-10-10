@@ -134,10 +134,10 @@ MEDIA = {".html": "text/html; charset=utf-8", ".rtf": "application/rtf", ".csv":
 
 
 @router.get("/pdf/{doc_id}/items/under")
-async def items_under(doc_id: str, page: int, id: str = "", picture: int = -1, scale: float = 2.0) -> Response:
+async def items_under(doc_id: str, page: int, id: str = "", picture: int = -1, paragraph: str = "", scale: float = 2.0) -> Response:
     from app.services.pdf import items
 
-    target = {"id": id} if id else {"picture": picture} if picture >= 0 else {}
+    target = {"id": id} if id else {"picture": picture} if picture >= 0 else {"paragraph": paragraph} if paragraph else {}
     data = await _run(items.render_without, _path(doc_id), page, target, scale, _pw(doc_id))
     return Response(data, media_type="image/png", headers=IMMUTABLE)
 

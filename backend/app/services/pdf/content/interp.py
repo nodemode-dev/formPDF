@@ -51,6 +51,8 @@ class Glyph:
     artifact: bool
     color: tuple = ()
     tz: float = 1.0
+    m: tuple = ()
+    alpha: float = 1.0
 
 
 @dataclass
@@ -103,7 +105,7 @@ class PageContent:
 
 
 class _State:
-    __slots__ = ("ctm", "tc", "tw", "tz", "tl", "font", "size", "rise", "tr", "fill")
+    __slots__ = ("ctm", "tc", "tw", "tz", "tl", "font", "size", "rise", "tr", "fill", "alpha")
 
     def __init__(self):
         self.ctm = IDENTITY
@@ -113,6 +115,7 @@ class _State:
         self.size = 0.0
         self.tr = 0
         self.fill: tuple = (0.0,)
+        self.alpha = 1.0
 
     def copy(self) -> "_State":
         s = _State()
@@ -248,6 +251,10 @@ class Interpreter:
                 path, subs, clip_pending = [], [], False
             elif op == b"sh" and operands:
                 self.out.draws.append(Draw(where, i, "shading", str(operands[0]), st.ctm, None, **self._mark(marks)))
+            elif op == b"gs" and operands:
+                gs = _get(_get(resources, "/ExtGState"), str(operands[0]))
+                if gs is not None and gs.get("/ca") is not None:
+                    st.alpha = _f(gs.get("/ca"), 1.0)
             elif op in (b"sc", b"scn", b"g", b"rg", b"k"):
                 st.fill = tuple(_f(v) for v in operands if not isinstance(v, NameObject))
             elif op == b"BMC" and operands:
@@ -280,7 +287,7 @@ class Interpreter:
             space = st.tw if (len(raw) == 1 and raw == b" ") else 0.0
             tx = (w0 * st.size + st.tc + space) * st.tz
             self.out.glyphs.append(Glyph(where, op_index, seq, code, raw, f.unicode(code), f.key, st.size, box, origin, tx, st.tr,
-                                         mark["mcid"], mark["artifact"], st.fill, st.tz))
+                                         mark["mcid"], mark["artifact"], st.fill, st.tz, trm, st.alpha))
             seq += 1
             tm = mult((1, 0, 0, 1, tx, 0), tm)
         return tm, seq

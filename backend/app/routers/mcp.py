@@ -55,7 +55,8 @@ information counts), compare {other: path, otherIsNewer, pictures}, links (every
 {save: name, out} (attached and pinned files; save writes one out), measurements (measurement comments with their values), snap_points
 {pages} (path ends, midpoints and crossings to measure from), spell {scope: "comments,fields,pages", texts: [{id, text}], ignore, lang,
 skip_caps} (possible misspellings with offset, context and suggestions), items {pages} (text and pictures added by formpdf, with id, box,
-rotation, font and paragraphs, and pictures already on the page with the op that draws them).
+rotation, font and paragraphs, pictures already on the page with the op that draws them, and paragraphs of text already on the page with
+their key, box, font and text).
 Change: header_footer {header: {left, center, right}, footer, tokens <<page>> <<pages>> <<date>> <<file>> <<bates>>, size, color, font,
 margins, start, apply: all | odd | even, bates: {prefix, suffix, start, digits}}; page_numbers {position: bottom-center | bottom-right | bottom-left |
 top-center | top-right | top-left, format: "{n}" | "Page {n} of {total}", start}; watermark {text, opacity 0..1, angle, size, color};
@@ -75,9 +76,11 @@ distance | perimeter | area, points: [[x, y], ...], unit, factor (units per poin
 spell_fix {fixes: [{where: comment, page, index, nm, offset, word, to} | {where: field, name, offset, word, to}]};
 edit_items {add: [{kind: text, page, x, y, w, text | paras: [{align: left | center | right | justify, list: none | bullet | number, level,
 runs: [{t, b, i, u, s, sup, sub, color}]}], font: {family: sans | serif | mono, size, color, lineHeight}, rot} | {kind: picture, page, x, y,
-w, h, path | data, rot, flipH, flipV, crop: {l, t, r, b}}], update: [{id | page and picture (op from items), x, y, w, h, rot, flipH, flipV,
-crop, text, paras, font}], arrange: [{id | page and picture, to: front | back | forward | backward}], comments: [{page, index, to}],
-remove: [id | {id} | {page, picture}]} (page text and pictures that stay editable; crop is fractions of the picture).
+w, h, path | data, rot, flipH, flipV, crop: {l, t, r, b}}], update: [{id | page and picture (op from items) | page and paragraph (key
+from items), x, y, w, h, rot, flipH, flipV, crop, path | data (replace a picture), text, paras, font}], arrange: [{id | page and picture |
+page and paragraph, to: front | back | forward | backward}], comments: [{page, index, to}], remove: [id | {id} | {page, picture} |
+{page, paragraph}]} (page text and pictures that stay editable, including text already in the PDF, which keeps its own font where it can;
+crop is fractions of the picture).
 Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}
 (one slide per page, words as text boxes); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.
 

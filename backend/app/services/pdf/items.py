@@ -13,6 +13,7 @@ from pypdf.generic import (ArrayObject, ContentStream, DecodedStreamObject, Dict
 
 from . import actions, annot, core, fontkit
 from .content import interp
+from .content.fonts import FontInfo
 
 KEY = NameObject("/FormpdfItem")
 WRAP = NameObject("/FormpdfWrap")
@@ -23,6 +24,8 @@ MAX_IMAGE = 60 * 1024 * 1024
 ALIGNS = ("left", "center", "right", "justify")
 LISTS = ("none", "bullet", "number")
 IDENTITY = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+ORIG = "#orig"
+ORIG_RES = NameObject("/FpO")
 ORIENT = {1: lambda u, v: (u, v), 2: lambda u, v: (1 - u, v), 3: lambda u, v: (1 - u, 1 - v), 4: lambda u, v: (u, 1 - v),
           5: lambda u, v: (v, u), 6: lambda u, v: (1 - v, u), 7: lambda u, v: (1 - v, 1 - u), 8: lambda u, v: (v, 1 - u)}
 
@@ -164,7 +167,7 @@ def _item_stream(w: PdfWriter, page, it: dict):
 def _public(it: dict, keep_ctx: bool = False) -> dict:
     keys = ["v", "id", "kind", "page", "x", "y", "w", "h", "rot", "flipH", "flipV"]
     if it["kind"] == "text":
-        keys += ["font", "paras", "auto"]
+        keys += ["font", "paras", "auto", "fit"]
     else:
         keys += ["crop", "iw", "ih", "orient", "format"]
     if keep_ctx:
@@ -191,18 +194,32 @@ def _layout_runs(para: dict, font: dict) -> list[list[dict]]:
     return words
 
 
-def _piece_font(p: dict, family: str) -> tuple[str, float]:
+def _orig_style(it: dict) -> tuple | None:
+    o = it["font"].get("orig")
+    return (bool(o.get("b")), bool(o.get("i"))) if isinstance(o, dict) and it.get("_fi") is not None else None
+
+
+def _piece_font(p: dict, family: str, fi=None, ob=None) -> tuple[str, float]:
+    k = 0.65 if (p["sup"] or p["sub"]) else 1.0
+    if fi is not None and ob == (p["b"], p["i"]) and fi.encode(p["t"]) is not None:
+        return ORIG, k
     _, name = fontkit.pick(p["t"], family, p["b"], p["i"])
-    return name, 0.65 if (p["sup"] or p["sub"]) else 1.0
+    return name, k
 
 
-def _width(word: list[dict], family: str, size: float) -> float:
+def _piece_width(p: dict, name: str, size: float, fi=None) -> float:
     from reportlab.pdfbase import pdfmetrics
 
+    if name == ORIG:
+        return sum(fi.width(c) for c, _ in fi.codes(fi.encode(p["t"]) or b"")) * size
+    return pdfmetrics.stringWidth(p["t"], name, size)
+
+
+def _width(word: list[dict], family: str, size: float, fi=None, ob=None) -> float:
     total = 0.0
     for p in word:
-        name, k = _piece_font(p, family)
-        total += pdfmetrics.stringWidth(p["t"], name, size * k)
+        name, k = _piece_font(p, family, fi, ob)
+        total += _piece_width(p, name, size * k, fi)
     return total
 
 
@@ -213,6 +230,7 @@ def layout(it: dict) -> tuple[list[dict], float]:
     lines: list[dict] = []
     counters: dict[int, int] = {}
     line_h = size * lh
+    fi, ob = it.get("_fi"), _orig_style(it)
     for para in it["paras"]:
         kind = para.get("list", "none")
         level = int(para.get("level", 0))
@@ -227,19 +245,19 @@ def layout(it: dict) -> tuple[list[dict], float]:
             marker = "•" if level % 2 == 0 else "–"
         elif kind == "number":
             marker = f"{counters[level]}."
-        left = indent + (size * 1.6 if marker else 0.0)
+        left = indent + (size * float(para.get("hang", 1.6)) if marker else 0.0)
         avail = max(size, W - left)
         words = _layout_runs(para, font)
         rows: list[list[list[dict]]] = [[]]
         widths: list[float] = [0.0]
         for word in words:
-            ww = _width(word, family, size)
+            ww = _width(word, family, size, fi, ob)
             is_space = word[0].get("space")
             if is_space and not rows[-1]:
                 continue
             if not is_space and rows[-1] and widths[-1] + ww > avail + 0.01:
                 while rows[-1] and rows[-1][-1][0].get("space"):
-                    widths[-1] -= _width(rows[-1].pop(), family, size)
+                    widths[-1] -= _width(rows[-1].pop(), family, size, fi, ob)
                 rows.append([])
                 widths.append(0.0)
             if not is_space and ww > avail and not rows[-1]:
@@ -247,23 +265,23 @@ def layout(it: dict) -> tuple[list[dict], float]:
                 for p in word:
                     for ch in p["t"]:
                         q = {**p, "t": ch}
-                        cw = _width([q], family, size)
-                        if chunk and _width(chunk, family, size) + cw > avail:
+                        cw = _width([q], family, size, fi, ob)
+                        if chunk and _width(chunk, family, size, fi, ob) + cw > avail:
                             rows[-1].append(chunk)
-                            widths[-1] = _width(chunk, family, size)
+                            widths[-1] = _width(chunk, family, size, fi, ob)
                             rows.append([])
                             widths.append(0.0)
                             chunk = []
                         chunk.append(q)
                 if chunk:
                     rows[-1].append(chunk)
-                    widths[-1] += _width(chunk, family, size)
+                    widths[-1] += _width(chunk, family, size, fi, ob)
                 continue
             rows[-1].append(word)
             widths[-1] += ww
         while rows[-1] and rows[-1][-1][0].get("space"):
-            widths[-1] -= _width(rows[-1].pop(), family, size)
-        align = para.get("align", "left")
+            widths[-1] -= _width(rows[-1].pop(), family, size, fi, ob)
+        align =para.get("align", "left")
         for n, (row, wd) in enumerate(zip(rows, widths)):
             last = n == len(rows) - 1
             gaps = sum(1 for wdx in row if wdx[0].get("space"))
@@ -289,8 +307,15 @@ def _ascent(family: str) -> tuple[float, float]:
     return asc, desc
 
 
+def baseline(it: dict) -> float:
+    font = it["font"]
+    size, lh = font["size"], font["lineHeight"]
+    fi = it.get("_fi") if _orig_style(it) is not None else None
+    asc, desc = (fi.ascent, -fi.descent) if fi is not None else _ascent(font["family"])
+    return (size * lh - (asc + desc) * size) / 2 + asc * size
+
+
 def _text_form(w: PdfWriter, it: dict):
-    from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfgen import canvas as rlcanvas
 
     lines, height = layout(it)
@@ -298,9 +323,10 @@ def _text_form(w: PdfWriter, it: dict):
         it["h"] = round(height, 3)
     H = max(1.0, it["h"])
     font = it["font"]
-    size, lh, family = font["size"], font["lineHeight"], font["family"]
-    asc, desc = _ascent(family)
-    base = (size * lh - (asc + desc) * size) / 2 + asc * size
+    size, family = font["size"], font["family"]
+    fi, ob = it.get("_fi"), _orig_style(it)
+    base = baseline(it)
+    raw: list[str] = []
     buf = io.BytesIO()
     c = rlcanvas.Canvas(buf, pagesize=(max(1.0, it["w"]), H))
     for ln in lines:
@@ -313,17 +339,21 @@ def _text_form(w: PdfWriter, it: dict):
         x = ln["x"]
         for word in ln["words"]:
             if word[0].get("space"):
-                x += _width(word, family, size) + ln["extra"]
+                x += _width(word, family, size, fi, ob) + ln["extra"]
                 continue
             for p in word:
-                name, k = _piece_font(p, family)
+                name, k = _piece_font(p, family, fi, ob)
                 sz = size * k
                 rise = size * 0.33 if p["sup"] else -size * 0.12 if p["sub"] else 0.0
-                pw = pdfmetrics.stringWidth(p["t"], name, sz)
+                pw = _piece_width(p, name, sz, fi)
                 col = _rgb(p["color"])
-                c.setFillColorRGB(*col)
-                c.setFont(name, sz)
-                c.drawString(x, y + rise, p["t"])
+                if name == ORIG:
+                    raw.append(f"BT {ORIG_RES} {_num(sz)} Tf {_num(col[0])} {_num(col[1])} {_num(col[2])} rg 1 0 0 1 {_num(x)} {_num(y + rise)} Tm "
+                               f"<{fi.encode(p['t']).hex()}> Tj ET")
+                else:
+                    c.setFillColorRGB(*col)
+                    c.setFont(name, sz)
+                    c.drawString(x, y + rise, p["t"])
                 if p["u"] or p["s"]:
                     c.setStrokeColorRGB(*col)
                     c.setLineWidth(max(0.4, sz * 0.06))
@@ -335,7 +365,27 @@ def _text_form(w: PdfWriter, it: dict):
     c.showPage()
     c.save()
     page = PdfReader(io.BytesIO(buf.getvalue())).pages[0]
-    return annot._form(w, page, [0, 0, max(1.0, it["w"]), H])
+    form = annot._form(w, page, [0, 0, max(1.0, it["w"]), H])
+    alpha = font.get("opacity", 1.0)
+    if raw or alpha < 0.999:
+        obj = form.get_object()
+        head = b"/FpA gs\n" if alpha < 0.999 else b""
+        obj.set_data(head + obj.get_data() + (("\nq " + " ".join(raw) + " Q\n") if raw else "").encode())
+        res = obj.get("/Resources")
+        res = DictionaryObject(res.get_object()) if res is not None else DictionaryObject()
+        if raw:
+            fonts = res.get("/Font")
+            fonts = DictionaryObject(fonts.get_object()) if fonts is not None else DictionaryObject()
+            fonts[ORIG_RES] = it["_oref"]
+            res[NameObject("/Font")] = fonts
+        if head:
+            gs = res.get("/ExtGState")
+            gs = DictionaryObject(gs.get_object()) if gs is not None else DictionaryObject()
+            gs[NameObject("/FpA")] = DictionaryObject({NameObject("/Type"): NameObject("/ExtGState"), NameObject("/ca"): FloatObject(alpha),
+                                                       NameObject("/CA"): FloatObject(alpha)})
+            res[NameObject("/ExtGState")] = gs
+        obj[NameObject("/Resources")] = res
+    return form
 
 
 def _orient_matrix(o: int) -> tuple:
@@ -453,7 +503,8 @@ def _norm_paras(v, font: dict) -> list[dict]:
                 run["color"] = _color(r.get("color"), font["color"])
             runs.append(run)
         out.append({"align": p.get("align") if p.get("align") in ALIGNS else "left", "list": p.get("list") if p.get("list") in LISTS else "none",
-                    "level": int(_f(p.get("level"), 0, 0, 6)), "runs": runs or [{"t": ""}]})
+                    "level": int(_f(p.get("level"), 0, 0, 6)), "runs": runs or [{"t": ""}],
+                    **({"hang": round(_f(p.get("hang"), 1.6, 0.3, 4), 3)} if p.get("hang") is not None else {})})
     return out or [{"align": "left", "list": "none", "level": 0, "runs": [{"t": ""}]}]
 
 
@@ -461,8 +512,15 @@ def _norm_font(v, base: dict | None = None) -> dict:
     v = v if isinstance(v, dict) else {}
     base = base or {"family": "sans", "size": 12.0, "color": "#111111", "lineHeight": 1.25}
     fam = v.get("family", base["family"])
-    return {"family": fam if fam in fontkit.FAMILIES else "sans", "size": _f(v.get("size"), base["size"], 4, 288),
-            "color": _color(v.get("color"), base["color"]), "lineHeight": _f(v.get("lineHeight"), base["lineHeight"], 0.8, 4)}
+    out = {"family": fam if fam in fontkit.FAMILIES else "sans", "size": _f(v.get("size"), base["size"], 4, 288),
+           "color": _color(v.get("color"), base["color"]), "lineHeight": _f(v.get("lineHeight"), base["lineHeight"], 0.8, 4)}
+    op = _f(v.get("opacity", base.get("opacity", 1.0)), 1.0, 0.02, 1.0)
+    if op < 0.999:
+        out["opacity"] = round(op, 3)
+    orig = v.get("orig", base.get("orig")) if fam == base["family"] else None
+    if isinstance(orig, dict) and orig.get("name"):
+        out["orig"] = {"name": str(orig["name"])[:80], "b": bool(orig.get("b")), "i": bool(orig.get("i"))}
+    return out
 
 
 def _geo(it: dict, req: dict) -> None:
@@ -482,6 +540,17 @@ def _text_item(req: dict, old: dict | None = None) -> dict:
                             old.get("font") if old else None)
     if "paras" in req or "text" in req:
         paras = _norm_paras(req.get("paras", req.get("text")), it["font"])
+        if "paras" in req and old and old.get("paras"):
+            hangs = [p.get("hang") for p in old["paras"] if p.get("hang")]
+            for p in paras:
+                if p.get("list") == "bullet" and "hang" not in p and hangs:
+                    p["hang"] = hangs[0]
+        if "paras" not in req and old and old.get("paras"):
+            first = (old["paras"][0].get("runs") or [{}])[0]
+            for p in paras:
+                p["align"] = old["paras"][0].get("align", "left")
+                for r in p["runs"]:
+                    r.update({k: True for k in ("b", "i", "u", "s") if first.get(k)})
         for k in ("align", "list"):
             if k in req and req[k] in (ALIGNS if k == "align" else LISTS):
                 for p in paras:
@@ -500,6 +569,8 @@ def _text_item(req: dict, old: dict | None = None) -> dict:
     _geo(it, req)
     if "h" in req and "auto" not in req:
         it["auto"] = False
+    if "w" in req:
+        it.pop("fit", None)
     return it
 
 
@@ -568,7 +639,20 @@ class Page:
 
     def render(self, it: dict):
         if it["kind"] == "text":
-            form = _text_form(self.w, it)
+            ref = it.pop("_oref", None)
+            if it["font"].get("orig") and ref is None:
+                ref = _form_font(self.form_ref(it["id"]))
+            if ref is None:
+                it["font"].pop("orig", None)
+            else:
+                it["_oref"], it["_fi"] = ref, FontInfo(ref)
+            try:
+                if it.get("fit") and all(p.get("align", "left") == "left" for p in it["paras"]):
+                    self.fit(it)
+                form = _text_form(self.w, it)
+            finally:
+                it.pop("_oref", None)
+                it.pop("_fi", None)
         else:
             img = it.pop("_image", None) or _form_image(self.form_ref(it["id"]))
             if img is None:
@@ -576,6 +660,15 @@ class Page:
             form = _picture_form(self.w, it, img)
         form.get_object()[KEY] = TextStringObject(json.dumps(_public(it), separators=(",", ":"), ensure_ascii=False))
         return form
+
+    def fit(self, it: dict) -> None:
+        font = it["font"]
+        fi, ob = it.get("_fi"), _orig_style(it)
+        lines, _ = layout({**it, "w": 1e6})
+        natural = max((ln["x"] + sum(_width(wd, font["family"], font["size"], fi, ob) for wd in ln["words"]) for ln in lines), default=0.0)
+        vx0, _, vx1, _ = core.view_box(self.page)
+        room = max(it["w"], (vx1 - vx0) - it["x"] - 18)
+        it["w"] = round(max(it["w"], min(natural + 0.5, room)), 3)
 
     def base_ops(self) -> tuple[list, list[tuple[int, int, int]]]:
         begin, end = _wrap_bounds(self.arr)
@@ -687,6 +780,15 @@ def _form_image(form_ref):
     return xo.get_object().raw_get(NameObject("/Im")) if xo is not None and NameObject("/Im") in xo.get_object() else None
 
 
+def _form_font(form_ref):
+    if form_ref is None:
+        return None
+    res = form_ref.get_object().get("/Resources")
+    fonts = res.get_object().get("/Font") if res is not None else None
+    fonts = fonts.get_object() if fonts is not None else None
+    return fonts.raw_get(ORIG_RES) if fonts is not None and ORIG_RES in fonts else None
+
+
 def _arrange_comment(w: PdfWriter, n: int, index: int, to: str) -> None:
     if to not in ("front", "back", "forward", "backward"):
         raise ValueError("to is front, back, forward or backward")
@@ -748,7 +850,9 @@ def read(path, *, args: dict | None = None, pages=None, passwords: list[str] | N
     r = core.reader(path, passwords)
     want = core.parse_pages(pages or (args or {}).get("pages"), len(r.pages))
     w = PdfWriter(clone_from=r)
-    items, pics = [], []
+    from . import textedit
+
+    items, pics, paras = [], [], []
     for n in want:
         p = Page(w, n)
         for z, (_, v) in enumerate(p.items()):
@@ -757,10 +861,14 @@ def read(path, *, args: dict | None = None, pages=None, passwords: list[str] | N
             items.append({**_public(v), "page": n, "z": -1, "merged": True})
         if not (args or {}).get("items_only"):
             pics += p.pictures()
+            if (args or {}).get("text", True):
+                paras += textedit.listing(p)
     lines = [f"p{i['page']} item {i['id']} · {i['kind']} · {i['x']:.0f},{i['y']:.0f} {i['w']:.0f}x{i['h']:.0f}"
              + (f" · {_plain(i)[:60]}" if i["kind"] == "text" else "") for i in items]
     lines += [f"p{p['page']} picture at op {p['op']} · {p['x']:.0f},{p['y']:.0f} {p['w']:.0f}x{p['h']:.0f} · {p['iw']}x{p['ih']} px" for p in pics]
-    return ("\n".join(lines) or "No added items or pictures."), {"items": items, "pictures": pics}
+    lines += [f"p{t['page']} text {t['key']} · {t['x']:.0f},{t['y']:.0f} {t['w']:.0f}x{t['h']:.0f} · {t['fontName'] or t['font']['family']} "
+              f"{t['font']['size']:g} · {t['text'][:60]}" for t in paras]
+    return ("\n".join(lines) or "No added items, pictures or text."), {"items": items, "pictures": pics, "paragraphs": paras}
 
 
 def _plain(it: dict) -> str:
@@ -815,6 +923,15 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
         return xo is not None and NameObject(PREFIX + item_id) in xo.get_object()
 
     def locate(req: dict) -> tuple[Page, int, dict]:
+        if req.get("paragraph") is not None and req.get("page") is not None:
+            from . import textedit
+
+            p = page(req["page"])
+            key = f"{p.n}:t{req['paragraph']}"
+            if key not in converted:
+                converted[key] = textedit.convert(p, str(req["paragraph"]))["id"]
+            i, it = p.find(converted[key])
+            return p, i, it
         if req.get("picture") is not None and req.get("page") is not None:
             p = page(req["page"])
             key = f"{p.n}:{int(req['picture'])}"
@@ -841,10 +958,24 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
     added: list[str] = []
     converted: dict[str, str] = {}
     updated = removed = arranged = 0
-    wanted = sorted({(int(r["page"]), int(r["picture"])) for key in ("update", "arrange", "remove") for r in args.get(key) or []
-                     if isinstance(r, dict) and r.get("picture") is not None and r.get("page") is not None}, key=lambda t: (t[0], -t[1]))
-    for n, op in wanted:
-        converted[f"{n}:{op}"] = page(n).convert(op)["id"]
+    reqs = [r for key in ("update", "arrange", "remove") for r in args.get(key) or [] if isinstance(r, dict) and r.get("page") is not None]
+    wanted = {(int(r["page"]), int(r["picture"]), "") for r in reqs if r.get("picture") is not None}
+    for r in reqs:
+        if r.get("paragraph") is not None and not re.fullmatch(r"\d+\.\d+", str(r["paragraph"])):
+            raise ValueError("paragraph is the key a listing gave, such as 12.0; list the page's text again")
+    texts: dict[int, list[str]] = {}
+    for r in reqs:
+        if r.get("paragraph") is not None and r.get("picture") is None:
+            texts.setdefault(int(r["page"]), []).append(str(r["paragraph"]))
+    shifts: dict[int, dict[int, int]] = {}
+    for n, keys in texts.items():
+        from . import textedit
+
+        made, shifts[n] = textedit.convert_many(page(n), keys)
+        for k, it in made.items():
+            converted[f"{n}:t{k}"] = it["id"]
+    for n, op, _ in sorted(wanted, key=lambda t: (t[0], -t[1])):
+        converted[f"{n}:{op}"] = page(n).convert(shifts.get(n, {}).get(op, op))["id"]
     for req in args.get("add") or []:
         if not isinstance(req, dict):
             continue
@@ -885,16 +1016,24 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
                 if not any(k in req for k in ("x", "y", "w", "h")):
                     _recrop(new, it.get("crop") or {})
             _geo(new, req)
-        if req.get("page") is not None and int(req["page"]) != p.n and req.get("picture") is None:
+            if req.get("path") or req.get("data"):
+                data = Path(str(req["path"])).expanduser().read_bytes() if req.get("path") else _decode_data(req.get("data"))
+                img, iw, ih, orient, fmt = image_object(w, data)
+                dw, dh = (ih, iw) if orient >= 5 else (iw, ih)
+                cy = new["y"] + new["h"] / 2
+                new["h"] = round(new["w"] * dh / max(1, dw), 3)
+                new["y"] = round(cy - new["h"] / 2, 3)
+                new.update({"iw": iw, "ih": ih, "orient": orient, "format": fmt, "crop": _crop(None), "_image": img})
+        if req.get("page") is not None and int(req["page"]) != p.n and req.get("picture") is None and req.get("paragraph") is None:
             raise ValueError("Moving an item to another page is not supported; remove it and add it there")
         keep = None
         if new["kind"] == "text" and all(new.get(k) == it.get(k) for k in ("font", "paras", "w")):
             keep = p.form_ref(new["id"])
-        elif new["kind"] == "picture" and all(new.get(k) == it.get(k) for k in ("w", "h", "crop")):
+        elif new["kind"] == "picture" and "_image" not in new and all(new.get(k) == it.get(k) for k in ("w", "h", "crop")):
             keep = p.form_ref(new["id"])
         if keep is not None:
             keep.get_object()[KEY] = TextStringObject(json.dumps(_public(new), separators=(",", ":"), ensure_ascii=False))
-        elif new["kind"] == "picture":
+        elif new["kind"] == "picture" and "_image" not in new:
             new["_image"] = _form_image(p.form_ref(new["id"]))
         p.write(new, at=i, form=keep)
         updated += 1
@@ -937,6 +1076,10 @@ def render_without(path, page: int, target: dict, scale: float = 2.0, passwords:
                 p.remove(str(target["id"]))
     elif target.get("picture") is not None:
         p.remove(p.convert(int(target["picture"]))["id"])
+    elif target.get("paragraph"):
+        from . import textedit
+
+        p.remove(textedit.convert(p, str(target["paragraph"]))["id"])
     buf = io.BytesIO()
     w.write(buf)
     doc = pdfium.PdfDocument(buf.getvalue())

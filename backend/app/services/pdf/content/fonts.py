@@ -213,6 +213,9 @@ class FontInfo:
         for code, ch in enumerate(table):
             if ch and ch != "\x00":
                 self.to_uni[code] = ch
+        if base_name == "/WinAnsiEncoding":
+            for code in (0x7F, 0x81, 0x8D, 0x8F, 0x90, 0x9D):
+                self.to_uni[code] = "•"
         if diffs is not None:
             code = 0
             for item in diffs.get_object():
