@@ -32,6 +32,8 @@ Home opens when no PDF is open, and from the formpdf mark in the workbench title
 
 - **Start** greets you with **Open a PDF**: drop a PDF on the window, or choose Open PDF (Mod+O). Dropping pictures, or several PDFs, starts Create PDF instead. **Open by path** takes a full path such as `~/Documents/report.pdf`. **Create from pictures** and **Merge PDFs** open the Create PDF dialog. **Use your agent** opens the Agents dialog.
 - **Recent PDFs** lists the PDFs you opened, newest first, with a page preview. Click one to open the version you last had; the x on a card forgets it (the file itself is not touched).
+- **Batch** runs one action on many PDFs: add PDFs (or paths), choose the action (page numbers, header and footer with Bates numbers, watermark, crop, redact, protect, metadata, compress, remove hidden information, split, Word, PowerPoint), set its options and choose **Run on all files**. Your PDFs are not changed; each result goes into a new folder `Exports/Batch [date time] [action]`, the list shows each file's result, and **Download all** gives them as a zip.
+- **Picking up again:** when formpdf closed while a PDF was open, the line under the greeting offers it back. After a crash or a reload with unsaved changes it reads "formpdf closed with unsaved changes in [name]. Reopen them": the changes you had applied come back with the Edited badge on, so you can still save them. Comments, field values and page moves you had not applied yet are not recovered. Discard or Dismiss clears the offer; the working copies stay in the data folder.
 - **Create PDF from pictures** and **Merge PDFs** in the side bar do the same as the buttons. **Claude Code, Codex, Cursor** opens the Agents dialog; **Local only** is a reminder that PDFs stay on this computer; **Help** and **Preferences** open those dialogs.
 
 ## The workbench
@@ -58,6 +60,10 @@ Password-protected PDFs ask for their password and open as an unlocked working c
 
 Convert > PowerPoint writes a .pptx with one slide per page. The slides take the size of the first page (other page sizes are fitted and centred). Each slide shows the page as a picture with its text taken out, and over it the words as real text boxes where formpdf's layout analysis finds paragraphs and headings, with their size, bold, italic, colour and alignment; detected tables become PowerPoint tables. Untick Editable text boxes for pictures only. The text is placed where it was; fonts PowerPoint does not have are substituted, so a line can run slightly longer or shorter. Scanned pages have no text, so they stay pictures.
 
+## Find a command or tool
+
+Mod+K, on Home or in the workbench (also Help > Find a command or tool), opens one search over every command and tool. Type what you want to do in your own words: "bates", "black out", "powerpoint", "bulk" or "rotate" find the tab or command that does it, and the word that matched shows beside it. Commands that cannot run right now stay in the list, dimmed, with the reason (Open a PDF first, Nothing to undo yet). Up and Down move, Enter runs, Esc closes; the commands you use most rise to the top.
+
 ## Keyboard shortcuts
 
 | Group | Command | Keys |
@@ -78,7 +84,8 @@ Convert > PowerPoint writes a .pptx with one slide per page. The slides take the
 | | Cancel the tool, close search or the bar | Esc |
 | Comment | Select, highlight, underline, strike through, note, text box, draw, rectangle, ellipse, line, arrow | V, H, U, K, N, T, P, R, E, L, A |
 | Organize | Select all pages | Mod+A |
-| Help | formpdf Help | F1 |
+| Help | Find a command or tool | Mod+K |
+| | formpdf Help | F1 |
 | | Keyboard shortcuts | Mod+/ |
 | | Preferences | Mod+, |
 
@@ -154,7 +161,7 @@ Edit > Undo agent turn (Alt+Mod+Z), or **Undo turn** next to the agent's last ch
 
 ## Preferences
 
-Help > Preferences (Mod+,): Appearance (theme and accent colour, the same fourteen themes as the form family, light and dark), Comments and stamps (the author name written on comments you apply, units), and Agents (let Claude Code, Codex and Cursor read and edit PDFs).
+Help > Preferences (Mod+,): Appearance (theme and accent colour, the same fourteen themes as the form family, light and dark), Comments and stamps (the author name written on comments you apply, units), Agents (let Claude Code, Codex and Cursor read and edit PDFs), and Network (every connection formpdf could make and whether it does: today the engine and the window talk only on this computer, and the desktop update check is off).
 
 ## The data folder
 
@@ -165,7 +172,10 @@ Pdf/pdf_xxxxxxxxxx.pdf   every opened, created or changed version, with a .json 
 Pdf/recent.json          the recent PDFs list
 Media/                   pictures extracted from PDFs
 Exports/                 files written by Save and by agents and exports without a path
+Exports/Batch [date] [action]/   results of a batch run
+Batch/                   copies of PDFs added to Batch in a browser, removed after a day
 settings.json            preferences
+session.json             the PDF open in the window, for picking up again after a restart or crash
 engine.json              the running engine's port and process, removed when it stops
 ```
 

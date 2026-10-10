@@ -11,7 +11,12 @@
 | `app/routers/live.py` | `/api/live` WebSocket: windows say hello, report their open document, answer window tools |
 | `app/routers/mcp.py` | `/mcp` MCP server: 7 tools, the guide resource, the pdf-job prompt, consent, turns, live landing of agent versions |
 | `app/routers/system.py`, `media.py` | health, version, capabilities, settings; extracted pictures |
+| `app/routers/batch.py` | `/api/batch`: upload copies, run one action on many files as a job, status, zip of results |
 | `app/services/bridge.py` | window list, the window's open document, `window_call` |
+| `app/services/session.py` | `~/Formpdf/session.json`: the window's open document, for Home's pick-up and recovery line |
+| `app/services/pdf/actions.py` | the pdf action registry: kinds, labels, suffixes, synonyms, batch fields, `run` handlers |
+| `app/services/pdf/content/` | content interpreter (`walk`: glyphs and draws tied to operators), `FontInfo`, `write_page`, `replace_form` |
+| `app/services/pdf/fontkit.py`, `app/fonts/` | Inter, Noto Serif, JetBrains Mono embedded as subsets; `covers`, `pick` |
 | `app/services/media.py` | formpdf-owned picture store for extracted images (replaces formsld's media service) |
 | `app/services/pdf/docs.py` | working copies `Pdf/pdf_xxxxxxxxxx.pdf` with meta (name, path, root key, protect), `derive`, recents (24) |
 | `app/services/pdf/core.py` | info, text, images, tables, merge, split, render, pages zip, the `PDFIUM` lock (`serial`) |
@@ -30,7 +35,9 @@
 | --- | --- |
 | `main.ts`, `app.ts` | composition root: Home, the workbench, live client, agent bridge, dialogs, global keys |
 | `ui/home.ts` | Home: open, open by path, recent PDFs with forget, create from pictures, merge, agents, preferences |
-| `ui/app-dialogs.ts` | Preferences, Agents, Help, Keyboard shortcuts |
+| `ui/app-dialogs.ts` | Preferences (with the Network list), Agents, Help, Keyboard shortcuts |
+| `ui/palette.ts`, `ui/batch.ts`, `ui/resume.ts` | Mod+K palette, Home > Batch, Home's pick-up and recovery line |
+| `pdf/tools.ts` | tool registry: sections, commands and synonyms that tools add to the workbench |
 | `ui/dom.ts`, `icons.ts`, `menu.ts`, `commands.ts`, `dialogs.ts`, `dropdown.ts`, `toast.ts`, `themes.ts`, `brand.ts` | the form family toolkit and the formpdf mark |
 | `live/socket.ts`, `live/agent.ts` | WebSocket client, window tools (consent, state, open, commit, undo-turn, saved) |
 | `pdf/workbench.ts` | the workbench shell, menus, history of versions with agent turns, save, print, close guard |

@@ -9,7 +9,11 @@
 1. A pure service function in `services/pdf/` taking `(src, out, ..., passwords=...)`, raising `ValueError` with a sentence for bad input. pdfium calls run under `core.serial`.
 2. A route in `routers/pdf.py` through `_derive` (changes) or `_run` (reads); errors map to 400, 404, 409 (locked), 422 (unreadable), 500.
 3. A pane control in `frontend/src/pdf/panels.ts` using `ctx.run` and `ctx.commit` (see workbench.md).
-4. An action in `routers/mcp.py`: add it to `CHANGE_ACTIONS` (with `SUFFIX` and `LABEL`) or `READ_ACTIONS` or `EXPORT_ACTIONS`, map its arguments in `_change`, `_read` or `_export`, and document it in the harness `pdf-actions.md` and the `GUIDE`.
+4. An action: register it in `services/pdf/actions.py` (name, kind read, change or export, label, suffix, palette synonyms, extension, batch fields). New actions pass a `run` handler, which `routers/mcp.py` falls through to from `_change`, `_export` or `_read`; the MCP enum, consent, `./formpdf run actions`, Home > Batch and GET /api/pdf/actions follow automatically. Document it in the harness `pdf-actions.md` and the `GUIDE`.
+
+## Content interpreter and fonts
+
+`services/pdf/content/` walks a page with its graphics state and returns `PageContent`: every glyph (operator index, code, text, box, origin, advance, MCID) and every draw (picture, inline image, form, path, clip, shading), with forms walked in place under `where` keys. Use it, not pdfplumber, whenever a change has to find and rewrite the operators that drew something (redaction, editing text and pictures, OCR placement, tagging); `write_page` and `replace_form` write changes back, copying shared forms. `FontInfo.encode` refuses characters a font has no glyph for. Text formpdf writes uses `fontkit.font_name(family, bold, italic)` (Inter, Noto Serif, JetBrains Mono, embedded as subsets with ToUnicode); check `fontkit.covers` first and say so when no family covers the text (CJK today).
 
 ## Libraries per job
 

@@ -6,6 +6,10 @@
 
 Agent changes arrive as window tools (`live/agent.ts`): `commit` calls `agentCommit(from, id, label, turn, agent)`, which refuses when the window moved on, pushes a state carrying the turn, and shows the agent chip with Undo turn. `undoAgent` travels to the state before the first state of the newest turn, and refuses when the newest state is the person's. `state()` is reported to the engine whenever the chrome syncs.
 
+## Adding a tool
+
+New tools do not edit `panels.ts`: register them in `pdf/tools.ts` with `registerTool({ id, tab, title, words, section, mount, sync, commands })`. The workbench mounts the section into that tab's pane once, adds the commands (so menus, shortcuts and the Mod+K palette see them, with `words` as synonyms and `why` as the disabled reason), and calls `sync` from `syncChrome`. The palette (`ui/palette.ts`) lists Home's commands on Home and the workbench's in the workbench.
+
 ## Panes
 
 `panels.ts` builds every pane once and patches it: View (layouts, reading, read aloud, document, find, compare), Comment (threads with replies and status), Fill & Sign (fields, signature, stamps), Prepare form (`form.ts`), Edit (header and footer with live preview, crop, page numbers, watermark), Organize (`organize.ts`, split, merge), Extract, Protect (password, remove password, find and redact, redact areas, metadata, hidden information), Convert (PowerPoint, Word, compress, pages as PNG).

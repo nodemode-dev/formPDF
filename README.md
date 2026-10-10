@@ -8,7 +8,8 @@ Version 0.1.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 
 | Area | In this version |
 | --- | --- |
-| Home | Open a PDF by picker, drop or path; recent PDFs with forget; create a PDF from pictures; merge PDFs |
+| Home | Open a PDF by picker, drop or path; recent PDFs with forget; create a PDF from pictures; merge PDFs; Batch (one action on many PDFs, results in a new folder); pick up where you left off, including unsaved changes after a crash |
+| Everywhere | Mod+K finds any command or tool in your own words and says why one cannot run yet; Preferences lists every network connection (none leave this computer) |
 | View | Single, continuous, two-page and cover layouts; reading mode; read aloud; find; compare two PDFs; document properties |
 | Comment | Highlight, underline, strike through, notes, text boxes, ink, shapes, lines and arrows; replies and status; stamps |
 | Fill & Sign | Fill form fields; draw or type a signature; dates, text and business or dynamic stamps |
