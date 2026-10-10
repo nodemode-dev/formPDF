@@ -4,8 +4,14 @@ import sys
 from fastapi import APIRouter
 
 from app.core import config
+from app.services import session
+from app.services.pdf import fontkit
 
 router = APIRouter()
+NETWORK = [
+    {"id": "engine", "name": "The engine and this window", "state": "local", "note": "They talk only on this computer, at 127.0.0.1. PDFs never leave it."},
+    {"id": "updates", "name": "Update check (desktop app)", "state": "off", "note": "This build has no update key, so it never checks. When one is set, formpdf asks before checking."},
+]
 
 
 def _available(module: str) -> bool:
@@ -38,7 +44,20 @@ def capabilities() -> dict:
         "desktop": config.is_desktop(),
         "dataDir": str(config.data_dir()),
         "port": config.port(),
+        "fonts": sum(len(f["styles"]) for f in fontkit.available()),
+        "network": NETWORK,
     }
+
+
+@router.get("/session")
+def get_session() -> dict:
+    return session.read()
+
+
+@router.post("/session/dismiss")
+def dismiss_session() -> dict:
+    session.clear()
+    return {"ok": True}
 
 
 @router.get("/settings")

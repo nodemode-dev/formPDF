@@ -92,6 +92,10 @@ class PreferencesDialog extends Dialog {
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Agents</div>
 <div class="fs-field"><span>Access</span><label class="fs-check"><input type="checkbox" data-f="agents"><span>Let Claude Code, Codex and Cursor read and edit PDFs</span></label></div>
 </section>
+<section class="fs-dlg-section"><div class="fs-dlg-section-title">Network</div>
+<p class="fs-note">Everything formpdf could connect to, and whether it does. No account, no telemetry.</p>
+<div class="fs-dlg-net"></div>
+</section>
 </div>`);
     this.body.appendChild(box);
     this.themes = q(box, '.fs-dlg-themes');
@@ -145,6 +149,15 @@ class PreferencesDialog extends Dialog {
       setValue(this.author, str(s.author));
       segSet(this.units, str(s.units) || 'pt');
     });
+    void api.capabilities().then((c) => {
+      const rows = (c.network as Array<{ id: string; name: string; state: string; note: string }> | undefined) ?? [];
+      const fill = (n: HTMLElement, r: { name: string; state: string; note: string }): void => { setText(q(n, '.fs-dlg-net-name'), r.name); setText(q(n, '.fs-dlg-net-state'), r.state); setText(q(n, '.fs-dlg-net-note'), r.note); };
+      patchList(q(this.body, '.fs-dlg-net'), rows, {
+        key: (r) => r.id,
+        create: (r) => { const n = el('<div class="fs-dlg-net-row"><span class="fs-dlg-net-name"></span><span class="fs-badge fs-dlg-net-state"></span><span class="fs-note fs-dlg-net-note"></span></div>'); fill(n, r); return n; },
+        update: fill,
+      });
+    }).catch(() => undefined);
   }
 }
 

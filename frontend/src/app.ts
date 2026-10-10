@@ -11,6 +11,7 @@ import { revealApp } from './ui/dom';
 import { enhanceAllSelects } from './ui/dropdown';
 import { Home } from './ui/home';
 import { Palette } from './ui/palette';
+import { offerResume } from './ui/resume';
 import { applyTheme } from './ui/themes';
 import { toast } from './ui/toast';
 import { VERSION } from './version';
@@ -95,6 +96,7 @@ export async function startApp(): Promise<void> {
   } catch { toast('The formpdf engine is not answering yet; retrying.', 'error'); }
   const files = new URLSearchParams(location.search).getAll('open').filter(Boolean);
   home.open();
+  if (!files.length) void offerResume(home.root.querySelector<HTMLElement>('[data-page="start"] .fs-home-sub') as HTMLElement, (id, restore) => openWorkbench({ recent: id, restore, app: hooks }));
   if (files.length) {
     history.replaceState(null, '', location.pathname);
     openPaths(files);

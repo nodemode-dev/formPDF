@@ -44,7 +44,7 @@ export class Home {
 </div></nav>
 <div class="fs-home-main">
 <div data-page="start">
-<div class="fs-home-head"><div><h1 class="fs-home-title"></h1><p class="fs-home-sub">Read, comment, fill and sign, organize, protect and convert PDFs on this computer.</p></div><div class="fs-home-head-actions"><button class="fs-btn" type="button" data-a="path">${icon('load', 14)}Open by path</button><button class="fs-btn" type="button" data-a="merge">${icon('merge', 14)}Merge PDFs</button></div></div>
+<div class="fs-home-head"><div><h1 class="fs-home-title"></h1><p class="fs-home-sub is-line">Read, comment, fill and sign, organize, protect and convert PDFs on this computer.</p></div><div class="fs-home-head-actions"><button class="fs-btn" type="button" data-a="path">${icon('load', 14)}Open by path</button><button class="fs-btn" type="button" data-a="merge">${icon('merge', 14)}Merge PDFs</button></div></div>
 <div class="fs-home-hero">
 <span class="fs-home-hero-icon">${icon('filePdf', 26)}</span>
 <div class="fs-home-hero-text"><div class="fs-home-hero-title">Open a PDF</div>

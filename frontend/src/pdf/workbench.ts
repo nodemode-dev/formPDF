@@ -20,7 +20,7 @@ import { mountTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
 import { Thumbs, Viewer, type Layout } from './viewer';
 
 export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void; palette(): void }
-export interface WorkbenchOptions { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; app: AppHooks }
+export interface WorkbenchOptions { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; app: AppHooks; restore?: { page: number; tab: string; dirty: boolean } }
 export interface DocState { id: string; key: string; name: string; pages: number; page: number; dirty: boolean; tab: string; path: string | null; agentTurn: string | null }
 export interface AgentReply { ok: boolean; text: string; data?: Record<string, unknown> }
 
@@ -781,6 +781,13 @@ class Workbench {
     await this.run('Opening', async () => {
       const info = await pdfApi.info(id);
       await this.adopt({ id, name: info.name ?? 'document.pdf', pages: info.pages, info, key: info.key ?? id, path: info.path });
+      const back = this.opts.restore;
+      if (back && this.doc?.id === id) {
+        this.opts = { ...this.opts, restore: undefined };
+        if (TABS.some(([t]) => t === back.tab)) this.setTab(back.tab as Tab);
+        if (back.page > 1) this.goPage(Math.min(back.page, info.pages));
+        if (back.dirty) { this.savedId = ''; this.syncChrome(); }
+      }
     });
   }
 

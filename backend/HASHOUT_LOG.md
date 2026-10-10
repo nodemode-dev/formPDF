@@ -40,6 +40,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 17. The content interpreter · services/pdf/content/
 18. The font kit · services/pdf/fontkit.py, app/fonts/
 19. Batch jobs · routers/batch.py
+20. Session restore and the network list · services/session.py, routers/live.py, routers/system.py
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -122,3 +123,9 @@ Text formpdf writes into a PDF (added text, edited paragraphs, OCR layers, Bates
 ## 19. Batch jobs · _v0.2.0 (routers/batch.py upload, run, _work, status, download, _target, _nest, _prune)
 
 Home > Batch runs one registered action (`Action.batch`) on many PDFs. Each file goes through `mcp.t_pdf` with `path` and an explicit `out`, the same code path agents and `./formpdf run` use, so batch behaves exactly like a file job: the input never changes. It calls `t_pdf` directly rather than `call_tool`, because the person started it in the window and the agent consent question does not apply. A run is a job in memory (`JOBS`, the newest 20 kept) worked through in an asyncio task kept in `TASKS` so it is not collected; the window polls GET /api/batch/{id} for per-file state, the message and the output paths, and GET /api/batch/{id}/zip zips what was written. Results go to a new folder `Exports/Batch <date time> <action label>`; output names follow the agents' `[stem]-[suffix].pdf` rule, and a second file with the same stem gets ` (2)`. Browser uploads are copied into `Formpdf/Batch/<random>/` because the window has no file paths in a browser; on each upload, copies older than a day are removed unless a running job uses them. Field names with dots from the batch form (`footer.center`, `bates.prefix`) are nested into the objects the actions take. Checked over HTTP: three files with Bates footers numbered ACME-000001 on, a refused non-batch action, a zip of three results, pruning of an old inbox folder.
+
+## 20. Session restore and the network list · _v0.2.0 (services/session.py remember, clear, read; routers/live.py handle doc; routers/system.py get_session, dismiss_session, NETWORK, capabilities)
+
+Every change already lands as an immutable working-copy version (entry 1), so a crash loses only what was never applied; what was missing was knowing which version the window had open. The window already reports its open document over /api/live, so the engine writes it to `~/Formpdf/session.json` as it arrives (id, key, name, page, tab, dirty, pages), at most every two seconds unless the id, tab or dirty state changes. A window that closes its PDF on purpose sends no document after having one, which clears the session; a fresh window's first empty report does not, because it never had one, which is how the file survives a reload or a crash to be read by the next start. GET /api/session returns the document only when its working copy still exists, with `recover` true when it had unsaved changes; POST /api/session/dismiss clears it. The page is approximate: the window reports page moves only alongside other changes.
+
+Beat Acrobat B1 needs the network story in one place. `NETWORK` in system.py lists every connection formpdf could make and its state, served in /api/capabilities: today only the local engine link and the desktop update check, which is off because no update key is configured. Features that add a connection (timestamp servers, AI providers, update checks) append their row here. Capabilities also report the font count.

@@ -6,6 +6,7 @@ import urllib.parse
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core import config, ids
+from app.services import session
 
 router = APIRouter()
 TOOL_RESULTS: dict[str, asyncio.Future] = {}
@@ -83,7 +84,12 @@ async def handle(client: Client, msg: dict) -> None:
         return
     if t == "doc":
         doc = msg.get("doc")
+        before = client.doc
         client.doc = doc if isinstance(doc, dict) and doc.get("id") else None
+        if client.doc:
+            session.remember(client.doc)
+        elif before:
+            session.clear()
         return
     if t == "toolResult":
         fut = TOOL_RESULTS.get(str(msg.get("id")))
