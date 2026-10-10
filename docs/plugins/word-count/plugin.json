@@ -1,0 +1,8 @@
+{
+  "name": "Word count",
+  "version": "1.0.0",
+  "description": "Counts the words on each page. A sample of an engine action and a window section.",
+  "author": "formpdf",
+  "engine": "engine.py",
+  "window": "window.js"
+}
