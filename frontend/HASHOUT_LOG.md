@@ -35,6 +35,8 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 16. Page tools and safe links · pdf/annotate.ts PageTool, pdf/tools.ts, tools/overlay.ts, pdf/workbench.ts openLink
 17. The Links tool · tools/links.ts
 18. The Attached files tool · tools/attachments.ts
+19. Toasts and the comment list never move anything · ui/toast.ts, pdf/panels.ts
+20. The Measure tool · tools/measure.ts
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -113,3 +115,13 @@ Edit > Links: Draw a link puts the page into a drag-a-box page tool (the box sho
 ## 18. The Attached files tool · _v0.3.0 (tools/attachments.ts)
 
 Edit > Attached files: Attach files picks any files and sends them as data URLs in one engine call (one version, one Undo step); Pin a file to the page picks one file, then a one-click page tool places its pin centred on the click and clamped to the page. The list shows document files and pins together, keeps its existing order when the PDF changes (the Links rule), and offers Save a copy (downloaded through `deliver`, so the desktop app asks for a path) and Remove. Clicking a pin row scrolls to it and pulses it.
+
+## 19. Toasts and the comment list never move anything · _v0.3.0 (ui/toast.ts toast, expire; styles/shell.css #toast-root; pdf/panels.ts Comments section; styles/pdf.css .fs-pdfwb-annots-area)
+
+Measuring several things in a row showed two shifts that were not the tool's own. Toasts: the stack was a bottom-anchored column, so a second toast pushed the first one up, and the container itself grew upward, which Chrome also reports. The stack is now `column-reverse` inside a fixed 220 px box: a new toast appears above the others, nothing that is showing moves, and an expired toast turns invisible but keeps its slot until every toast above it has gone too. Comments: measurements, pins and links-turned-comments appear in the PDF's comment list, and the list swapping its "No comments yet" block for rows moved every section below it. The list, its In this PDF heading and the empty block now share one fixed 260 px scrolling area.
+
+## 20. The Measure tool · _v0.3.0 (tools/measure.ts; styles/tools.css .fs-pdf-measure, .fs-tool-listbox)
+
+Comment > Measure: Distance (click, click, or drag), Perimeter and Area (click corners; double-click or Enter finishes, Backspace drops the last corner), Shift for 45 degree steps, Esc to stop. Pointer events carry no click count on pointerdown (`detail` is 0), so a double-click is two presses within 450 ms and 6 screen pixels. The drawing shows in an SVG overlay per page in page points (the overlay scales with zoom like every other layer) with the live value on a label. Snapping fetches `snap_points` for a page the first time the pointer moves over it and snaps within 9 screen pixels; Shift turns snapping off while it constrains angles. Each finished measurement is one engine call and one version, so Undo removes it; there is no staged state to lose on close. The scale is units per point: true size per unit by default, or calibrated by drawing over a known length and typing its real length; changing the unit converts the scale, and the scale is remembered per document key in memory and localStorage. Export CSV writes the PDF's measurements with a leading quote on cells that start with = + - @, tab or carriage return so a spreadsheet does not run them. The mode buttons blur when a mode starts, because a focused button turns Enter into a click that ended the mode instead of finishing the shape.
+
+All tool lists (Links, Attached files, Measure) now sit with their empty note in one fixed 176 px box that scrolls; rows keep their height (`flex: none`) and the note sits in the same cell. Growing lists and a hiding note had moved the buttons under them.

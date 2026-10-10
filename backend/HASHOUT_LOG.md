@@ -45,6 +45,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 22. Links · services/pdf/links.py, services/pdf/frame.py
 23. Attached files · services/pdf/attach.py
 24. Bates numbers across files · routers/batch.py _bates
+25. Measurements · services/pdf/measure.py, content/interp.py Draw.points
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -149,3 +150,9 @@ Document-level files live in the catalog's EmbeddedFiles name tree. pypdf can ad
 ## 24. Bates numbers across files · _v0.3.0 (routers/batch.py _work, _bates, _bates_text, _numbered; services/pdf/actions.py header_footer fields)
 
 Acrobat's Bates numbering is a set operation: legal documents are numbered as one run. Batch with Add header and footer and Add Bates numbers now passes each file a start number that continues from the previous file, counting only the pages that file actually numbered (its page range and odd or even setting, the same sequence header_footer counts), and writes `Bates numbers.csv` (file, numbered copy, first, last) into the results folder and the zip. Each row's `note` shows its range. The form's `bates.on` and `bates.across` are batch-only switches and are removed before the call. `bates.on` also fixes a 0.2.0 fault: the batch form always sent start and digits, and header_footer treats any `bates` object as a request for Bates numbers, so every batch header and footer run was stamped with them.
+
+## 25. Measurements · _v0.3.0 (services/pdf/measure.py change, read, snap, value, _annot, _appearance, _measure_dict; services/pdf/content/interp.py Draw.points)
+
+Measurements are written the way Acrobat writes them, so other readers show and re-read them: a distance is a Line annotation with IT LineDimension, open arrows on both ends and Cap; a perimeter a PolyLine with PolyLineDimension; an area a Polygon with PolygonDimension. Each carries a rectilinear Measure dictionary whose X number format holds the unit and the scale (units per point), so the value can be recomputed later and recalibrating never changes earlier readings, plus Contents with the formatted value (optionally after a label). Each gets its own appearance stream (the line or outline in the colour, a 12 percent fill for areas through an ExtGState, the value in Helvetica on a white plate) because readers otherwise draw measurement annotations inconsistently. Values: length times scale, area times scale squared; perimeter sums the segments. `measurements` reads both formpdf's and other tools' measurement annotations back with their value from the stored scale; `measure` removes by page and index in that order.
+
+`snap_points` walks the page with the content interpreter and returns path vertices, segment midpoints and segment crossings in top-left page points, capped at 4000 points and 700 segments for the crossing pass. That needed the interpreter to keep subpaths apart: `Draw.points` now holds each painted path's subpaths (m starts one, re adds a closed one, h closes, curves contribute their end point), so a midpoint or crossing is never invented between two separate shapes. The no-op write-back check stayed pixel-identical on all twelve corpus PDFs after the change.

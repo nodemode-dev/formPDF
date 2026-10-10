@@ -64,6 +64,7 @@ class Draw:
     clip: bool = False
     mcid: int | None = None
     artifact: bool = False
+    points: tuple = ()
 
 
 @dataclass
@@ -153,6 +154,7 @@ class Interpreter:
         tm = tlm = IDENTITY
         marks: list[tuple[str, int | None]] = []
         path: list[tuple[float, float]] = []
+        subs: list[list[tuple[float, float]]] = []
         clip_pending = False
         for i, (operands, op) in enumerate(operations):
             self.count += 1
@@ -214,20 +216,35 @@ class Interpreter:
             elif op == b"INLINE IMAGE":
                 self.out.draws.append(Draw(where, i, "inline", "", st.ctm, box_of(st.ctm, 0, 0, 1, 1), **self._mark(marks)))
             elif op in (b"m", b"l") and len(operands) >= 2:
-                path.append(apply(st.ctm, _f(operands[0]), _f(operands[1])))
+                pt = apply(st.ctm, _f(operands[0]), _f(operands[1]))
+                path.append(pt)
+                if op == b"m" or not subs:
+                    subs.append([pt])
+                else:
+                    subs[-1].append(pt)
             elif op in (b"c", b"v", b"y"):
                 vals = [_f(v) for v in operands]
-                path.extend(apply(st.ctm, vals[k], vals[k + 1]) for k in range(0, len(vals) - 1, 2))
+                pts = [apply(st.ctm, vals[k], vals[k + 1]) for k in range(0, len(vals) - 1, 2)]
+                path.extend(pts)
+                if pts and not subs:
+                    subs.append([])
+                if pts:
+                    subs[-1].append(pts[-1])
             elif op == b"re" and len(operands) == 4:
                 x, y, w, h = (_f(v) for v in operands)
-                path.extend(apply(st.ctm, px, py) for px, py in ((x, y), (x + w, y), (x + w, y + h), (x, y + h)))
+                pts = [apply(st.ctm, px, py) for px, py in ((x, y), (x + w, y), (x + w, y + h), (x, y + h))]
+                path.extend(pts)
+                subs.append(pts + pts[:1])
+            elif op == b"h" and subs and len(subs[-1]) > 1:
+                subs[-1].append(subs[-1][0])
             elif op in (b"W", b"W*"):
                 clip_pending = True
             elif op in PAINT:
                 box = (min(p[0] for p in path), min(p[1] for p in path), max(p[0] for p in path), max(p[1] for p in path)) if path else None
                 kind = "path" if op != b"n" else ("clip" if clip_pending else "nop")
-                self.out.draws.append(Draw(where, i, kind, "", st.ctm, box, op.decode(), clip_pending, **self._mark(marks)))
-                path, clip_pending = [], False
+                self.out.draws.append(Draw(where, i, kind, "", st.ctm, box, op.decode(), clip_pending, **self._mark(marks),
+                                           points=tuple(tuple(s) for s in subs) if kind == "path" else ()))
+                path, subs, clip_pending = [], [], False
             elif op == b"sh" and operands:
                 self.out.draws.append(Draw(where, i, "shading", str(operands[0]), st.ctm, None, **self._mark(marks)))
             elif op in (b"sc", b"scn", b"g", b"rg", b"k"):

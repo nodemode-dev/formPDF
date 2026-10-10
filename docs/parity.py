@@ -32,7 +32,7 @@ row(a, "Drawing: ink, rectangle, ellipse, line, arrow", 1, F, "`annotate.ts` too
 row(a, "Stamps", 1, F, "`pdf/stamps.ts STAMPS` (standard, dynamic with name and date, sign-here, marks, picture stamps), `annot.py _stamp` Stamp annotations with appearance streams")
 row(a, "Comment list with replies and status", 1, F, "Comment panel threads with replies and status (`panels.ts syncAnnots`), written as /IRT reply and /State annotations (`annot.py _thread`), read by `GET /pdf/{id}/comments`")
 row(a, "Flatten annotations into the page", 1, F, "`panels.ts` Flatten into the page, `annot.py annotate(flatten)`")
-row(a, "Measure distance, perimeter and area", 1, N, "nothing found: no measuring tool in `annotate.ts Tool` or `services/pdf/annot.py KINDS`")
+row(a, "Measure distance, perimeter and area", 1, F, "Comment > Measure (`frontend/src/tools/measure.ts`): distance, perimeter and area with a live value, units, calibration from a known length, snapping to path ends, midpoints and crossings, 45 degree steps, a list with remove and CSV export; saved as Line, PolyLine and Polygon measurement annotations with a Measure dictionary and their own appearance (`services/pdf/measure.py change, read, snap`; actions measure, measurements, snap_points)")
 
 a = "Content editing"
 row(a, "Edit PDF text and pictures in place", 1, N, "nothing found: no tool edits text already on the page (`annotate.ts Tool` has markup and drawing tools only), and placed pictures are new annotations, not the page's own images")

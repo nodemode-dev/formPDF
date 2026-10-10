@@ -123,8 +123,7 @@ registerTool({
 <p class="fs-note fs-tool-note" data-t="note"></p>
 <div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-t="add" disabled>Add link</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-t="clear" disabled>Clear box</button></div>
 <div class="fs-pdfwb-subhead">In this PDF <span class="fs-badge is-count" data-t="count">0</span></div>
-<div class="fs-list fs-tool-list" data-t="list"></div>
-<p class="fs-note" data-t="empty">No links yet.</p>`,
+<div class="fs-tool-listbox"><div class="fs-list fs-tool-list" data-t="list"></div><p class="fs-note fs-tool-empty" data-t="empty">No links yet.</p></div>`,
   mount: (root, host) => {
     rootEl = root;
     syncForm(root);

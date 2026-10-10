@@ -117,8 +117,7 @@ registerTool({
   section: () => `<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-t="attach">${icon('upload', 14)}Attach files…</button><button class="fs-btn fs-btn-sm" type="button" data-t="pin">${icon('sticky', 14)}Pin a file to the page…</button></div>
 <p class="fs-note">Attached files travel inside the PDF. Remove hidden information can take them out again.</p>
 <div class="fs-pdfwb-subhead">In this PDF <span class="fs-badge is-count" data-t="count">0</span></div>
-<div class="fs-list fs-tool-list" data-t="list"></div>
-<p class="fs-note" data-t="empty">No attached files.</p>`,
+<div class="fs-tool-listbox"><div class="fs-list fs-tool-list" data-t="list"></div><p class="fs-note fs-tool-empty" data-t="empty">No attached files.</p></div>`,
   mount: (root, host) => {
     root.addEventListener('click', (e) => {
       const t = (e.target as HTMLElement).closest<HTMLElement>('[data-t]');
