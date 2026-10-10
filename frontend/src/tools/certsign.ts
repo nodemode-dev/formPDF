@@ -121,6 +121,9 @@ function fillRow(n: HTMLElement, s: SigEntry): void {
   setText(q(n, '.fs-row-title'), sigTitle(s));
   setText(q(n, '.fs-row-sub'), sigSub(s));
   n.dataset.index = String(s.index);
+  const c = s.signer;
+  const cert = c ? [`Certificate of ${c.name}${c.email ? ` <${c.email}>` : ''}${c.org ? `, ${c.org}` : ''}`, `Issued by ${c.selfSigned ? 'the signer (self-signed)' : c.issuer}`, `Valid ${c.from.slice(0, 10)} to ${c.to.slice(0, 10)}`, `SHA-256 ${c.fingerprint.replace(/(..)(?!$)/g, '$1:').toUpperCase()}`].join('\n') : 'No certificate found';
+  if (n.title !== cert) n.title = cert;
   setDisabled(q<HTMLButtonElement>(n, '[data-c="trust"]'), s.verdict !== 'unknown' || !s.signer?.der);
 }
 
