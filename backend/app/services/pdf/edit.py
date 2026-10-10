@@ -523,7 +523,10 @@ def compress(src, out, *, quality: int = 70, passwords: list[str] | None = None)
             page.compress_content_streams(level=9)
         except Exception:
             pass
-    w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+    try:
+        w.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+    except AttributeError:
+        pass
     pages = _write(w, out)
     return {"pages": pages, "images": replaced, "before": Path(src).stat().st_size, "after": Path(out).stat().st_size}
 
