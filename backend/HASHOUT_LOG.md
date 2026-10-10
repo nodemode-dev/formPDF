@@ -15,6 +15,7 @@ app/routers/media.py         extracted pictures
 app/services/bridge.py       window list, window document, window_call
 app/services/media.py        formpdf-owned picture store
 app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare, actions (registry)
+app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp.py (walk: glyphs, draws, streams), streams.py (write-back)
 ```
 
 ## TOC
@@ -35,6 +36,7 @@ app/services/pdf/            docs, core, edit, annot, forms, layout, word, slide
 14. Consent for every action that writes · routers/mcp.py _mutating
 15. Compress without document info · services/pdf/edit.py compress
 16. One action registry for MCP, the CLI, batch and the palette · services/pdf/actions.py
+17. The content interpreter · services/pdf/content/
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -99,3 +101,13 @@ pypdf's `compress_identical_objects(remove_orphans=True)` dereferences the write
 ## 16. One action registry for MCP, the CLI, batch and the palette · _v0.2.0 (services/pdf/actions.py; routers/mcp.py READ_ACTIONS to LABEL, _change, _export, _read; routers/pdf.py action_list)
 
 The parity plan adds about forty actions, and each one has to reach the window, the MCP `pdf` tool, `./formpdf run`, Home batch and the command palette. Before this, the action names, labels and output suffixes lived as literals in mcp.py, so every new action meant edits in several places that could drift. `actions.py` is now the one table: name, kind (read, change, export), label, suffix, synonyms for the palette, an output extension, and the fields a batch form shows. mcp.py's names are the registry's live lists and dicts (same objects), so the tool's action enum and consent rules follow registration without rebuilding. The 27 built-in actions keep their hand-written branches in `_change`, `_export` and `_read`; an action registered with a `run` handler (later phases, plug-ins) falls through to it: change and export handlers take `(src, out, *, args, pages, passwords)`, read handlers take `(src, *, args, pages, passwords)` and return text plus data. `batch` is false for read actions and for actions that need per-file choices (merge, fill, annotate, form, organize, unlock). GET /api/pdf/actions serves the catalogue.
+
+## 17. The content interpreter · _v0.2.0 (services/pdf/content/fonts.py FontInfo, parse_cmap; interp.py walk, Interpreter, PageContent.within; streams.py write_page, new_form, replace_form)
+
+True redaction, editing text and pictures already on a page, OCR text placement and tagging all need the same thing: every glyph, picture draw and path tied to the operator that drew it, with its box on the page. pdfplumber finds characters but cannot say which operator made them, so it cannot drive a change. `walk(page, pdf)` parses the page's joined content (pypdf joins a /Contents array, so a piece that ends mid-operator is not a problem) and runs a graphics-state machine: CTM stack, text state (Tc, Tw, Tz, TL, Ts, Tr, font and size), text and line matrices, fill colour and the marked-content stack. Each shown code becomes a `Glyph` with its operator index, its position inside that operator, the code bytes, Unicode text, a box from font descent to ascent through the text rendering matrix, the origin, the advance (with Tc, and Tw only for single-byte code 32) and its MCID or Artifact state. Pictures, inline images, forms, paths, clips and shadings become `Draw`s. Form XObjects are walked in place with their Matrix and own or inherited resources, keyed by `where` (the chain of Do operator indexes), with a depth cap of 8, a cycle guard and a four-million-operator budget that sets `truncated`.
+
+`FontInfo` reads simple fonts (Widths, FirstChar, MissingWidth; base encoding plus Differences; glyph names through the Adobe list, uniXXXX and uXXXX forms, with suffixes like .sc or .v1 stripped and ligature names split on underscores), standard 14 fonts without widths through reportlab's AFM tables (Arial, Times New Roman and Courier New names alias to them), Type0 fonts (W and DW, Identity-H and V, embedded CMaps with codespace and CID ranges; other predefined CMaps are treated as two-byte and flagged `approx`) and Type3 fonts (FontMatrix-scaled widths and box). ToUnicode wins over the encoding. `reverse` and `encode` map text back to codes and refuse a character the font has no glyph for, which is how later phases avoid printing question marks. pypdf's encoding and glyph tables are private modules, imported behind a guard so an upgrade degrades instead of crashing.
+
+Checked against pdfplumber on twelve PDFs (reportlab standard and TrueType subset fonts, matplotlib Type3 and Type42, TeX Type1 with custom encodings, a Word-made math PDF, a browser-made PDF, formpdf's own outputs): every glyph origin and width matched to 0.000 pt, counts matched on every page, and text matched except where the font's own built-in Type1 or CFF encoding is the only source of Unicode (two glyphs in a TeX math font), which is not read yet. Writing every page back from its parsed operations rendered pixel-identical in PDFium and extracted the same text. No PDF in that set was tagged, so the MCID and Artifact paths have not run against a real file yet.
+
+`write_page` replaces a page's content with one new stream; `new_form` and `replace_form` add a changed copy of a form under a new resource name and leave the original for the other pages that share it (the caller renames the Do operand).
