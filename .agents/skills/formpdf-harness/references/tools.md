@@ -10,7 +10,7 @@ No arguments. Text lines: version, port and data folder; whether a window is ope
 
 ## open_pdf
 
-`{path}` absolute. Copies the file into formpdf's working copies, adds it to recent PDFs and opens it in the window (or in the engine when no window is open). Fails when the person has unsaved changes in the window. Asks for consent. Structured `{id, key, pages, window}`.
+`{path}` absolute. A Word, PowerPoint, Excel or other Office file is first converted to `[stem].pdf` by the person's LibreOffice (get_context says whether it is installed); the original is never written. Copies the file into formpdf's working copies, adds it to recent PDFs and opens it in the window (or in the engine when no window is open). Fails when the person has unsaved changes in the window. Asks for consent. Structured `{id, key, pages, window}`.
 
 ## pdf
 
