@@ -45,6 +45,7 @@ def parse() -> tuple[argparse.Namespace, list[str]]:
 def main() -> int:
     a, extra = parse()
     from app.routers import mcp
+    import app.services.ai
     import app.services.lists
     from app.services import plugins
 

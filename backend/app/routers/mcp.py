@@ -84,6 +84,9 @@ crop is fractions of the picture); ocr {dpi: 300, skip_text: true, deskew: true,
 computer and adds invisible, searchable text; tilted full-page scans are straightened; get_context says whether OCR is installed).
 Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}
 (one slide per page: words as text boxes, rotated words as rotated boxes, shapes and pictures as PowerPoint objects); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.
+AI (only when the person chose a provider in Preferences > AI; you can usually answer yourself from text): ai_ask {question}, ai_summary {length},
+ai_outline {slides, brief, paths}, ai_deck {outline | slides, brief, paths} (export .pptx), ai_picture {prompt, page, x, y, w, h}. When the provider is
+"your agent", questions the person asks in the Assistant tab appear in get_context; read the PDF and reply with answer_question {id, text}, citing [p. N].
 
 ## Tips
 - Run find before redact and tell the person what will go. Crop hides, redact removes.
@@ -141,7 +144,8 @@ TOOLS = [
            "title": _S, "author": _S, "subject": _S, "keywords": _S, "strip": {"type": "boolean"}, "quality": {"type": "integer"},
            "remove": {"type": "array", "items": _S}, "values": {"type": "object"}, "flatten": {"type": "boolean"},
            "annotations": {"type": "array", "items": {"type": "object"}}, "highlight": _S, "create": {"type": "array", "items": {"type": "object"}},
-           "rename": {"type": "object"}, "other": _S, "otherIsNewer": {"type": "boolean"}, "pictures": {"type": "boolean"}},
+           "rename": {"type": "object"}, "other": _S, "otherIsNewer": {"type": "boolean"}, "pictures": {"type": "boolean"},
+           "question": _S, "prompt": _S, "brief": _S, "slides": {"type": "integer"}, "outline": {"type": "object"}},
           ["action"]),
     _tool("render_pages", "A contact sheet picture of up to 12 pages of the open PDF (or a file), each labelled with its page number.",
           {"doc": _DOC, "path": _PATH, "pages": _PAGES, "width": {"type": "integer", "description": "Sheet width in pixels (default 1600)"}}, read=True),
@@ -149,6 +153,9 @@ TOOLS = [
           {"kind": {"type": "string", "enum": ["text", "tables", "images"]}, "doc": _DOC, "path": _PATH, "pages": _PAGES}, ["kind"], read=True),
     _tool("save", "Writes the open PDF's current version to a file (absolute path; default the Exports folder in ~/Formpdf).", {"doc": _DOC, "path": _S}),
     _tool("undo", "Undoes your last turn on the open PDF (every change you made less than 90 seconds apart).", {"doc": _DOC}, destructive=True),
+    _tool("answer_question", "Answers a question the person asked in formpdf's Assistant tab (get_context lists them when the AI provider is your agent). Read the PDF "
+          "first, cite every statement as [p. N] and quote exactly in double quotes before the citation; the answer appears in the window with page links.",
+          {"id": {"type": "string", "description": "The question's id from get_context"}, "text": _S}, ["id", "text"]),
 ]
 NAMES = {t["name"] for t in TOOLS}
 
@@ -627,6 +634,11 @@ async def t_get_context(a: Agent, args: dict) -> dict:
 
     ocr_st = ocr.status()
     lines.append("OCR: installed" if ocr_st["available"] else f"OCR: not installed ({ocr_st['reason']})")
+    from app.services import ai
+
+    for q in ai.waiting():
+        lines.append(f"Question waiting in the Assistant tab: id {q['id']} · {q['name']} (doc {q['doc']}) · {q['question'][:300]} "
+                     f"(read the PDF, then answer_question {{id, text}} citing pages as [p. N])")
     office_st = office.status()
     lines.append("Office files: LibreOffice found (open_pdf and merge accept .docx, .pptx, .xlsx and similar)" if office_st["available"]
                  else "Office files: LibreOffice not installed (ask the person to install it to convert .docx, .pptx and .xlsx)")
@@ -726,6 +738,27 @@ async def t_save(a: Agent, args: dict) -> dict:
     if src.window:
         await bridge.window_call("saved", {"id": src.id}, 20)
     return _ok(f"Saved {src.name} to {res['path']} ({res['bytes'] // 1024} KB).", res)
+
+
+async def t_answer_question(a: Agent, args: dict) -> dict:
+    from app.services import ai
+
+    qid, text = str(args.get("id") or ""), str(args.get("text") or "").strip()
+    if not text:
+        raise ToolError("text is the answer to show the person.")
+    item = ai.PENDING.get(qid)
+    if item is None:
+        raise ToolError("There is no waiting question with that id; call get_context for the current ones.")
+    texts = await asyncio.to_thread(pdfsvc.extract_text, docs.path_of(item["doc"]), None, routes._pw(item["doc"]))
+    done = ai.give_answer(qid, text[:40000], texts)
+    shown = False
+    if bridge.window_connected():
+        res = await bridge.window_call("ai-answer", {"id": qid, "doc": item["doc"], "answer": done["answer"], "citations": done["citations"], "agent": a.name}, 15)
+        shown = bool(res and not res.get("isError"))
+    bad = [c for c in done["citations"] if c["quote"] and not c["verified"]]
+    note = f" {len(bad)} quote{'s' if len(bad) != 1 else ''} could not be found on the cited page; check them." if bad else ""
+    return _ok(f"Answer {'shown in the Assistant tab' if shown else 'saved; the window shows it when it asks again'} with {len(done['citations'])} citations.{note}",
+               {"id": qid, "citations": done["citations"], "shown": shown})
 
 
 async def t_undo(a: Agent, args: dict) -> dict:

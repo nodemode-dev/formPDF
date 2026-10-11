@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core import config
-from app.routers import batch, identity, lists, live, mcp, media, pdf, reviews, scan, system
+from app.routers import ai, batch, identity, lists, live, mcp, media, pdf, reviews, scan, system
 from app.services import plugins
 
 
@@ -47,6 +47,7 @@ app.include_router(scan.router, prefix="/api")
 app.include_router(identity.router, prefix="/api")
 app.include_router(lists.router, prefix="/api")
 app.include_router(reviews.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
 app.include_router(live.router)
 app.include_router(mcp.router)
 

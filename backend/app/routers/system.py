@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.core import config
 from app.services import session
-from app.services import office
+from app.services import ai, office
 from app.services.pdf import fontkit, ocr, spell
 
 router = APIRouter()
@@ -64,7 +64,7 @@ def capabilities() -> dict:
         "spellLanguages": spell.languages(),
         "ocr": ocr.status(),
         "office": office.status(),
-        "network": NETWORK,
+        "network": NETWORK + [ai.network_entry()],
     }
 
 
