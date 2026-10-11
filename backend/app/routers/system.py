@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.core import config
 from app.services import session
+from app.services import office
 from app.services.pdf import fontkit, ocr, spell
 
 router = APIRouter()
@@ -13,6 +14,7 @@ NETWORK = [
     {"id": "updates", "name": "Update check (desktop app)", "state": "off", "note": "This build has no update key, so it never checks. When one is set, formpdf asks before checking."},
     {"id": "ocr", "name": "Text recognition (OCR)", "state": "local", "note": "Runs on this computer with models installed alongside formpdf. Nothing is uploaded or downloaded."},
     {"id": "timestamp", "name": "Timestamp server (signing)", "state": "off", "note": "Only when you set a server in Preferences and tick Add a timestamp while signing: formpdf sends that server a fingerprint of the signature, never the PDF."},
+    {"id": "office", "name": "Office files (LibreOffice)", "state": "local", "note": "Only when you create a PDF from an Office file: formpdf runs your own LibreOffice on this computer with macros off and linked content not updated, so nothing is fetched."},
     {"id": "scanners", "name": "Scanners", "state": "local", "note": "Only when you use Scan: formpdf looks for scanners on your local network and talks to the one you pick. Nothing goes past your network."},
 ]
 
@@ -61,6 +63,7 @@ def capabilities() -> dict:
         "fonts": sum(len(f["styles"]) for f in fontkit.available()),
         "spellLanguages": spell.languages(),
         "ocr": ocr.status(),
+        "office": office.status(),
         "network": NETWORK,
     }
 

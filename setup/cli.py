@@ -26,7 +26,7 @@ def parse() -> tuple[argparse.Namespace, list[str]]:
                                  "Changing actions write [name]-[action].pdf beside the input unless --out is given; the input never changes.")
     ap.add_argument("action", help="a pdf action (info, text, find, header_footer, page_numbers, watermark, crop, redact, organize, protect, unlock, "
                                    "metadata, compress, sanitize, fill, annotate, form, merge, split, to_docx, to_pptx, ...), render, or actions to list them")
-    ap.add_argument("files", nargs="*", help="the PDF (merge: two or more PDFs)")
+    ap.add_argument("files", nargs="*", help="the PDF (merge: two or more PDFs, or Office files and pictures to make one PDF)")
     for f in FLAGS:
         ap.add_argument(f"--{f}", dest=f)
     for f in NUMBERS:
@@ -98,9 +98,9 @@ def main() -> int:
         out.write_bytes(base64.b64decode(res["content"][1]["data"]))
         print(f"{res['content'][0]['text']} Wrote {out}")
         return 0
-    if a.action == "merge" and len(files) >= 2:
+    if a.action == "merge" and (len(files) >= 2 or (files and not files[0].lower().endswith(".pdf"))):
         args["paths"] = files
-        args.setdefault("out", here(Path(files[0]).stem + "-merged.pdf"))
+        args.setdefault("out", here(Path(files[0]).stem + ("-merged.pdf" if len(files) > 1 else ".pdf")))
     elif files:
         args["path"] = files[0]
         if len(files) > 1:

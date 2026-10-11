@@ -471,7 +471,7 @@ async def create(files: list[UploadFile] = File(...), page: str = Form("fit"), m
             raise HTTPException(413, "The files add up to more than 1 GB")
         items.append((f.filename or f"file{k + 1}", data))
     if not items:
-        raise HTTPException(400, "Add at least one picture or PDF")
+        raise HTTPException(400, "Add at least one PDF, picture or Office file")
     title = Path(name.strip() or items[0][0]).stem or "Combined"
     doc_id, out = docs.target(f"{title}.pdf")
     try:

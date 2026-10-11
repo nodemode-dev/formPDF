@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from app.core import config
 from app.routers import pdf as routes
 from app.routers.live import local_origin
-from app.services import bridge
+from app.services import bridge, office
 from app.services import pdf as pdfsvc
 from app.services.pdf import actions, docs
 
@@ -83,7 +83,7 @@ page and paragraph, to: front | back | forward | backward}], comments: [{page, i
 crop is fractions of the picture); ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
 computer and adds invisible, searchable text; tilted full-page scans are straightened; get_context says whether OCR is installed).
 Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}
-(one slide per page, words as text boxes); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.
+(one slide per page: words as text boxes, rotated words as rotated boxes, shapes and pictures as PowerPoint objects); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.
 
 ## Tips
 - Run find before redact and tell the person what will go. Crop hides, redact removes.
@@ -551,7 +551,8 @@ async def _export(src: Source, action: str, args: dict, pages) -> dict:
     if action == "to_docx":
         return _ok(f"Wrote {out} ({got['pages']} pages, {got['headings']} headings, {got['paragraphs']} paragraphs, {got['tables']} tables, {got['pictures']} pictures).",
                    {"path": str(out), **got})
-    return _ok(f"Wrote {out} ({got['slides']} slides at {got['width']} by {got['height']} pt, {got['textboxes']} text boxes, {got['tables']} tables).",
+    return _ok(f"Wrote {out} ({got['slides']} slide{'s' if got['slides'] != 1 else ''} at {got['width']} by {got['height']} pt, {got['textboxes']} text boxes, "
+               f"{got['tables']} tables, {got.get('shapes', 0)} shapes, {got.get('pictures', 0)} pictures).",
                {"path": str(out), **got})
 
 
@@ -626,8 +627,11 @@ async def t_get_context(a: Agent, args: dict) -> dict:
 
     ocr_st = ocr.status()
     lines.append("OCR: installed" if ocr_st["available"] else f"OCR: not installed ({ocr_st['reason']})")
+    office_st = office.status()
+    lines.append("Office files: LibreOffice found (open_pdf and merge accept .docx, .pptx, .xlsx and similar)" if office_st["available"]
+                 else "Office files: LibreOffice not installed (ask the person to install it to convert .docx, .pptx and .xlsx)")
     return _ok("\n".join(lines), {"window": bridge.window_connected(), "agentsAllowed": allowed, "doc": win, "open": list(OPEN.values())[:10], "recent": recent,
-                                  "ocr": ocr_st["available"]})
+                                  "ocr": ocr_st["available"], "office": office_st["available"]})
 
 
 async def t_open_pdf(a: Agent, args: dict) -> dict:
@@ -635,14 +639,22 @@ async def t_open_pdf(a: Agent, args: dict) -> dict:
     if not p.is_file():
         raise ToolError(f"{p} is not a file.")
     data = await asyncio.to_thread(p.read_bytes)
-    if b"%PDF-" not in data[:1024]:
-        raise ToolError(f"{p.name} is not a PDF.")
-    doc_id = await asyncio.to_thread(docs.put_bytes, data, p.name, str(p))
+    origin: str | None = str(p)
+    name = p.name
+    if b"%PDF-" not in data[:1024] and office.is_office(p.name):
+        try:
+            data = await asyncio.to_thread(office.convert, data, p.name)
+        except ValueError as e:
+            raise ToolError(str(e)) from None
+        origin, name = None, f"{p.stem}.pdf"
+    elif b"%PDF-" not in data[:1024]:
+        raise ToolError(f"{p.name} is not a PDF or an Office file.")
+    doc_id = await asyncio.to_thread(docs.put_bytes, data, name, origin)
     info = await asyncio.to_thread(pdfsvc.info, docs.path_of(doc_id), routes._pw(doc_id))
     entry = docs.remember(doc_id, info.get("pages", 0))
     OPEN.pop(entry["key"], None)
-    _track(entry["key"], doc_id, "Open", None, p.name)
-    head = f"{p.name} · id {doc_id} · key {entry['key']} · {info.get('pages', 0)} pages{' · password protected' if info.get('locked') else ''}"
+    _track(entry["key"], doc_id, "Open", None, name)
+    head = f"{name}{f' (converted from {p.name} by LibreOffice)' if origin is None else ''} · id {doc_id} · key {entry['key']} · {info.get('pages', 0)} pages{' · password protected' if info.get('locked') else ''}"
     if bridge.window_connected():
         res = await bridge.window_call("open", {"id": doc_id}, 60)
         if res and res.get("isError"):
@@ -657,9 +669,18 @@ async def t_pdf(a: Agent, args: dict) -> dict:
         raise ToolError("action is one of " + ", ".join(ACTIONS) + ".")
     if action == "merge" and args.get("out") and not args.get("path") and not args.get("doc"):
         paths = [_abs(p) for p in args.get("paths") or []]
-        if len(paths) < 2:
-            raise ToolError("merge with out needs paths: two or more PDFs, merged in the order given.")
+        mixed = any(p.suffix.lower() != ".pdf" for p in paths)
+        if len(paths) < 2 and not mixed:
+            raise ToolError("merge with out needs paths: two or more PDFs, merged in the order given (or Office files and pictures, one or more).")
         out = _abs(args.get("out"), must_exist=False)
+        if mixed:
+            try:
+                items = [(p.name, await asyncio.to_thread(p.read_bytes)) for p in paths]
+                res = await asyncio.to_thread(pdfsvc.from_files, items, out, page=str(args.get("page") or "fit"), title=out.stem)
+            except (OSError, ValueError, pdfsvc.Locked) as exc:
+                return _fail(f"pdf merge failed: {_clip(str(exc), 300)}")
+            conv = f", {res['documents']} converted by LibreOffice" if res.get("documents") else ""
+            return _ok(f"Made {out} ({res['pages']} page{'s' if res['pages'] != 1 else ''}) from {len(paths)} file{'s' if len(paths) != 1 else ''}{conv}.", {"path": str(out), "pages": res["pages"]})
         res = await asyncio.to_thread(pdfsvc.merge, paths, out)
         return _ok(f"Merged {len(paths)} files into {out} ({res['pages']} pages).", {"path": str(out), "pages": res["pages"]})
     src = _source(args)

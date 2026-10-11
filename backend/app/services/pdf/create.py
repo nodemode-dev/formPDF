@@ -3,6 +3,8 @@ from pathlib import Path
 
 from pypdf import PdfReader, PdfWriter
 
+from app.services import office
+
 from . import core
 
 PAPER = {"a4": (595.276, 841.89), "letter": (612.0, 792.0)}
@@ -77,7 +79,7 @@ def _picture_page(fr, raw: bytes | None, dpi: float, *, page: str, margin: float
 def from_files(items: list[tuple[str, bytes]], out, *, page: str = "fit", margin: float = 0, orientation: str = "auto",
                title: str | None = None) -> dict:
     if not items:
-        raise ValueError("Add at least one picture or PDF")
+        raise ValueError("Add at least one PDF, picture or Office file")
     if len(items) > MAX_ITEMS:
         raise ValueError(f"Combine at most {MAX_ITEMS} files at a time")
     page = str(page or "fit").lower()
@@ -91,7 +93,7 @@ def from_files(items: list[tuple[str, bytes]], out, *, page: str = "fit", margin
     except (TypeError, ValueError):
         raise ValueError("The margin must be a number of points") from None
     w = PdfWriter()
-    pictures = pdfs = 0
+    pictures = pdfs = documents = 0
     for name, data in items:
         low = name.lower()
         if data[:1024].find(b"%PDF-") >= 0:
@@ -107,8 +109,12 @@ def from_files(items: list[tuple[str, bytes]], out, *, page: str = "fit", margin
             w.append(r)
             pdfs += 1
             continue
+        if office.is_office(low):
+            w.append(PdfReader(io.BytesIO(office.convert(data, name))))
+            documents += 1
+            continue
         if not low.endswith(PICTURES) and not data[:4] in (b"\x89PNG", b"GIF8", b"RIFF") and data[:2] != b"\xff\xd8":
-            raise ValueError(f"{name} is neither a PDF nor a picture")
+            raise ValueError(f"{name} is not a PDF, a picture or an Office file")
         for fr, raw, dpi in _frames(data, name):
             w.append(PdfReader(io.BytesIO(_picture_page(fr, raw, dpi, page=page, margin=margin, orientation=orientation))))
             pictures += 1
@@ -117,4 +123,4 @@ def from_files(items: list[tuple[str, bytes]], out, *, page: str = "fit", margin
     w.add_metadata({"/Title": str(title or Path(items[0][0]).stem)[:200], "/Producer": "formpdf"})
     with open(out, "wb") as fh:
         w.write(fh)
-    return {"pages": len(w.pages), "pictures": pictures, "pdfs": pdfs}
+    return {"pages": len(w.pages), "pictures": pictures, "pdfs": pdfs, "documents": documents}

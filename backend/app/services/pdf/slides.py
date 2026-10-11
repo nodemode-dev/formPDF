@@ -2,10 +2,7 @@ import io
 import math
 from pathlib import Path
 
-from pypdf import PdfWriter
-from pypdf.generic import ContentStream
-
-from . import core, layout
+from . import core, layout, objects
 
 EMU_PER_PT = 12700
 MIN_EMU = 914400
@@ -14,37 +11,177 @@ PLAIN_TABLE = "{2D5ABB26-0587-4C30-8999-92F81FD0307C}"
 SHEET_MAX = 12
 
 
-def _textless(src, passwords: list[str] | None) -> bytes | None:
+def _unstyle(shape) -> None:
+    from pptx.oxml.ns import qn
+
+    style = shape._element.find(qn("p:style"))
+    if style is not None:
+        shape._element.remove(style)
+
+
+def _alpha(shape, path: str, a: int) -> None:
+    from pptx.oxml.ns import qn
+
+    if a >= 255:
+        return
+    clr = shape._element.find(".//" + "/".join(qn(p) for p in path.split("/")))
+    if clr is not None:
+        clr.append(clr.makeelement(qn("a:alpha"), {"val": str(int(a / 255 * 100000))}))
+
+
+def _paint(shape, rec: dict, k: float) -> None:
+    from pptx.dml.color import RGBColor
+    from pptx.enum.dml import MSO_LINE_DASH_STYLE
+    from pptx.util import Emu
+
+    _unstyle(shape)
+    fill = rec.get("fill")
+    if hasattr(shape, "fill"):
+        if fill:
+            shape.fill.solid()
+            shape.fill.fore_color.rgb = RGBColor(*fill[:3])
+            _alpha(shape, "p:spPr/a:solidFill/a:srgbClr", fill[3])
+        else:
+            shape.fill.background()
+    line = rec.get("stroke")
+    if line:
+        shape.line.color.rgb = RGBColor(*line[:3])
+        shape.line.width = Emu(int(max(3175, rec["width"] * k)))
+        if rec.get("dash"):
+            shape.line.dash_style = MSO_LINE_DASH_STYLE.DASH
+        _alpha(shape, "a:ln/a:solidFill/a:srgbClr", line[3])
+    else:
+        shape.line.fill.background()
+
+
+def _shape(slide, rec: dict, to) -> bool:
+    from pptx.enum.shapes import MSO_CONNECTOR, MSO_SHAPE
+    from pptx.util import Emu
+
+    k = to.k
+    subs = [[to(*p) for p in s] for s in rec["subs"]]
+    if len(subs) == 1:
+        pts = subs[0]
+        ring = pts[:-1] if len(pts) == 5 and math.dist(pts[0], pts[-1]) < 1 else pts
+        xs, ys = sorted({round(p[0]) for p in ring}), sorted({round(p[1]) for p in ring})
+        if len(ring) == 4 and len(xs) == 2 and len(ys) == 2 and (rec["closed"][0] or len(pts) == 5 or rec.get("fill") is not None):
+            shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Emu(xs[0]), Emu(ys[0]), Emu(max(1, xs[1] - xs[0])), Emu(max(1, ys[1] - ys[0])))
+            shape.name = "Rectangle"
+            _paint(shape, rec, k)
+            return True
+        if len(pts) == 2 and not rec.get("fill") and rec.get("stroke"):
+            shape = slide.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Emu(int(pts[0][0])), Emu(int(pts[0][1])), Emu(int(pts[1][0])), Emu(int(pts[1][1])))
+            shape.name = "Line"
+            _paint(shape, rec, k)
+            return True
+    first = subs[0][0]
+    fb = slide.shapes.build_freeform(int(first[0]), int(first[1]), scale=1.0)
+    for n, (s, closed) in enumerate(zip(subs, rec["closed"])):
+        if n:
+            fb.move_to(int(s[0][0]), int(s[0][1]))
+        fb.add_line_segments([(int(x), int(y)) for x, y in s[1:]], close=bool(closed or rec.get("fill") is not None))
+    shape = fb.convert_to_shape()
+    shape.name = "Shape"
+    _paint(shape, rec, k)
+    return True
+
+
+def _picture(slide, rec: dict, to) -> bool:
+    from pptx.util import Emu
+
+    x0, y0, x1, y1 = rec["box"]
+    (ax, ay), (bx, by) = to(x0, y1), to(x1, y0)
+    buf = io.BytesIO()
+    pil = rec["pil"]
+    if pil.mode in ("RGBA", "LA", "P"):
+        pil.convert("RGBA").save(buf, "PNG", optimize=False)
+    else:
+        pil.convert("RGB").save(buf, "JPEG", quality=90)
+    buf.seek(0)
+    pic = slide.shapes.add_picture(buf, Emu(int(ax)), Emu(int(ay)), Emu(int(max(1, bx - ax))), Emu(int(max(1, by - ay))))
+    pic.name = "Picture"
+    return True
+
+
+def _tilted_box(slide, t: dict, to) -> None:
+    from pptx.dml.color import RGBColor
+    from pptx.enum.text import MSO_AUTO_SIZE, PP_ALIGN
+    from pptx.util import Emu, Pt
+
+    k = to.k
+    cx, cy = to(*t["center"])
+    w, h = max(t["length"], 1) * k * 1.04, max(t["height"], t["size"] * 1.15, 1) * k
+    box = slide.shapes.add_textbox(Emu(int(cx - w / 2)), Emu(int(cy - h / 2)), Emu(int(w)), Emu(int(h)))
+    box.name = "Text"
+    box.rotation = (-math.degrees(t["angle"])) % 360
+    tf = box.text_frame
+    tf.margin_left = tf.margin_right = tf.margin_top = tf.margin_bottom = 0
+    tf.word_wrap = False
+    tf.auto_size = MSO_AUTO_SIZE.NONE
+    p = tf.paragraphs[0]
+    p.alignment = PP_ALIGN.LEFT
+    run = p.add_run()
+    run.text = t["text"]
+    f = run.font
+    f.size = Pt(max(1.0, t["size"] * k / EMU_PER_PT))
+    f.bold = bool(t.get("bold"))
+    if t.get("font"):
+        f.name = str(t["font"])[:60]
+    if t.get("color"):
+        f.color.rgb = RGBColor(*t["color"][:3])
+        _alpha(box, "a:solidFill/a:srgbClr", t["color"][3])
+
+
+class _Map:
+    def __init__(self, k: float, ox: float, oy: float, cb):
+        self.k, self.ox, self.oy, self.x0, self.y1 = k, ox, oy, float(cb[0]), float(cb[3])
+
+    def __call__(self, x: float, y: float) -> tuple[float, float]:
+        return self.ox + (x - self.x0) * self.k, self.oy + (self.y1 - y) * self.k
+
+
+def _words(page) -> list[dict]:
     try:
-        r = core.reader(src, passwords)
-        w = PdfWriter(clone_from=r)
-        for page in w.pages:
-            contents = page.get_contents()
-            if contents is None:
-                continue
-            cs = ContentStream(contents, w)
-            out = []
-            for operands, op in cs.operations:
-                if op in (b"Tj", b"TJ"):
-                    continue
-                if op == b"'":
-                    out.append(([], b"T*"))
-                    continue
-                if op == b'"':
-                    if len(operands) >= 3:
-                        out += [([operands[0]], b"Tw"), ([operands[1]], b"Tc")]
-                    out.append(([], b"T*"))
-                    continue
-                out.append((operands, op))
-            cs.operations = out
-            page.replace_contents(cs)
-        buf = io.BytesIO()
-        w.write(buf)
-        return buf.getvalue()
-    except core.Locked:
-        raise
+        ws = page.extract_words(extra_attrs=["size"], keep_blank_chars=False, x_tolerance_ratio=0.15)
     except Exception:
-        return None
+        return []
+    ox, oy = float(page.bbox[0]), float(page.bbox[1])
+    return [{"text": w["text"], "x0": w["x0"] - ox, "x1": w["x1"] - ox, "top": w["top"] - oy, "bottom": w["bottom"] - oy, "size": w.get("size", 0)} for w in ws]
+
+
+def _spread(b: dict, words: list[dict]) -> list[dict]:
+    mine = sorted((w for w in words if w["x0"] >= b["x0"] - 1 and w["x1"] <= b["x1"] + 1 and w["top"] >= b["top"] - 1 and w["bottom"] <= b["bottom"] + 1),
+                  key=lambda w: w["x0"])
+    if len(mine) < 2:
+        return [b]
+    groups = [[mine[0]]]
+    for w in mine[1:]:
+        gap = w["x0"] - groups[-1][-1]["x1"]
+        if gap > 1.5 * max(b["size"], w["size"] or 0, 1):
+            groups.append([w])
+        else:
+            groups[-1].append(w)
+    if len(groups) == 1:
+        return [b]
+    styles = [r for r in (b.get("runs") or []) for _ in str(r.get("text") or "")]
+    flat = "".join(str(r.get("text") or "") for r in (b.get("runs") or []))
+    cursor = 0
+    out = []
+    for g in groups:
+        text = " ".join(w["text"] for w in g)
+        at = flat.find(g[0]["text"], cursor)
+        run = dict(styles[at]) if 0 <= at < len(styles) else dict((b.get("runs") or [{}])[0])
+        cursor = at + len(g[0]["text"]) if at >= 0 else cursor
+        out.append({**b, "text": text, "x0": g[0]["x0"], "x1": g[-1]["x1"], "top": min(w["top"] for w in g), "bottom": max(w["bottom"] for w in g),
+                    "runs": [{**run, "text": text, "size": run.get("size") or b["size"]}], "align": "left"})
+    return out
+
+
+def _tilted_char(o) -> bool:
+    if o.get("object_type") != "char":
+        return False
+    m = o.get("matrix") or (1, 0, 0, 1, 0, 0)
+    return abs(m[1]) > objects.TILT * math.hypot(m[0], m[1]) or m[0] < 0
 
 
 def _rgb(hexc: str | None):
@@ -135,14 +272,12 @@ def _table(slide, b: dict, k: float, ox: float, oy: float, body: float) -> None:
 @core.serial
 def to_pptx(src, out, *, pages=None, passwords: list[str] | None = None, dpi: float = 150, text: bool = True) -> dict:
     import pdfplumber
-    import pypdfium2 as pdfium
     from pptx import Presentation
     from pptx.util import Emu
 
-    stripped = _textless(src, passwords) if text else None
     pw = next(iter(passwords or []), "")
-    bg = pdfium.PdfDocument(stripped) if stripped else core.pdfium_doc(src, passwords)
-    counts = {"textboxes": 0, "tables": 0}
+    bg = core.pdfium_doc(src, passwords)
+    counts = {"textboxes": 0, "tables": 0, "shapes": 0, "pictures": 0}
     try:
         with pdfplumber.open(str(src), password=pw) as pdf:
             n = len(pdf.pages)
@@ -174,6 +309,10 @@ def to_pptx(src, out, *, pages=None, passwords: list[str] | None = None, dpi: fl
                 k, ox, oy = _fit(W, H, sw, sh)
                 slide = prs.slides.add_slide(blank)
                 pg = bg[i - 1]
+                parts = objects.split(bg, pg, text=True) if text else {"objects": [], "tilted": []}
+                cx0, cy0, cx1, cy1 = pg.get_cropbox()
+                side = (cy1 - cy0, cx1 - cx0) if pg.get_rotation() % 180 else (cx1 - cx0, cy1 - cy0)
+                to = _Map(k, ox, oy, (0.0, 0.0, side[0], side[1]))
                 scale = max(0.2, min(dpi / 72, 6000 / max(W, H, 1)))
                 pil = core.render_pil(pg, scale).convert("RGB")
                 pg.close()
@@ -182,12 +321,31 @@ def to_pptx(src, out, *, pages=None, passwords: list[str] | None = None, dpi: fl
                 buf.seek(0)
                 pic = slide.shapes.add_picture(buf, Emu(int(ox)), Emu(int(oy)), Emu(int(W * k)), Emu(int(H * k)))
                 pic.name = f"Page {i}"
+                for rec in parts["objects"]:
+                    try:
+                        if rec["kind"] == "image":
+                            counts["pictures"] += _picture(slide, rec, to)
+                        else:
+                            counts["shapes"] += _shape(slide, rec, to)
+                    except Exception:
+                        continue
+                for t in parts["tilted"]:
+                    _tilted_box(slide, t, to)
+                    counts["textboxes"] += 1
                 if text:
-                    got = layout.page_blocks(page, body=base)
+                    flat = page.filter(lambda o: not _tilted_char(o))
+                    got = layout.page_blocks(flat, body=base)
+                    words = None
                     for b in got["blocks"]:
                         if b["kind"] in ("para", "heading") and b.get("text"):
-                            _textbox(slide, b, k, ox, oy)
-                            counts["textboxes"] += 1
+                            if b.get("lines", 1) == 1:
+                                words = words if words is not None else _words(flat)
+                                parts_b = _spread(b, words)
+                            else:
+                                parts_b = [b]
+                            for pb in parts_b:
+                                _textbox(slide, pb, k, ox, oy)
+                                counts["textboxes"] += 1
                         elif b["kind"] == "table":
                             _table(slide, b, k, ox, oy, got["body"])
                             counts["tables"] += 1
@@ -195,7 +353,7 @@ def to_pptx(src, out, *, pages=None, passwords: list[str] | None = None, dpi: fl
             prs.core_properties.title = Path(str(src)).stem[:200]
             prs.save(str(out))
         return {"pages": len(idx), "slides": len(idx), "width": round(sw / EMU_PER_PT, 2), "height": round(sh / EMU_PER_PT, 2),
-                "text": bool(text), "layered": bool(stripped), **counts}
+                "text": bool(text), "layered": bool(text), **counts}
     finally:
         bg.close()
 
