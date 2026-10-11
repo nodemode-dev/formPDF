@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.12.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.13.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -10,9 +10,9 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 
 | Area | vs Acrobat |
 | --- | --- |
-| PDF viewing | 5.5 of 6 · 92% |
+| PDF viewing | 6 of 6 · 100% |
 | PDF annotation | 7 of 7 · 100% |
-| Content editing | 13 of 14 · 93% |
+| Content editing | 14 of 14 · 100% |
 | PDF forms and signing | 5.5 of 6 · 92% |
 | PDF organize | 7 of 7 · 100% |
 | PDF protect and redact | 5 of 5 · 100% |
@@ -22,10 +22,10 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | Accessibility | 4.5 of 5 · 90% |
 | Import and export | 1 of 1 · 100% |
 | Print | 2.5 of 3 · 83% |
-| Automation and agents | 1.5 of 3 · 50% |
-| **Overall** | **66.5 of 72 · 92%** |
+| Automation and agents | 2 of 3 · 67% |
+| **Overall** | **68.5 of 72 · 95%** |
 
-Across the 72 scored rows formpdf has 64 full, 5 partial and 3 none.
+Across the 72 scored rows formpdf has 66 full, 5 partial and 1 none.
 
 ## Where formpdf leads
 
@@ -33,11 +33,11 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 ## Where formpdf trails most
 
-- **Content editing.** formpdf edits the text and pictures a PDF already has and adds page text and pictures that stay editable; only generating pictures with AI is missing.
+- **AI presentations.** Outlines are drafted from several files and saved as PowerPoint, but as text slides on the default template, without a designed theme or pictures from the sources.
 - **Signing requests.** Signers and their order are tracked in the PDF, but sending and reminders go through the person's own email rather than a service.
 - **Print production.** No CMYK conversion or transparency flattening, and PDF/X output is not validated by an outside tool.
 - **Form JavaScript.** Standard Acrobat calculations, formats and checks run, but no PDF JavaScript is executed, so custom form scripts do nothing.
-- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Generate a presentation from PDFs and files with AI (PDF Spaces).
+- Rows with nothing yet: Share PDF links with permissions, which needs a hosted service; formpdf is local only by choice.
 
 ## Line by line
 
@@ -50,7 +50,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Bookmarks and links | yes | Full | `workbench.ts` Bookmarks side panel, `viewer.ts` link layer |
 | Open password-protected PDFs | yes | Full | `workbench.ts askPassword`, `services/pdf/core.py reader(passwords)` |
 | Read aloud, reflow, two-page layout | yes | Full | `viewer.ts setLayout` (single, continuous, two-page, two-page continuous, cover), `reading.ts Reflow` over `layout.py reflow`, `reading.ts Speaker` (speechSynthesis with sentence and word highlight) |
-| Summarize or ask questions of a PDF (AI Assistant) | yes | Partial | no built-in model; an outside agent reads the PDF through the MCP pdf actions text and tables (`mcp.py t_pdf`, `services/pdf/core.py extract_text, extract_tables`) and answers in its own chat |
+| Summarize or ask questions of a PDF (AI Assistant) | yes | Full | Assistant tab (`tools/assistant.ts`) over `services/ai.py ask, summary`: questions and summaries from the person's agent (answer_question), Anthropic or OpenAI with their key, or a local model; answers cite pages as links and every quotation is checked against the cited page, unverified ones marked |
 
 ### PDF annotation
 
@@ -77,7 +77,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Spell check edited text and comments | yes | Full | Comment > Check spelling (`tools/spell.ts`, F7) over PDF comments, text boxes, form field text and comments not applied yet, with suggestions, Change, Change all, Ignore, Ignore all and Add to dictionary; engine `spell.py` reads Hunspell dictionaries (SCOWL en_US bundled, more in Formpdf/dictionaries), MCP `pdf spell` and `spell_fix`; Preferences > Spelling sets the language and your words |
 | Add pictures to PDF pages | yes | Full | Edit > Text and pictures > Add picture (`tools/content.ts`): PNG, JPEG, GIF, WebP, BMP or TIFF placed as page content at full resolution, JPEG kept as JPEG, EXIF orientation honoured, editable afterwards (`items.py image_object`) |
 | Crop pictures on PDF pages | yes | Full | Select a picture added by formpdf or already on the page, Crop and drag the handles (Enter keeps it), Reset crop; a clip in the picture's form, never a re-encode (`items.py _picture_form`, `Page.convert`) |
-| Generate pictures with AI (Adobe Express) | yes | None | nothing found |
+| Generate pictures with AI (Adobe Express) | yes | Full | Assistant > Generate a picture and the ai_picture action (`services/ai.py picture`): a prompt goes to OpenAI's image API or a picture server on the person's computer, and the result is placed as an editable page picture (`items.py`) that Edit > Select moves, resizes and crops |
 | Arrange objects: bring forward, send backward | yes | Full | Bring to front, Bring forward, Send backward, Send to back (Mod+], Mod+[ with Shift for front and back) for page text, pictures (added or already on the page) and comments (`tools/content.ts arrange`; `items.py Page.arrange`, edit_items comments for comments already in the PDF) |
 | Align and distribute objects on a page | yes | Full | align left, centre, right, top, middle, bottom and distribute across or down for selected page text, pictures and comments (Edit > Text and pictures) and for new form fields (Prepare form > Align fields, Shift-click to select several) (`pdf/align.ts`, `tools/formalign.ts`) |
 | Rotate and flip pictures on PDF pages | yes | Full | rotate by any angle with the rotate handle (Shift for 15 degree steps) or by 90 degrees, flip horizontally or vertically, for pictures added by formpdf and pictures already on the page, by transform only (`items.py placement`) |
@@ -174,7 +174,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
-| Generate a presentation from PDFs and files with AI (PDF Spaces) | yes | None | nothing found: formpdf has no deck editor and no built-in model; Export to PowerPoint converts pages, it does not draft a presentation |
+| Generate a presentation from PDFs and files with AI (PDF Spaces) | yes | Partial | Assistant > Generate a presentation, ai_outline and ai_deck (`services/ai.py outline, deck`): an outline drafted from this PDF and up to ten more PDFs, Office or text files, edited in the pane, saved as PowerPoint with sources in the notes; partial because slides are text on the default template, without a designed theme or pictures from the sources |
 | JavaScript and guided actions | yes | Partial | action lists: five built in, recorded from the window's own changes, saved, run on the open PDF as one undoable version, in Batch, by agents and from the CLI (`lists.py run_list`, `tools/lists.ts`, `pdf/recorder.ts`); form calculations, formats, keystrokes and range checks written with Acrobat's standard functions run as the person fills (`pdf/formcalc.ts`); partial because no PDF JavaScript is executed, so custom form scripts, document scripts and a console are not available |
 | Plug-ins and add-ons | yes | Full | plug-in folders with an engine file and a window file, off until the person allows them and off again when they change (`plugins.py`); a plug-in registers ordinary actions that reach the MCP tool, the palette, Batch, action lists and the CLI, and adds tool sections to any tab (`pdf/plugins.ts`, `pdf/tools.ts registerTool`); sample in `docs/plugins/word-count` |
 | MCP server for outside agents (HTTP and stdio) | no | Full | `backend/app/routers/mcp.py` HTTP server on 127.0.0.1:8198/mcp and `setup/mcp_stdio.py` stdio bridge (engine found through ~/Formpdf/engine.json); tools get_context, open_pdf, pdf, render_pages, extract, save, undo |

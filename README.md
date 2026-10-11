@@ -22,7 +22,8 @@ Version 0.12.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 | Accessibility | Check against Acrobat's 32 rules with a fix for each repairable one and an HTML report; tag the PDF from its layout; edit the reading order on the page; alternate text figure by figure |
 | Print | Pages per sheet, booklets and posters with a live sheet preview; real grayscale; PDF/A-2b, 2u and 3b check and convert; PDF/X-4 with your printer's profile; preflight with fixups and a report |
 | Automation | Action lists (five built in, record your own, run on the open PDF or in Batch); plug-ins that add actions and tool sections, off until you allow them |
-| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (63 actions and any from plug-ins), render_pages, extract, save, undo |
+| Assistant | Ask or summarise with page links and checked quotations, draft a presentation from several files, generate a picture onto the page; through your agent, Anthropic or OpenAI with your key, or a model on your computer, and off until you choose |
+| Agents | MCP server over HTTP at /mcp or stdio: get_context, open_pdf, pdf (68 actions and any from plug-ins), render_pages, extract, save, undo, answer_question |
 
 ## Install and run
 
@@ -69,7 +70,7 @@ docs/       MANUAL.md
 
 ## Known gaps
 
-- Against Acrobat, formpdf scores 66.5 of 72 (92%); docs/PARITY.md has every row. The largest gaps are AI tools, sharing through a hosted service (formpdf is local only) and form JavaScript beyond Acrobat's standard functions.
+- Against Acrobat, formpdf scores 68.5 of 72 (95%); docs/PARITY.md has every row. The remaining gaps are sharing through a hosted service (formpdf is local only), form JavaScript beyond Acrobat's standard functions, designed themes for AI presentations, print production (CMYK and flattening), service-sent signing requests and a screen reader pass with VoiceOver and NVDA.
 - Print production has no CMYK conversion or transparency flattening; PDF/X-4 needs your printer's ICC profile and is not checked by an outside validator.
 - Tagging works out structure from the layout; check the reading order and add alternate text afterwards. Editing page content after tagging leaves the new content untagged until you tag again.
 - OCR adds about 150 MB to an install (set `FORMPDF_NO_OCR=1` before `./formpdf install` to leave it out). On macOS, USB scanners are reached only when they also speak eSCL (AirScan); network scanners work everywhere.
