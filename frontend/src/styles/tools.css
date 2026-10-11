@@ -158,3 +158,22 @@
 .fs-rt-ed > div[data-list="number"][data-level="1"]::before { content: counter(n1) "."; position: absolute; left: 0; }
 .fs-rt-ed > div[data-list="number"][data-level="2"]::before { content: counter(n2) "."; position: absolute; left: 0; }
 .fs-rt-ed > div[data-list="number"][data-level="3"]::before { content: counter(n3) "."; position: absolute; left: 0; }
+.fs-ai-q { width: 100%; resize: vertical; }
+.fs-ai-len { width: auto; }
+.fs-ai-answer { box-sizing: border-box; height: 240px; resize: vertical; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-2) var(--space-3); border: 1px solid var(--line-1); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary); font-size: var(--fs-13); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fs-ai-answer.is-empty { color: var(--text-muted); }
+.fs-ai-cite { display: inline; margin: 0 1px; padding: 0 4px; border: 1px solid var(--line-2); border-radius: 4px; background: var(--surface-2); color: var(--accent-ink); font: inherit; font-size: 0.85em; line-height: inherit; cursor: pointer; }
+.fs-ai-cite:hover, .fs-ai-cite:focus-visible { border-color: var(--accent-color); outline: none; }
+.fs-ai-cite.is-unverified { color: var(--warn); }
+.fs-ai-quote.is-unverified { text-decoration: underline wavy var(--warn); }
+.fs-ai-status { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+.fs-ai-status > .fs-note { min-height: calc(3 * 1.45em); }
+.fs-ai-line { min-height: calc(2 * 1.45em); }
+.fs-ai-srclist { display: grid; gap: 2px; }
+.fs-ai-outline { display: grid; gap: var(--space-2); }
+.fs-ai-slide { display: grid; grid-template-columns: 20px minmax(0, 1fr) 24px; gap: var(--space-2); align-items: start; }
+.fs-ai-slide.is-title { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.fs-ai-slide-body { display: grid; gap: 4px; }
+.fs-ai-slide textarea { resize: vertical; }
+.fs-ai-num { padding-top: 6px; color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: right; }
+.fs-ai-srcs { font-size: var(--fs-11); }

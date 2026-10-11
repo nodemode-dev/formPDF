@@ -34,7 +34,7 @@ const LOCAL = {
   fitWidth: '<path d="M3.5 4.5v15M20.5 4.5v15M7 12h10M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5"/>',
   underline: '<path d="M7 4.5v6a5 5 0 0 0 10 0v-6M5.5 20h13"/>',
 };
-const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print']];
+const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print'], ['assistant', 'Assistant']];
 const LAYOUT_KEY = 'fs-pdf-layout';
 const SAY_KEY = 'fs-pdf-say';
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;

@@ -59,6 +59,7 @@ export class AgentBridge {
     if (name === 'commit') return reply(await wb.agentCommit(str(args.from), str(args.id), str(args.label) || 'Agent change', str(args.turn), str(args.agent) || 'Agent'));
     if (name === 'undo-turn') return reply(await wb.undoAgent());
     if (name === 'saved') { wb.agentSaved(str(args.id)); return reply({ ok: true, text: 'The window knows the PDF was saved.' }); }
+    if (name === 'ai-answer') { window.dispatchEvent(new CustomEvent('fs-ai-answer', { detail: args })); return reply({ ok: true, text: 'The answer is in the Assistant tab.' }); }
     return reply({ ok: false, text: `The window has no tool named ${name}.` });
   }
 

@@ -11,3 +11,4 @@ import './access';
 import './print';
 import './lists';
 import './xfdf';
+import './assistant';

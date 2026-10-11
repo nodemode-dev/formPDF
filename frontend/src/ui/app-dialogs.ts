@@ -4,10 +4,13 @@ import { VERSION } from '../version';
 import { brandMark } from './brand';
 import { formatKeys, type Command, type Commands } from './commands';
 import { Dialog } from './dialogs';
-import { el, escapeHtml, patchList, q, setChecked, setClass, setHidden, setHtml, setText, setValue } from './dom';
+import { el, escapeHtml, patchList, q, setChecked, setClass, setDisabled, setHidden, setHtml, setText, setValue } from './dom';
 import { icon } from './icons';
 import { THEMES, readChoice, setAccent, setTheme, themeSwatchesHtml } from './themes';
 import { toast } from './toast';
+
+interface NetRow { id: string; name: string; state: string; note: string }
+interface AiInfo { provider: string; model: string; base: string; imageModel: string; imageBase: string; keys: Record<string, boolean>; defaults: Record<string, Record<string, string>> }
 
 type Settings = Record<string, unknown>;
 
@@ -117,6 +120,15 @@ class PreferencesDialog extends Dialog {
 <p class="fs-note fs-dlg-plug-note">Plug-ins are folders in the Formpdf plugins folder. A plug-in runs code on this computer with formpdf's access to your files, so it stays off until you allow it, and asks again if it changes.</p>
 <div class="fs-dlg-plugs"></div>
 </section>
+<section class="fs-dlg-section"><div class="fs-dlg-section-title">AI</div>
+<p class="fs-note fs-dlg-ai-note">The Assistant tab asks questions, summarises, drafts presentations and makes pictures with the provider you choose. Nothing is sent anywhere until you choose one and use it.</p>
+<label class="fs-field"><span>Provider</span><select class="fs-input fs-dlg-ai-provider"><option value="off">Off</option><option value="agent">Your agent (Claude Code, Codex or Cursor)</option><option value="anthropic">Anthropic, with your API key</option><option value="openai">OpenAI, with your API key</option><option value="local">A model on this computer (Ollama, LM Studio or similar)</option></select></label>
+<label class="fs-field"><span>Model</span><input class="fs-input fs-dlg-ai-model" type="text" spellcheck="false"></label>
+<label class="fs-field"><span>Server</span><input class="fs-input fs-dlg-ai-base" type="url" spellcheck="false"></label>
+<label class="fs-field"><span>API key</span><input class="fs-input fs-dlg-ai-key" type="password" autocomplete="off" spellcheck="false"></label>
+<label class="fs-field"><span>Picture server</span><input class="fs-input fs-dlg-ai-imgbase" type="url" spellcheck="false" placeholder="AUTOMATIC1111 or compatible, for pictures"></label>
+<div class="fs-field"><span></span><div class="fs-dlg-ai-test"><button class="fs-btn fs-btn-sm" type="button" data-f="aitest">Test the connection</button><span class="fs-note fs-dlg-ai-say" aria-live="polite"></span></div></div>
+</section>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Agents</div>
 <div class="fs-field"><span>Access</span><label class="fs-check"><input type="checkbox" data-f="agents"><span>Let Claude Code, Codex and Cursor read and edit PDFs</span></label></div>
 </section>
@@ -160,6 +172,61 @@ class PreferencesDialog extends Dialog {
     this.words.addEventListener('change', () => this.persist({ dictionary: this.words.value.split(/\s*\n\s*/).filter(Boolean) }));
     this.agents.addEventListener('change', () => this.h?.setAgents(this.agents.checked));
     this.tsa.addEventListener('change', () => this.persist({ timestampUrl: this.tsa.value.trim() }));
+    const ai = (k: string): HTMLInputElement => q<HTMLInputElement>(box, `.fs-dlg-ai-${k}`);
+    ai('provider').addEventListener('change', () => void this.saveAi({ provider: ai('provider').value }));
+    ai('model').addEventListener('change', () => void this.saveAi({ model: ai('model').value.trim() }));
+    ai('base').addEventListener('change', () => void this.saveAi({ base: ai('base').value.trim() }));
+    ai('imgbase').addEventListener('change', () => void this.saveAi({ imageBase: ai('imgbase').value.trim() }));
+    ai('key').addEventListener('change', () => { const v = ai('key').value.trim(); ai('key').value = ''; void this.saveAi({ key: v }); });
+    q(box, '[data-f="aitest"]').addEventListener('click', () => void this.testAi());
+  }
+
+  private fillAi(s: AiInfo): void {
+    const ai = (k: string): HTMLInputElement => q<HTMLInputElement>(this.body, `.fs-dlg-ai-${k}`);
+    setValue(ai('provider'), s.provider);
+    const d = s.defaults[s.provider] ?? {};
+    setValue(ai('model'), s.model);
+    ai('model').placeholder = d.model ?? '';
+    setValue(ai('base'), s.base);
+    ai('base').placeholder = d.base ?? '';
+    setValue(ai('imgbase'), s.provider === 'local' ? s.imageBase : '');
+    const keyed = s.provider === 'anthropic' || s.provider === 'openai' || s.provider === 'local';
+    const has = keyed && s.keys[s.provider];
+    ai('key').placeholder = !keyed ? 'Not needed' : has ? 'Saved on this computer; type a new one to replace it' : s.provider === 'local' ? 'Only if your server needs one' : 'Paste your key; it stays on this computer';
+    setDisabled(ai('model'), s.provider === 'off' || s.provider === 'agent');
+    setDisabled(ai('base'), s.provider === 'off' || s.provider === 'agent');
+    setDisabled(ai('key'), !keyed);
+    setDisabled(ai('imgbase'), s.provider !== 'local');
+    setDisabled(q<HTMLButtonElement>(this.body, '[data-f="aitest"]'), s.provider === 'off' || s.provider === 'agent');
+  }
+
+  private async saveAi(patch: Record<string, unknown>): Promise<void> {
+    const say = q(this.body, '.fs-dlg-ai-say');
+    try {
+      const s = await api.post<AiInfo>('/api/ai/settings', patch);
+      this.fillAi(s);
+      setText(say, 'key' in patch ? (patch.key ? 'Key saved.' : 'Key removed.') : 'Saved.');
+      window.dispatchEvent(new CustomEvent('fs-ai-settings'));
+      void api.capabilities().then((c) => this.fillNet((c.network as NetRow[] | undefined) ?? [])).catch(() => undefined);
+    } catch (e) { setText(say, e instanceof Error ? e.message : String(e)); }
+  }
+
+  private async testAi(): Promise<void> {
+    const say = q(this.body, '.fs-dlg-ai-say');
+    setText(say, 'Testing.');
+    try {
+      const r = await api.post<{ text: string; ms: number }>('/api/ai/test', {});
+      setText(say, `Connected: answered "${r.text.slice(0, 40)}" in ${(r.ms / 1000).toFixed(1)} s.`);
+    } catch (e) { setText(say, e instanceof Error ? e.message : String(e)); }
+  }
+
+  private fillNet(rows: NetRow[]): void {
+    const fill = (n: HTMLElement, r: NetRow): void => { setText(q(n, '.fs-dlg-net-name'), r.name); setText(q(n, '.fs-dlg-net-state'), r.state); setText(q(n, '.fs-dlg-net-note'), r.note); };
+    patchList(q(this.body, '.fs-dlg-net'), rows, {
+      key: (r) => r.id,
+      create: (r) => { const n = el('<div class="fs-dlg-net-row"><span class="fs-dlg-net-name"></span><span class="fs-badge fs-dlg-net-state"></span><span class="fs-note fs-dlg-net-note"></span></div>'); fill(n, r); return n; },
+      update: fill,
+    });
   }
 
   private async allowPlugin(id: string, allowed: boolean): Promise<void> {
@@ -233,14 +300,9 @@ class PreferencesDialog extends Dialog {
         }
       }
       if (this.lang.dataset.want) setValue(this.lang, this.lang.dataset.want);
-      const rows = (c.network as Array<{ id: string; name: string; state: string; note: string }> | undefined) ?? [];
-      const fill = (n: HTMLElement, r: { name: string; state: string; note: string }): void => { setText(q(n, '.fs-dlg-net-name'), r.name); setText(q(n, '.fs-dlg-net-state'), r.state); setText(q(n, '.fs-dlg-net-note'), r.note); };
-      patchList(q(this.body, '.fs-dlg-net'), rows, {
-        key: (r) => r.id,
-        create: (r) => { const n = el('<div class="fs-dlg-net-row"><span class="fs-dlg-net-name"></span><span class="fs-badge fs-dlg-net-state"></span><span class="fs-note fs-dlg-net-note"></span></div>'); fill(n, r); return n; },
-        update: fill,
-      });
+      this.fillNet((c.network as NetRow[] | undefined) ?? []);
     }).catch(() => undefined);
+    void api.get<AiInfo>('/api/ai/settings').then((s) => this.fillAi(s)).catch(() => undefined);
   }
 }
 
