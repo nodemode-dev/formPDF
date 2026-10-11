@@ -75,7 +75,7 @@ row(a, "Find and redact text or patterns", 1, F, "Protect > Find text to redact:
 row(a, "Remove metadata and hidden information", 1, F, "Protect > Remove hidden information (`sanitize.py scan, sanitize`: metadata, JavaScript, attachments, comments, flattened fields, hidden layers, links, bookmarks, thumbnails, private data, hidden text)")
 
 a = "PDF convert"
-row(a, "Export to PowerPoint (.pptx)", 1, P, "Convert > Export to PowerPoint and the to_pptx action (`services/pdf/slides.py to_pptx`): one slide per page, the page drawn as a picture with its text removed, words placed as real text boxes and detected tables as PowerPoint tables; rotated words and text in form XObjects stay in the picture, and shapes and pictures are not rebuilt as objects")
+row(a, "Export to PowerPoint (.pptx)", 1, F, "Convert > Export to PowerPoint and the to_pptx action (`services/pdf/slides.py to_pptx`, `objects.py split`): one slide per page; words as real text boxes (turned words as turned boxes, text in form XObjects included), detected tables as PowerPoint tables, lines, rectangles and other paths as PowerPoint shapes and pictures as pictures, over a slide picture that keeps only what cannot be rebuilt (shadings, soft masks, clipped or skewed objects and what is drawn before them)")
 row(a, "Extract text as .txt or .md", 1, F, "`core.py extract_text`, `panels.ts` text-txt, text-md")
 row(a, "Export to HTML or RTF", 1, F, "Convert > Web page, rich text and Excel (`tools/exports.ts`), MCP `pdf to_html` and `to_rtf` (`exports.py`): one self-contained HTML file with pictures inline, or RTF with lists, tables and pictures; headings, lists and tables in reading order with running headers and footers left out")
 row(a, "Extract pictures", 1, F, "`core.py extract_images`")
@@ -89,7 +89,7 @@ row(a, "Scan paper documents to PDF", 1, F, "Home and File > Scan (`pdf/scan.ts`
 
 a = "Review and comments"
 row(a, "Compare two versions of a PDF", 1, F, "`pdf/compare.ts Comparer`, `services/pdf/compare.py compare`: View > Compare against an older or newer PDF, word-level insertions, changes and deletions marked on the page with optional picture changes, every difference listed with before and after text; no summary report file")
-row(a, "Track a review: who commented, when, and with what status", 1, P, "comments are read with author, date, replies and status (`annot.py comments`, `panels.ts syncAnnots`); no review tracker across files or reviewers")
+row(a, "Track a review: who commented, when, and with what status", 1, F, "Home > Reviews (`ui/reviews.ts`, `services/reviews.py`): every recent PDF with comments, its reviewers with their counts and last dates, open and resolved threads and last activity, opening on the Comment tab; reviews pass between copies as XFDF (`xfdf.py export_xfdf, import_xfdf`, Comment > Share comments) with replies, status, authors and dates, matched by name so nothing is duplicated")
 
 a = "Collaboration and sharing"
 row(a, "Share PDF links with permissions", 1, N, "nothing found: no hosted service")
@@ -103,7 +103,7 @@ row(a, "Alternate text for figures", 1, F, "Accessibility > Alternate text (`too
 row(a, "Tag a PDF for accessibility (autotag)", 1, F, "Accessibility > Tags and the autotag action (`services/pdf/access.py tag`): headings, paragraphs, lists, tables with header cells, figures with boxes, links, fields and comments in reading order from `layout.page_blocks`, running headers and footers as artifacts, marked content written stream by stream; renders unchanged and Poppler reads the tree")
 
 a = "Import and export"
-row(a, "Create PDFs from Office files (Word, PowerPoint, Excel)", 1, N, "nothing found: `services/pdf/create.py from_files` takes pictures and PDFs only")
+row(a, "Create PDFs from Office files (Word, PowerPoint, Excel)", 1, F, "Combine files, drops on Home and the workbench, open_pdf, merge and the CLI convert Word, PowerPoint, Excel, OpenDocument, RTF, text and CSV through the LibreOffice the person installs (`services/office.py`, `create.py from_files`), headless with macros and link updates off; the window says when LibreOffice is missing, as Acrobat needs Office for some of its own conversions")
 
 a = "Print"
 row(a, "Print PDFs, including several pages per sheet", 1, F, "Print tab (`tools/print.ts`, `pdf/printjob.ts`) over `services/pdf/printing.py`: pages per sheet (1 to 16) in four orders with borders, booklets with binding side, posters with overlap, cut marks and labels, comments and fields choice, a live preview of every sheet, printed through a print PDF sized with @page on every platform or saved")

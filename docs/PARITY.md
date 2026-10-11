@@ -1,6 +1,6 @@
 # Parity with Adobe Acrobat
 
-formpdf 0.11.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
+formpdf 0.12.0, scored row by row against Adobe Acrobat Pro and Studio (help current to the August 2026 feature update).
 
 ## Method
 
@@ -16,16 +16,16 @@ Each row is a capability Acrobat's own help documents, written in Acrobat's term
 | PDF forms and signing | 5.5 of 6 · 92% |
 | PDF organize | 7 of 7 · 100% |
 | PDF protect and redact | 5 of 5 · 100% |
-| PDF convert | 10.5 of 11 · 95% |
-| Review and comments | 1.5 of 2 · 75% |
+| PDF convert | 11 of 11 · 100% |
+| Review and comments | 2 of 2 · 100% |
 | Collaboration and sharing | 1 of 2 · 50% |
 | Accessibility | 4.5 of 5 · 90% |
-| Import and export | 0 of 1 · 0% |
+| Import and export | 1 of 1 · 100% |
 | Print | 2.5 of 3 · 83% |
 | Automation and agents | 1.5 of 3 · 50% |
-| **Overall** | **64.5 of 72 · 90%** |
+| **Overall** | **66.5 of 72 · 92%** |
 
-Across the 72 scored rows formpdf has 61 full, 7 partial and 4 none.
+Across the 72 scored rows formpdf has 64 full, 5 partial and 3 none.
 
 ## Where formpdf leads
 
@@ -37,7 +37,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 - **Signing requests.** Signers and their order are tracked in the PDF, but sending and reminders go through the person's own email rather than a service.
 - **Print production.** No CMYK conversion or transparency flattening, and PDF/X output is not validated by an outside tool.
 - **Form JavaScript.** Standard Acrobat calculations, formats and checks run, but no PDF JavaScript is executed, so custom form scripts do nothing.
-- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Create PDFs from Office files (Word, PowerPoint, Excel); Generate a presentation from PDFs and files with AI (PDF Spaces).
+- Rows with nothing yet: Generate pictures with AI (Adobe Express); Share PDF links with permissions; Generate a presentation from PDFs and files with AI (PDF Spaces).
 
 ## Line by line
 
@@ -120,7 +120,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
-| Export to PowerPoint (.pptx) | yes | Partial | Convert > Export to PowerPoint and the to_pptx action (`services/pdf/slides.py to_pptx`): one slide per page, the page drawn as a picture with its text removed, words placed as real text boxes and detected tables as PowerPoint tables; rotated words and text in form XObjects stay in the picture, and shapes and pictures are not rebuilt as objects |
+| Export to PowerPoint (.pptx) | yes | Full | Convert > Export to PowerPoint and the to_pptx action (`services/pdf/slides.py to_pptx`, `objects.py split`): one slide per page; words as real text boxes (turned words as turned boxes, text in form XObjects included), detected tables as PowerPoint tables, lines, rectangles and other paths as PowerPoint shapes and pictures as pictures, over a slide picture that keeps only what cannot be rebuilt (shadings, soft masks, clipped or skewed objects and what is drawn before them) |
 | Extract text as .txt or .md | yes | Full | `core.py extract_text`, `panels.ts` text-txt, text-md |
 | Export to HTML or RTF | yes | Full | Convert > Web page, rich text and Excel (`tools/exports.ts`), MCP `pdf to_html` and `to_rtf` (`exports.py`): one self-contained HTML file with pictures inline, or RTF with lists, tables and pictures; headings, lists and tables in reading order with running headers and footers left out |
 | Extract pictures | yes | Full | `core.py extract_images` |
@@ -137,7 +137,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
 | Compare two versions of a PDF | yes | Full | `pdf/compare.ts Comparer`, `services/pdf/compare.py compare`: View > Compare against an older or newer PDF, word-level insertions, changes and deletions marked on the page with optional picture changes, every difference listed with before and after text; no summary report file |
-| Track a review: who commented, when, and with what status | yes | Partial | comments are read with author, date, replies and status (`annot.py comments`, `panels.ts syncAnnots`); no review tracker across files or reviewers |
+| Track a review: who commented, when, and with what status | yes | Full | Home > Reviews (`ui/reviews.ts`, `services/reviews.py`): every recent PDF with comments, its reviewers with their counts and last dates, open and resolved threads and last activity, opening on the Comment tab; reviews pass between copies as XFDF (`xfdf.py export_xfdf, import_xfdf`, Comment > Share comments) with replies, status, authors and dates, matched by name so nothing is duplicated |
 
 ### Collaboration and sharing
 
@@ -160,7 +160,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
-| Create PDFs from Office files (Word, PowerPoint, Excel) | yes | None | nothing found: `services/pdf/create.py from_files` takes pictures and PDFs only |
+| Create PDFs from Office files (Word, PowerPoint, Excel) | yes | Full | Combine files, drops on Home and the workbench, open_pdf, merge and the CLI convert Word, PowerPoint, Excel, OpenDocument, RTF, text and CSV through the LibreOffice the person installs (`services/office.py`, `create.py from_files`), headless with macros and link updates off; the window says when LibreOffice is missing, as Acrobat needs Office for some of its own conversions |
 
 ### Print
 
