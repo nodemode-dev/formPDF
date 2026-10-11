@@ -1,3 +1,4 @@
+import { api } from '../io/api';
 import { Dialog } from '../ui/dialogs';
 import { el, patchList, q, setClass, setDisabled, setHidden, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
@@ -6,7 +7,13 @@ import type { CreateOptions } from './api';
 import type { CreateKind } from './intent';
 
 const PICTURE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
+const OFFICE = /\.(docx?|docm|dotx?|odt|ott|rtf|txt|wpd|pages|pptx?|pptm|ppsx?|potx?|odp|otp|key|xlsx?|xlsm|xlsb|ods|ots|csv|numbers)$/i;
+const OFFICE_ACCEPT = '.doc,.docx,.docm,.dot,.dotx,.odt,.ott,.rtf,.txt,.wpd,.pages,.ppt,.pptx,.pptm,.pps,.ppsx,.pot,.potx,.odp,.otp,.key,.xls,.xlsx,.xlsm,.xlsb,.ods,.ots,.csv,.numbers';
 const isPdf = (f: File): boolean => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+const isOffice = (f: File): boolean => OFFICE.test(f.name);
+const KIND: Array<[RegExp, string]> = [[/\.(pptx?|pptm|ppsx?|potx?|odp|otp|key)$/i, 'Slides'], [/\.(xlsx?|xlsm|xlsb|ods|ots|csv|numbers)$/i, 'Sheet'], [OFFICE, 'Document']];
+const kindOf = (f: File): string => (isPdf(f) ? 'PDF · ' : isOffice(f) ? `${KIND.find(([re]) => re.test(f.name))?.[1] ?? 'Document'} · ` : '');
+let office: Promise<boolean> | null = null;
 const isPicture = (f: File): boolean => (f.type.startsWith('image/') && !/svg/.test(f.type)) || PICTURE.test(f.name);
 const size = (n: number): string => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 let seq = 0;
@@ -90,7 +97,14 @@ class CreateDialog extends Dialog {
     this.kind = kind;
     for (const b of Array.from(q(this.body, '.fs-pdfwb-cmode').children)) setClass(b, 'is-on', (b as HTMLElement).dataset.k === kind);
     this.setTitle(kind === 'pictures' ? 'Create PDF from pictures' : 'Combine files into a PDF');
-    setText(q(this.body, '.fs-pdfwb-cnote'), kind === 'pictures' ? 'Each picture becomes one page. Drag the rows, or use the arrows, to change the order.' : 'PDFs keep their pages and pictures become pages, in the order shown. Drag the rows to reorder.');
+    const note = q(this.body, '.fs-pdfwb-cnote');
+    setText(note, kind === 'pictures' ? 'Each picture becomes one page. Drag the rows, or use the arrows, to change the order.' : 'PDFs keep their pages, pictures become pages and Office files are converted, in the order shown. Drag the rows to reorder.');
+    if (kind === 'files') {
+      office ??= api.capabilities().then((c) => !!(c.office as { available?: boolean } | undefined)?.available).catch(() => { office = null; return true; });
+      void office.then((on) => {
+        if (!on && this.kind === 'files') setText(note, 'PDFs keep their pages and pictures become pages, in the order shown. Office files need LibreOffice, which is not installed (libreoffice.org).');
+      });
+    }
     this.sync();
   }
 
@@ -98,16 +112,16 @@ class CreateDialog extends Dialog {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
-    input.accept = this.kind === 'pictures' ? 'image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff' : '.pdf,application/pdf,image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff';
+    input.accept = this.kind === 'pictures' ? 'image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff' : `.pdf,application/pdf,image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff,${OFFICE_ACCEPT}`;
     input.onchange = () => this.addFiles(Array.from(input.files ?? []));
     input.click();
   }
 
   private addFiles(files: File[]): void {
-    const ok = files.filter((f) => isPdf(f) || isPicture(f));
-    if (ok.length < files.length) toast(`${files.length - ok.length} file${files.length - ok.length === 1 ? ' is' : 's are'} not a picture or a PDF and ${files.length - ok.length === 1 ? 'was' : 'were'} left out`);
-    if (ok.some(isPdf) && this.kind === 'pictures') this.setKind('files');
-    for (const f of ok) this.items.push({ key: `c${seq++}`, file: f, url: isPdf(f) ? '' : URL.createObjectURL(f), pdf: isPdf(f) });
+    const ok = files.filter((f) => isPdf(f) || isPicture(f) || isOffice(f));
+    if (ok.length < files.length) toast(`${files.length - ok.length} file${files.length - ok.length === 1 ? ' is' : 's are'} not a PDF, a picture or an Office file and ${files.length - ok.length === 1 ? 'was' : 'were'} left out`);
+    if (ok.some((f) => isPdf(f) || isOffice(f)) && this.kind === 'pictures') this.setKind('files');
+    for (const f of ok) this.items.push({ key: `c${seq++}`, file: f, url: isPdf(f) || isOffice(f) ? '' : URL.createObjectURL(f), pdf: isPdf(f) || isOffice(f) });
     this.sync();
   }
 
@@ -133,9 +147,9 @@ class CreateDialog extends Dialog {
     patchList(this.list, this.items, {
       key: (it) => it.key,
       create: (it) => {
-        const r = el(`<div class="fs-pdfwb-crow" role="listitem" draggable="true"><span class="fs-pdfwb-cthumb">${it.pdf ? icon('filePdf', 22) : `<img alt="" decoding="async" src="${it.url}">`}</span><span class="fs-pdfwb-cname"></span><span class="fs-pdfwb-cmeta"></span><button class="fs-icon-btn is-sm" type="button" data-k="up" title="Move up" aria-label="Move up">${icon('chevronUp', 14)}</button><button class="fs-icon-btn is-sm" type="button" data-k="down" title="Move down" aria-label="Move down">${icon('chevronDown', 14)}</button><button class="fs-icon-btn is-sm" type="button" data-k="remove" title="Remove" aria-label="Remove">${icon('close', 14)}</button></div>`);
+        const r = el(`<div class="fs-pdfwb-crow" role="listitem" draggable="true"><span class="fs-pdfwb-cthumb">${it.pdf ? icon(isOffice(it.file) ? 'fileText' : 'filePdf', 22) : `<img alt="" decoding="async" src="${it.url}">`}</span><span class="fs-pdfwb-cname"></span><span class="fs-pdfwb-cmeta"></span><button class="fs-icon-btn is-sm" type="button" data-k="up" title="Move up" aria-label="Move up">${icon('chevronUp', 14)}</button><button class="fs-icon-btn is-sm" type="button" data-k="down" title="Move down" aria-label="Move down">${icon('chevronDown', 14)}</button><button class="fs-icon-btn is-sm" type="button" data-k="remove" title="Remove" aria-label="Remove">${icon('close', 14)}</button></div>`);
         setText(r.querySelector('.fs-pdfwb-cname'), it.file.name);
-        setText(r.querySelector('.fs-pdfwb-cmeta'), `${it.pdf ? 'PDF · ' : ''}${size(it.file.size)}`);
+        setText(r.querySelector('.fs-pdfwb-cmeta'), `${kindOf(it.file)}${size(it.file.size)}`);
         return r;
       },
       update: () => undefined,

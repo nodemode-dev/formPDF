@@ -38,6 +38,7 @@ const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['
 const LAYOUT_KEY = 'fs-pdf-layout';
 const SAY_KEY = 'fs-pdf-say';
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
+const OFFICE_FILE = /\.(docx?|docm|odt|rtf|pptx?|ppsx?|odp|key|xlsx?|xlsm|ods|csv|pages|numbers)$/i;
 const layoutBtns = LAYOUTS.map(([v, l, ic]) => `<button class="fs-tb-btn" type="button" data-a="layout" data-v="${v}" title="${l}" aria-label="${l}">${icon(ic, 16)}</button>`).join('');
 const PALETTE = ['#FFD400', '#22C55E', '#38BDF8', '#F472B6', '#E11D48', '#2563EB', '#111111'];
 const TOOL_COLOR: Record<string, string> = { highlight: '#FFD400', underline: '#2563EB', strikeout: '#E11D48', note: '#FFD400', freetext: '#111111', ink: '#E11D48', rect: '#E11D48', ellipse: '#E11D48', line: '#111111', arrow: '#E11D48' };
@@ -541,8 +542,9 @@ class Workbench {
       const all = Array.from(e.dataTransfer?.files ?? []);
       const files = all.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
       const pictures = all.filter((f) => IMAGE_FILE.test(f.name) || (f.type.startsWith('image/') && !f.type.includes('svg')));
-      if (pictures.length) { void this.startCreate(files.length ? 'files' : 'pictures', [...files, ...pictures].sort((a, b) => all.indexOf(a) - all.indexOf(b))); return; }
-      if (!files.length) { toast('Drop a PDF file, or pictures to make one'); return; }
+      const office = all.filter((f) => OFFICE_FILE.test(f.name));
+      if (pictures.length || office.length) { void this.startCreate(files.length || office.length ? 'files' : 'pictures', [...files, ...pictures, ...office].sort((a, b) => all.indexOf(a) - all.indexOf(b))); return; }
+      if (!files.length) { toast('Drop a PDF file, or pictures or Office files to make one'); return; }
       if (this.tab === 'organize' && this.doc) { void this.insertPdfs(files, this.organizer.items.length); return; }
       void this.guard(() => this.openFile(files[0]));
     });

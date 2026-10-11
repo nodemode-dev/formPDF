@@ -15,11 +15,12 @@ export interface HomeHooks {
   help(): void;
 }
 
-type View = 'start' | 'recent' | 'batch';
+type View = 'start' | 'recent' | 'batch' | 'reviews';
 
 const skeleton = `<div class="fs-card is-skeleton" data-key="__skeleton" aria-hidden="true"><span class="fs-card-preview fs-pdfwb-recent-prev"></span><span class="fs-card-body"><span class="fs-card-name">&nbsp;</span><span class="fs-card-meta">&nbsp;</span></span></div>`;
 const empty = `<div class="fs-card is-empty" hidden><span class="fs-card-preview fs-pdfwb-recent-prev is-blank">${icon('filePdf', 28)}</span><span class="fs-card-body"><span class="fs-card-name">No PDFs yet</span><span class="fs-card-meta">Open one, or make one from pictures</span></span></div>`;
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
+const OFFICE_FILE = /\.(docx?|docm|odt|rtf|pptx?|ppsx?|odp|key|xlsx?|xlsm|ods|csv|pages|numbers)$/i;
 
 export class Home {
   readonly root: HTMLElement;
@@ -36,6 +37,7 @@ export class Home {
 <button class="fs-home-nav-item" type="button" data-a="merge">${icon('merge', 16)}<span>Merge PDFs</span></button>
 <button class="fs-home-nav-item" type="button" data-a="scan">${icon('scanner', 16)}<span>Scan</span></button>
 <button class="fs-home-nav-item" type="button" data-v="batch">${icon('layers', 16)}<span>Batch</span></button>
+<button class="fs-home-nav-item" type="button" data-v="reviews">${icon('comments', 16)}<span>Reviews</span></button>
 <div class="fs-home-nav-sep"></div>
 <div class="fs-home-nav-title">Agents</div>
 <button class="fs-home-nav-item" type="button" data-a="agents">${icon('agent', 16)}<span>Claude Code, Codex, Cursor</span></button>
@@ -50,14 +52,15 @@ export class Home {
 <div class="fs-home-hero">
 <span class="fs-home-hero-icon">${icon('filePdf', 26)}</span>
 <div class="fs-home-hero-text"><div class="fs-home-hero-title">Open a PDF</div>
-<div class="fs-home-hero-sub">Drop a PDF here, or pictures to make one. View and read aloud, search and compare, comment and stamp, fill, sign and build forms, organize, split and merge, add headers, footers and Bates numbers, find and redact, protect, compress, and export to Word or PowerPoint.</div>
-<div class="fs-home-formats"><span class="fs-home-format">PDF</span><span class="fs-home-format">PNG</span><span class="fs-home-format">JPG</span><span class="fs-home-format">GIF</span><span class="fs-home-format">WEBP</span><span class="fs-home-format">TIFF</span></div></div>
+<div class="fs-home-hero-sub">Drop a PDF here, or pictures or Office files to make one. View and read aloud, search and compare, comment and stamp, fill, sign and build forms, organize, split and merge, add headers, footers and Bates numbers, find and redact, protect, compress, and export to Word or PowerPoint.</div>
+<div class="fs-home-formats"><span class="fs-home-format">PDF</span><span class="fs-home-format">PNG</span><span class="fs-home-format">JPG</span><span class="fs-home-format">GIF</span><span class="fs-home-format">WEBP</span><span class="fs-home-format">TIFF</span><span class="fs-home-format">DOCX</span><span class="fs-home-format">PPTX</span><span class="fs-home-format">XLSX</span></div></div>
 <div class="fs-home-hero-actions"><button class="fs-btn fs-btn-primary" type="button" data-a="open">${icon('folderOpen', 14)}Open PDF</button><button class="fs-btn" type="button" data-a="pictures">${icon('fileImage', 14)}Create from pictures</button><button class="fs-btn fs-btn-ghost" type="button" data-a="agents">${icon('agent', 14)}Use your agent</button></div>
 </div>
 <section class="fs-home-section"><div class="fs-home-section-head"><h2 class="fs-home-section-title">Recent PDFs</h2><button class="fs-btn fs-btn-ghost fs-btn-sm" type="button" data-v="recent">See all</button></div><div class="fs-card-grid fs-home-recent">${skeleton}${empty}</div></section>
 </div>
 <div data-page="recent" hidden><div class="fs-home-head"><div><h1 class="fs-home-title">Recent PDFs</h1><p class="fs-home-sub">The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.</p></div></div><div class="fs-card-grid fs-home-recent-full">${skeleton}${empty}</div></div>
 <div data-page="batch" hidden></div>
+<div data-page="reviews" hidden></div>
 </div></section>`);
     document.getElementById('app')?.appendChild(this.root);
     this.wire();
@@ -98,9 +101,10 @@ export class Home {
       const all = Array.from(e.dataTransfer?.files ?? []);
       const pictures = all.filter((f) => IMAGE_FILE.test(f.name));
       const pdfs = all.filter((f) => f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf');
-      if (pictures.length || pdfs.length > 1) this.hooks.create(pictures.length && !pdfs.length ? 'pictures' : 'files', all.filter((f) => pictures.includes(f) || pdfs.includes(f)));
+      const office = all.filter((f) => OFFICE_FILE.test(f.name));
+      if (pictures.length || office.length || pdfs.length > 1) this.hooks.create(pictures.length && !pdfs.length && !office.length ? 'pictures' : 'files', all.filter((f) => pictures.includes(f) || pdfs.includes(f) || office.includes(f)));
       else if (pdfs.length) this.hooks.openFiles(pdfs);
-      else if (all.length) toast('Drop a PDF file, or pictures to make one');
+      else if (all.length) toast('Drop a PDF file, or pictures or Office files to make one');
     });
   }
 
@@ -149,7 +153,10 @@ export class Home {
     this.view = v;
     for (const page of Array.from(this.root.querySelectorAll<HTMLElement>('[data-page]'))) setHidden(page, page.dataset.page !== v);
     for (const b of Array.from(this.root.querySelectorAll<HTMLElement>('.fs-home-nav-item[data-v]'))) setClass(b, 'is-active', b.dataset.v === v);
+    this.onView(v);
   }
+
+  onView: (v: View) => void = () => undefined;
 
   open(): void {
     setHidden(this.root, false);

@@ -23,3 +23,18 @@
 .fs-batch-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); min-height: 30px; }
 .fs-batch-out { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 900px) { .fs-batch-grid { grid-template-columns: minmax(0, 1fr); } }
+.fs-rev { display: grid; gap: var(--space-2); }
+.fs-rev-head, .fs-rev-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) 56px 72px 112px 20px; align-items: center; gap: var(--space-3); padding: 0 var(--space-3); }
+.fs-rev-head { min-height: 24px; color: var(--text-muted); font-size: var(--fs-11, 11px); text-transform: uppercase; letter-spacing: 0.04em; }
+.fs-rev-head[hidden] { display: none; }
+.fs-rev-list { display: flex; flex-direction: column; gap: 4px; }
+.fs-rev-row { height: 52px; border: 1px solid var(--line-1); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-secondary); font-size: var(--fs-12); cursor: pointer; }
+.fs-rev-row:hover, .fs-rev-row:focus-visible { border-color: var(--line-2); background: var(--surface-2); outline: none; }
+.fs-rev-doc { display: grid; min-width: 0; }
+.fs-rev-name, .fs-rev-sub, .fs-rev-people { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-rev-name { color: var(--text-primary); }
+.fs-rev-sub { color: var(--text-muted); }
+.fs-rev-open, .fs-rev-done { font-variant-numeric: tabular-nums; }
+.fs-rev-open { color: var(--accent-ink); }
+.fs-rev-go { display: inline-flex; color: var(--text-muted); }
+.fs-rev-status { min-height: 18px; }

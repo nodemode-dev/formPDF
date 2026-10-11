@@ -12,6 +12,7 @@ import { revealApp } from './ui/dom';
 import { enhanceAllSelects } from './ui/dropdown';
 import { Home } from './ui/home';
 import { Palette } from './ui/palette';
+import { Reviews } from './ui/reviews';
 import { offerResume } from './ui/resume';
 import { applyTheme } from './ui/themes';
 import { toast } from './ui/toast';
@@ -47,6 +48,8 @@ export async function startApp(): Promise<void> {
     { id: 'home-scan', label: 'Scan…', words: ['scanner', 'scan to pdf', 'paper', 'feeder'], run: () => open({ scan: true }) },
     { id: 'home-recent', label: 'Recent PDFs', words: ['history', 'last'], run: () => home.show('recent') },
     { id: 'home-batch', label: 'Batch: run an action on many PDFs', words: ['batch', 'many files', 'bulk', 'folder', 'action wizard', 'bates'], run: () => home.show('batch') },
+    { id: 'home-reviews', label: 'Reviews: comments across your PDFs', words: ['review tracker', 'track review', 'reviewers', 'comments', 'shared review'], run: () => home.show('reviews') },
+    { id: 'home-office', label: 'Create PDF from Office files…', words: ['word', 'docx', 'powerpoint', 'pptx', 'excel', 'xlsx', 'convert to pdf', 'libreoffice'], run: () => open({ create: 'files' }) },
     { id: 'home-help', label: 'formpdf Help', keys: ['F1'], run: () => hooks.help() },
     { id: 'home-shortcuts', label: 'Keyboard shortcuts', keys: ['Mod+/'], run: () => hooks.shortcuts(bench.commands) },
     { id: 'home-prefs', label: 'Preferences…', keys: ['Mod+,'], words: ['settings', 'theme', 'dark', 'light'], run: () => hooks.preferences() },
@@ -59,7 +62,7 @@ export async function startApp(): Promise<void> {
     run: (c) => { if (homeCmds.includes(c)) c.run(); else bench.commands.run(c.id); },
   });
   const bench = ensureWorkbench(hooks);
-  const open = (o: { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean }): void => { openWorkbench({ ...o, app: hooks }); };
+  const open = (o: { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; restore?: { page: number; tab: string; dirty: boolean } }): void => { openWorkbench({ ...o, app: hooks }); };
 
   const home = new Home({
     openFiles: (files) => { if (files[0]) open({ file: files[0] }); },
@@ -73,6 +76,8 @@ export async function startApp(): Promise<void> {
   });
 
   new Batch(home.root.querySelector<HTMLElement>('[data-page="batch"]') as HTMLElement);
+  const reviews = new Reviews(home.root.querySelector<HTMLElement>('[data-page="reviews"]') as HTMLElement, (id) => open({ recent: id, restore: { page: 1, tab: 'comment', dirty: false } }));
+  home.onView = (v) => { if (v === 'reviews') void reviews.load(); };
 
   const bridge = new AgentBridge({ bench: () => bench, allow: () => setAgents(true) });
   live.onTool = (name, args) => bridge.run(name, args);

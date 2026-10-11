@@ -99,7 +99,7 @@ export const pdfApi = {
     const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!res.ok) { let d = res.statusText; try { d = ((await res.json()) as { detail?: string }).detail ?? d; } catch { d = `${res.status} ${res.statusText}`; } throw new Error(d); }
     const out = await res.json() as T;
-    if (out && typeof out === 'object' && 'id' in out && !('text' in out) && !['run_list', 'edit_structure', 'sign'].includes(name)) record(name, body);
+    if (out && typeof out === 'object' && 'id' in out && !('text' in out) && !['run_list', 'edit_structure', 'sign', 'import_xfdf'].includes(name)) record(name, body);
     return out;
   },
   async actFile(id: string, name: string, body: Record<string, unknown> = {}): Promise<{ blob: Blob; name: string }> {

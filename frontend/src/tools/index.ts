@@ -10,3 +10,4 @@ import './certsign';
 import './access';
 import './print';
 import './lists';
+import './xfdf';
