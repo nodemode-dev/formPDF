@@ -37,6 +37,10 @@ Changing and export actions ask for consent.
 
 `{doc?}`. With a window: undoes your last turn there (every agent change in a row with the same turn) and refuses when the last change was the person's. Without a window: steps the engine's version list back over your last turn. Asks for consent.
 
+## answer_question
+
+`{id, text}`. When the person chose "Your agent" as the AI provider, questions they ask in the Assistant tab wait in get_context (`Question waiting in the Assistant tab: id ...`). Read the PDF (pdf text, render_pages), then answer with `text`: cite every statement as `[p. N]` and put exact quotations in double quotes before their citation. formpdf checks each quotation against the cited page and shows the answer in the window with page links; the result says how many quotations it could not find. Structured `{id, citations, shown}`.
+
 ## Resources and prompts
 
 `formpdf://guide` is the short guide (the loop and every action). The prompt `pdf-job {path, job}` writes a starting instruction.
