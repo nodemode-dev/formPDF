@@ -44,7 +44,7 @@ def inks(path, *, args: dict | None = None, pages=None, passwords: list[str] | N
                     spots.append(n)
             if colour.space_kind(cs, None) == "rgb":
                 rgb = True
-    return {"process": list(PROCESS), "spots": spots, "rgb": rgb, "say": f"{4 + len(spots)} inks: the four process inks{', ' + ', '.join(spots) if spots else ''}."}
+    return f"{4 + len(spots)} inks: the four process inks{', ' + ', '.join(spots) if spots else ''}.", {"process": list(PROCESS), "spots": spots, "rgb": rgb}
 
 
 def _cmyk(kind: str, v: list[float]) -> list[float] | None:
@@ -196,7 +196,8 @@ def preview(path, *, args: dict | None = None, pages=None, passwords: list[str] 
             page.replace_contents(contents)
     buf = io.BytesIO()
     w.write(buf)
-    return {"page": n, "hide": sorted(hide), "png": _png(buf.getvalue(), scale)}
+    say = f"Page {n} without {', '.join(sorted(hide))}." if hide else f"Page {n} with every ink."
+    return say, {"page": n, "hide": sorted(hide), "png": _png(buf.getvalue(), scale)}
 
 
 actions.register(actions.Action("inks", "read", "List the inks a PDF prints with", words=("separations", "inks", "plates", "spot colours", "output preview"), run=inks))
