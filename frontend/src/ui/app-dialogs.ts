@@ -4,6 +4,8 @@ import { VERSION } from '../version';
 import { brandMark } from './brand';
 import { formatKeys, type Command, type Commands } from './commands';
 import { Dialog } from './dialogs';
+import { language, languages, setLanguage } from './i18n';
+import { isLang } from './i18n/langs';
 import { el, escapeHtml, patchList, q, setChecked, setClass, setDisabled, setHidden, setHtml, setText, setValue } from './dom';
 import { icon } from './icons';
 import { THEMES, readChoice, setAccent, setTheme, themeSwatchesHtml } from './themes';
@@ -98,6 +100,9 @@ class PreferencesDialog extends Dialog {
     super('Preferences', 560);
     const c = readChoice();
     const box = el(`<div class="fs-dlg-stack">
+<section class="fs-dlg-section"><div class="fs-dlg-section-title">Language</div>
+<label class="fs-field"><span>Interface</span><select class="fs-input fs-dlg-pref-ui" data-no-i18n>${languages().map(([code, name]) => `<option value="${code}">${name}</option>`).join('')}</select></label>
+</section>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Appearance</div>
 <div class="fs-field is-top"><span>Theme</span><div><div class="nm-theme-grid fs-dlg-themes">${themeSwatchesHtml(c.theme, c.accentColor)}</div><div class="fs-note fs-dlg-theme-name"></div></div></div>
 <div class="fs-field"><span>Accent</span><div class="fs-dlg-accents">${ACCENTS.map((a) => `<button class="fs-swatch" type="button" data-accent="${a}" style="--swatch:${a}" aria-label="Accent ${a}" title="${a}"></button>`).join('')}<label class="fs-dlg-color" title="Custom accent">${icon('palette', 14)}<input type="color" aria-label="Custom accent colour"></label></div></div>
@@ -169,6 +174,9 @@ class PreferencesDialog extends Dialog {
     this.author.addEventListener('change', () => this.persist({ author: this.author.value.trim() }));
     segOn(this.units, (v) => this.persist({ units: v }));
     this.lang.addEventListener('change', () => { this.persist({ spellLang: this.lang.value }); applyLang(this.lang.value); });
+    const ui = q<HTMLSelectElement>(box, '.fs-dlg-pref-ui');
+    setValue(ui, language());
+    ui.addEventListener('change', () => { if (isLang(ui.value)) { this.persist({ language: ui.value }); void setLanguage(ui.value); } });
     this.words.addEventListener('change', () => this.persist({ dictionary: this.words.value.split(/\s*\n\s*/).filter(Boolean) }));
     this.agents.addEventListener('change', () => this.h?.setAgents(this.agents.checked));
     this.tsa.addEventListener('change', () => this.persist({ timestampUrl: this.tsa.value.trim() }));

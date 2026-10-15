@@ -10,6 +10,8 @@ import { agentsDialog, applyLang, helpDialog, preferencesDialog, shortcutsDialog
 import { Batch } from './ui/batch';
 import { comboOf, type Command } from './ui/commands';
 import { anyDialogOpen, promptName } from './ui/dialogs';
+import { language, setLanguage, startLanguage, startPageTranslator } from './ui/i18n';
+import { isLang } from './ui/i18n/langs';
 import { revealApp } from './ui/dom';
 import { enhanceAllSelects } from './ui/dropdown';
 import { Home } from './ui/home';
@@ -23,6 +25,8 @@ import { VERSION } from './version';
 
 export async function startApp(): Promise<void> {
   applyTheme();
+  await startLanguage();
+  startPageTranslator();
   document.title = `formpdf ${VERSION}`;
   const live = new LiveClient(navigator.platform || 'window');
   let agentsAllowed = false;
@@ -132,6 +136,7 @@ export async function startApp(): Promise<void> {
     agentsAllowed = !!settings.agentsAllowed;
     live.setAgents(agentsAllowed);
     applyLang(typeof settings.spellLang === 'string' ? settings.spellLang : '');
+    if (isLang(settings.language) && settings.language !== language()) void setLanguage(settings.language);
   } catch { toast('The formpdf engine is not answering yet; retrying.', 'error'); }
   const files = new URLSearchParams(location.search).getAll('open').filter(Boolean);
   home.open();
