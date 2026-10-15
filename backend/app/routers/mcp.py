@@ -98,7 +98,10 @@ version: X-4 | X-6} converts for a press (X-6 is PDF 2.0); read pdfx_check {leve
 file claims} lists what stops the file meeting it, by formpdf's own checks; pdf20 rewrites the file as PDF 2.0 with XMP metadata;
 read preflight {profile: print | office | screen, tac: ink limit in percent, default 300} checks fonts, picture resolution, colour, ink
 coverage, white set to overprint, artwork at the trim edge without bleed, transparency, hairlines, trim boxes and scripts, each with
-its pages and a fix where one exists; preflight_fix {fixes} applies them; import_xfdf {xfdf: path | data: text, pages} adds a reviewer's comments, recognises ones already here even under another name and
+its pages and a fix where one exists; preflight_fix {fixes} applies them; read accessibility runs Acrobat's 32 rules plus a Tag correctness group (heading levels against their size, headings tagged as
+paragraphs, reading order against the page, placeholder alternate text, language of each part); fix_accessibility {fixes: [..., headings,
+spans]} re-levels headings by size and marks parts in another script with their language; an "Alternate text request" in get_context
+asks you to look at figures and answer_question with JSON {figure id: alt text or DECORATIVE}; import_xfdf {xfdf: path | data: text, pages} adds a reviewer's comments, recognises ones already here even under another name and
 takes their status; export_changes writes a JSON change list (delete, replace, insert, comment, each with the words around it) for a
 layout app; highlights and underlines move with their words when edit_items changes page text (comments_followed); read inks lists the process and spot inks; read separation_preview
 {page, hide: inks to turn off} returns that page as a PNG data URL with those inks removed; ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
@@ -675,6 +678,9 @@ async def t_get_context(a: Agent, args: dict) -> dict:
     from app.services import ai
 
     for q in ai.waiting():
+        if q.get("kind") == "alt":
+            lines.append(f"Alternate text request waiting: id {q['id']} · {q['name']} (doc {q['doc']}) · {q['question']}")
+            continue
         lines.append(f"Question waiting in the Assistant tab: id {q['id']} · {q['name']} (doc {q['doc']}) · {q['question'][:300]} "
                      f"(read the PDF, then answer_question {{id, text}} citing pages as [p. N])")
     office_st = office.status()
@@ -788,6 +794,16 @@ async def t_answer_question(a: Agent, args: dict) -> dict:
     if item is None:
         raise ToolError("There is no waiting question with that id; call get_context for the current ones.")
     texts = await asyncio.to_thread(pdfsvc.extract_text, docs.path_of(item["doc"]), None, routes._pw(item["doc"]))
+    if item.get("kind") == "alt":
+        from app.services import alttext
+
+        try:
+            n = len(alttext.parse_answer(text))
+        except ValueError as e:
+            raise ToolError(f"{e}: answer with JSON mapping each figure id to its alternate text or DECORATIVE.") from None
+        ai.give_answer(qid, text[:40000], [])
+        return _ok(f"{n} alternate text draft{'s' if n != 1 else ''} handed to the window; the person reviews and saves each in Accessibility > Alternate text.",
+                   {"id": qid, "drafts": n})
     done = ai.give_answer(qid, text[:40000], texts)
     shown = False
     if bridge.window_connected():

@@ -370,6 +370,34 @@ def picture(src, out, *, args: dict | None = None, pages=None, passwords: list[s
     return {**(res if isinstance(res, dict) else {}), "pages": core.page_count(out), "prompt": prompt}
 
 
+def describe(png: bytes, prompt: str, *, system: str, max_tokens: int = 300) -> str:
+    s = settings()
+    p = s["provider"]
+    key = _keys().get(p, "")
+    b64 = base64.b64encode(png).decode("ascii")
+    if p == "off":
+        raise ValueError(NOT_SET)
+    if p == "agent":
+        raise ValueError("The AI provider is your agent; it answers through MCP")
+    if p == "anthropic":
+        if not key:
+            raise ValueError("Add your Anthropic API key in Preferences > AI")
+        j = _post(s["base"].rstrip("/") + "/v1/messages", {"model": s["model"], "max_tokens": max_tokens, "system": system, "messages": [{"role": "user", "content": [
+            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}}, {"type": "text", "text": prompt}]}]},
+                  {"x-api-key": key, "anthropic-version": "2023-06-01"})
+        return "".join(part.get("text", "") for part in j.get("content") or [] if part.get("type") == "text").strip()
+    if p == "openai" and not key:
+        raise ValueError("Add your OpenAI API key in Preferences > AI")
+    j = _post(s["base"].rstrip("/") + "/chat/completions", {"model": s["model"], "max_tokens": max_tokens, "messages": [
+        {"role": "system", "content": system},
+        {"role": "user", "content": [{"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}}, {"type": "text", "text": prompt}]}]},
+              {"Authorization": f"Bearer {key}"} if key else {})
+    try:
+        return str(j["choices"][0]["message"]["content"] or "").strip()
+    except (KeyError, IndexError, TypeError):
+        raise ValueError("The AI provider answered in a form formpdf does not read") from None
+
+
 def post_question(doc_id: str, name: str, question: str, kind: str = "ask") -> dict:
     qid = uuid.uuid4().hex[:10]
     item = {"id": qid, "doc": doc_id, "name": name, "question": question[:4000], "kind": kind, "at": time.time(), "answer": None}

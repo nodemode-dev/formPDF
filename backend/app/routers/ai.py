@@ -3,7 +3,7 @@ import time
 
 from fastapi import APIRouter, HTTPException
 
-from app.services import ai
+from app.services import ai, alttext
 from app.services.pdf import docs
 
 router = APIRouter()
@@ -60,13 +60,34 @@ async def ask(body: dict) -> dict:
     return {"waiting": False, **data}
 
 
+@router.post("/ai/alt")
+async def alt(body: dict) -> dict:
+    doc_id = str(body.get("doc") or "")
+    if not docs.valid(doc_id):
+        raise HTTPException(404, "Open a PDF first")
+    ids = [str(i) for i in body.get("ids") or []][:200]
+    try:
+        _text, data = await asyncio.to_thread(alttext.drafts, docs.path_of(doc_id), args={"ids": ids}, passwords=_pw(doc_id))
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from None
+    if data.get("waiting"):
+        item = ai.post_question(doc_id, docs.meta(doc_id).get("name") or "document.pdf", data["question"], "alt")
+        return {"waiting": True, "id": item["id"], "figures": data["figures"]}
+    return data
+
+
 @router.get("/ai/questions/{qid}")
 async def question(qid: str) -> dict:
     item = ai.PENDING.get(qid)
     if item is None:
         raise HTTPException(404, "That question is no longer waiting")
     out = dict(item)
-    if item.get("answer"):
+    if item.get("answer") and item.get("kind") == "alt":
+        try:
+            out["drafts"] = alttext.parse_answer(item["answer"])
+        except ValueError as e:
+            out["error"] = str(e)
+    elif item.get("answer"):
         texts = await asyncio.to_thread(lambda: ai.core.extract_text(docs.path_of(item["doc"]), None, _pw(item["doc"])))
         out["citations"] = ai.citations(item["answer"], texts)
     return out
