@@ -93,7 +93,9 @@ is positive), scale (about the shape's centre), fill, stroke (#rrggbb | {cmyk: [
 named ink as a Separation colour space), width, opacity 0..1, blend:
 Normal | Multiply | Screen | Overlay | ...}]} changes them in place (result ops gives each edited shape's new op); read boxes lists media,
 crop, bleed, trim and art boxes; edit_boxes {pages, trim | bleed | crop | art | media: {x, y, w, h}, bleed_mm (bleed around the trim box,
-growing the media box and keeping the visible area), clear: [box names]}; ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
+growing the media box and keeping the visible area), clear: [box names]}; pdfx {profile: path to the printer's .icc, condition,
+version: X-4 | X-6} converts for a press (X-6 is PDF 2.0); read pdfx_check {level: X-1a | X-3 | X-4 | X-6 | VT, default the one the
+file claims} lists what stops the file meeting it, by formpdf's own checks; pdf20 rewrites the file as PDF 2.0 with XMP metadata; ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
 computer and adds invisible, searchable text; tilted full-page scans are straightened; get_context says whether OCR is installed).
 Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}
 (one slide per page: words as text boxes, rotated words as rotated boxes, shapes and pictures as PowerPoint objects); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.

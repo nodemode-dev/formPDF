@@ -782,9 +782,13 @@ def convert(src, out, *, args: dict | None = None, pages=None, passwords: list[s
 
 def pdfx(src, out, *, args: dict | None = None, pages=None, passwords: list[str] | None = None) -> dict:
     args = args or {}
+    version = str(args.get("version") or "X-4").upper().removeprefix("PDF/")
+    if version not in ("X-4", "X-6"):
+        raise ValueError("version is X-4 or X-6")
+    label = f"PDF/{version}"
     prof_path = str(args.get("profile") or "").strip()
     if not prof_path:
-        raise ValueError("PDF/X-4 needs the ICC profile of the printing condition (for example the one your printer sent); give its path as profile")
+        raise ValueError(f"{label} needs the ICC profile of the printing condition (for example the one your printer sent); give its path as profile")
     p = Path(prof_path).expanduser()
     if not p.is_file():
         raise ValueError(f"No ICC profile at {prof_path}")
@@ -829,16 +833,23 @@ def pdfx(src, out, *, args: dict | None = None, pages=None, passwords: list[str]
             x0, y0, x1, y1 = core.view_box(page)
             page[NameObject("/TrimBox")] = ArrayObject(FloatObject(v) for v in (x0, y0, x1, y1))
     _intent(w, "/GTS_PDFX", profile, n, condition)
-    _set_meta(w, _meta(w, r.metadata), None, None, "PDF/X-4", {"/GTS_PDFXVersion": TextStringObject("PDF/X-4"), "/Trapped": NameObject("/False")})
-    w.pdf_header = b"%PDF-1.6"
+    _set_meta(w, _meta(w, r.metadata), None, None, label, {"/GTS_PDFXVersion": TextStringObject(label), "/Trapped": NameObject("/False")})
+    if version == "X-6":
+        w._info = DictionaryObject({k: v for k, v in w._info.items() if k in ("/CreationDate", "/ModDate", "/Trapped", "/GTS_PDFXVersion")})
+        for page in w.pages:
+            res = _o(page.get("/Resources"))
+            if isinstance(res, DictionaryObject) and "/ProcSet" in res:
+                del res["/ProcSet"]
+    w.pdf_header = b"%PDF-2.0" if version == "X-6" else b"%PDF-1.6"
     if not getattr(w, "_ID", None):
         w.generate_file_identifiers()
     with open(out, "wb") as fh:
         w.write(fh)
-    return {"pages": len(w.pages), "condition": condition, "fixed": done, "fonts": notes}
+    return {"pages": len(w.pages), "version": label, "condition": condition, "fixed": done, "fonts": notes}
 
 
 actions.register(actions.Action("pdfa_check", "read", "Check PDF/A", words=("pdf/a", "archive", "validate", "iso 19005"), run=check))
 actions.register(actions.Action("pdfa", "change", "Convert to PDF/A", "pdfa", ("pdf/a", "archive", "long-term", "iso 19005"),
                                 fields=(actions.Field("level", "Level", "select", "2b", tuple(LEVELS)),), run=convert))
-actions.register(actions.Action("pdfx", "change", "Convert to PDF/X-4", "pdfx", ("pdf/x", "press", "print production", "output intent"), run=pdfx))
+actions.register(actions.Action("pdfx", "change", "Convert to PDF/X-4 or PDF/X-6", "pdfx", ("pdf/x", "pdf/x-4", "pdf/x-6", "press", "print production", "output intent"),
+                                fields=(actions.Field("version", "Version", "select", "X-4", ("X-4", "X-6")),), run=pdfx))
