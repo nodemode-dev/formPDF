@@ -15,7 +15,7 @@ type Crop = { l: number; t: number; r: number; b: number };
 interface Item { id: string; kind: 'text' | 'picture'; thread?: string; seq?: number; overflow?: boolean; page: number; x: number; y: number; w: number; h: number; rot?: number; flipH?: boolean; flipV?: boolean; z: number; font?: Font; paras?: Para[]; crop?: Crop; iw?: number; ih?: number; merged?: boolean }
 interface Pic { page: number; op: number; x: number; y: number; w: number; h: number; rot: number; flipV: boolean; iw: number; ih: number }
 interface Txt { page: number; key: string; x: number; y: number; w: number; h: number; rot: number; font: Font; paras: Para[]; text: string; editable: boolean; fontName: string }
-interface Shape { page: number; op: number; paint: string; box: { x: number; y: number; w: number; h: number } }
+interface Shape { page: number; op: number; paint: string; box: { x: number; y: number; w: number; h: number }; group?: string | null }
 type Kind = 'text' | 'picture' | 'pic' | 'ptext' | 'comment' | 'shape';
 interface Obj { key: string; kind: Kind; page: number; g: Geo; item?: Item; pic?: Pic; txt?: Txt; annot?: Annot; shape?: Shape }
 type Pt = { x: number; y: number };
@@ -329,12 +329,33 @@ function styleShapes(host: ToolHost, what: 'fill' | 'stroke' | 'opacity' | 'blen
 
 function repaint(): void { layers.repaint(); sync(); }
 
+/** A grouped shape stands for its whole group: the keys of every shape in it on that page. */
+function members(o: Obj): string[] {
+  const g = o.shape?.group;
+  return g ? shapes.filter((s) => s.page === o.page && s.group === g).map(shapeKey) : [o.key];
+}
+
 function pick(o: Obj | null, add: boolean): void {
   if (cropping && (!o || o.key !== cropping)) { cropping = null; cropDraft = null; }
+  const keys = o ? members(o) : [];
   if (!o) { if (!add) sel = []; }
-  else if (add) sel = sel.includes(o.key) ? sel.filter((k) => k !== o.key) : [...sel, o.key];
-  else if (!sel.includes(o.key)) sel = [o.key];
+  else if (add) sel = sel.includes(o.key) ? sel.filter((k) => !keys.includes(k)) : [...sel, ...keys.filter((k) => !sel.includes(k))];
+  else if (!sel.includes(o.key)) sel = keys;
   repaint();
+}
+
+/** Group the selected shapes into one, or with group false take them out of their groups. */
+async function groupShapes(host: ToolHost, group: boolean): Promise<unknown> {
+  const objs = selectedShapes(host);
+  const pages = new Set(objs.map((o) => o.page));
+  if (group && (objs.length < 2 || pages.size !== 1)) throw new Error('Select two or more shapes on one page to group them');
+  const edits = group
+    ? objs.map((o) => ({ page: o.page, op: o.shape?.op, group: `G${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}` }))
+    : objs.filter((o) => o.shape?.group).map((o) => ({ page: o.page, op: o.shape?.op, group: null }));
+  if (group) for (const e of edits) e.group = edits[0].group;
+  if (!edits.length) throw new Error('None of the selected shapes is in a group');
+  await editShapes(host, edits, group ? 'Group shapes' : 'Ungroup shapes');
+  return { shapes: edits.length };
 }
 
 function hit(page: number, p: Pt, host: ToolHost): Obj | null {
@@ -554,6 +575,10 @@ function key(host: ToolHost, e: KeyboardEvent): boolean {
   }
   if (e.key === 'Enter' && cropping) { void finishCrop(host, true); return true; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && sel.length) { void remove(host); return true; }
+  if ((e.key === 'g' || e.key === 'G') && (e.ctrlKey || e.metaKey) && selectedShapes(host).length) {
+    void groupShapes(host, !e.shiftKey).catch((err: Error) => toast(err.message));
+    return true;
+  }
   const step = e.shiftKey ? 10 : 1;
   const arrow: Record<string, Pt> = { ArrowLeft: { x: -step, y: 0 }, ArrowRight: { x: step, y: 0 }, ArrowUp: { x: 0, y: -step }, ArrowDown: { x: 0, y: step } };
   if (arrow[e.key] && sel.length) { void nudge(host, arrow[e.key]); return true; }
@@ -1063,6 +1088,8 @@ registerTool({
     { id: 'tool-thread-text', label: 'Thread text boxes', words: ['link text frames', 'text flow', 'continue story', 'overflow'], group: 'Edit', when: 'Use when two selected text boxes should hold one story that flows from the first into the second.', mutates: true, enabled: () => selectedText(host).length === 2, why: () => 'Select two added text boxes first', run: () => threadSelected(host) },
     { id: 'tool-unthread-text', label: 'Unthread text box', words: ['unlink text frame', 'break thread'], group: 'Edit', mutates: true, enabled: () => selectedText(host).some((o) => !!o.item?.thread), why: () => 'Select a threaded text box first', run: () => unthreadSelected(host) },
     { id: 'tool-grow-story', label: 'Continue story on new pages', words: ['add pages for text', 'autoflow', 'overflow pages'], group: 'Edit', when: 'Use when a text box overflows and the rest of its story should continue on new pages.', mutates: true, enabled: () => selectedText(host).length === 1, why: () => 'Select one added text box first', run: () => growStory(host) },
+    { id: 'tool-shape-group', label: 'Group shapes', words: ['group', 'keep together', 'logo', 'combine shapes'], group: 'Edit', when: 'Use when several shapes on one page make one thing, such as a logo, and should select and move as one; Ctrl+G.', mutates: true, enabled: () => selectedShapes(host).length > 1, why: () => 'Select two or more shapes on one page first', run: () => groupShapes(host, true) },
+    { id: 'tool-shape-ungroup', label: 'Ungroup shapes', words: ['ungroup', 'break apart', 'separate shapes'], group: 'Edit', when: 'Use when the shapes of a group should select one by one again; Ctrl+Shift+G.', mutates: true, enabled: () => selectedShapes(host).some((o) => !!o.shape?.group), why: () => 'Select a grouped shape first', run: () => groupShapes(host, false) },
     { id: 'tool-move-to-page', label: 'Move to page…', words: ['move to another page', 'send to page', 'relocate'], group: 'Edit', when: 'Use when selected added text boxes or pictures belong on another page; they keep their position on the page.', params: { page: { type: 'integer', min: 1, description: 'the page to move the selection to; without it the window asks' } }, mutates: true, enabled: () => allSelected(host).some((o) => !!o.item), why: () => 'Select an added text box or picture first', run: (p) => moveToPage(host, p) },
     { id: 'tool-shape-spot', label: 'Spot colour for selected shapes…', words: ['pantone', 'spot colour', 'spot color', 'separation', 'ink'], group: 'Edit', when: 'Use when selected shapes must print in a named ink such as a Pantone colour; cmyk is how it looks on screen and in proofs.', params: { name: { type: 'string', required: true, description: 'the ink name exactly as the printer knows it, such as PANTONE 300 C' }, cmyk: { type: 'array', required: true, description: '[c, m, y, k] in percent for the screen and proofs' }, tint: { type: 'number', min: 0, max: 1, description: 'how much of the ink, default 1' }, line: { type: 'boolean', description: 'colour the line instead of the fill' } }, mutates: true, enabled: () => selectedShapes(host).length > 0, why: () => 'Select one or more shapes first', run: (p) => { const spot = { spot: { name: String(p?.name ?? ''), cmyk: p?.cmyk, tint: p?.tint ?? 1 } }; return editShapes(host, selectedShapes(host).map((o) => ({ page: o.page, op: o.shape?.op, [p?.line ? 'stroke' : 'fill']: spot })), `Spot colour ${String(p?.name ?? '')}`); } },
     { id: 'tool-fonts', label: 'Fonts in this PDF…', words: ['font report', 'missing fonts', 'embedded fonts', 'installed fonts'], group: 'Edit', when: 'Use to see which fonts are embedded, subset, standard or installed before editing or printing.', enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: () => showFonts(host) },

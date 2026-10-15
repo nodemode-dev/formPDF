@@ -1,7 +1,7 @@
 import re
 
 from pypdf import PdfWriter
-from pypdf.generic import ArrayObject, ContentStream, DecodedStreamObject, DictionaryObject, FloatObject, NameObject, NumberObject
+from pypdf.generic import ArrayObject, ContentStream, DecodedStreamObject, DictionaryObject, FloatObject, NameObject, NumberObject, TextStringObject
 
 from . import actions, core, items
 from .content import interp
@@ -9,6 +9,8 @@ from .content import interp
 CONSTRUCT = {b"m", b"l", b"c", b"v", b"y", b"re", b"h", b"W", b"W*"}
 BLENDS = ("Normal", "Multiply", "Screen", "Overlay", "Darken", "Lighten", "ColorDodge", "ColorBurn", "HardLight", "SoftLight", "Difference", "Exclusion")
 MAX_EDITS = 500
+GROUP_TAG = NameObject("/FsG")
+GROUP_ID = re.compile(r"^[A-Za-z0-9_-]{1,40}$")
 
 
 def _mul(a, b) -> tuple:
@@ -52,11 +54,34 @@ def _display(page, box) -> dict:
     return {"x": round(x0 - vx0, 2), "y": round(vy1 - y1, 2), "w": round(x1 - x0, 2), "h": round(y1 - y0, 2)}
 
 
+def _groups(ops: list) -> dict[int, tuple[str, int, int]]:
+    """For each operator inside a formpdf group wrapper (/FsG BDC ... EMC), the innermost group's id and the wrapper's BDC and EMC indexes."""
+    stack: list = []
+    opened: dict[int, int] = {}
+    out: dict[int, tuple[str, int, int]] = {}
+    for i, (operands, op) in enumerate(ops):
+        if op in (b"BDC", b"BMC"):
+            gid = None
+            if op == b"BDC" and len(operands) >= 2 and operands[0] == GROUP_TAG:
+                props = operands[1].get_object() if hasattr(operands[1], "get_object") else operands[1]
+                gid = str(props.get("/G", "")) if isinstance(props, DictionaryObject) else None
+            stack.append((gid, i))
+        elif op == b"EMC" and stack:
+            gid, at = stack.pop()
+            if gid:
+                for k in range(at + 1, i):
+                    if k not in out or opened.get(k, -1) < at:
+                        out[k] = (gid, at, i)
+                        opened[k] = at
+    return out
+
+
 def _paths(w: PdfWriter, n: int) -> tuple[items.Page, list[dict], list]:
     p = items.Page(w, n)
     content = interp.walk(p.page, w, forms=False)
     ops = interp.page_operations(p.page, w)
     spans = _layout(p.page, p.arr)
+    groups = _groups(ops)
     found = []
     for d in content.draws:
         if d.kind != "path" or d.where != () or d.box is None:
@@ -68,7 +93,8 @@ def _paths(w: PdfWriter, n: int) -> tuple[items.Page, list[dict], list]:
         if start < span[1]:
             continue
         found.append({"page": n, "op": d.op, "start": start, "paint": d.paint, "box": _display(p.page, d.box), "ctm": d.ctm,
-                      "stream": span[0], "offset": span[1], "points": sum(len(s) for s in d.points)})
+                      "stream": span[0], "offset": span[1], "points": sum(len(s) for s in d.points),
+                      "group": groups[d.op][0] if d.op in groups else None, "gspan": groups[d.op][1:] if d.op in groups else None})
     return p, found, ops
 
 
@@ -80,7 +106,7 @@ def read(path, *, args: dict | None = None, pages=None, passwords: list[str] | N
     for n in want:
         _, found, _ = _paths(w, n)
         for f in found[:2000]:
-            rows.append({k: f[k] for k in ("page", "op", "paint", "box", "points")})
+            rows.append({k: f[k] for k in ("page", "op", "paint", "box", "points", "group")})
     lines = [f"p{r_['page']} path {r_['op']} · {r_['paint']} · {r_['box']['x']:.0f},{r_['box']['y']:.0f} {r_['box']['w']:.0f}x{r_['box']['h']:.0f}" for r_ in rows[:400]]
     return (f"{len(rows)} paths" + ("\n" + "\n".join(lines) if lines else "")), {"paths": rows}
 
@@ -169,7 +195,7 @@ def _gstate(page, alpha: float | None, blend: str | None) -> NameObject:
 def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = None) -> dict:
     edits = [e for e in (args or {}).get("edits") or [] if isinstance(e, dict)]
     if not edits:
-        raise ValueError("edits is a list of {page, op (from paths), dx, dy, scale, fill, stroke, opacity, blend}")
+        raise ValueError("edits is a list of {page, op (from paths), dx, dy, scale, to, remove, group, fill, stroke, opacity, blend}")
     if len(edits) > MAX_EDITS:
         raise ValueError(f"At most {MAX_EDITS} path edits at once")
     w = PdfWriter(clone_from=core.reader(src, passwords))
@@ -191,7 +217,7 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
             if f is None:
                 raise ValueError(f"There is no editable path {e.get('op')} on page {n}; list them with paths")
             plan.append((f, e))
-        grown: dict[int, int] = {}
+        grown: dict[int, tuple[int, int, int]] = {}
         for f, e in sorted(plan, key=lambda t: -t[0]["op"]):
             if f["stream"] not in streams:
                 streams[f["stream"]] = list(ContentStream(p.arr[f["stream"]].get_object(), w).operations)
@@ -199,9 +225,34 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
             a, b = f["start"] - f["offset"], f["op"] - f["offset"]
             if e.get("remove"):
                 del ops[a:b + 1]
-                grown[f["op"]] = -(b - a + 1) - 1
+                grown[f["op"]] = (0, 0, b - a + 1)
                 done += 1
                 continue
+            before = after = 0
+            if "group" in e:
+                want = str(e["group"] or "")
+                if want and not GROUP_ID.match(want):
+                    raise ValueError("group is up to 40 letters, digits, - or _")
+                have, span = f.get("group") or "", f.get("gspan")
+                if span and not (f["offset"] <= span[0] and span[1] < f["offset"] + len(ops)):
+                    span = None
+                if want != have:
+                    if have and not span:
+                        raise ValueError(f"The group of path {f['op']} on page {n} spans several content streams and cannot be changed")
+                    if have:
+                        s0, s1 = span[0] - f["offset"], span[1] - f["offset"]
+                        if want:
+                            ops[s0] = ([GROUP_TAG, DictionaryObject({NameObject("/G"): TextStringObject(want)})], b"BDC")
+                        else:
+                            del ops[s1]
+                            del ops[s0]
+                            a, b = a - 1, b - 1
+                            before, after = -1, -1
+                    elif want:
+                        ops[a:b + 1] = [([GROUP_TAG, DictionaryObject({NameObject("/G"): TextStringObject(want)})], b"BDC")] + ops[a:b + 1] + [([], b"EMC")]
+                        a, b = a + 1, b + 1
+                        before, after = 1, 1
+                    done += 1
             head: list = [([], b"q")]
             dx, dy = float(e.get("dx") or 0), float(e.get("dy") or 0)
             scale = float(e.get("scale") or 1)
@@ -242,18 +293,20 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
                 head += _color_ops(stroke, True, p.page)
             if e.get("width") is not None:
                 head.append(([FloatObject(max(0.0, float(e["width"])))], b"w"))
-            if len(head) == 1:
-                continue
-            ops[a:b + 1] = head + ops[a:b + 1] + [([], b"Q")]
-            grown[f["op"]] = len(head)
-            done += 1
+            if len(head) > 1:
+                ops[a:b + 1] = head + ops[a:b + 1] + [([], b"Q")]
+                before, after = before + len(head), after + 1
+                done += 1
+            if before or after:
+                grown[f["op"]] = (before, after, 0)
         shift = 0
         for op in sorted(grown):
-            if grown[op] < 0:
-                shift += grown[op] + 1
+            before, after, gone = grown[op]
+            if gone:
+                shift -= gone
                 continue
-            moved.setdefault(n, {})[op] = op + shift + grown[op]
-            shift += grown[op] + 1
+            moved.setdefault(n, {})[op] = op + shift + before
+            shift += before + after
         for pos, ops in streams.items():
             cs = ContentStream(None, w)
             cs.operations = ops
@@ -261,7 +314,7 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
             ref.get_object().set_data(cs.get_data())
             p.arr[pos] = ref
     if not done:
-        raise ValueError("Nothing to change: give dx, dy, scale, fill, stroke, width, opacity or blend")
+        raise ValueError("Nothing to change: give dx, dy, scale, to, remove, group, fill, stroke, width, opacity or blend")
     with open(out, "wb") as fh:
         w.write(fh)
     return {"pages": len(w.pages), "edited": done, "ops": {str(n): {str(k): v for k, v in m.items()} for n, m in moved.items()}}

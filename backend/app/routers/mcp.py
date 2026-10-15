@@ -88,8 +88,9 @@ order, on any pages; update text, paras or font on any frame of a thread edits t
 frame until the story fits (overflow: true on the last frame otherwise) and removes those added pages again, while still blank, once the story no longer needs them; unthread: [id] detaches a frame; update {id, to_page, x, y} moves
 any item to another page; read fonts lists every font with embedded, subset, standard and installed state and its editWith family;
 font_map {map: {font name: sans | serif | mono | null}} saves in the PDF which family page text in that font is edited in (null: its own font);
-read paths {pages} lists the shapes and lines already on a page with op, paint and box; edit_paths {edits: [{page, op, dx, dy (points, down
-is positive), scale (about the shape's centre), fill, stroke (#rrggbb | {cmyk: [c, m, y, k]} | {gray} | {spot: {name, cmyk, tint}} for a
+read paths {pages} lists the shapes and lines already on a page with op, paint, box and group; edit_paths {edits: [{page, op, dx, dy (points, down
+is positive), scale (about the shape's centre), to {x, y, w, h} (resize to that box), remove: true, group (an id shared by shapes that
+select as one, such as the parts of a logo; null takes a shape out), fill, stroke (#rrggbb | {cmyk: [c, m, y, k]} | {gray} | {spot: {name, cmyk, tint}} for a
 named ink as a Separation colour space), width, opacity 0..1, blend:
 Normal | Multiply | Screen | Overlay | ...}]} changes them in place (result ops gives each edited shape's new op); read boxes lists media,
 crop, bleed, trim and art boxes; edit_boxes {pages, trim | bleed | crop | art | media: {x, y, w, h}, bleed_mm (bleed around the trim box,
