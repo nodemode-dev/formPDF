@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+source setup/lib.sh
+
+usage() {
+  cat <<'EOF'
+./build_app            build formpdf's desktop app from this folder, start to finish
+  --no-install         macOS: leave the built app where it is instead of copying it to Applications
+  --install            Linux: install the built .deb with apt (asks for your password)
+  --open               open the app when the build is done
+  --clean              rebuild the Rust side and the frozen engine from nothing
+Every step's output goes to build_app.log beside this file.
+EOF
+}
+
+install_app=auto open_app=0 clean=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-install) install_app=no ;;
+    --install) install_app=yes ;;
+    --open) open_app=1 ;;
+    --clean) clean=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+  esac
+done
+
+log="$FORMPDF_ROOT/build_app.log"
+: > "$log"
+exec > >(tee -a "$log") 2>&1
+trap 'status=$?; [ $status -eq 0 ] || printf "\n[formpdf] the build stopped (exit %s). The full log is %s\n" "$status" "$log"' EXIT
+
+os="$(fp_os)"
+step() { printf '\n[formpdf] == %s\n' "$*"; }
+
+step "checking the tools"
+[ "$os" = macos ] || [ "$os" = linux ] || fp_die "build_app runs on macOS and Linux; on Windows run build_app.bat"
+if [ "$os" = macos ]; then
+  xcode-select -p >/dev/null 2>&1 || fp_die "the Xcode command line tools are missing: run xcode-select --install, then ./build_app again"
+fi
+py="$(fp_python)" || fp_die "Python 3.12 or newer is required (on macOS: brew install python)"
+command -v node >/dev/null 2>&1 || fp_die "Node 20.19 or newer is required (on macOS: brew install node)"
+node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>22||(a===22&&b>=12)||(a===20&&b>=19)?0:1)' \
+  || fp_die "Node $(node -v) is too old; Vite needs 20.19 or 22.12 or newer"
+fp_rust_env
+if ! command -v rustup >/dev/null 2>&1 && ! command -v cargo >/dev/null 2>&1; then
+  fp_say "installing Rust with rustup (https://rustup.rs) into ~/.cargo; your shell profile is not changed"
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable --no-modify-path
+  fp_rust_env
+fi
+if command -v rustup >/dev/null 2>&1; then
+  rustup toolchain list | grep -q '^stable' || rustup toolchain install stable --profile minimal
+  fp_rust_env
+fi
+[ "$(dirname "$(command -v rustc)")" = "$(dirname "$(command -v cargo)")" ] \
+  || fp_die "rustc ($(command -v rustc)) and cargo ($(command -v cargo)) come from different installs; remove one (brew uninstall rust) and run ./build_app again"
+if [ "$os" = linux ] && ! pkg-config --exists webkit2gtk-4.1 2>/dev/null; then
+  fp_die "Tauri needs system libraries; on Debian or Ubuntu: sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev librsvg2-dev patchelf"
+fi
+fp_say "python $("$py" -c 'import platform; print(platform.python_version())'), node $(node -v), $(rustc -V), $(cargo -V | awk '{print $1, $2}') from $(dirname "$(command -v rustc)")"
+
+step "installing the engine and the window"
+if [ -f backend/venv/bin/activate ] && [ -d frontend/node_modules ]; then
+  fp_say "already installed; ./formpdf install refreshes it"
+else
+  setup/install_all
+fi
+step "installing the desktop packages (PyInstaller, the Tauri command line)"
+setup/install_desktop
+
+if [ "$clean" = 1 ]; then
+  step "cleaning earlier builds"
+  ( cd src-tauri && cargo clean )
+  rm -rf backend/build/pyinstaller backend/dist-engine src-tauri/binaries/formpdf-engine-*
+fi
+fp_rust_fresh
+
+step "building the window"
+setup/build_frontend
+step "freezing the engine into the app's sidecar"
+setup/freeze_backend
+[ -f src-tauri/icons/icon.icns ] || frontend/node_modules/.bin/tauri icon assets/formpdf_icon.png -o src-tauri/icons
+
+tauri_args=(build)
+case "$os" in
+  macos)
+    tauri_args+=(--bundles app)
+    [ -n "${APPLE_SIGNING_IDENTITY:-}" ] || tauri_args+=(--config '{"bundle":{"macOS":{"signingIdentity":"-"}}}')
+    ;;
+  linux) tauri_args+=(--bundles "${FORMPDF_BUNDLES:-deb}") ;;
+esac
+
+step "building the desktop app (the first build compiles several hundred Rust crates)"
+tlog="$(mktemp)"
+if ! frontend/node_modules/.bin/tauri "${tauri_args[@]}" 2>&1 | tee "$tlog"; then
+  grep -Eq 'error\[E|could not compile' "$tlog" || fp_die "tauri build failed outside the Rust compile; see the lines above"
+  fp_say "the Rust compile failed; cleaning src-tauri/target and trying once more"
+  ( cd src-tauri && cargo clean )
+  fp_rust_fresh
+  frontend/node_modules/.bin/tauri "${tauri_args[@]}" || fp_die "tauri build failed twice; send build_app.log"
+fi
+rm -f "$tlog"
+
+bundle="$FORMPDF_ROOT/src-tauri/target/release/bundle"
+version="$("$py" -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' src-tauri/tauri.conf.json)"
+
+if [ "$os" = macos ]; then
+  app="$bundle/macos/formpdf.app"
+  [ -d "$app" ] || fp_die "the build finished but $app is missing"
+  codesign --verify --deep --strict "$app" 2>/dev/null || fp_say "codesign could not verify the app; it is ad-hoc signed, so macOS may ask once before it opens"
+  step "packing the disk image"
+  mkdir -p "$bundle/dmg"
+  dmg="$bundle/dmg/formpdf_${version}_$(uname -m).dmg"
+  stage="$(mktemp -d)"
+  ditto "$app" "$stage/formpdf.app"
+  ln -s /Applications "$stage/Applications"
+  rm -f "$dmg"
+  hdiutil create -quiet -volname formpdf -srcfolder "$stage" -ov -format UDZO "$dmg"
+  rm -rf "$stage"
+  fp_say "app: $app"
+  fp_say "disk image: $dmg"
+  target_app=""
+  if [ "$install_app" != no ]; then
+    dest=/Applications
+    [ -w "$dest" ] || { dest="$HOME/Applications"; mkdir -p "$dest"; }
+    if pgrep -x formpdf >/dev/null 2>&1; then
+      osascript -e 'tell application "formpdf" to quit' >/dev/null 2>&1 || true
+      sleep 2
+    fi
+    rm -rf "$dest/formpdf.app"
+    ditto "$app" "$dest/formpdf.app"
+    xattr -dr com.apple.quarantine "$dest/formpdf.app" 2>/dev/null || true
+    target_app="$dest/formpdf.app"
+    fp_say "installed: $target_app"
+  fi
+  if [ "$open_app" = 1 ]; then open "${target_app:-$app}"; fi
+else
+  deb="$(ls -t "$bundle"/deb/*.deb 2>/dev/null | head -1 || true)"
+  [ -n "$deb" ] && fp_say "package: $deb"
+  ls "$bundle"/*/ 2>/dev/null | sed 's/^/  /'
+  if [ "$install_app" = yes ] && [ -n "$deb" ]; then
+    sudo apt install -y "$deb"
+  elif [ -n "$deb" ]; then
+    fp_say "install it with: sudo apt install $deb   (or run ./build_app --install)"
+  fi
+  if [ "$open_app" = 1 ]; then "$FORMPDF_ROOT/src-tauri/target/release/formpdf" >/dev/null 2>&1 & fi
+fi
+fp_say "done in ${SECONDS}s"
