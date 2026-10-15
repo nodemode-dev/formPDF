@@ -30,6 +30,18 @@ def _view(page, box) -> dict:
     return {"x": round(x0 - vx0, 2), "y": round(vy1 - y1, 2), "w": round(x1 - x0, 2), "h": round(y1 - y0, 2)}
 
 
+def _op_boxes(c) -> dict:
+    """The box each painting operator covers, keyed by (stream, operator index): draws as they are, text as the union of its glyphs."""
+    out = {(d.where, d.op): d.box for d in c.draws if d.box}
+    for g in c.glyphs:
+        k, b = (g.where, g.op), g.box
+        if not b:
+            continue
+        o = out.get(k)
+        out[k] = b if o is None else (min(o[0], b[0]), min(o[1], b[1]), max(o[2], b[2]), max(o[3], b[3]))
+    return out
+
+
 def _pages(pages: set) -> str:
     ps = sorted(pages)
     if not ps:
@@ -101,19 +113,20 @@ def _nums(operands) -> list[float]:
 
 
 def _press(doc, limit: float = TAC_LIMIT) -> dict:
-    found = {"tac": {}, "overprint": set(), "edge": {}}
+    found = {"tac": {}, "overprint": set(), "edge": {}, "boxes": {"tac": {}, "overprint": {}}}
     for pi, page in enumerate(doc.pages):
         n = pi + 1
         try:
             c = interp.walk(page, doc)
         except Exception:
             continue
+        boxes = _op_boxes(c)
         for st in c.streams.values():
             res = _o(st.resources) if st.resources is not None else None
             gstates = _o(res.get("/ExtGState")) if isinstance(res, DictionaryObject) else None
             state = {"fcs": "gray", "fill": [0.0], "scs": "gray", "stroke": [0.0], "op": False}
             stack = []
-            for operands, op in st.operations:
+            for i, (operands, op) in enumerate(st.operations):
                 if op == b"q":
                     stack.append(dict(state))
                 elif op == b"Q" and stack:
@@ -141,11 +154,15 @@ def _press(doc, limit: float = TAC_LIMIT) -> dict:
                         if cs == "cmyk" and len(vals) == 4:
                             total = sum(vals) * 100
                             if total > limit + 0.5:
+                                if total > found["tac"].get(n, 0.0) and boxes.get((st.where, i)):
+                                    found["boxes"]["tac"][n] = _view(page, boxes[(st.where, i)])
                                 found["tac"][n] = max(found["tac"].get(n, 0.0), total)
                     cs, vals = state["fcs"], state["fill"]
                     white = (cs == "cmyk" and len(vals) == 4 and sum(vals) < 0.001) or (cs == "gray" and vals and vals[0] > 0.999) or (cs == "rgb" and len(vals) == 3 and min(vals) > 0.999)
                     if state["op"] and white and op in PAINT_FILL | {b"Tj", b"TJ", b"'", b"\""}:
                         found["overprint"].add(n)
+                        if boxes.get((st.where, i)):
+                            found["boxes"]["overprint"].setdefault(n, _view(page, boxes[(st.where, i)]))
         trim = page.trimbox
         bleed = page.bleedbox
         no_bleed = abs(float(bleed.left) - float(trim.left)) < 0.5 and abs(float(bleed.right) - float(trim.right)) < 0.5 \
@@ -173,29 +190,35 @@ def _press(doc, limit: float = TAC_LIMIT) -> dict:
             pil.thumbnail((256, 256))
             total = max((sum(px) for px in pil.getdata()), default=0) * 100 / 255
             if total > limit + 0.5:
+                if total > found["tac"].get(im["page"], 0.0):
+                    found["boxes"]["tac"][im["page"]] = im["box"]
                 found["tac"][im["page"]] = max(found["tac"].get(im["page"], 0.0), total)
         except Exception:
             continue
     return found
 
 
-def _hairlines(doc) -> set:
-    pages = set()
+def _hairlines(doc) -> dict:
+    """Pages with a line thinner than HAIRLINE, each with the box of its first one (or None)."""
+    pages: dict = {}
     for pi, page in enumerate(doc.pages):
         try:
             c = interp.walk(page, doc)
         except Exception:
             continue
+        boxes = _op_boxes(c)
         for st in c.streams.values():
             width = 1.0
-            for operands, op in st.operations:
+            for i, (operands, op) in enumerate(st.operations):
                 if op == b"w" and operands:
                     try:
                         width = float(operands[0])
                     except (TypeError, ValueError):
                         continue
                 elif op in (b"S", b"s", b"B", b"B*", b"b", b"b*") and width < HAIRLINE:
-                    pages.add(pi + 1)
+                    b = boxes.get((st.where, i))
+                    if pages.get(pi + 1) is None:
+                        pages[pi + 1] = _view(page, b) if b else None
                     break
     return pages
 
@@ -248,18 +271,18 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
     if profile != "screen":
         hl = _hairlines(r)
         out.append(_check("hairlines", "Hairlines", "warn" if hl else "pass", f"Lines thinner than {HAIRLINE} pt{_pages(hl)} may not print or may vanish." if hl else "No line is thinner than a press can print.",
-                          [{"page": p, "text": "Hairline"} for p in sorted(hl)], "hairlines" if hl else None))
+                          [{"page": p, "text": "Hairline", "box": hl[p]} for p in sorted(hl)], "hairlines" if hl else None))
     if profile == "print":
         limit = float((args or {}).get("tac") or TAC_LIMIT)
         press = _press(r, limit)
         tac = press["tac"]
         out.append(_check("ink", "Total ink coverage", "warn" if tac else "pass",
                           f"Ink coverage goes above {limit:.0f} percent{_pages(set(tac))}, up to {max(tac.values()):.0f} percent; heavy ink smears and dries slowly." if tac
-                          else f"Ink coverage stays within {limit:.0f} percent.", [{"page": p, "text": f"{v:.0f} percent ink"} for p, v in sorted(tac.items())]))
+                          else f"Ink coverage stays within {limit:.0f} percent.", [{"page": p, "text": f"{v:.0f} percent ink", "box": press["boxes"]["tac"].get(p)} for p, v in sorted(tac.items())]))
         ov = press["overprint"]
         out.append(_check("overprint", "White set to overprint", "fail" if ov else "pass",
                           f"White is painted with overprint on{_pages(ov)}; on press it disappears, so whatever is under it shows through." if ov else "Nothing white is set to overprint.",
-                          [{"page": p, "text": "White overprints"} for p in sorted(ov)]))
+                          [{"page": p, "text": "White overprints", "box": press["boxes"]["overprint"].get(p)} for p in sorted(ov)]))
         edge = press["edge"]
         out.append(_check("bleed", "Bleed", "warn" if edge else "pass",
                           f"Artwork reaches the trimmed edge but there is no bleed{_pages(edge)}; a thin white line can show after cutting. Add bleed in Page boxes and bleed." if edge

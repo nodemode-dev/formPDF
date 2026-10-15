@@ -12,7 +12,7 @@ interface Layout { text: string; sheets: Sheet[]; count: number; border: boolean
 interface Issue { id: string; clause: string; text: string; pages: number[]; count: number; fixable: boolean }
 interface PdfaReport { text: string; level: string; conforms: boolean; issues: Issue[]; claims: { part: string; conformance: string; pdfx: string } }
 type PStatus = 'fail' | 'warn' | 'info' | 'pass';
-interface PCheck { id: string; name: string; status: PStatus; say: string; findings: Array<{ page?: number | null; text: string; box?: { x: number; y: number; w: number; h: number } }>; fix: string | null }
+interface PCheck { id: string; name: string; status: PStatus; say: string; findings: Array<{ page?: number | null; text: string; box?: { x: number; y: number; w: number; h: number } | null }>; fix: string | null }
 interface PReport { text: string; profile: string; checks: PCheck[]; summary: Record<PStatus, number>; fixes: string[] }
 
 const PREVIEW_H = 250;
