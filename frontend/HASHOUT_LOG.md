@@ -52,6 +52,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 27. Scan · pdf/scan.ts, pdf/workbench.ts startScan, ui/home.ts
 36. The agent dock · ui/terminal-dock.ts, ui/chat-pane.ts, ui/markdown.ts, io/events.ts, styles/dock.css, app.ts
 37. The command catalogue · ui/commands.ts, automation/catalogue.ts, live/agent.ts, app.ts
+38. Threading text boxes and the fonts dialog · tools/content.ts, styles/tools.css
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -244,3 +245,7 @@ The ask line sends the open PDF's name, page, tab, doc id and path as context (t
 ## 37. The command catalogue · _v0.14.0 (ui/commands.ts Command, CommandParam, Commands.onChange, call; automation/catalogue.ts Catalogue list, describe, run, runMany, mirror; live/agent.ts list_commands to run_commands; app.ts catalogue; pdf/workbench.ts pdf-go-page)
 
 The formvis command shape: group, description, when, typed params, mutates and risky on each command, and run takes params. Most formpdf commands do not set those yet, so the catalogue fills group from id patterns (File, Edit, View, Tabs, Tools, Agents, Home, Help) and mutates and risky from two small sets; a command that sets them wins. The dock commands are window-only and never listed to agents, because an agent opening a terminal inside the window it drives would loop. Parameters are checked before running (required, type, enum, min, max), an unavailable command answers with its why, and an unknown id answers with up to five near ids. The registry calls onChange on add and remove; the catalogue debounces that by 400 ms and posts the whole list to the engine, so late tools and plug-ins appear in the catalogue as they register. window.formpdf.catalogue is set for the console and scripts. pdf-go-page is the first command with a parameter; from the palette, without one, it focuses the page box.
+
+## 38. Threading text boxes and the fonts dialog · _v0.15.0 (tools/content.ts selectedText, threadSelected, unthreadSelected, growStory, FontsDialog, showFonts, commands tool-thread-text to tool-fonts; styles/tools.css .fs-fonts-*)
+
+The four commands are the first tool commands written with the full catalogue fields (group, when, mutates, why), so agents see why they are unavailable. Thread uses the selection order: the first selected box is where the story starts. All three thread commands go through act() (one undoable version each) and then reload the page items, because a thread change can resize frames on other pages and add pages. The fonts dialog patches its rows by font name, so opening it again on another PDF updates rows in place; patchList does not call update for nodes it creates, so create fills the row through the same function. Font names are marked data-no-i18n for the language phase. Not drawn yet: in and out ports on frames and an overflow marker on the last frame.

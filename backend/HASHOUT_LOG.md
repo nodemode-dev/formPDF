@@ -21,7 +21,7 @@ app/services/terminal.py     PTY sessions: login shells and Claude Code, scrollb
 app/services/claude_code.py  finds the claude binary, in-app MCP token, starts Claude Code in a dock tab
 app/services/chat.py         the Chat tab: claude -p stream-json to chat.* events, transcripts, hand-offs
 app/services/media.py        formpdf-owned picture store
-app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare, actions (registry)
+app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare, actions (registry), fontreport (fonts action)
 app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp.py (walk: glyphs, draws, streams), streams.py (write-back)
 ```
 
@@ -62,6 +62,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 33. Connected scanners · services/scan.py, routers/scan.py
 48. The agent dock: terminals, Claude Code and Chat · services/terminal.py, claude_code.py, chat.py, events.py, routers/agentdock.py
 49. One command catalogue for every surface · routers/commands.py, routers/mcp.py list_commands to run_commands
+50. Threaded text frames and the font report · services/pdf/items.py split_story, change; services/pdf/fontreport.py
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -358,3 +359,13 @@ Chat runs claude -p with stream-json, partial messages and --resume for continui
 ## 49. One command catalogue for every surface · _v0.14.0 (routers/commands.py mirror, search, near, run; routers/mcp.py t_list_commands, t_describe_command, t_run_command, t_run_commands, _mutating; setup/commands_cli.py; setup/claude_launch.py)
 
 The formvis pattern: the window owns the registry, because undo, selection and dialogs live there, and mirrors its catalogue to POST /api/commands/catalogue on boot and on every change; the engine keeps the latest copy in memory and in ~/Formpdf/commands-catalogue.json so list and describe answer even with the window closed. Running always goes to the window over the live socket (bridge.window_call run_command, two minutes) and says plainly when no window is open. MCP run_command and run_commands count as writing when any named entry is flagged mutates or risky, so they go through the existing consent; unknown ids are not writes and fail at once with near-miss ids. The CLI is a thin urllib client of the same routes. `./formpdf claude` starts Claude Code in the person's terminal with formpdf's stdio MCP server attached and only mcp__formpdf pre-allowed.
+
+## 50. Threaded text frames and the font report · _v0.15.0 (services/pdf/items.py layout pi and wi, split_story, _runs_of, _page_keys, change frames_of, store, flow, thread, unthread, to_page, grow; services/pdf/fontreport.py report, installed)
+
+A thread is a set of text items sharing a `thread` id, ordered by `seq`. The story (paras and font) is stored only on the first frame; followers store an empty paragraph and are rendered with their share. Storing the whole story once means an edit through any frame cannot fork the text, and reading the PDF back recovers the story without stitching frames together. layout now returns, per line, the paragraph index and the word index the line starts at (None for a line that starts inside a word broken by characters); split_story lays the remaining story out at each frame's width, takes as many lines as the height holds, moves the cut back past mid-word lines and the very first line, and rebuilds the two halves of the cut paragraph from its words. The first half is marked split so justification still applies to its last line; the second half is marked cont so it has no list marker and does not advance the numbering. Lines are counted, not measured, so a frame holds floor(height / line height) lines.
+
+Everything that touches a thread (an update of any frame, thread, unthread, removal, a move) only marks the thread; each marked thread is laid out once at the end of change(), after every other request, so a request that edits the story and moves frames renders each frame once. Frames are found by scanning each page's content streams for the thread id in the item key without building a Page, because Page() normalises /Contents and /Resources and would rewrite every page of the file. grow inserts a blank page of the last frame's size directly after it (not at the end, so the story stays together) and places a copy of the last frame there, repeating until the story fits, at most 200 frames. Turning grow on for a lone box makes it a one-frame thread and, when the box was auto-height, first clamps it to 36 pt above the page's bottom edge, because an auto-height box never overflows. A thread reduced to one frame without grow becomes an ordinary auto-height box again. Pages grown for a story are not removed when the story shrinks; the empty frames stay.
+
+Moving an item to another page (update to_page) removes it from its page and writes it on the other with the same parameters; a picture carries its image object across. Before this, a move across pages was refused.
+
+The font report reads fonts from every page and form resource through pdfa.fonts and pdfa.embedded, strips subset prefixes, and compares normalised names (lower case, letters and digits, MT and PS suffixes dropped) with the names fc-list reports and the font files in the platform folders, both cached for the engine's life. A family match (the name before Bold, Italic and similar) counts as family installed. The standard 14 fonts are reported as supplied by readers and never as missing.
