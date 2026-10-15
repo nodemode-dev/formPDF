@@ -82,7 +82,11 @@ w, h, path | data, rot, flipH, flipV, crop: {l, t, r, b}}], update: [{id | page 
 from items), x, y, w, h, rot, flipH, flipV, crop, path | data (replace a picture), text, paras, font}], arrange: [{id | page and picture |
 page and paragraph, to: front | back | forward | backward}], comments: [{page, index, to}], remove: [id | {id} | {page, picture} |
 {page, paragraph}]} (page text and pictures that stay editable, including text already in the PDF, which keeps its own font where it can;
-crop is fractions of the picture); ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
+crop is fractions of the picture). Threaded text: thread: [{from: id, to: id, grow}] makes "to" continue the story of "from" (its own text
+is appended); add with after: id adds a frame that continues that one; the story lives in the first frame and flows through the frames in
+order, on any pages; update text, paras or font on any frame of a thread edits the story; grow: true adds pages with a copy of the last
+frame until the story fits (overflow: true on the last frame otherwise); unthread: [id] detaches a frame; update {id, to_page, x, y} moves
+any item to another page; read fonts lists every font with embedded, subset, standard and installed state; ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
 computer and adds invisible, searchable text; tilted full-page scans are straightened; get_context says whether OCR is installed).
 Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}
 (one slide per page: words as text boxes, rotated words as rotated boxes, shapes and pictures as PowerPoint objects); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.

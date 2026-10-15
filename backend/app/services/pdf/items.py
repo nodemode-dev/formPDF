@@ -167,7 +167,7 @@ def _item_stream(w: PdfWriter, page, it: dict):
 def _public(it: dict, keep_ctx: bool = False) -> dict:
     keys = ["v", "id", "kind", "page", "x", "y", "w", "h", "rot", "flipH", "flipV"]
     if it["kind"] == "text":
-        keys += ["font", "paras", "auto", "fit"]
+        keys += ["font", "paras", "auto", "fit", "thread", "seq", "overflow", "grow"]
     else:
         keys += ["crop", "iw", "ih", "orient", "format"]
     if keep_ctx:
@@ -231,12 +231,13 @@ def layout(it: dict) -> tuple[list[dict], float]:
     counters: dict[int, int] = {}
     line_h = size * lh
     fi, ob = it.get("_fi"), _orig_style(it)
-    for para in it["paras"]:
+    for pi, para in enumerate(it["paras"]):
         kind = para.get("list", "none")
         level = int(para.get("level", 0))
-        if kind != "number":
+        cont = bool(para.get("cont"))
+        if kind != "number" and not cont:
             counters = {k: v for k, v in counters.items() if k < level} if kind == "bullet" else {}
-        else:
+        elif not cont:
             counters = {k: v for k, v in counters.items() if k <= level}
             counters[level] = counters.get(level, 0) + 1
         indent = level * size * 1.5
@@ -244,13 +245,17 @@ def layout(it: dict) -> tuple[list[dict], float]:
         if kind == "bullet":
             marker = "•" if level % 2 == 0 else "–"
         elif kind == "number":
-            marker = f"{counters[level]}."
-        left = indent + (size * float(para.get("hang", 1.6)) if marker else 0.0)
+            marker = f"{counters.get(level, 1)}."
+        hung = marker is not None
+        if cont:
+            marker = None
+        left = indent + (size * float(para.get("hang", 1.6)) if hung else 0.0)
         avail = max(size, W - left)
         words = _layout_runs(para, font)
         rows: list[list[list[dict]]] = [[]]
         widths: list[float] = [0.0]
-        for word in words:
+        starts: list[int | None] = [0]
+        for wi, word in enumerate(words):
             ww = _width(word, family, size, fi, ob)
             is_space = word[0].get("space")
             if is_space and not rows[-1]:
@@ -260,6 +265,7 @@ def layout(it: dict) -> tuple[list[dict], float]:
                     widths[-1] -= _width(rows[-1].pop(), family, size, fi, ob)
                 rows.append([])
                 widths.append(0.0)
+                starts.append(wi)
             if not is_space and ww > avail and not rows[-1]:
                 chunk: list[dict] = []
                 for p in word:
@@ -271,6 +277,7 @@ def layout(it: dict) -> tuple[list[dict], float]:
                             widths[-1] = _width(chunk, family, size, fi, ob)
                             rows.append([])
                             widths.append(0.0)
+                            starts.append(None)
                             chunk = []
                         chunk.append(q)
                 if chunk:
@@ -283,7 +290,7 @@ def layout(it: dict) -> tuple[list[dict], float]:
             widths[-1] -= _width(rows[-1].pop(), family, size, fi, ob)
         align =para.get("align", "left")
         for n, (row, wd) in enumerate(zip(rows, widths)):
-            last = n == len(rows) - 1
+            last = n == len(rows) - 1 and not para.get("split")
             gaps = sum(1 for wdx in row if wdx[0].get("space"))
             extra = 0.0
             x = left
@@ -294,8 +301,53 @@ def layout(it: dict) -> tuple[list[dict], float]:
             elif align == "justify" and not last and gaps:
                 extra = max(0.0, avail - wd) / gaps
             lines.append({"y": len(lines) * line_h, "x": x, "words": row, "extra": extra, "marker": marker if n == 0 else None,
-                          "mx": indent})
+                          "mx": indent, "pi": pi, "wi": starts[n]})
     return lines, max(line_h, len(lines) * line_h)
+
+
+def _runs_of(words: list[list[dict]]) -> list[dict]:
+    runs: list[dict] = []
+    for word in words:
+        for p in word:
+            style = {k: True for k in ("b", "i", "u", "s", "sup", "sub") if p.get(k)}
+            style["color"] = p["color"]
+            if runs and {k: v for k, v in runs[-1].items() if k != "t"} == style:
+                runs[-1]["t"] += p["t"]
+            else:
+                runs.append({"t": p["t"], **style})
+    return runs or [{"t": ""}]
+
+
+def split_story(font: dict, paras: list[dict], frames: list[tuple[float, float]]) -> tuple[list[list[dict]], bool]:
+    line_h = font["size"] * font["lineHeight"]
+    rest = list(paras)
+    shares: list[list[dict]] = []
+    for fw, fh in frames:
+        if not rest:
+            shares.append([])
+            continue
+        lines, _ = layout({"font": font, "paras": rest, "w": fw})
+        room = int((fh + 0.01) // line_h)
+        if len(lines) <= room:
+            shares.append(rest)
+            rest = []
+            continue
+        cut = room
+        while cut > 0 and (lines[cut]["wi"] is None or (lines[cut]["wi"] == 0 and lines[cut]["pi"] == 0)):
+            cut -= 1
+        if cut <= 0:
+            shares.append([])
+            continue
+        pi, wi = lines[cut]["pi"], lines[cut]["wi"]
+        para = rest[pi]
+        words = _layout_runs(para, font)
+        tail = words[wi:]
+        while tail and tail[0][0].get("space"):
+            tail = tail[1:]
+        head = rest[:pi] + ([{**para, "runs": _runs_of(words[:wi]), "split": True}] if wi > 0 else [])
+        shares.append(head)
+        rest = ([{**{k: v for k, v in para.items() if k != "split"}, "runs": _runs_of(tail), "cont": wi > 0 or bool(para.get("cont"))}] if tail else []) + rest[pi + 1:]
+    return shares, bool(rest)
 
 
 def _ascent(family: str) -> tuple[float, float]:
@@ -817,6 +869,16 @@ def _arrange_comment(w: PdfWriter, n: int, index: int, to: str) -> None:
     page[NameObject("/Annots")] = new
 
 
+def _page_keys(w: PdfWriter, n: int) -> str:
+    pg = w.pages[n - 1]
+    raw = pg.raw_get("/Contents") if "/Contents" in pg else None
+    if raw is None:
+        return ""
+    obj = raw.get_object()
+    refs = list(obj) if isinstance(obj, ArrayObject) else [raw]
+    return "".join(str(r.get_object().get(KEY, "")) for r in refs)
+
+
 def _new_id() -> str:
     return uuid.uuid4().hex[:10]
 
@@ -955,6 +1017,56 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
                     return p, i, it
         raise ValueError(f"There is no item {item_id}")
 
+    touched: set[str] = set()
+    threaded = 0
+
+    def frames_of(tid: str) -> list[tuple[int, dict]]:
+        found = [(n, v) for n in range(1, n_pages + 1) if f"\"thread\":\"{tid}\"" in _page_keys(w, n) for _, v in page(n).items() if v.get("thread") == tid]
+        return sorted(found, key=lambda t: int(t[1].get("seq") or 0))
+
+    def store(n: int, v: dict) -> None:
+        p = page(n)
+        i, _ = p.find(v["id"])
+        p.write(v, at=i, form=p.form_ref(v["id"]))
+
+    def flow(tid: str) -> None:
+        nonlocal n_pages
+        fr = frames_of(tid)
+        if not fr:
+            return
+        if len(fr) == 1 and not fr[0][1].get("grow"):
+            n, v = fr[0]
+            solo = {k: x for k, x in v.items() if k not in ("thread", "seq", "overflow", "grow")}
+            solo["auto"] = True
+            page(n).write(solo, at=page(n).find(v["id"])[0])
+            return
+        head = fr[0][1]
+        font, story = head["font"], head["paras"]
+        grow = any(v.get("grow") for _, v in fr)
+        shares, over = split_story(font, story, [(v["w"], v["h"]) for _, v in fr])
+        while over and grow and n_pages < 2000 and len(fr) < 200:
+            n, last = fr[-1]
+            box = w.pages[n - 1].mediabox
+            w.insert_blank_page(width=float(box.width), height=float(box.height), index=n)
+            n_pages += 1
+            cache.clear()
+            nxt = {k: x for k, x in last.items() if k not in ("overflow",)}
+            nxt.update({"id": _new_id(), "page": n + 1, "seq": int(last.get("seq") or 0) + 1, "paras": _norm_paras("", font)})
+            page(n + 1).write({**nxt, "paras": _norm_paras("", font)})
+            fr = frames_of(tid)
+            shares, over = split_story(font, story, [(v["w"], v["h"]) for _, v in fr])
+        for k, ((n, v), share) in enumerate(zip(fr, shares)):
+            kept = {key: x for key, x in v.items() if key not in ("overflow", "fit")}
+            kept.update({"thread": tid, "seq": k, "auto": False, "font": font})
+            kept["paras"] = story if k == 0 else _norm_paras("", font)
+            if over and k == len(fr) - 1:
+                kept["overflow"] = True
+            p = page(n)
+            i, _ = p.find(v["id"])
+            form = p.render({**kept, "paras": share or _norm_paras("", font)})
+            form.get_object()[KEY] = TextStringObject(json.dumps(_public(kept), separators=(",", ":"), ensure_ascii=False))
+            p.write(kept, at=i, form=form)
+
     added: list[str] = []
     converted: dict[str, str] = {}
     updated = removed = arranged = 0
@@ -976,6 +1088,7 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
             converted[f"{n}:t{k}"] = it["id"]
     for n, op, _ in sorted(wanted, key=lambda t: (t[0], -t[1])):
         converted[f"{n}:{op}"] = page(n).convert(shifts.get(n, {}).get(op, op))["id"]
+    links: list[dict] = [r for r in args.get("thread") or [] if isinstance(r, dict)]
     for req in args.get("add") or []:
         if not isinstance(req, dict):
             continue
@@ -1003,12 +1116,29 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
         if z == "back":
             p.arrange(it["id"], "back")
         added.append(it["id"])
+        if req.get("after") and kind == "text":
+            links.append({"from": str(req["after"]), "to": it["id"]})
     for req in args.get("update") or []:
         if not isinstance(req, dict):
             continue
         p, i, it = locate(req)
+        if it.get("thread") and int(it.get("seq") or 0) > 0 and any(k in req for k in ("paras", "text", "font", "family", "size", "color", "lineHeight")):
+            hn, head = frames_of(str(it["thread"]))[0]
+            store(hn, _text_item({k: v for k, v in req.items() if k in ("paras", "text", "font", "family", "size", "color", "lineHeight", "align", "list", "bold", "italic")}, head))
+            req = {k: v for k, v in req.items() if k not in ("paras", "text", "font", "family", "size", "color", "lineHeight", "align", "list", "bold", "italic")}
         if it["kind"] == "text":
             new = _text_item(req, it)
+            if "grow" in req:
+                new["grow"] = bool(req["grow"])
+            if new.get("grow") and not new.get("thread"):
+                new.update({"thread": "T" + new["id"], "seq": 0})
+                if it.get("auto", True):
+                    vb = core.view_box(p.page)
+                    line = new["font"]["size"] * new["font"]["lineHeight"]
+                    new["h"] = round(min(new["h"], max(line, (vb[3] - vb[1]) - new["y"] - 36)), 3)
+            if new.get("thread"):
+                new["auto"] = False
+                touched.add(str(new["thread"]))
         else:
             new = dict(it)
             if "crop" in req:
@@ -1024,8 +1154,18 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
                 new["h"] = round(new["w"] * dh / max(1, dw), 3)
                 new["y"] = round(cy - new["h"] / 2, 3)
                 new.update({"iw": iw, "ih": ih, "orient": orient, "format": fmt, "crop": _crop(None), "_image": img})
-        if req.get("page") is not None and int(req["page"]) != p.n and req.get("picture") is None and req.get("paragraph") is None:
-            raise ValueError("Moving an item to another page is not supported; remove it and add it there")
+        target = req.get("to_page")
+        if target is not None and int(target) != p.n:
+            dest = page(target)
+            if len(dest.items()) >= MAX_ITEMS:
+                raise ValueError(f"A page can hold at most {MAX_ITEMS} added items")
+            if new["kind"] == "picture" and "_image" not in new:
+                new["_image"] = _form_image(p.form_ref(new["id"]))
+            p.remove(new["id"])
+            new["page"] = dest.n
+            dest.write(new)
+            updated += 1
+            continue
         keep = None
         if new["kind"] == "text" and all(new.get(k) == it.get(k) for k in ("font", "paras", "w")):
             keep = p.form_ref(new["id"])
@@ -1048,16 +1188,65 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
             continue
         _arrange_comment(w, int(_f(req.get("page"), 0, 0, n_pages)), int(_f(req.get("index"), -1, -1, 1e9)), str(req.get("to") or ""))
         arranged += 1
+    for req in links:
+        pa, _, a = locate({"id": req.get("from")})
+        pb, _, b = locate({"id": req.get("to")})
+        if a["kind"] != "text" or b["kind"] != "text":
+            raise ValueError("Only text boxes can be threaded")
+        if b.get("thread"):
+            raise ValueError(f"Text box {b['id']} is already in a thread; unthread it first")
+        tid = str(a.get("thread") or "T" + a["id"])
+        fr = frames_of(tid) if a.get("thread") else [(pa.n, a)]
+        pos = next(k for k, (_, v) in enumerate(fr) if v["id"] == a["id"])
+        head = fr[0][1]
+        story = list(head["paras"]) + ([p for p in b["paras"]] if _plain(b).strip() else [])
+        order = fr[:pos + 1] + [(pb.n, b)] + fr[pos + 1:]
+        for k, (n, v) in enumerate(order):
+            moved = {**v, "thread": tid, "seq": k, "auto": False}
+            moved.pop("fit", None)
+            if k == 0:
+                moved["paras"] = story
+            if "grow" in req:
+                moved["grow"] = bool(req["grow"])
+            store(n, moved)
+        touched.add(tid)
+        threaded += 1
+    for req in args.get("unthread") or []:
+        req = req if isinstance(req, dict) else {"id": req}
+        p, _, it = locate(req)
+        tid = it.get("thread")
+        if not tid:
+            continue
+        fr = [(n, v) for n, v in frames_of(str(tid)) if v["id"] != it["id"]]
+        story = frames_of(str(tid))[0][1]["paras"]
+        for k, (n, v) in enumerate(fr):
+            store(n, {**v, "seq": k, **({"paras": story} if k == 0 else {})})
+        alone = {k: v for k, v in it.items() if k not in ("thread", "seq", "overflow", "grow")}
+        alone["paras"] = _norm_paras("", it["font"]) if it.get("seq") else story
+        if not fr:
+            alone["auto"] = True
+        p.write(alone, at=p.find(it["id"])[0])
+        touched.add(str(tid))
+        threaded += 1
     for req in args.get("remove") or []:
         req = req if isinstance(req, dict) else {"id": req}
         p, _, it = locate(req)
+        if it.get("thread"):
+            fr = frames_of(str(it["thread"]))
+            rest = [(n, v) for n, v in fr if v["id"] != it["id"]]
+            if rest and int(it.get("seq") or 0) == int(fr[0][1].get("seq") or 0):
+                store(rest[0][0], {**rest[0][1], "paras": it["paras"]})
+            touched.add(str(it["thread"]))
         p.remove(it["id"])
         removed += 1
-    if not (added or updated or removed or arranged):
+    for tid in sorted(touched):
+        flow(tid)
+    if not (added or updated or removed or arranged or threaded):
         raise ValueError("Nothing to add, change, arrange or remove")
     with open(out, "wb") as fh:
         w.write(fh)
-    return {"pages": n_pages, "added": len(added), "ids": added, "converted": converted, "updated": updated, "arranged": arranged, "deleted": removed}
+    return {"pages": n_pages, "added": len(added), "ids": added, "converted": converted, "updated": updated, "arranged": arranged, "deleted": removed,
+            "threaded": threaded, "threads": sorted(touched)}
 
 
 @core.serial
