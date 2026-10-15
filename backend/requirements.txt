@@ -11,3 +11,5 @@ pypdfium2==5.13.0
 pdfplumber==0.11.10
 reportlab==5.0.1
 pyhanko==0.37.0
+ptyprocess==0.7.0 ; sys_platform != "win32"
+pywinpty==3.0.5 ; sys_platform == "win32"

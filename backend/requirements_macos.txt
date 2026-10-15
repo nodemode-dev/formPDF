@@ -11,3 +11,4 @@ pypdfium2
 pdfplumber
 reportlab
 pyhanko
+ptyprocess

@@ -1,8 +1,9 @@
 import { api } from './io/api';
+import { events } from './io/events';
 import { AgentBridge } from './live/agent';
 import { LiveClient } from './live/socket';
 import type { CreateKind } from './pdf/intent';
-import { ensureWorkbench, openWorkbench, type AppHooks } from './pdf/workbench';
+import { ensureWorkbench, openWorkbench, type AppHooks, type DocState } from './pdf/workbench';
 import './tools';
 import { agentsDialog, applyLang, helpDialog, preferencesDialog, shortcutsDialog } from './ui/app-dialogs';
 import { Batch } from './ui/batch';
@@ -14,6 +15,7 @@ import { Home } from './ui/home';
 import { Palette } from './ui/palette';
 import { Reviews } from './ui/reviews';
 import { offerResume } from './ui/resume';
+import { isDockCombo, TerminalDock } from './ui/terminal-dock';
 import { applyTheme } from './ui/themes';
 import { toast } from './ui/toast';
 import { VERSION } from './version';
@@ -29,6 +31,19 @@ export async function startApp(): Promise<void> {
     void api.setSettings({ agentsAllowed: on }).catch(() => undefined);
   };
   const agentHooks = { agentsAllowed: () => agentsAllowed, setAgents };
+  events.start();
+  let docNow: DocState | null = null;
+  const dock = new TerminalDock();
+  dock.onFail = (err) => toast(err instanceof Error ? err.message : String(err), 'error');
+  dock.onPage = (n) => { if (!bench.showPage(n)) toast('Open the PDF in the window to go to that page'); };
+  dock.context = () => (docNow ? `formpdf window: ${docNow.name} open, page ${docNow.page} of ${docNow.pages}, ${docNow.tab} tab, doc id ${docNow.id}${docNow.path ? `, file ${docNow.path}` : ''}${docNow.dirty ? ', unsaved changes' : ''}` : 'formpdf window: no PDF open');
+  dock.note = () => (docNow ? `with ${docNow.name} open` : '');
+  const dockCmds: Command[] = [
+    { id: 'view-agent-dock', label: 'Show agent dock and terminal', keys: ['Mod+J'], words: ['terminal', 'shell', 'console', 'dock', 'agent'], run: () => void dock.toggle() },
+    { id: 'agent-claude-code', label: 'Claude Code in the dock', keys: ['Shift+Mod+J'], words: ['claude', 'agent', 'ai', 'terminal'], run: () => void dock.claude() },
+    { id: 'agent-chat', label: 'Chat with Claude about this PDF', keys: ['Alt+Mod+J'], words: ['claude', 'chat', 'ask', 'ai', 'assistant'], run: () => void dock.showChat() },
+    { id: 'view-new-terminal', label: 'New terminal', words: ['shell', 'console', 'bash', 'zsh'], run: () => void dock.open() },
+  ];
 
   const hooks: AppHooks = {
     home: () => home.open(),
@@ -37,7 +52,7 @@ export async function startApp(): Promise<void> {
     shortcuts: (cmds) => shortcutsDialog(cmds),
     preferences: () => preferencesDialog(agentHooks),
     agents: () => agentsDialog(agentHooks),
-    doc: (state) => live.setDoc(state),
+    doc: (state) => { docNow = state; live.setDoc(state); },
     palette: () => palette.show(),
   };
   const homeCmds: Command[] = [
@@ -54,6 +69,7 @@ export async function startApp(): Promise<void> {
     { id: 'home-shortcuts', label: 'Keyboard shortcuts', keys: ['Mod+/'], run: () => hooks.shortcuts(bench.commands) },
     { id: 'home-prefs', label: 'Preferences…', keys: ['Mod+,'], words: ['settings', 'theme', 'dark', 'light'], run: () => hooks.preferences() },
     { id: 'home-agents', label: 'Agents and MCP…', words: ['claude', 'codex', 'cursor', 'mcp'], run: () => hooks.agents() },
+    ...dockCmds,
   ];
   const palette = new Palette({
     commands: () => (bench.isOpen ? bench.commands.all() : [...homeCmds, ...bench.commands.all().filter((c) => !/^pdf-(open|create|help|shortcuts|preferences|agents|palette|home)/.test(c.id))]),
@@ -62,7 +78,16 @@ export async function startApp(): Promise<void> {
     run: (c) => { if (homeCmds.includes(c)) c.run(); else bench.commands.run(c.id); },
   });
   const bench = ensureWorkbench(hooks);
-  const open = (o: { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; restore?: { page: number; tab: string; dirty: boolean } }): void => { openWorkbench({ ...o, app: hooks }); };
+  bench.commands.add(...dockCmds);
+  window.addEventListener('keydown', (e) => {
+    if (!isDockCombo(e) || anyDialogOpen()) return;
+    const cmd = bench.commands.forCombo(comboOf(e));
+    if (!cmd || !dockCmds.includes(cmd)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    cmd.run();
+  }, true);
+  const open =(o: { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; restore?: { page: number; tab: string; dirty: boolean } }): void => { openWorkbench({ ...o, app: hooks }); };
 
   const home = new Home({
     openFiles: (files) => { if (files[0]) open({ file: files[0] }); },

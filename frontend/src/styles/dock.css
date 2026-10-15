@@ -1,0 +1,68 @@
+html.is-dock-open .fs-pdfwb, html.is-dock-open .fs-home { bottom: var(--fs-dock-h); }
+.fs-dock { position: fixed; left: 0; right: 0; bottom: 0; height: var(--fs-dock-h, 300px); z-index: var(--z-dock); display: grid; grid-template-rows: 34px minmax(0, 1fr) 40px; min-width: 0; min-height: 0; background: var(--surface-0); color: var(--text-primary); border-top: 1px solid var(--line-1); font-family: var(--font-ui); }
+.fs-dock[hidden] { display: none; }
+.fs-dock-rsz { position: absolute; top: -3px; left: 0; right: 0; height: 6px; cursor: row-resize; z-index: var(--z-raised); touch-action: none; }
+.fs-dock-rsz:hover, .fs-dock-rsz.is-dragging { background: var(--accent-color-dim); }
+.fs-dock-head { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); background: var(--surface-1); border-bottom: 1px solid var(--line-0); min-width: 0; }
+.fs-dock-tabs { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.fs-dock-tab { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 6px 0 9px; border: 1px solid transparent; border-radius: var(--radius); background: transparent; color: var(--text-muted); font: inherit; font-size: var(--fs-12); white-space: nowrap; cursor: pointer; }
+.fs-dock-tab:hover { color: var(--text-primary); }
+.fs-dock-tab.is-on { border-color: var(--line-2); background: var(--surface-raised); color: var(--text-primary); }
+.fs-dock-tab.is-claude .icon, .fs-dock-tab.is-chat .icon { color: var(--accent-color); }
+.fs-dock-tab.is-exited .fs-dock-tab-title { text-decoration: line-through; text-decoration-color: var(--line-3); }
+.fs-dock-tab-x { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: var(--radius-sm); color: var(--text-muted); }
+.fs-dock-tab-x:hover { background: var(--surface-2); color: var(--text-primary); }
+.fs-dock-spacer { flex: 1; }
+.fs-dock-head .fs-icon-btn { width: 26px; height: 26px; }
+.fs-dock-stage { position: relative; min-height: 0; min-width: 0; overflow: hidden; }
+.fs-term { position: absolute; inset: 6px 4px 0 10px; }
+.fs-term[hidden] { display: none; }
+.fs-term .xterm-viewport { background: transparent; }
+.fs-dock-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 0 var(--space-4); text-align: center; }
+.fs-dock-empty[hidden] { display: none; }
+.fs-dock-ask { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); background: var(--surface-1); border-top: 1px solid var(--line-0); }
+.fs-dock-ask-mark { display: inline-grid; place-items: center; color: var(--accent-color); }
+.fs-dock-ask-input { flex: 1; height: 28px; }
+.fs-dock-ask .fs-icon-btn { width: 28px; height: 28px; }
+.fs-chat { position: absolute; inset: 0; display: grid; grid-template-rows: 30px minmax(0, 1fr); }
+.fs-chat[hidden] { display: none; }
+.fs-chat-bar { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border-bottom: 1px solid var(--line-0); min-width: 0; }
+.fs-chat-status { color: var(--text-muted); font-size: var(--fs-12); white-space: nowrap; }
+.fs-chat-stop[hidden] { display: none; }
+.fs-chat-log { overflow-y: auto; padding: var(--space-2) var(--space-3) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--fs-12); user-select: text; -webkit-user-select: text; }
+.fs-chat-empty { margin: auto 0; max-width: 64ch; }
+.fs-chat-empty[hidden] { display: none; }
+.fs-chat-msg { max-width: 82ch; display: flex; flex-direction: column; gap: 4px; line-height: 1.45; }
+.fs-chat-msg.is-user { align-self: flex-end; padding: 6px 10px; border-radius: var(--radius-md); background: var(--surface-raised); white-space: pre-wrap; }
+.fs-chat-msg.is-claude { align-self: flex-start; }
+.fs-chat-note { color: var(--text-muted); font-size: var(--fs-11); }
+.fs-chat-tool { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 2px 8px; border: 1px solid var(--line-1); border-radius: var(--radius); color: var(--text-muted); font-family: var(--font-mono); font-size: var(--fs-11); align-self: flex-start; }
+.fs-chat-tool-mark { display: inline-grid; place-items: center; }
+.fs-chat-tool-name { color: var(--text-primary); }
+.fs-chat-tool-input { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.fs-chat-tool.is-running .fs-chat-tool-mark { color: var(--accent-color); }
+.fs-chat-tool.is-error { border-color: var(--danger, var(--line-2)); }
+.fs-chat-page { flex: none; padding: 0 5px; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font: inherit; cursor: pointer; }
+.fs-chat-page:hover { color: var(--text-primary); border-color: var(--line-3); }
+.fs-chat-error { color: var(--danger, var(--text-primary)); }
+.fs-chat-meta { color: var(--text-muted); font-size: var(--fs-11); font-variant-numeric: tabular-nums; }
+.fs-chat-usage { color: var(--text-muted); font-size: var(--fs-11); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fs-chat-usage.is-high { color: var(--accent-color); }
+.fs-chat-images { display: flex; flex-wrap: wrap; gap: 6px; align-self: flex-start; }
+.fs-chat-images img { width: auto; height: auto; max-width: 260px; max-height: 180px; border-radius: var(--radius); border: 1px solid var(--line-1); background: var(--surface-2); }
+.fs-md { display: flex; flex-direction: column; gap: 6px; white-space: normal; }
+.fs-md p { margin: 0; }
+.fs-md-live { margin: 0; white-space: pre-wrap; }
+.fs-md ul, .fs-md ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 2px; }
+.fs-md strong { font-weight: 600; }
+.fs-md code { padding: 0 4px; border-radius: var(--radius-sm); background: var(--surface-2); font-family: var(--font-mono); font-size: var(--fs-11); }
+.fs-md pre { margin: 0; padding: 8px 10px; border-radius: var(--radius); background: var(--surface-2); overflow-x: auto; }
+.fs-md pre code { padding: 0; background: transparent; white-space: pre; }
+.fs-md-h { font-weight: 600; }
+.fs-md-h1 { font-size: var(--fs-14); }
+.fs-md-link { text-decoration: underline; text-decoration-color: var(--line-2); }
+.fs-md hr { width: 100%; border: 0; border-top: 1px solid var(--line-1); margin: 2px 0; }
+.fs-md-table { overflow-x: auto; }
+.fs-md table { border-collapse: collapse; font-size: var(--fs-11); }
+.fs-md th, .fs-md td { padding: 3px 8px; border: 1px solid var(--line-1); text-align: left; }
+.fs-md th { background: var(--surface-2); font-weight: 600; }

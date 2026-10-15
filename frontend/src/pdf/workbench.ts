@@ -1041,6 +1041,12 @@ class Workbench {
 
   get hasDoc(): boolean { return !!this.doc; }
 
+  showPage(n: number): boolean {
+    if (!this.doc || !Number.isInteger(n) || n < 1 || n > this.viewer.pages.length) return false;
+    this.goPage(n);
+    return true;
+  }
+
   private toolHost: ToolHost | null = null;
   private get host(): ToolHost {
     return (this.toolHost ??= {

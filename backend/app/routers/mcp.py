@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from app.core import config
 from app.routers import pdf as routes
 from app.routers.live import local_origin
-from app.services import bridge, office
+from app.services import bridge, claude_code, office
 from app.services import pdf as pdfsvc
 from app.services.pdf import actions, docs
 
@@ -109,6 +109,7 @@ class Agent:
         self.name = name or "agent"
         self.turn: str | None = None
         self.last = 0.0
+        self.inapp = False
 
 
 SESSIONS: dict[str, Agent] = {}
@@ -191,6 +192,7 @@ def _agent(request: Request, params: dict) -> Agent:
     a = SESSIONS.get(key)
     if a is None:
         a = SESSIONS[key] = Agent(key, info.get("name") or "agent")
+    a.inapp = request.headers.get("x-formpdf-inapp") == claude_code.INAPP_TOKEN
     return a
 
 
@@ -203,6 +205,8 @@ def _turn(a: Agent) -> str:
 
 
 async def _consent(a: Agent) -> str | None:
+    if a.inapp:
+        return None
     if config.read_settings().get("agentsAllowed") or any(c.agents for c in bridge.windows()):
         return None
     if not bridge.window_connected():

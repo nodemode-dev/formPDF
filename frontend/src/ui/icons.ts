@@ -173,6 +173,8 @@ export const ICONS: Record<string, string> = {
   fileCode: L(`${PAGE}<path d="M10 12l-2 2.5 2 2.5M14 12l2 2.5-2 2.5"/>`),
   fileSheet: L(`${PAGE}<path d="M8 11.5h8v6.5H8zM8 14.75h8M12 11.5v6.5"/>`),
   scanner: L(`<rect x="3.5" y="11" width="17" height="7.5" rx="1.5"/><path d="M6 15h6M5 11l11.5-6.5M16 15h2"/>`),
+  terminal: L(`<rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M7 9.5l3 2.5-3 2.5M12.5 15H17"/>`),
+  agentChat: L(`${BUBBLE}<path d="M14.5 7.2l.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z" ${F}/><path d="M7.5 10.5h3M7.5 13.5h6"/>`),
 };
 
 export function icon(name: string, size = 16): string {

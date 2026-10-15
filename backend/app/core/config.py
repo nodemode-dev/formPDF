@@ -64,6 +64,10 @@ def port() -> int:
     return int(os.environ.get("FORMPDF_PORT") or BACKEND_PORT)
 
 
+def engine_url() -> str:
+    return f"http://127.0.0.1:{port()}"
+
+
 def resource_dir() -> Path:
     return Path(getattr(sys, "_MEIPASS", BACKEND_DIR))
 

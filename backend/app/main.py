@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import time
@@ -8,8 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core import config
-from app.routers import ai, batch, identity, lists, live, mcp, media, pdf, reviews, scan, system
-from app.services import plugins
+from app.routers import agentdock, ai, batch, identity, lists, live, mcp, media, pdf, reviews, scan, system
+from app.services import events, plugins, terminal
 
 
 def _write_discovery() -> None:
@@ -32,8 +33,12 @@ def _clear_discovery() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     _write_discovery()
+    loop = asyncio.get_running_loop()
+    events.bind(loop)
+    terminal.bind(loop)
     plugins.start()
     yield
+    terminal.close_all()
     _clear_discovery()
 
 
@@ -49,6 +54,7 @@ app.include_router(lists.router, prefix="/api")
 app.include_router(reviews.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(live.router)
+app.include_router(agentdock.router)
 app.include_router(mcp.router)
 
 _dist = config.dist_dir()
