@@ -9,6 +9,7 @@ import './ocr';
 import './certsign';
 import './access';
 import './print';
+import './boxes';
 import './lists';
 import './xfdf';
 import './assistant';
