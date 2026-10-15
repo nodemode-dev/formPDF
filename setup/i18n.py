@@ -7,6 +7,7 @@ English is the key; each language's table is frontend/src/ui/i18n/<code>.ts. es-
 differs from es and fr, so they are checked for broken placeholders but not for missing keys.
 """
 import glob
+import html
 import json
 import re
 import sys
@@ -24,13 +25,13 @@ KEEP_ENGLISH = {"PDF", "PDF/A", "PDF/X", "PDF/UA", "XFDF", "JSON", "CSV", "PNG",
 TEXT = re.compile(r">([^<>`]+)<")
 ATTR = re.compile(r'\b(?:title|aria-label|placeholder)="([^"$]+)"')
 QUOTED = re.compile(r"'((?:[^'\\\n]|\\.){2,400})'")
-CODEISH = re.compile(r"[\n;{}=]|&&|\|\||\bthis\.|\bq\(|\)\.|=>|\bawait\b|\bconst\b|\breturn\b|Promise|\?:|: (string|number|boolean)\b|\.fs-|\bfs-|^[a-z]")
+CODEISH = re.compile(r"[\n{}=]|^;|;\s*$|;\s*[A-Za-z_$][\w$.]*\s*[=(.\[]|&&|\|\||\bthis\.|\bq\(|\)\.|=>|\bawait\b|\bconst\b|\breturn\b|Promise|\?:|: (string|number|boolean)\b|\.fs-|\bfs-|^[a-z]")
 BACKEND = [ROOT / "backend" / "app" / "services" / "pdf" / "access.py", ROOT / "backend" / "app" / "services" / "pdf" / "preflight.py"]
 RULE = re.compile(r'_rule\("[a-z_]+", [A-Z], "([^"]+)"|_check\("[a-z_]+", "([^"]+)"')
 
 
 def clean(s: str) -> str | None:
-    s = s.strip().replace("\\'", "'")
+    s = html.unescape(s.strip().replace("\\'", "'"))
     if s.endswith("…"):
         s = s[:-1].rstrip()
     if s.endswith(":") and not s.endswith("::"):

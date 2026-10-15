@@ -79,8 +79,8 @@ function bindEdges(layer: HTMLElement, page: number): void {
     if (!d || d.page !== page || e.pointerId !== d.id) return;
     edging = null;
     const b = data.find((x) => x.page === page);
-    const same = ['x', 'y', 'w', 'h'].every((k) => Math.abs(d.r[k as 'x'] - d.r0[k as 'x']) < 0.25);
-    if (!b || same || e.type === 'pointercancel') { layers.repaint([page - 1]); return; }
+    const moved = Math.max(...(['x', 'y', 'w', 'h'] as const).map((k) => Math.abs(d.r[k] - d.r0[k])));
+    if (!b || moved < 0.25 || e.type === 'pointercancel') { layers.repaint([page - 1]); return; }
     const r = { x: round(d.r.x + b.crop.x), y: round(d.r.y + b.crop.y), w: round(d.r.w), h: round(d.r.h) };
     void setBox(page, d.key, r);
   };
