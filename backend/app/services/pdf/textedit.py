@@ -230,6 +230,8 @@ def _usable(f: FontInfo | None, text: str) -> bool:
 def detect(page, w, content=None) -> list[dict]:
     content = content or interp.walk(page, w, forms=False)
     fonts = {f.key: f for f in content.fonts.values()}
+    from .fontreport import font_map
+    mapped = font_map(w)
     gs = _prep(content.glyphs)
     lines = _lines([x for x in gs if x.g.render != 3], walls(content.draws))
     hidden = _lines([x for x in gs if x.g.render == 3])
@@ -259,7 +261,8 @@ def detect(page, w, content=None) -> list[dict]:
         text = "".join(r["t"] for r in runs)
         editable = "�" not in text
         ob = (bool(f and f.bold), bool(f and f.italic))
-        orig = _usable(f, text) and editable
+        swap = mapped.get(f.plain) if f else None
+        orig = _usable(f, text) and editable and not swap
         lh = round(max(0.8, min(4.0, (p[0].v - p[1].v) / size)), 3) if len(p) > 1 else 1.2
         if bullet:
             start = next((x.u0 for x in p[0].glyphs if x.g.text.strip() and x.g.text not in BULLETS), p[0].u0 + 1.6 * size)
@@ -267,7 +270,7 @@ def detect(page, w, content=None) -> list[dict]:
                 **({"hang": round(max(0.3, (start - p[0].u0) / size), 3)} if bullet else {}),
                 "runs": [{"t": r["t"], **({"b": True} if r["_s"][0] else {}), **({"i": True} if r["_s"][1] else {}),
                           **({"color": r["_s"][2]} if r["_s"][2] != color else {})} for r in runs]}
-        font = {"family": _family(f), "size": size, "color": color, "lineHeight": lh}
+        font = {"family": swap or _family(f), "size": size, "color": color, "lineHeight": lh}
         alpha = min(x.g.alpha for x in glyphs)
         if alpha < 0.999:
             font["opacity"] = round(alpha, 3)

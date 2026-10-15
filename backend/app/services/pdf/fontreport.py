@@ -6,9 +6,45 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 
+import json
+
+from pypdf import PdfWriter
+from pypdf.generic import NameObject, TextStringObject
+
 from . import actions, core, pdfa
 
 FONT_EXT = (".ttf", ".otf", ".ttc", ".otc", ".pfb", ".dfont")
+MAP_KEY = NameObject("/FormpdfFontMap")
+FAMILIES = ("sans", "serif", "mono")
+
+
+def font_map(doc) -> dict[str, str]:
+    root = doc.root_object
+    try:
+        raw = json.loads(str(root.get(MAP_KEY, "{}")))
+    except ValueError:
+        return {}
+    return {str(k)[:120]: v for k, v in raw.items() if v in FAMILIES} if isinstance(raw, dict) else {}
+
+
+def change_map(src, out, *, args: dict | None = None, pages=None, passwords: list[str] | None = None) -> dict:
+    w = PdfWriter(clone_from=core.reader(src, passwords))
+    current = font_map(w)
+    asked = (args or {}).get("map") or {}
+    if not isinstance(asked, dict) or not asked:
+        raise ValueError("map is {font name: sans | serif | mono | null}; null goes back to the font itself")
+    for name, fam in asked.items():
+        name = re.sub(r"^[A-Z]{6}\+", "", str(name))[:120]
+        if fam in FAMILIES:
+            current[name] = fam
+        elif fam in (None, "", "keep"):
+            current.pop(name, None)
+        else:
+            raise ValueError(f"{fam} is not sans, serif or mono")
+    w.root_object[MAP_KEY] = TextStringObject(json.dumps(current, ensure_ascii=False, separators=(",", ":")))
+    with open(out, "wb") as fh:
+        w.write(fh)
+    return {"pages": len(w.pages), "map": current, "fonts": len(current)}
 
 
 def _key(name: str) -> str:
@@ -55,6 +91,7 @@ def installed() -> frozenset[str]:
 
 def report(path, *, args: dict | None = None, pages=None, passwords: list[str] | None = None):
     doc = core.reader(path, passwords)
+    mapped = font_map(doc)
     have = installed()
     families = {_family_key(n) for n in have}
     rows: dict[str, dict] = {}
@@ -73,15 +110,18 @@ def report(path, *, args: dict | None = None, pages=None, passwords: list[str] |
     for row in sorted(rows.values(), key=lambda r: r["name"].lower()):
         row["pages"] = sorted(row["pages"])
         row["standard"] = row["name"] in pdfa.BASE14
+        row["editWith"] = mapped.get(row["name"], "")
         row["editable"] = row["installed"] or row["type"] == "Type3"
         row["state"] = ("embedded subset" if row["subset"] else "embedded") if row["embedded"] else "standard 14, supplied by readers" if row["standard"] else "not embedded"
         out.append(row)
     missing = [r["name"] for r in out if not r["embedded"] and not r["familyInstalled"] and not r["standard"]]
     lines = [f"{r['name']} · {r['type']} · {r['state']} · {'installed' if r['installed'] else 'family installed' if r['familyInstalled'] else 'not installed'}"
-             f" · pages {','.join(map(str, r['pages'][:12]))}{'...' if len(r['pages']) > 12 else ''}" for r in out]
+             f"{' · edited as ' + r['editWith'] if r['editWith'] else ''} · pages {','.join(map(str, r['pages'][:12]))}{'...' if len(r['pages']) > 12 else ''}" for r in out]
     head = f"{len(out)} fonts; {sum(1 for r in out if not r['embedded'])} not embedded; {len(missing)} neither embedded nor installed."
-    return head + ("\n" + "\n".join(lines) if lines else ""), {"fonts": out, "missing": missing}
+    return head + ("\n" + "\n".join(lines) if lines else ""), {"fonts": out, "missing": missing, "map": mapped}
 
 
 actions.register(actions.Action("fonts", "read", "Fonts used: embedded, subset and installed", words=("fonts", "font report", "missing fonts", "embedded fonts", "preflight fonts"),
                                 run=report))
+actions.register(actions.Action("font_map", "change", "Edit a font as another family", "fontmap", ("font map", "swap font", "replace font", "substitute font", "missing font"),
+                                run=change_map))

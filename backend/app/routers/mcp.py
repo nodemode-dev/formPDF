@@ -86,7 +86,8 @@ crop is fractions of the picture). Threaded text: thread: [{from: id, to: id, gr
 is appended); add with after: id adds a frame that continues that one; the story lives in the first frame and flows through the frames in
 order, on any pages; update text, paras or font on any frame of a thread edits the story; grow: true adds pages with a copy of the last
 frame until the story fits (overflow: true on the last frame otherwise); unthread: [id] detaches a frame; update {id, to_page, x, y} moves
-any item to another page; read fonts lists every font with embedded, subset, standard and installed state; ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
+any item to another page; read fonts lists every font with embedded, subset, standard and installed state and its editWith family;
+font_map {map: {font name: sans | serif | mono | null}} saves in the PDF which family page text in that font is edited in (null: its own font); ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
 computer and adds invisible, searchable text; tilted full-page scans are straightened; get_context says whether OCR is installed).
 Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}
 (one slide per page: words as text boxes, rotated words as rotated boxes, shapes and pictures as PowerPoint objects); to_html {out, pictures}; to_rtf {out, pictures}; to_xlsx {out, tables_only}.
