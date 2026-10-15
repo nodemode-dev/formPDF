@@ -1588,5 +1588,21 @@ export const it: Record<string, string> = {
 "{0} the same": "{0} uguali",
 "{0} to delete": "{0} da eliminare",
 "{0} to {1}, {2}% smaller.": "Da {0} a {1}, {2}% in meno.",
-"{0} with comments, {1}.": "{0} con commenti, {1}."
+"{0} with comments, {1}.": "{0} con commenti, {1}.",
+"Colour burn": "Brucia colore",
+"Colour dodge": "Scherma colore",
+"Darken": "Scurisci",
+"Delete shape": "Elimina forma",
+"Delete shapes": "Elimina forme",
+"Difference": "Differenza",
+"Exclusion": "Esclusione",
+"Hard light": "Luce intensa",
+"How the selected shapes mix with what is under them": "Come le forme selezionate si fondono con ciò che sta sotto",
+"Lighten": "Schiarisci",
+"Multiply": "Moltiplica",
+"Normal": "Normale",
+"Overlay": "Sovrapponi",
+"Screen": "Scolora",
+"Shape blend mode": "Metodo di fusione della forma",
+"Soft light": "Luce soffusa"
 };

@@ -1588,5 +1588,21 @@ export const id: Record<string, string> = {
 "{0} the same": "{0} sama",
 "{0} to delete": "{0} akan dihapus",
 "{0} to {1}, {2}% smaller.": "{0} menjadi {1}, {2}% lebih kecil.",
-"{0} with comments, {1}.": "{0} dengan komentar, {1}."
+"{0} with comments, {1}.": "{0} dengan komentar, {1}.",
+"Colour burn": "Pembakaran warna",
+"Colour dodge": "Penghindaran warna",
+"Darken": "Gelapkan",
+"Delete shape": "Hapus bentuk",
+"Delete shapes": "Hapus beberapa bentuk",
+"Difference": "Selisih",
+"Exclusion": "Pengecualian",
+"Hard light": "Cahaya keras",
+"How the selected shapes mix with what is under them": "Cara bentuk yang dipilih bercampur dengan yang ada di bawahnya",
+"Lighten": "Terangkan",
+"Multiply": "Kalikan",
+"Normal": "Normal",
+"Overlay": "Hamparan",
+"Screen": "Layar",
+"Shape blend mode": "Mode campuran bentuk",
+"Soft light": "Cahaya lembut"
 };

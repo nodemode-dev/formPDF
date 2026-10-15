@@ -1588,5 +1588,21 @@ export const hu: Record<string, string> = {
 "{0} the same": "Azonos: {0}",
 "{0} to delete": "Törlendő: {0}",
 "{0} to {1}, {2}% smaller.": "{0} → {1}, {2}%-kal kisebb.",
-"{0} with comments, {1}.": "{0} megjegyzésekkel, {1}."
+"{0} with comments, {1}.": "{0} megjegyzésekkel, {1}.",
+"Colour burn": "Színégetés",
+"Colour dodge": "Színfakítás",
+"Darken": "Sötétítés",
+"Delete shape": "Alakzat törlése",
+"Delete shapes": "Alakzatok törlése",
+"Difference": "Különbség",
+"Exclusion": "Kizárás",
+"Hard light": "Erős fény",
+"How the selected shapes mix with what is under them": "Hogyan keverednek a kijelölt alakzatok az alattuk lévőkkel",
+"Lighten": "Világosítás",
+"Multiply": "Szorzás",
+"Normal": "Normál",
+"Overlay": "Átfedés",
+"Screen": "Szita",
+"Shape blend mode": "Alakzat keverési módja",
+"Soft light": "Lágy fény"
 };

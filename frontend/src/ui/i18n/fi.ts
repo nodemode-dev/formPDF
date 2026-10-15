@@ -1588,5 +1588,21 @@ export const fi: Record<string, string> = {
 "{0} the same": "Samoja: {0}",
 "{0} to delete": "Poistettavia: {0}",
 "{0} to {1}, {2}% smaller.": "{0} → {1}, {2} % pienempi.",
-"{0} with comments, {1}.": "{0} kommenteilla, {1}."
+"{0} with comments, {1}.": "{0} kommenteilla, {1}.",
+"Colour burn": "Värin tummennus",
+"Colour dodge": "Värin vaalennus",
+"Darken": "Tummenna",
+"Delete shape": "Poista muoto",
+"Delete shapes": "Poista muodot",
+"Difference": "Erotus",
+"Exclusion": "Poisto",
+"Hard light": "Kova valo",
+"How the selected shapes mix with what is under them": "Miten valitut muodot sekoittuvat niiden alla olevaan",
+"Lighten": "Vaalenna",
+"Multiply": "Kerro",
+"Normal": "Normaali",
+"Overlay": "Sulauta",
+"Screen": "Rasteri",
+"Shape blend mode": "Muodon sekoitustila",
+"Soft light": "Pehmeä valo"
 };

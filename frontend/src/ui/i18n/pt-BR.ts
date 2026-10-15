@@ -1588,5 +1588,21 @@ export const ptBR: Record<string, string> = {
 "{0} the same": "{0} iguais",
 "{0} to delete": "{0} a excluir",
 "{0} to {1}, {2}% smaller.": "De {0} para {1}, {2}% menor.",
-"{0} with comments, {1}.": "{0} com comentários, {1}."
+"{0} with comments, {1}.": "{0} com comentários, {1}.",
+"Colour burn": "Superexposição de cores",
+"Colour dodge": "Subexposição de cores",
+"Darken": "Escurecer",
+"Delete shape": "Excluir forma",
+"Delete shapes": "Excluir formas",
+"Difference": "Diferença",
+"Exclusion": "Exclusão",
+"Hard light": "Luz direta",
+"How the selected shapes mix with what is under them": "Como as formas selecionadas se misturam com o que está embaixo",
+"Lighten": "Clarear",
+"Multiply": "Multiplicação",
+"Normal": "Normal",
+"Overlay": "Sobrepor",
+"Screen": "Tela",
+"Shape blend mode": "Modo de mesclagem da forma",
+"Soft light": "Luz indireta"
 };

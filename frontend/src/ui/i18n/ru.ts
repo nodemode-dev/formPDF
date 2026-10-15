@@ -1588,5 +1588,21 @@ export const ru: Record<string, string> = {
 "{0} the same": "Одинаковых: {0}",
 "{0} to delete": "К удалению: {0}",
 "{0} to {1}, {2}% smaller.": "Было {0}, стало {1}, меньше на {2} %.",
-"{0} with comments, {1}.": "{0} с комментариями, {1}."
+"{0} with comments, {1}.": "{0} с комментариями, {1}.",
+"Colour burn": "Затемнение основы",
+"Colour dodge": "Осветление основы",
+"Darken": "Замена темным",
+"Delete shape": "Удалить фигуру",
+"Delete shapes": "Удалить фигуры",
+"Difference": "Разница",
+"Exclusion": "Исключение",
+"Hard light": "Жесткий свет",
+"How the selected shapes mix with what is under them": "Как выбранные фигуры смешиваются с тем, что под ними",
+"Lighten": "Замена светлым",
+"Multiply": "Умножение",
+"Normal": "Обычный",
+"Overlay": "Перекрытие",
+"Screen": "Экран",
+"Shape blend mode": "Режим наложения фигуры",
+"Soft light": "Мягкий свет"
 };

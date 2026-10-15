@@ -1588,5 +1588,21 @@ export const pl: Record<string, string> = {
 "{0} the same": "Takie same: {0}",
 "{0} to delete": "Do usunięcia: {0}",
 "{0} to {1}, {2}% smaller.": "Z {0} do {1}, mniej o {2}%.",
-"{0} with comments, {1}.": "{0} z komentarzami, {1}."
+"{0} with comments, {1}.": "{0} z komentarzami, {1}.",
+"Colour burn": "Ściemnianie kolorów",
+"Colour dodge": "Rozjaśnianie kolorów",
+"Darken": "Ciemniej",
+"Delete shape": "Usuń kształt",
+"Delete shapes": "Usuń kształty",
+"Difference": "Różnica",
+"Exclusion": "Wykluczenie",
+"Hard light": "Ostre światło",
+"How the selected shapes mix with what is under them": "Jak zaznaczone kształty mieszają się z tym, co pod nimi",
+"Lighten": "Jaśniej",
+"Multiply": "Mnożenie",
+"Normal": "Normalny",
+"Overlay": "Nakładka",
+"Screen": "Mnożenie odwrotności",
+"Shape blend mode": "Tryb mieszania kształtu",
+"Soft light": "Łagodne światło"
 };

@@ -1588,5 +1588,21 @@ export const th: Record<string, string> = {
 "{0} the same": "เหมือนกัน {0}",
 "{0} to delete": "จะลบ {0}",
 "{0} to {1}, {2}% smaller.": "{0} เหลือ {1} เล็กลง {2}%",
-"{0} with comments, {1}.": "{0} ที่มีความคิดเห็น {1}"
+"{0} with comments, {1}.": "{0} ที่มีความคิดเห็น {1}",
+"Colour burn": "เบิร์นสี",
+"Colour dodge": "ดอดจ์สี",
+"Darken": "มืดลง",
+"Delete shape": "ลบรูปร่าง",
+"Delete shapes": "ลบรูปร่างหลายรายการ",
+"Difference": "ผลต่าง",
+"Exclusion": "การยกเว้น",
+"Hard light": "แสงจ้า",
+"How the selected shapes mix with what is under them": "วิธีที่รูปร่างที่เลือกผสมกับสิ่งที่อยู่ด้านล่าง",
+"Lighten": "สว่างขึ้น",
+"Multiply": "คูณ",
+"Normal": "ปกติ",
+"Overlay": "ซ้อนทับ",
+"Screen": "สกรีน",
+"Shape blend mode": "โหมดผสมของรูปร่าง",
+"Soft light": "แสงนุ่ม"
 };

@@ -1588,5 +1588,21 @@ export const ko: Record<string, string> = {
 "{0} the same": "동일 {0}개",
 "{0} to delete": "삭제 예정 {0}개",
 "{0} to {1}, {2}% smaller.": "{0}에서 {1}(으)로, {2}% 작아졌습니다.",
-"{0} with comments, {1}.": "댓글이 있는 {0}, {1}."
+"{0} with comments, {1}.": "댓글이 있는 {0}, {1}.",
+"Colour burn": "색상 번",
+"Colour dodge": "색상 닷지",
+"Darken": "어둡게 하기",
+"Delete shape": "도형 삭제",
+"Delete shapes": "도형 여러 개 삭제",
+"Difference": "차이",
+"Exclusion": "제외",
+"Hard light": "하드 라이트",
+"How the selected shapes mix with what is under them": "선택한 도형이 아래에 있는 내용과 섞이는 방식",
+"Lighten": "밝게 하기",
+"Multiply": "곱하기",
+"Normal": "표준",
+"Overlay": "오버레이",
+"Screen": "스크린",
+"Shape blend mode": "도형 혼합 모드",
+"Soft light": "소프트 라이트"
 };

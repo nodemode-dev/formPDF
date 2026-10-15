@@ -1588,5 +1588,21 @@ export const vi: Record<string, string> = {
 "{0} the same": "{0} giống nhau",
 "{0} to delete": "{0} sẽ xóa",
 "{0} to {1}, {2}% smaller.": "{0} còn {1}, nhỏ hơn {2}%.",
-"{0} with comments, {1}.": "{0} có nhận xét, {1}."
+"{0} with comments, {1}.": "{0} có nhận xét, {1}.",
+"Colour burn": "Đốt màu",
+"Colour dodge": "Né màu",
+"Darken": "Làm tối",
+"Delete shape": "Xóa hình",
+"Delete shapes": "Xóa các hình",
+"Difference": "Khác biệt",
+"Exclusion": "Loại trừ",
+"Hard light": "Ánh sáng gắt",
+"How the selected shapes mix with what is under them": "Cách các hình đã chọn hòa trộn với nội dung bên dưới",
+"Lighten": "Làm sáng",
+"Multiply": "Nhân",
+"Normal": "Bình thường",
+"Overlay": "Phủ",
+"Screen": "Màn hình",
+"Shape blend mode": "Chế độ hòa trộn của hình",
+"Soft light": "Ánh sáng dịu"
 };

@@ -1588,5 +1588,21 @@ export const zhTW: Record<string, string> = {
 "{0} the same": "{0} 項相同",
 "{0} to delete": "{0} 項待刪除",
 "{0} to {1}, {2}% smaller.": "{0} 縮減為 {1}，減少了 {2}%。",
-"{0} with comments, {1}.": "{0}含註解，{1}。"
+"{0} with comments, {1}.": "{0}含註解，{1}。",
+"Colour burn": "加深顏色",
+"Colour dodge": "加亮顏色",
+"Darken": "變暗",
+"Delete shape": "刪除形狀",
+"Delete shapes": "刪除多個形狀",
+"Difference": "差異化",
+"Exclusion": "排除",
+"Hard light": "實光",
+"How the selected shapes mix with what is under them": "所選形狀與下方內容的混合方式",
+"Lighten": "變亮",
+"Multiply": "色彩增值",
+"Normal": "正常",
+"Overlay": "覆蓋",
+"Screen": "濾色",
+"Shape blend mode": "形狀混合模式",
+"Soft light": "柔光"
 };

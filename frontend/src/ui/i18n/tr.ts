@@ -1588,5 +1588,21 @@ export const tr: Record<string, string> = {
 "{0} the same": "Aynı olanlar: {0}",
 "{0} to delete": "Silinecek: {0}",
 "{0} to {1}, {2}% smaller.": "{0} boyutundan {1} boyutuna, %{2} daha küçük.",
-"{0} with comments, {1}.": "{0}, yorumlarla birlikte, {1}."
+"{0} with comments, {1}.": "{0}, yorumlarla birlikte, {1}.",
+"Colour burn": "Renk yanması",
+"Colour dodge": "Renk soldurma",
+"Darken": "Koyulaştır",
+"Delete shape": "Şekli sil",
+"Delete shapes": "Şekilleri sil",
+"Difference": "Fark",
+"Exclusion": "Dışlama",
+"Hard light": "Sert ışık",
+"How the selected shapes mix with what is under them": "Seçili şekillerin altlarındakiyle nasıl karıştığı",
+"Lighten": "Açıklaştır",
+"Multiply": "Çarp",
+"Normal": "Normal",
+"Overlay": "Bindirme",
+"Screen": "Ekran",
+"Shape blend mode": "Şekil karışım modu",
+"Soft light": "Yumuşak ışık"
 };

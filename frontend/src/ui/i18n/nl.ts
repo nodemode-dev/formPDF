@@ -1588,5 +1588,21 @@ export const nl: Record<string, string> = {
 "{0} the same": "{0} gelijk",
 "{0} to delete": "{0} te verwijderen",
 "{0} to {1}, {2}% smaller.": "Van {0} naar {1}, {2}% kleiner.",
-"{0} with comments, {1}.": "{0} met opmerkingen, {1}."
+"{0} with comments, {1}.": "{0} met opmerkingen, {1}.",
+"Colour burn": "Kleur doordrukken",
+"Colour dodge": "Kleur tegenhouden",
+"Darken": "Donkerder",
+"Delete shape": "Vorm verwijderen",
+"Delete shapes": "Vormen verwijderen",
+"Difference": "Verschil",
+"Exclusion": "Uitsluiting",
+"Hard light": "Fel licht",
+"How the selected shapes mix with what is under them": "Hoe de geselecteerde vormen mengen met wat eronder ligt",
+"Lighten": "Lichter",
+"Multiply": "Vermenigvuldigen",
+"Normal": "Normaal",
+"Overlay": "Bedekken",
+"Screen": "Raster",
+"Shape blend mode": "Overvloeimodus van de vorm",
+"Soft light": "Zacht licht"
 };

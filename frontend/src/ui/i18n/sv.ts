@@ -1588,5 +1588,21 @@ export const sv: Record<string, string> = {
 "{0} the same": "{0} lika",
 "{0} to delete": "{0} att ta bort",
 "{0} to {1}, {2}% smaller.": "{0} till {1}, {2} % mindre.",
-"{0} with comments, {1}.": "{0} med kommentarer, {1}."
+"{0} with comments, {1}.": "{0} med kommentarer, {1}.",
+"Colour burn": "Färgbränning",
+"Colour dodge": "Färgskugga",
+"Darken": "Mörkare",
+"Delete shape": "Ta bort form",
+"Delete shapes": "Ta bort former",
+"Difference": "Differens",
+"Exclusion": "Uteslutning",
+"Hard light": "Hårt ljus",
+"How the selected shapes mix with what is under them": "Hur de markerade formerna blandas med det som ligger under",
+"Lighten": "Ljusare",
+"Multiply": "Multiplicera",
+"Normal": "Normal",
+"Overlay": "Täcka över",
+"Screen": "Raster",
+"Shape blend mode": "Blandningsläge för form",
+"Soft light": "Mjukt ljus"
 };

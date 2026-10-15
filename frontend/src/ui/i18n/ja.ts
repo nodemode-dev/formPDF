@@ -1588,5 +1588,21 @@ export const ja: Record<string, string> = {
 "{0} the same": "同じ：{0} 件",
 "{0} to delete": "削除予定：{0} 件",
 "{0} to {1}, {2}% smaller.": "{0} から {1} へ、{2}% 小さくなりました。",
-"{0} with comments, {1}.": "コメント付きの{0}、{1}。"
+"{0} with comments, {1}.": "コメント付きの{0}、{1}。",
+"Colour burn": "焼き込みカラー",
+"Colour dodge": "覆い焼きカラー",
+"Darken": "比較（暗）",
+"Delete shape": "図形を削除",
+"Delete shapes": "複数の図形を削除",
+"Difference": "差の絶対値",
+"Exclusion": "除外",
+"Hard light": "ハードライト",
+"How the selected shapes mix with what is under them": "選択した図形と下にあるものとの混ざり方",
+"Lighten": "比較（明）",
+"Multiply": "乗算",
+"Normal": "通常",
+"Overlay": "オーバーレイ",
+"Screen": "スクリーン",
+"Shape blend mode": "図形の描画モード",
+"Soft light": "ソフトライト"
 };

@@ -1588,5 +1588,21 @@ export const da: Record<string, string> = {
 "{0} the same": "{0} ens",
 "{0} to delete": "{0} der skal slettes",
 "{0} to {1}, {2}% smaller.": "Fra {0} til {1}, {2} % mindre.",
-"{0} with comments, {1}.": "{0} med kommentarer, {1}."
+"{0} with comments, {1}.": "{0} med kommentarer, {1}.",
+"Colour burn": "Farvebrænding",
+"Colour dodge": "Farveudvaskning",
+"Darken": "Mørkere",
+"Delete shape": "Slet figur",
+"Delete shapes": "Slet figurer",
+"Difference": "Forskel",
+"Exclusion": "Udelukkelse",
+"Hard light": "Hårdt lys",
+"How the selected shapes mix with what is under them": "Hvordan de valgte figurer blandes med det, der ligger under",
+"Lighten": "Lysere",
+"Multiply": "Multiplicer",
+"Normal": "Normal",
+"Overlay": "Overlejring",
+"Screen": "Skærm",
+"Shape blend mode": "Blandingstilstand for figur",
+"Soft light": "Blødt lys"
 };

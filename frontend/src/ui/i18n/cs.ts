@@ -1588,5 +1588,21 @@ export const cs: Record<string, string> = {
 "{0} the same": "Stejné: {0}",
 "{0} to delete": "K odstranění: {0}",
 "{0} to {1}, {2}% smaller.": "Z {0} na {1}, o {2} % méně.",
-"{0} with comments, {1}.": "{0} s komentáři, {1}."
+"{0} with comments, {1}.": "{0} s komentáři, {1}.",
+"Colour burn": "Ztmavit barvy",
+"Colour dodge": "Zesvětlit barvy",
+"Darken": "Ztmavit",
+"Delete shape": "Odstranit tvar",
+"Delete shapes": "Odstranit tvary",
+"Difference": "Rozdíl",
+"Exclusion": "Vyloučit",
+"Hard light": "Tvrdé světlo",
+"How the selected shapes mix with what is under them": "Jak se vybrané tvary mísí s tím, co je pod nimi",
+"Lighten": "Zesvětlit",
+"Multiply": "Násobit",
+"Normal": "Normální",
+"Overlay": "Překrýt",
+"Screen": "Závoj",
+"Shape blend mode": "Režim prolnutí tvaru",
+"Soft light": "Měkké světlo"
 };

@@ -1588,5 +1588,21 @@ export const uk: Record<string, string> = {
 "{0} the same": "Однакових: {0}",
 "{0} to delete": "До видалення: {0}",
 "{0} to {1}, {2}% smaller.": "Було {0}, стало {1}, менше на {2} %.",
-"{0} with comments, {1}.": "{0} з коментарями, {1}."
+"{0} with comments, {1}.": "{0} з коментарями, {1}.",
+"Colour burn": "Затемнення основи",
+"Colour dodge": "Освітлення основи",
+"Darken": "Заміна темним",
+"Delete shape": "Видалити фігуру",
+"Delete shapes": "Видалити фігури",
+"Difference": "Різниця",
+"Exclusion": "Виключення",
+"Hard light": "Жорстке світло",
+"How the selected shapes mix with what is under them": "Як вибрані фігури змішуються з тим, що під ними",
+"Lighten": "Заміна світлим",
+"Multiply": "Множення",
+"Normal": "Звичайний",
+"Overlay": "Перекриття",
+"Screen": "Екран",
+"Shape blend mode": "Режим накладання фігури",
+"Soft light": "М'яке світло"
 };

@@ -1588,5 +1588,21 @@ export const zhCN: Record<string, string> = {
 "{0} the same": "{0} 项相同",
 "{0} to delete": "{0} 项待删除",
 "{0} to {1}, {2}% smaller.": "{0} 缩减为 {1}，减小了 {2}%。",
-"{0} with comments, {1}.": "{0}含批注，{1}。"
+"{0} with comments, {1}.": "{0}含批注，{1}。",
+"Colour burn": "颜色加深",
+"Colour dodge": "颜色减淡",
+"Darken": "变暗",
+"Delete shape": "删除形状",
+"Delete shapes": "删除多个形状",
+"Difference": "差值",
+"Exclusion": "排除",
+"Hard light": "强光",
+"How the selected shapes mix with what is under them": "所选形状与下方内容的混合方式",
+"Lighten": "变亮",
+"Multiply": "正片叠底",
+"Normal": "正常",
+"Overlay": "叠加",
+"Screen": "滤色",
+"Shape blend mode": "形状混合模式",
+"Soft light": "柔光"
 };
