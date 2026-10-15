@@ -61,6 +61,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 44. Output preview · tools/output.ts layers, want, pump, loadInks, setHide; styles/tools.css .fs-sep-*
 45. Workspaces · pdf/workspace.ts Workspaces; pdf/workbench.ts ws, wsMenu, Window menu; pdf/panels.ts wantComments, onThreads, comments; styles/pdf.css .fs-ws-*
 46. Share comments: page range, status summary, text changes · tools/xfdf.ts said, importData, importXfdf, exportChanges
+47. Alt text drafts and Tag correctness in Accessibility · tools/access.ts needsAlt, drafts, draftAlt, syncAlt, FIX_LABEL, CHECK_INTRO
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -291,3 +292,7 @@ The workbench grid was not rebuilt: the side, a divider, the centre, a divider a
 ## 46. Share comments: page range, status summary, text changes · _v0.22.0 (tools/xfdf.ts Imported, plural, said, importData, importXfdf, exportChanges, section, commands tool-xfdf-import params, tool-changes-export)
 
 Import is split into importData (the engine call and the undo step) and importXfdf (the file picker), so the command can take the XFDF text from an agent and the button can take a file, with the same summary either way. The summary separates what was recognised under another name from what was simply already here, because those are the cases a reviewer asks about. Export text changes reads the JSON it is about to save so the toast and the command result can say how many changes there were, including none, rather than saving an empty file silently.
+
+## 47. Alt text drafts and Tag correctness in Accessibility · _v0.23.0 (tools/access.ts Region.weak, needsAlt, drafts, draftsFor, drafting, draftSay, draftAsk, draftAlt, syncAlt draft fill and note, saveAlt, section draft button and note, command tool-access-alt-draft, FIX_LABEL headings and spans, CHECK_INTRO)
+
+A draft is filled into the box only when its figure is shown with reset, and only if the figure has no alternate text or a placeholder one, so a draft can never overwrite text the person typed; the note says whether what is in the box is still the AI's. The draft button counts the figures still needing text and turns into a waiting state while the agent works; the poll stops after 15 minutes or when the document changes. The button's label has its own class: the first version wrote the label into the first span, which was the icon, and the text overflowed onto Save, so a click on Save started another draft (found by the browser test's click going to the wrong element). The intro was shortened to the length of the results line that replaces it, because the longer one made the rule list jump up 52 px when a check finished.
