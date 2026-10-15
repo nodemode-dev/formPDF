@@ -433,6 +433,7 @@ function selectTool(host: ToolHost): PageTool {
       d.moved = true;
       const key = sel[0];
       if (d.kind === 'move') {
+        dropMark(d.page, e);
         for (const [k, g] of d.base) preview.set(k, { ...g, x: g.x + dx, y: g.y + dy });
       } else if (d.kind === 'rotate') {
         const g = d.base.get(key);
@@ -455,7 +456,7 @@ function selectTool(host: ToolHost): PageTool {
       }
       layers.repaint([d.page - 1]);
     },
-    up: (pv, p) => {
+    up: (pv, p, e) => {
       const l = linking;
       if (l) {
         linking = null;
@@ -472,12 +473,21 @@ function selectTool(host: ToolHost): PageTool {
       drag = null;
       if (!d || !d.moved) return;
       if (d.kind === 'crop') { repaint(); return; }
+      const to = d.kind === 'move' ? dropPage(d.page, e) : 0;
+      dropMark(0, null);
+      if (to) {
+        preview.clear();
+        repaint();
+        if (!allSelected(host).some((o) => o.item)) { toast('Only added text boxes and pictures move to another page; shapes stay on their page'); return; }
+        void moveToPage(host, { page: to }).catch((err: Error) => toast(err.message, 'error'));
+        return;
+      }
       const changes = new Map<string, Geo>();
       for (const [k, g] of preview) changes.set(k, g);
       void applyGeo(host, changes, d.kind === 'move' ? 'Move' : d.kind === 'rotate' ? 'Rotate' : 'Resize');
     },
     key: (e) => key(host, e),
-    cancel: () => { drag = null; linking = null; document.body.classList.remove('fs-is-linking'); preview.clear(); if (editing) void finishEdit(host); cropping = null; cropDraft = null; mode = 'idle'; sel = []; repaint(); },
+    cancel: () => { drag = null; dropMark(0, null); linking = null; document.body.classList.remove('fs-is-linking'); preview.clear(); if (editing) void finishEdit(host); cropping = null; cropDraft = null; mode = 'idle'; sel = []; repaint(); },
   };
 }
 
@@ -626,6 +636,21 @@ async function growStory(host: ToolHost): Promise<void> {
   if (!box?.item) { toast('Select the text box whose story should continue on new pages'); return; }
   await act(host, { update: [{ id: box.item.id, grow: true }] }, 'Continue story on new pages', 'Adding pages');
   reload(host);
+}
+
+/** The page whose thumbnail is under the pointer during a move, when it is not the page being dragged on; 0 otherwise. */
+function dropPage(from: number, e: PointerEvent | MouseEvent | null | undefined): number {
+  if (!e) return 0;
+  const t = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('.fs-pdf-thumb');
+  const n = t ? Number(t.dataset.key) + 1 : 0;
+  return n && n !== from ? n : 0;
+}
+
+/** Marks the thumbnail a move would drop onto; dropMark(0, null) clears it. */
+function dropMark(from: number, e: PointerEvent | MouseEvent | null | undefined): void {
+  const n = from ? dropPage(from, e) : 0;
+  for (const t of Array.from(document.querySelectorAll<HTMLElement>('.fs-pdf-thumb.is-drop'))) if (Number(t.dataset.key) + 1 !== n) t.classList.remove('is-drop');
+  if (n) document.querySelector<HTMLElement>(`.fs-pdf-thumb[data-key="${n - 1}"]`)?.classList.add('is-drop');
 }
 
 async function moveToPage(host: ToolHost, params?: Record<string, unknown>): Promise<unknown> {
