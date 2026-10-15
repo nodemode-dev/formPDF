@@ -1,3 +1,4 @@
+import { api } from '../io/api';
 import { pdfApi, type Derived } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
 import { el, patchList, q, setClass, setDisabled, setHidden, setText } from '../ui/dom';
@@ -10,18 +11,20 @@ interface Finding { page?: number | null; text: string; id?: string }
 interface Rule { id: string; group: string; name: string; status: Status; say: string; findings: Finding[]; more: number; fix: string | null }
 interface Report { text: string; summary: Record<Status, number>; groups: Array<{ name: string; rules: Rule[] }>; tagged: boolean; pages: number; title: string; lang: string; fixes: string[] }
 interface Box { x: number; y: number; w: number; h: number }
-interface Region { id: string; page: number; order: number; type: string; tag: string; text: string; alt: string; box: Box | null; pw: number; ph: number }
+interface Region { id: string; page: number; order: number; type: string; tag: string; text: string; alt: string; weak?: boolean; box: Box | null; pw: number; ph: number }
+
+const needsAlt = (x: Region): boolean => !x.alt || !!x.weak;
 interface Structure { text: string; tagged: boolean; regions: Region[]; figures: Region[]; types: string[] }
 
 const STATUS_ICON: Record<Status, [string, string]> = { failed: ['warning', 'is-bad'], manual: ['info', 'is-warn'], passed: ['success', 'is-ok'], skipped: ['minus', ''] };
 const STATUS_WORD: Record<Status, string> = { failed: 'Failed', manual: 'Check by hand', passed: 'Passed', skipped: 'Skipped' };
 const FIX_LABEL: Record<string, string> = { tag: 'Tag the PDF', title: 'Set the title', lang: 'Set the language', tabs: 'Fix tab order', annotations: 'Add to the tags',
-  descriptions: 'Add descriptions', summaries: 'Add summaries', bookmarks: 'Make bookmarks' };
+  descriptions: 'Add descriptions', summaries: 'Add summaries', bookmarks: 'Make bookmarks', headings: 'Re-level headings by size', spans: 'Mark their language' };
 const TYPE_LABEL: Record<string, string> = { P: 'Paragraph', H1: 'Heading 1', H2: 'Heading 2', H3: 'Heading 3', H4: 'Heading 4', H5: 'Heading 5', H6: 'Heading 6',
   BlockQuote: 'Quotation', Caption: 'Caption', Note: 'Note', Code: 'Code', Formula: 'Formula', Figure: 'Figure', Span: 'Text span', L: 'List', Table: 'Table',
   Link: 'Link', Form: 'Form field', Annot: 'Comment', TOC: 'Contents', LI: 'List item', TR: 'Table row', TH: 'Header cell', TD: 'Cell', Artifact: 'Background (not read)' };
 const RETAG = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BlockQuote', 'Caption', 'Note', 'Code', 'Formula', 'Figure', 'Span'];
-const CHECK_INTRO = 'Checks the PDF against the 32 rules of Acrobat\'s accessibility checker and says what to fix. Nothing changes until you choose a fix.';
+const CHECK_INTRO = 'Checks Acrobat\'s 32 accessibility rules, then whether the tags are right, and says what to fix. Nothing changes until you choose a fix.';
 
 let hostRef: ToolHost | null = null;
 let checkRoot: HTMLElement | null = null;
@@ -45,6 +48,11 @@ let figuresFor = '';
 let figuresLoading = '';
 let figIndex = 0;
 let watching = false;
+const drafts = new Map<string, { alt: string; decorative: boolean }>();
+let draftsFor = '';
+let drafting = '';
+let draftSay = '';
+let draftAsk = '';
 
 function docId(): string { return hostRef?.doc()?.id ?? ''; }
 
@@ -379,7 +387,16 @@ function syncAlt(reset = false): void {
   const ta = q<HTMLTextAreaElement>(root, '[data-f="alt"]');
   const deco = q<HTMLInputElement>(root, '[data-f="deco"]');
   setDisabled(deco, !f);
-  if (reset) { ta.value = f?.alt ?? ''; deco.checked = false; }
+  if (draftsFor !== id) { drafts.clear(); draftsFor = id; }
+  const draft = f && needsAlt(f) ? drafts.get(f.id) : undefined;
+  if (reset) { ta.value = (draft ? draft.alt : f?.alt) ?? ''; deco.checked = !!draft?.decorative; }
+  const fromDraft = !!draft && (deco.checked ? draft.decorative : ta.value.trim() === draft.alt);
+  const missing = ready ? figures.filter((x) => needsAlt(x) && !drafts.has(x.id)).length : 0;
+  setText(q(root, '[data-f="draftnote"]'), drafting === id ? draftSay : fromDraft ? (draft.decorative ? 'Drafted by AI as decorative. Check the picture, then Save, or untick to describe it.' : 'Drafted by AI. Read it against the picture, change what is wrong, then Save.') : draftSay);
+  setHidden(q(root, '[data-f="draftnote"]'), !(drafting === id || fromDraft || draftSay));
+  const db = q<HTMLButtonElement>(root, '[data-f="draft"]');
+  setDisabled(db, !ready || drafting === id || (!missing && !(f && needsAlt(f))));
+  setText(q(db, '.fs-acc-draftlabel'), drafting === id ? 'Drafting…' : missing ? `Draft alt text for ${missing} figure${missing === 1 ? '' : 's'}` : 'Draft alt text with AI');
   if (ta.disabled !== (!f || deco.checked)) ta.disabled = !f || deco.checked;
   setDisabled(q<HTMLButtonElement>(root, '[data-f="save"]'), !f || (!deco.checked && ta.value.trim() === (f?.alt ?? '')));
   const thumb = q(root, '[data-f="thumb"]');
@@ -405,8 +422,53 @@ async function saveAlt(): Promise<void> {
   const alt = q<HTMLTextAreaElement>(root, '[data-f="alt"]').value.trim();
   const ok = await editTags([deco ? { id: f.id, decorative: true } : { id: f.id, alt }], deco ? 'Mark figure as decorative' : 'Set alternate text');
   if (!ok) return;
+  drafts.delete(f.id);
+  draftSay = '';
   if (!deco && figIndex < figures.length - 1) figIndex += 1;
   refreshAll();
+}
+
+type Draft = { id: string; alt: string; decorative: boolean };
+
+async function draftAlt(ids: string[] = []): Promise<Record<string, unknown>> {
+  const d = hostRef?.doc();
+  if (!d) throw new Error('Open a PDF first');
+  const id = d.id;
+  if (drafting === id) throw new Error('Alternate text is already being drafted');
+  drafting = id;
+  draftSay = 'Asking your AI provider to describe the figures…';
+  syncAlt();
+  try {
+    const res = await api.post<{ waiting?: boolean; id?: string; drafts?: Draft[] }>('/api/ai/alt', { doc: id, ids });
+    let got: Draft[] = res.drafts ?? [];
+    if (res.waiting && res.id) {
+      draftAsk = res.id;
+      draftSay = 'Waiting for your agent. In Claude Code, Codex or Cursor, say: answer my formpdf question.';
+      syncAlt();
+      const started = Date.now();
+      for (;;) {
+        await new Promise((r) => window.setTimeout(r, 2500));
+        if (draftAsk !== res.id) throw new Error('Drafting was cancelled');
+        if (Date.now() - started > 15 * 60_000) throw new Error('Your agent did not answer within 15 minutes');
+        const q2 = await api.get<{ answer: string | null; drafts?: Draft[]; error?: string }>(`/api/ai/questions/${res.id}`);
+        if (q2.error) throw new Error(q2.error);
+        if (q2.answer) { got = q2.drafts ?? []; break; }
+      }
+    }
+    if (hostRef?.doc()?.id !== id && draftsFor !== id) return { drafts: 0 };
+    for (const g of got) drafts.set(g.id, { alt: g.alt, decorative: g.decorative });
+    draftSay = got.length ? `${got.length} draft${got.length === 1 ? '' : 's'} ready. Each one is filled in when you reach its figure; nothing is saved until you press Save.` : 'Every figure already has alternate text.';
+    const first = figures.findIndex((x) => needsAlt(x) && drafts.has(x.id));
+    if (first >= 0) figIndex = first;
+    return { drafts: got.length, figures: got.map((g) => g.id) };
+  } catch (err) {
+    draftSay = (err as Error).message;
+    throw err;
+  } finally {
+    if (drafting === id) drafting = '';
+    draftAsk = '';
+    syncAlt(true);
+  }
 }
 
 function watch(root: HTMLElement): void {
@@ -539,7 +601,8 @@ registerTool({
 <div class="fs-acc-thumb" data-f="thumb"><div class="fs-acc-pic" hidden></div></div>
 <textarea class="fs-input fs-acc-alt" data-f="alt" rows="3" placeholder="What the picture shows and why it matters" aria-label="Alternate text" disabled></textarea>
 <label class="fs-check"><input type="checkbox" data-f="deco" disabled>Decorative: screen readers skip it</label>
-<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-f="save" disabled>${icon('check', 14)}Save</button></div>`,
+<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-f="save" disabled>${icon('check', 14)}Save</button><button class="fs-btn fs-btn-sm" type="button" data-f="draft" disabled>${icon('sparkle', 14)}<span class="fs-acc-draftlabel">Draft alt text with AI</span></button></div>
+<p class="fs-note" data-f="draftnote" hidden></p>`,
   mount: (root, host) => {
     hostRef = host;
     altRoot = root;
@@ -550,6 +613,7 @@ registerTool({
         case 'prev': figIndex = Math.max(0, figIndex - 1); syncAlt(true); break;
         case 'next': figIndex = Math.min(figures.length - 1, figIndex + 1); syncAlt(true); break;
         case 'save': void saveAlt(); break;
+        case 'draft': if (!(t as HTMLButtonElement).disabled) void draftAlt().catch((err) => toast((err as Error).message, 'error')); break;
         case 'thumb': { const f = figures[figIndex]; if (f?.box) hostRef?.ctx.viewer.scrollToPoint(f.page - 1, f.box.x + f.box.w / 2, f.box.y); break; }
       }
     });
@@ -560,5 +624,6 @@ registerTool({
   sync: (_root, host) => { hostRef = host; if (onTab()) void loadFigures(); syncAlt(figuresFor !== docId()); },
   commands: (host) => [
     { id: 'tool-access-alt', label: 'Add alternate text to figures', words: ['alt text', 'describe images'], enabled: () => !!host.doc(), run: () => { host.setTab('access'); void loadFigures(); } },
+    { id: 'tool-access-alt-draft', label: 'Draft alternate text with AI', words: ['alt text', 'ai alt text', 'describe images'], group: 'Accessibility', when: 'Use to get draft alternate text for figures from the person\'s AI provider; the drafts wait in Accessibility > Alternate text for the person to review and save.', params: { ids: { type: 'array', description: 'figure ids; every figure without alternate text when left out' } }, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: async (p) => { host.setTab('access'); await loadFigures(); return draftAlt(Array.isArray(p?.ids) ? p.ids.map(String) : []); } },
   ],
 });
