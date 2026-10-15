@@ -11,7 +11,7 @@ from pypdf import PdfReader, PdfWriter
 from pypdf.generic import (ArrayObject, ContentStream, DecodedStreamObject, DictionaryObject, FloatObject, IndirectObject, NameObject,
                            NumberObject, StreamObject, TextStringObject)
 
-from . import actions, annot, core, fontkit
+from . import actions, anchors, annot, core, fontkit
 from .content import interp
 from .content.fonts import FontInfo
 
@@ -1292,4 +1292,4 @@ actions.register(actions.Action("items", "read", "List added text and pictures",
                                 fields=(actions.PAGES,), run=read))
 actions.register(actions.Action("edit_items", "change", "Add or edit page text and pictures", "edited",
                                 ("add text", "add picture", "image", "text box on the page", "crop picture", "rotate picture", "flip",
-                                 "bring forward", "send backward", "arrange", "align"), run=change))
+                                 "bring forward", "send backward", "arrange", "align"), run=anchors.following(change)))
