@@ -22,7 +22,7 @@ app/services/claude_code.py  finds the claude binary, in-app MCP token, starts C
 app/services/chat.py         the Chat tab: claude -p stream-json to chat.* events, transcripts, hand-offs
 app/services/media.py        formpdf-owned picture store
 app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare, actions (registry), fontreport (fonts action),
-                             paths (paths, edit_paths), boxes (boxes, edit_boxes)
+                             paths (paths, edit_paths), boxes (boxes, edit_boxes), pdfx (pdfx_check, pdf20)
 app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp.py (walk: glyphs, draws, streams), streams.py (write-back)
 ```
 
@@ -67,6 +67,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 51. The document font map · services/pdf/fontreport.py font_map, change_map; services/pdf/textedit.py detect
 52. Editing existing shapes and page boxes · services/pdf/paths.py, services/pdf/boxes.py
 53. Spot colours as Separation colour spaces · services/pdf/paths.py _separation, _color, _color_ops
+54. PDF/X-6, the PDF/X checker and PDF 2.0 · services/pdf/pdfa.py pdfx; services/pdf/pdfx.py verify, pdf20
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -385,3 +386,7 @@ A shape edit never rewrites the drawing. The path object (every construction ope
 ## 53. Spot colours as Separation colour spaces · _v0.18.0 (services/pdf/paths.py _color spot, _separation, _color_ops)
 
 A spot colour is [/Separation /InkName /DeviceCMYK fn] with fn a type 2 (exponential, N 1) function from C0 0 0 0 0 to C1 the given CMYK, so tint 0 is no ink and tint 1 is the full alternate, the shape a RIP expects for a single named ink. It is stored under /FpSpot[n] in the page's /ColorSpace resources and selected with cs or CS, then scn or SCN with the tint. Before adding one, the page's spaces are searched for a Separation with the same ink name and that key is reused, so one ink is one colour space however many shapes use it. NameObject escapes spaces and other delimiters itself when written; the ink name is passed plain (pre-escaping it to #20 wrote #2320, a different ink name on press). Names are limited to letters, digits, spaces, dot, hyphen and underscore, which covers Pantone, HKS and house ink names. A DeviceN for several inks at once is not offered.
+
+## 54. PDF/X-6, the PDF/X checker and PDF 2.0 · _v0.19.0 (services/pdf/pdfa.py pdfx version; services/pdf/pdfx.py LEVELS, verify, _claim, _detect, pdf20)
+
+PDF/X-6 reuses the X-4 conversion end to end and changes only what the version decides: the header (%PDF-2.0), the claim in XMP and Info, the Info dictionary reduced to the keys still meaningful (dates, Trapped, the version), and /ProcSet removed because PDF 2.0 deprecates it. The checker is formpdf's reading of the standards' main requirements, not ISO's test suite, and says so in every result: it compares the header with each level's PDF version (1.4 for the 2003 editions of X-1a and X-3, 1.6 for X-4 and PDF/VT-1, exactly 2.0 for X-6), requires a GTS_PDFX output intent with a condition identifier (and an embedded profile for X-1a and X-3, where a registered condition alone is not enough in practice), a file ID, Trapped True or False except for X-6 (which carries it in XMP or not at all), no JavaScript, a trim or art box on every page, trim inside bleed inside media, every font embedded, no RGB for X-1a (colour.scan reports device and ICC-based RGB) and no transparency for X-1a and X-3 (preflight._transparency). PDF/VT is checked as X-4 plus a DPartRoot, the document part tree that marks each record. The claim is read from XMP first and Info second. pdf20 is the same metadata move without a printing condition, for people who want the newer format itself; it keeps any PDF/X claim already in the XMP.

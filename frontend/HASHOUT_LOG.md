@@ -56,6 +56,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 39. Thread ports, move to page and Edit with · tools/content.ts paintBox, selectTool, moveToPage, mapFont; styles/tools.css .fs-cx-port
 40. Existing shapes in Select · tools/content.ts shapes, editShapes, styleShapes; styles/tools.css .fs-cx-swatch
 41. Page boxes and bleed, spot colour command · tools/boxes.ts, tools/index.ts, styles/tools.css .fs-bx; tools/content.ts tool-shape-spot
+42. PDF/X version, check and PDF 2.0 in Print · tools/print.ts convertPdfx, checkPdfx, savePdf20, syncStd
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -266,3 +267,7 @@ Shapes load in the same flush as items (a second action call in parallel, which 
 ## 41. Page boxes and bleed, spot colour command · _v0.18.0 (tools/boxes.ts shownBoxes, layers, paint, load, sync, addBleed, clearBleed, setShow, commands tool-add-bleed and tool-show-boxes; tools/index.ts; styles/tools.css .fs-bx-*; tools/content.ts tool-shape-spot, commands typed Command[])
 
 The boxes come from one boxes read per document version (all pages), cached by doc id and refetched after every bleed change. They are drawn in a PageLayers layer, one node per box kind patched by key, positioned relative to the crop box because the viewer shows the crop box and bleed may have grown the media box past it; the bleed box therefore runs past the page edge on screen, which is the point. The layer has no pointer events and no z-index of its own; the box tags are white chips so they read on any artwork. The show choice is a per-viewer convenience in localStorage fs-boxes-show, wrapped in try. Add bleed turns the overlay on so the result is visible. The spot command takes name and cmyk as required parameters, so from the palette without them it explains what it needs; agents and the CLI pass them. content.ts's commands list is typed Command[] because array literals with different params shapes otherwise widen past the Command type.
+
+## 42. PDF/X version, check and PDF 2.0 in Print · _v0.19.0 (tools/print.ts section xver, xnote, xcheck, pdf20; convertPdfx version; checkPdfx; savePdf20; syncStd; commands tool-pdfx-check, tool-pdf20)
+
+The check result is one sentence in a note paragraph that already holds a sentence before any check, so the panel does not grow or shift when the result arrives: it either confirms the level and PDF version or names the first three findings and how many more. Both actions flush pending edits first, like the other Print actions, so the check sees what is on screen. Convert uses the chosen version in its busy text, undo label and toast. checkPdfx returns the report, so run_command tool-pdfx-check hands agents the same findings the window shows.
