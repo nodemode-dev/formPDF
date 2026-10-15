@@ -3,6 +3,7 @@ import { bounds, shifted, type PageTool } from '../pdf/annotate';
 import { pdfApi, type Annot, type Derived } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
 import type { PageView } from '../pdf/viewer';
+import type { Command } from '../ui/commands';
 import { Dialog, promptName } from '../ui/dialogs';
 import { el, patchList, q, setClass, setDisabled, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
@@ -1019,7 +1020,7 @@ registerTool({
     const list = waiters.get(pv.index);
     if (list?.length) { waiters.delete(pv.index); for (const fn of list) fn(); }
   },
-  commands: (host) => [
+  commands: (host): Command[] => [
     { id: 'tool-content-select', label: 'Select text and pictures', words: ['select objects', 'move picture'], enabled: () => !!host.doc(), run: () => { host.setTab('edit'); setMode(host, 'select'); } },
     { id: 'tool-add-text', label: 'Add page text', words: ['type on the page', 'text box on the page'], enabled: () => !!host.doc(), run: () => { host.setTab('edit'); setMode(host, 'text'); } },
     { id: 'tool-add-picture', label: 'Add a picture to the page…', words: ['insert image', 'place picture'], enabled: () => !!host.doc(), run: () => { host.setTab('edit'); choosePicture(host); } },
@@ -1031,6 +1032,7 @@ registerTool({
     { id: 'tool-unthread-text', label: 'Unthread text box', words: ['unlink text frame', 'break thread'], group: 'Edit', mutates: true, enabled: () => selectedText(host).some((o) => !!o.item?.thread), why: () => 'Select a threaded text box first', run: () => unthreadSelected(host) },
     { id: 'tool-grow-story', label: 'Continue story on new pages', words: ['add pages for text', 'autoflow', 'overflow pages'], group: 'Edit', when: 'Use when a text box overflows and the rest of its story should continue on new pages.', mutates: true, enabled: () => selectedText(host).length === 1, why: () => 'Select one added text box first', run: () => growStory(host) },
     { id: 'tool-move-to-page', label: 'Move to page…', words: ['move to another page', 'send to page', 'relocate'], group: 'Edit', when: 'Use when selected added text boxes or pictures belong on another page; they keep their position on the page.', params: { page: { type: 'integer', min: 1, description: 'the page to move the selection to; without it the window asks' } }, mutates: true, enabled: () => allSelected(host).some((o) => !!o.item), why: () => 'Select an added text box or picture first', run: (p) => moveToPage(host, p) },
+    { id: 'tool-shape-spot', label: 'Spot colour for selected shapes…', words: ['pantone', 'spot colour', 'spot color', 'separation', 'ink'], group: 'Edit', when: 'Use when selected shapes must print in a named ink such as a Pantone colour; cmyk is how it looks on screen and in proofs.', params: { name: { type: 'string', required: true, description: 'the ink name exactly as the printer knows it, such as PANTONE 300 C' }, cmyk: { type: 'array', required: true, description: '[c, m, y, k] in percent for the screen and proofs' }, tint: { type: 'number', min: 0, max: 1, description: 'how much of the ink, default 1' }, line: { type: 'boolean', description: 'colour the line instead of the fill' } }, mutates: true, enabled: () => selectedShapes(host).length > 0, why: () => 'Select one or more shapes first', run: (p) => { const spot = { spot: { name: String(p?.name ?? ''), cmyk: p?.cmyk, tint: p?.tint ?? 1 } }; return editShapes(host, selectedShapes(host).map((o) => ({ page: o.page, op: o.shape?.op, [p?.line ? 'stroke' : 'fill']: spot })), `Spot colour ${String(p?.name ?? '')}`); } },
     { id: 'tool-fonts', label: 'Fonts in this PDF…', words: ['font report', 'missing fonts', 'embedded fonts', 'installed fonts'], group: 'Edit', when: 'Use to see which fonts are embedded, subset, standard or installed before editing or printing.', enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: () => showFonts(host) },
   ],
 });

@@ -89,7 +89,8 @@ frame until the story fits (overflow: true on the last frame otherwise); unthrea
 any item to another page; read fonts lists every font with embedded, subset, standard and installed state and its editWith family;
 font_map {map: {font name: sans | serif | mono | null}} saves in the PDF which family page text in that font is edited in (null: its own font);
 read paths {pages} lists the shapes and lines already on a page with op, paint and box; edit_paths {edits: [{page, op, dx, dy (points, down
-is positive), scale (about the shape's centre), fill, stroke (#rrggbb | {cmyk: [c, m, y, k]} | {gray}), width, opacity 0..1, blend:
+is positive), scale (about the shape's centre), fill, stroke (#rrggbb | {cmyk: [c, m, y, k]} | {gray} | {spot: {name, cmyk, tint}} for a
+named ink as a Separation colour space), width, opacity 0..1, blend:
 Normal | Multiply | Screen | Overlay | ...}]} changes them in place (result ops gives each edited shape's new op); read boxes lists media,
 crop, bleed, trim and art boxes; edit_boxes {pages, trim | bleed | crop | art | media: {x, y, w, h}, bleed_mm (bleed around the trim box,
 growing the media box and keeping the visible area), clear: [box names]}; ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this

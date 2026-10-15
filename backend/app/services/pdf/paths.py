@@ -95,12 +95,50 @@ def _color(v) -> list | None:
         return [("cmyk", [max(0.0, min(1.0, float(x) / (100 if float(x) > 1 else 1))) for x in v["cmyk"]])]
     if isinstance(v, dict) and v.get("gray") is not None:
         return [("gray", [max(0.0, min(1.0, float(v["gray"])))])]
-    raise ValueError("A colour is #rrggbb, {cmyk: [c, m, y, k]} (0 to 1 or percent) or {gray: 0..1}")
+    if isinstance(v, dict) and isinstance(v.get("spot"), dict):
+        s = v["spot"]
+        name = re.sub(r"[^A-Za-z0-9 ._-]", "", str(s.get("name") or "")).strip()[:60]
+        alt = s.get("cmyk")
+        if not name or not isinstance(alt, list) or len(alt) != 4:
+            raise ValueError("A spot colour is {spot: {name, cmyk: [c, m, y, k] for screens and proofs, tint: 0..1}}")
+        cmyk = [max(0.0, min(1.0, float(x) / (100 if float(x) > 1 else 1))) for x in alt]
+        return [("spot", [name, cmyk, max(0.0, min(1.0, float(s.get("tint", 1))))])]
+    raise ValueError("A colour is #rrggbb, {cmyk: [c, m, y, k]} (0 to 1 or percent), {gray: 0..1} or {spot: {name, cmyk, tint}}")
 
 
-def _color_ops(spec, stroke: bool) -> list:
+def _separation(page, name: str, cmyk: list) -> NameObject:
+    res = page.get("/Resources")
+    res = res.get_object() if res is not None else DictionaryObject()
+    old = res.get("/ColorSpace")
+    spaces = DictionaryObject(old.get_object()) if old is not None else DictionaryObject()
+    fn = DictionaryObject({NameObject("/FunctionType"): NumberObject(2), NameObject("/Domain"): ArrayObject([FloatObject(0), FloatObject(1)]),
+                           NameObject("/C0"): ArrayObject([FloatObject(0)] * 4), NameObject("/C1"): ArrayObject([FloatObject(round(x, 4)) for x in cmyk]),
+                           NameObject("/N"): NumberObject(1)})
+    space = ArrayObject([NameObject("/Separation"), NameObject("/" + name), NameObject("/DeviceCMYK"), fn])
+    for k, v in spaces.items():
+        o = v.get_object()
+        if isinstance(o, ArrayObject) and len(o) > 1 and o[0] == "/Separation" and str(o[1]) == str(space[1]):
+            res[NameObject("/ColorSpace")] = spaces
+            page[NameObject("/Resources")] = res
+            return NameObject(k)
+    k = 1
+    while NameObject(f"/FpSpot{k}") in spaces:
+        k += 1
+    key = NameObject(f"/FpSpot{k}")
+    spaces[key] = space
+    res[NameObject("/ColorSpace")] = spaces
+    page[NameObject("/Resources")] = res
+    return key
+
+
+def _color_ops(spec, stroke: bool, page=None) -> list:
     out = []
     for kind, vals in spec:
+        if kind == "spot":
+            key = _separation(page, vals[0], vals[1])
+            out.append(([key], b"CS" if stroke else b"cs"))
+            out.append(([FloatObject(round(vals[2], 4))], b"SCN" if stroke else b"scn"))
+            continue
         nums = [FloatObject(round(x, 4)) for x in vals]
         op = {"rgb": b"rg", "cmyk": b"k", "gray": b"g"}[kind]
         out.append((nums, op.upper() if stroke else op))
@@ -182,9 +220,9 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
                 head.append(([_gstate(p.page, alpha, blend)], b"gs"))
             fill, stroke = _color(e.get("fill")), _color(e.get("stroke"))
             if fill:
-                head += _color_ops(fill, False)
+                head += _color_ops(fill, False, p.page)
             if stroke:
-                head += _color_ops(stroke, True)
+                head += _color_ops(stroke, True, p.page)
             if e.get("width") is not None:
                 head.append(([FloatObject(max(0.0, float(e["width"])))], b"w"))
             if len(head) == 1:
