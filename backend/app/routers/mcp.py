@@ -85,7 +85,7 @@ page and paragraph, to: front | back | forward | backward}], comments: [{page, i
 crop is fractions of the picture). Threaded text: thread: [{from: id, to: id, grow}] makes "to" continue the story of "from" (its own text
 is appended); add with after: id adds a frame that continues that one; the story lives in the first frame and flows through the frames in
 order, on any pages; update text, paras or font on any frame of a thread edits the story; grow: true adds pages with a copy of the last
-frame until the story fits (overflow: true on the last frame otherwise); unthread: [id] detaches a frame; update {id, to_page, x, y} moves
+frame until the story fits (overflow: true on the last frame otherwise) and removes those added pages again, while still blank, once the story no longer needs them; unthread: [id] detaches a frame; update {id, to_page, x, y} moves
 any item to another page; read fonts lists every font with embedded, subset, standard and installed state and its editWith family;
 font_map {map: {font name: sans | serif | mono | null}} saves in the PDF which family page text in that font is edited in (null: its own font);
 read paths {pages} lists the shapes and lines already on a page with op, paint and box; edit_paths {edits: [{page, op, dx, dy (points, down

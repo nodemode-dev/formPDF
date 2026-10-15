@@ -167,7 +167,7 @@ def _item_stream(w: PdfWriter, page, it: dict):
 def _public(it: dict, keep_ctx: bool = False) -> dict:
     keys = ["v", "id", "kind", "page", "x", "y", "w", "h", "rot", "flipH", "flipV"]
     if it["kind"] == "text":
-        keys += ["font", "paras", "auto", "fit", "thread", "seq", "overflow", "grow"]
+        keys += ["font", "paras", "auto", "fit", "thread", "seq", "overflow", "grow", "grown"]
     else:
         keys += ["crop", "iw", "ih", "orient", "format"]
     if keep_ctx:
@@ -1029,6 +1029,12 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
         i, _ = p.find(v["id"])
         p.write(v, at=i, form=p.form_ref(v["id"]))
 
+    def spare(n: int, v: dict) -> bool:
+        p = page(n)
+        if p.page.get("/Annots") or [x.get("id") for _, x in p.items()] != [v.get("id")]:
+            return False
+        return all(_kind(r)[0] != "base" or not r.get_object().get_data().strip() for r in p.arr)
+
     def flow(tid: str) -> None:
         nonlocal n_pages
         fr = frames_of(tid)
@@ -1051,8 +1057,14 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
             n_pages += 1
             cache.clear()
             nxt = {k: x for k, x in last.items() if k not in ("overflow",)}
-            nxt.update({"id": _new_id(), "page": n + 1, "seq": int(last.get("seq") or 0) + 1, "paras": _norm_paras("", font)})
+            nxt.update({"id": _new_id(), "page": n + 1, "seq": int(last.get("seq") or 0) + 1, "paras": _norm_paras("", font), "grown": True})
             page(n + 1).write({**nxt, "paras": _norm_paras("", font)})
+            fr = frames_of(tid)
+            shares, over = split_story(font, story, [(v["w"], v["h"]) for _, v in fr])
+        while grow and not over and len(fr) > 1 and not shares[-1] and fr[-1][1].get("grown") and spare(*fr[-1]):
+            w.remove_page(fr[-1][0] - 1)
+            n_pages -= 1
+            cache.clear()
             fr = frames_of(tid)
             shares, over = split_story(font, story, [(v["w"], v["h"]) for _, v in fr])
         for k, ((n, v), share) in enumerate(zip(fr, shares)):
