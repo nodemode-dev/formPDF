@@ -55,6 +55,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 38. Threading text boxes and the fonts dialog · tools/content.ts, styles/tools.css
 39. Thread ports, move to page and Edit with · tools/content.ts paintBox, selectTool, moveToPage, mapFont; styles/tools.css .fs-cx-port
 40. Existing shapes in Select · tools/content.ts shapes, editShapes, styleShapes; styles/tools.css .fs-cx-swatch
+41. Page boxes and bleed, spot colour command · tools/boxes.ts, tools/index.ts, styles/tools.css .fs-bx; tools/content.ts tool-shape-spot
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -261,3 +262,7 @@ Move to page validates against the viewer's page count, skips items already on t
 ## 40. Existing shapes in Select · _v0.17.0 (tools/content.ts Shape, shapes, shapeKey, flush paths, objects, hit, handlesFor, applyGeo, editShapes, styleShapes, sync shapeOn; styles/tools.css .fs-cx-swatch)
 
 Shapes load in the same flush as items (a second action call in parallel, which fails soft to no shapes), are keyed s:[page]:[op], and are only offered in Select mode. They are hit last and smallest first, so text and pictures win over the artwork under them and a small shape inside a big one can be picked; lines get a 2 pt minimum box so they can be clicked. Only selected shapes draw a box, because a page may hold thousands of paths. A move sends dx and dy from the preview, colour and opacity come from the new Shape group, and each goes through editShapes, which commits one version and rewrites selected keys with the engine's op mapping before reloading. Delete, arrange and crop skip shapes; deleting artwork is redaction's job.
+
+## 41. Page boxes and bleed, spot colour command · _v0.18.0 (tools/boxes.ts shownBoxes, layers, paint, load, sync, addBleed, clearBleed, setShow, commands tool-add-bleed and tool-show-boxes; tools/index.ts; styles/tools.css .fs-bx-*; tools/content.ts tool-shape-spot, commands typed Command[])
+
+The boxes come from one boxes read per document version (all pages), cached by doc id and refetched after every bleed change. They are drawn in a PageLayers layer, one node per box kind patched by key, positioned relative to the crop box because the viewer shows the crop box and bleed may have grown the media box past it; the bleed box therefore runs past the page edge on screen, which is the point. The layer has no pointer events and no z-index of its own; the box tags are white chips so they read on any artwork. The show choice is a per-viewer convenience in localStorage fs-boxes-show, wrapped in try. Add bleed turns the overlay on so the result is visible. The spot command takes name and cmyk as required parameters, so from the palette without them it explains what it needs; agents and the CLI pass them. content.ts's commands list is typed Command[] because array literals with different params shapes otherwise widen past the Command type.
