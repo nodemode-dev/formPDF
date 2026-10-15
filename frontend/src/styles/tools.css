@@ -58,6 +58,15 @@
 .fs-cx-full { position: absolute; box-sizing: border-box; outline: 1px dashed rgba(0, 0, 0, 0.45); background: rgba(0, 0, 0, 0.06); }
 .fs-cx-group { display: grid; gap: var(--space-2); }
 .fs-tool-note.fs-cx-note { min-height: calc(4 * 1.45em); }
+.fs-cx-port { position: absolute; width: 11px; height: 11px; box-sizing: border-box; border: 1.5px solid var(--accent-color); border-radius: 2px; background: #fff; pointer-events: none; }
+.fs-cx-port.is-in { left: -6px; top: 4px; }
+.fs-cx-port.is-out { right: -6px; bottom: 4px; pointer-events: auto; cursor: alias; }
+.fs-cx-port.is-linked { background: var(--accent-color); }
+.fs-cx-port.is-overflow { border-color: #e11d48; background: #e11d48; cursor: copy; }
+.fs-cx-port.is-overflow::before, .fs-cx-port.is-overflow::after { content: ""; position: absolute; left: 50%; top: 50%; background: #fff; transform: translate(-50%, -50%); }
+.fs-cx-port.is-overflow::before { width: 7px; height: 1.5px; }
+.fs-cx-port.is-overflow::after { width: 1.5px; height: 7px; }
+body.fs-is-linking, body.fs-is-linking * { cursor: alias !important; }
 .fs-fonts-list { display: flex; flex-direction: column; max-height: 360px; overflow-y: auto; border: 1px solid var(--line-1); border-radius: var(--radius-md); }
 .fs-fonts-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr) auto; gap: var(--space-2); align-items: center; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--line-0); font-size: var(--fs-12); }
 .fs-fonts-row:last-child { border-bottom: 0; }

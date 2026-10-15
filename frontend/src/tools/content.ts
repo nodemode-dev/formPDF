@@ -39,6 +39,7 @@ let drag: Drag | null = null;
 const preview = new Map<string, Geo>();
 let cropping: string | null = null;
 let cropDraft: Crop | null = null;
+let linking: { from: string; moved: boolean; x: number; y: number } | null = null;
 let font: Font = { family: 'sans', size: 12, color: '#111111', lineHeight: 1.25 };
 let picture: { data: string; w: number; h: number; name: string } | null = null;
 let lastDown = { t: 0, x: 0, y: 0, key: '' };
@@ -126,6 +127,12 @@ function paintBox(n: HTMLElement, o: Obj, single: boolean): void {
   setClass(n, 'is-selected', sel.includes(o.key));
   setClass(n, 'is-faint', !sel.includes(o.key));
   let html = sel.includes(o.key) ? handlesFor(o, single) : '';
+  const it = o.kind === 'text' ? o.item : undefined;
+  if (it && mode === 'select' && !cropping) {
+    const inTitle = it.thread && it.seq ? 'Continues the story from the frame before' : 'Start of the story';
+    const outTitle = it.overflow ? 'The story does not fit: click to continue it on new pages, or drag onto another text box' : it.thread ? 'Threaded: drag onto another text box to continue the story there' : 'Drag onto another text box to continue the story there';
+    html += `<span class="fs-cx-port is-in${it.thread && it.seq ? ' is-linked' : ''}" title="${inTitle}"></span><span class="fs-cx-port is-out${it.thread ? ' is-linked' : ''}${it.overflow ? ' is-overflow' : ''}" data-port="out" title="${outTitle}"></span>`;
+  }
   if (cropping === o.key && o.item) {
     const c = cropDraft ?? o.item.crop ?? NO_CROP, W = g.w / Math.max(0.01, 1 - c.l - c.r), H = g.h / Math.max(0.01, 1 - c.t - c.b);
     const fx = o.item.flipH ? -(c.r * W) : -(c.l * W), fy = o.item.flipV ? -(c.b * H) : -(c.t * H);
@@ -344,11 +351,22 @@ function selectTool(host: ToolHost): PageTool {
       const page = pv.index + 1;
       if (editing) { void finishEdit(host); return; }
       const t = e.target as HTMLElement;
+      if (t.closest('[data-port="out"]')) {
+        const from = t.closest<HTMLElement>('.fs-cx-box')?.dataset.key;
+        if (from?.startsWith('i:')) { linking = { from: from.slice(2), moved: false, x: e.clientX, y: e.clientY }; document.body.classList.add('fs-is-linking'); return; }
+      }
       const handle = t.closest<HTMLElement>('[data-h]')?.dataset.h;
       const now = performance.now();
       const o = handle ? allSelected(host).find((x) => x.page === page) ?? null : hit(page, p, host);
       const dbl = !!o && o.key === lastDown.key && now - lastDown.t < 450 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 6;
       lastDown = { t: now, x: e.clientX, y: e.clientY, key: o?.key ?? '' };
+      if (dbl && o?.item?.thread && o.item.seq) {
+        const head = items.find((x) => x.thread === o.item?.thread && !x.seq);
+        const ho = head ? objects(head.page, host).find((x) => x.key === `i:${head.id}`) : undefined;
+        if (head && ho) { sel = [ho.key]; void editText(host, ho, head.page, geo(ho)); }
+        else toast('This frame continues a story: edit it in the first frame of the thread');
+        return;
+      }
       if (dbl && o && isText(o)) { sel = [o.key]; void editText(host, o, page, geo(o)); return; }
       if (dbl && o && (o.kind === 'picture' || o.kind === 'pic')) { startCrop(host, o.key); return; }
       if (!handle) pick(o, e.shiftKey);
@@ -361,6 +379,7 @@ function selectTool(host: ToolHost): PageTool {
       drag = { kind, page, p0: p, handle: handle ?? '', base, crop0: { ...crop0 }, moved: false };
     },
     move: (pv, p, e) => {
+      if (linking && !linking.moved && Math.hypot(e.clientX - linking.x, e.clientY - linking.y) > 4) linking.moved = true;
       const d = drag;
       if (!d || pv.index + 1 !== d.page) return;
       const dx = p.x - d.p0.x, dy = p.y - d.p0.y;
@@ -390,7 +409,19 @@ function selectTool(host: ToolHost): PageTool {
       }
       layers.repaint([d.page - 1]);
     },
-    up: () => {
+    up: (pv, p) => {
+      const l = linking;
+      if (l) {
+        linking = null;
+        document.body.classList.remove('fs-is-linking');
+        const src = items.find((x) => x.id === l.from);
+        if (!l.moved) { if (src?.overflow) void act(host, { update: [{ id: l.from, grow: true }] }, 'Continue story on new pages', 'Adding pages').then(() => reload(host)); return; }
+        const target = hit(pv.index + 1, p, host);
+        if (!target?.item || target.kind !== 'text' || target.item.id === l.from) { toast('Release over another added text box to continue the story there'); return; }
+        if (target.item.thread) { toast('That text box is already in a thread; unthread it first'); return; }
+        void act(host, { thread: [{ from: l.from, to: target.item.id }] }, 'Thread text boxes', 'Threading').then(() => reload(host));
+        return;
+      }
       const d = drag;
       drag = null;
       if (!d || !d.moved) return;
@@ -400,7 +431,7 @@ function selectTool(host: ToolHost): PageTool {
       void applyGeo(host, changes, d.kind === 'move' ? 'Move' : d.kind === 'rotate' ? 'Rotate' : 'Resize');
     },
     key: (e) => key(host, e),
-    cancel: () => { drag = null; preview.clear(); if (editing) void finishEdit(host); cropping = null; cropDraft = null; mode = 'idle'; sel = []; repaint(); },
+    cancel: () => { drag = null; linking = null; document.body.classList.remove('fs-is-linking'); preview.clear(); if (editing) void finishEdit(host); cropping = null; cropDraft = null; mode = 'idle'; sel = []; repaint(); },
   };
 }
 
