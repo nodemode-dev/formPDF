@@ -120,7 +120,8 @@ function allSelected(host: ToolHost): Obj[] {
 const geo = (o: Obj): Geo => preview.get(o.key) ?? o.g;
 
 function handlesFor(o: Obj, single: boolean): string {
-  if (!single || o.kind === 'comment' || o.kind === 'shape') return '';
+  if (!single || o.kind === 'comment') return '';
+  if (o.kind === 'shape') return ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((h) => `<span class="fs-cx-h" data-h="${h}"></span>`).join('');
   if (cropping === o.key) return ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((h) => `<span class="fs-cx-h is-crop" data-h="${h}"></span>`).join('');
   const list = isText(o) ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
   return list.map((h) => `<span class="fs-cx-h" data-h="${h}"></span>`).join('') + '<span class="fs-cx-h is-rot" data-h="rot"></span>';
@@ -271,7 +272,11 @@ function remap(res: { converted?: Record<string, string> } | null): void {
 async function applyGeo(host: ToolHost, changes: Map<string, Geo>, label: string): Promise<void> {
   const objs = allSelected(host).filter((o) => changes.has(o.key));
   const updates: Array<Record<string, unknown>> = [];
-  const shapeEdits = objs.filter((o) => o.shape).map((o) => { const g = changes.get(o.key) as Geo; return { page: o.page, op: o.shape?.op, dx: round(g.x - o.g.x), dy: round(g.y - o.g.y) }; }).filter((e) => e.dx || e.dy);
+  const shapeEdits = objs.filter((o) => o.shape).map((o): Record<string, unknown> => {
+    const g = changes.get(o.key) as Geo;
+    const sized = Math.abs(g.w - o.g.w) > 0.05 || Math.abs(g.h - o.g.h) > 0.05;
+    return sized ? { page: o.page, op: o.shape?.op, to: { x: round(g.x), y: round(g.y), w: round(g.w), h: round(g.h) } } : { page: o.page, op: o.shape?.op, dx: round(g.x - o.g.x), dy: round(g.y - o.g.y) };
+  }).filter((e) => e.to || e.dx || e.dy);
   if (shapeEdits.length) await editShapes(host, shapeEdits, label);
   for (const o of objs) {
     const g = changes.get(o.key) as Geo;
@@ -315,11 +320,11 @@ async function editShapes(host: ToolHost, edits: Array<Record<string, unknown>>,
 
 const selectedShapes = (host: ToolHost): Obj[] => allSelected(host).filter((o) => !!o.shape);
 
-function styleShapes(host: ToolHost, what: 'fill' | 'stroke' | 'opacity', value: string): void {
+function styleShapes(host: ToolHost, what: 'fill' | 'stroke' | 'opacity' | 'blend', value: string): void {
   const objs = selectedShapes(host);
   if (!objs.length) return;
   const v = what === 'opacity' ? Number(value) : value;
-  void editShapes(host, objs.map((o) => ({ page: o.page, op: o.shape?.op, [what]: v })), what === 'opacity' ? 'Shape opacity' : what === 'fill' ? 'Shape fill' : 'Shape stroke');
+  void editShapes(host, objs.map((o) => ({ page: o.page, op: o.shape?.op, [what]: v })), what === 'opacity' ? 'Shape opacity' : what === 'fill' ? 'Shape fill' : what === 'blend' ? 'Shape blend mode' : 'Shape stroke');
 }
 
 function repaint(): void { layers.repaint(); sync(); }
@@ -563,8 +568,10 @@ async function remove(host: ToolHost): Promise<void> {
   for (const o of objs) {
     if (o.annot) host.ctx.annot.remove(o.annot.id);
   }
+  const gone = objs.filter((o) => o.shape).map((o) => ({ page: o.page, op: o.shape?.op, remove: true }));
   sel = [];
   cropping = null;
+  if (gone.length) await editShapes(host, gone, gone.length > 1 ? 'Delete shapes' : 'Delete shape');
   if (engine.length) await act(host, { remove: engine }, engine.length > 1 ? 'Delete page items' : 'Delete page item', 'Deleting');
   repaint();
 }
@@ -967,7 +974,7 @@ registerTool({
 <div class="fs-pdfwb-subhead">Picture</div>
 <div class="fs-cx-btns" data-g="picture">${btn('data-p="left"', 'undo', 'Rotate left')}${btn('data-p="right"', 'redo', 'Rotate right')}${btn('data-p="flipH"', 'flipH', 'Flip horizontally')}${btn('data-p="flipV"', 'flipV', 'Flip vertically')}${btn('data-p="crop"', 'crop', 'Crop (Enter keeps it)')}<button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-p="uncrop">Reset crop</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-p="replace">Replace…</button></div>
 <div class="fs-pdfwb-subhead">Shape</div>
-<div class="fs-cx-row" data-g="shape"><label class="fs-cx-swatch" title="Fill colour of the selected shapes"><span>Fill</span><input type="color" data-s="fill" value="#E11D48" aria-label="Shape fill"></label><label class="fs-cx-swatch" title="Line colour of the selected shapes"><span>Line</span><input type="color" data-s="stroke" value="#111111" aria-label="Shape line colour"></label><select class="fs-tool-unit" data-s="opacity" aria-label="Shape opacity" title="Opacity of the selected shapes"><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option></select></div>
+<div class="fs-cx-row" data-g="shape"><label class="fs-cx-swatch" title="Fill colour of the selected shapes"><span>Fill</span><input type="color" data-s="fill" value="#E11D48" aria-label="Shape fill"></label><label class="fs-cx-swatch" title="Line colour of the selected shapes"><span>Line</span><input type="color" data-s="stroke" value="#111111" aria-label="Shape line colour"></label><select class="fs-tool-unit" data-s="opacity" aria-label="Shape opacity" title="Opacity of the selected shapes"><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option></select><select class="fs-tool-unit" data-s="blend" aria-label="Shape blend mode" title="How the selected shapes mix with what is under them"><option value="Normal">Normal</option><option value="Multiply">Multiply</option><option value="Screen">Screen</option><option value="Overlay">Overlay</option><option value="Darken">Darken</option><option value="Lighten">Lighten</option><option value="ColorDodge">Colour dodge</option><option value="ColorBurn">Colour burn</option><option value="HardLight">Hard light</option><option value="SoftLight">Soft light</option><option value="Difference">Difference</option><option value="Exclusion">Exclusion</option></select></div>
 <div class="fs-pdfwb-subhead">Arrange</div>
 <div class="fs-cx-btns">${btn('data-z="front"', 'bringFront', 'Bring to front')}${btn('data-z="forward"', 'bringForward', 'Bring forward')}${btn('data-z="backward"', 'sendBackward', 'Send backward')}${btn('data-z="back"', 'sendBack', 'Send to back')}</div>
 <div class="fs-pdfwb-subhead">Align and distribute</div>

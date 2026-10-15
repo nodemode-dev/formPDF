@@ -197,12 +197,29 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
                 streams[f["stream"]] = list(ContentStream(p.arr[f["stream"]].get_object(), w).operations)
             ops = streams[f["stream"]]
             a, b = f["start"] - f["offset"], f["op"] - f["offset"]
+            if e.get("remove"):
+                del ops[a:b + 1]
+                grown[f["op"]] = -(b - a + 1) - 1
+                done += 1
+                continue
             head: list = [([], b"q")]
             dx, dy = float(e.get("dx") or 0), float(e.get("dy") or 0)
             scale = float(e.get("scale") or 1)
             if not 0.01 <= scale <= 100:
                 raise ValueError("scale is between 0.01 and 100")
-            if dx or dy or scale != 1:
+            to = e.get("to")
+            if isinstance(to, dict) and f["box"]["w"] > 0.01 and f["box"]["h"] > 0.01:
+                bx = f["box"]
+                vx0, vy0, vx1, vy1 = core.view_box(p.page)
+                sx, sy = float(to["w"]) / bx["w"], float(to["h"]) / bx["h"]
+                if not (0.01 <= sx <= 100 and 0.01 <= sy <= 100):
+                    raise ValueError("a shape can be resized to between 1 percent and 100 times its size")
+                ox, oy = vx0 + bx["x"], vy1 - bx["y"] - bx["h"]
+                nx, ny = vx0 + float(to["x"]), vy1 - float(to["y"]) - float(to["h"])
+                t = (sx, 0, 0, sy, nx - sx * ox, ny - sy * oy)
+                ctm = tuple(float(v) for v in f["ctm"])
+                head.append(([FloatObject(round(v, 6)) for v in _mul(_mul(ctm, t), _inv(ctm))], b"cm"))
+            elif dx or dy or scale != 1:
                 bx = f["box"]
                 vx0, vy0, vx1, vy1 = core.view_box(p.page)
                 cx, cy = vx0 + bx["x"] + bx["w"] / 2, vy1 - bx["y"] - bx["h"] / 2
@@ -232,6 +249,9 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
             done += 1
         shift = 0
         for op in sorted(grown):
+            if grown[op] < 0:
+                shift += grown[op] + 1
+                continue
             moved.setdefault(n, {})[op] = op + shift + grown[op]
             shift += grown[op] + 1
         for pos, ops in streams.items():
