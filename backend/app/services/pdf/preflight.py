@@ -24,6 +24,12 @@ def _check(cid: str, name: str, status: str, say: str, findings=(), fix: str | N
     return {"id": cid, "name": name, "status": status, "say": say, "findings": found[:200], "more": max(0, len(found) - 200), "fix": fix}
 
 
+def _view(page, box) -> dict:
+    vx0, _vy0, _vx1, vy1 = core.view_box(page)
+    x0, y0, x1, y1 = box
+    return {"x": round(x0 - vx0, 2), "y": round(vy1 - y1, 2), "w": round(x1 - x0, 2), "h": round(y1 - y0, 2)}
+
+
 def _pages(pages: set) -> str:
     ps = sorted(pages)
     if not ps:
@@ -53,7 +59,7 @@ def images(doc) -> list[dict]:
             if wpt < 4 or hpt < 4 or not pw or not ph:
                 continue
             ppi = min(pw / (wpt / 72), ph / (hpt / 72))
-            out.append({"page": pi + 1, "ppi": round(ppi), "px": (pw, ph), "pt": (round(wpt, 1), round(hpt, 1)), "ref": (st, d.name)})
+            out.append({"page": pi + 1, "ppi": round(ppi), "px": (pw, ph), "pt": (round(wpt, 1), round(hpt, 1)), "ref": (st, d.name), "box": _view(page, d.box)})
     return out
 
 
@@ -95,7 +101,7 @@ def _nums(operands) -> list[float]:
 
 
 def _press(doc, limit: float = TAC_LIMIT) -> dict:
-    found = {"tac": {}, "overprint": set(), "edge": set()}
+    found = {"tac": {}, "overprint": set(), "edge": {}}
     for pi, page in enumerate(doc.pages):
         n = pi + 1
         try:
@@ -153,7 +159,7 @@ def _press(doc, limit: float = TAC_LIMIT) -> dict:
                 if (x1 - x0) * (y1 - y0) < 4:
                     continue
                 if x0 <= tx0 + 0.5 or y0 <= ty0 + 0.5 or x1 >= tx1 - 0.5 or y1 >= ty1 - 0.5:
-                    found["edge"].add(n)
+                    found["edge"][n] = _view(page, d.box)
                     break
     for im in images(doc):
         try:
@@ -217,13 +223,13 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
         out.append(_check("resolution", "Picture resolution", "warn" if high else "pass",
                           f"{len(high)} picture{'s are' if len(high) != 1 else ' is'} sharper than a screen needs (over 225 ppi){_pages({i['page'] for i in high})}; downsampling to 150 ppi makes the file smaller."
                           if high else "Pictures are not larger than a screen needs.",
-                          [{"page": i["page"], "text": f"{i['ppi']} ppi ({i['px'][0]} x {i['px'][1]} px at {i['pt'][0]} x {i['pt'][1]} pt)"} for i in high],
+                          [{"page": i["page"], "text": f"{i['ppi']} ppi ({i['px'][0]} x {i['px'][1]} px at {i['pt'][0]} x {i['pt'][1]} pt)", "box": i["box"]} for i in high],
                           "downsample" if high else None))
     else:
         out.append(_check("resolution", "Picture resolution", "fail" if bad else "warn" if low else "pass",
                           f"{len(low)} picture{'s are' if len(low) != 1 else ' is'} below {225 if profile == 'print' else 96} ppi at the size they print{_pages({i['page'] for i in low})}, so they print soft or blocky."
                           if low else ("Every picture has enough resolution for its printed size." if imgs else "There are no pictures."),
-                          [{"page": i["page"], "text": f"{i['ppi']} ppi ({i['px'][0]} x {i['px'][1]} px at {i['pt'][0]} x {i['pt'][1]} pt)"} for i in low]))
+                          [{"page": i["page"], "text": f"{i['ppi']} ppi ({i['px'][0]} x {i['px'][1]} px at {i['pt'][0]} x {i['pt'][1]} pt)", "box": i["box"]} for i in low]))
     sc = colour.scan(r)
     kinds = set(sc.used)
     if profile == "print":
@@ -257,7 +263,7 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
         edge = press["edge"]
         out.append(_check("bleed", "Bleed", "warn" if edge else "pass",
                           f"Artwork reaches the trimmed edge but there is no bleed{_pages(edge)}; a thin white line can show after cutting. Add bleed in Page boxes and bleed." if edge
-                          else "Nothing runs to the trimmed edge without bleed.", [{"page": p, "text": "Artwork at the edge, no bleed"} for p in sorted(edge)]))
+                          else "Nothing runs to the trimmed edge without bleed.", [{"page": p, "text": "Artwork at the edge, no bleed", "box": b} for p, b in sorted(edge.items())]))
         no_trim = [i + 1 for i, p in enumerate(r.pages) if "/TrimBox" not in p and "/ArtBox" not in p]
         out.append(_check("trim", "Trim box", "info" if no_trim else "pass", "Pages have no trim box, so the finished size is the page size." if no_trim else "Every page has a trim box.",
                           fix="trim_box" if no_trim else None))

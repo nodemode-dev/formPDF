@@ -12,7 +12,7 @@ interface Layout { text: string; sheets: Sheet[]; count: number; border: boolean
 interface Issue { id: string; clause: string; text: string; pages: number[]; count: number; fixable: boolean }
 interface PdfaReport { text: string; level: string; conforms: boolean; issues: Issue[]; claims: { part: string; conformance: string; pdfx: string } }
 type PStatus = 'fail' | 'warn' | 'info' | 'pass';
-interface PCheck { id: string; name: string; status: PStatus; say: string; findings: Array<{ page?: number | null; text: string }>; fix: string | null }
+interface PCheck { id: string; name: string; status: PStatus; say: string; findings: Array<{ page?: number | null; text: string; box?: { x: number; y: number; w: number; h: number } }>; fix: string | null }
 interface PReport { text: string; profile: string; checks: PCheck[]; summary: Record<PStatus, number>; fixes: string[] }
 
 const PREVIEW_H = 250;
@@ -315,6 +315,7 @@ function syncPf(): void {
 function fillCheck(n: HTMLElement, x: PCheck): void {
   const first = x.findings.find((f) => f.page)?.page ?? null;
   if (x.status !== 'pass' && first) n.dataset.page = String(first); else delete n.dataset.page;
+  if (n.dataset.key !== x.id) { n.dataset.key = x.id; delete n.dataset.at; }
   const [ic, cls] = PICON[x.status];
   const ico = q(n, '.fs-acc-ico');
   if (ico.dataset.s !== x.status) { ico.innerHTML = icon(ic, 14); ico.dataset.s = x.status; ico.className = `fs-row-icon fs-acc-ico ${cls}`; }
@@ -327,6 +328,20 @@ function fillCheck(n: HTMLElement, x: PCheck): void {
   const label = x.fix ? FIXWORD[x.fix] ?? 'Fix' : 'Fix';
   if (b.title !== label) { b.title = label; b.setAttribute('aria-label', `${label}: ${x.name}`); }
   setDisabled(b, !x.fix);
+}
+
+/** Each click on a check goes to its next finding; a finding with a box outlines the object itself. */
+function showFinding(host: ToolHost, row: HTMLElement): void {
+  const x = pf?.checks.find((c) => c.id === row.dataset.key);
+  const found = (x?.findings ?? []).filter((f) => f.page);
+  if (!found.length) { host.ctx.viewer.goTo(Number(row.dataset.page)); return; }
+  const at = row.dataset.at === undefined ? 0 : (Number(row.dataset.at) + 1) % found.length;
+  row.dataset.at = String(at);
+  const f = found[at];
+  const page = Number(f.page);
+  if (!f.box) { host.ctx.viewer.goTo(page); return; }
+  host.ctx.viewer.scrollToPoint(page - 1, f.box.x + f.box.w / 2, f.box.y);
+  host.ctx.annot.pulse(page, [f.box]);
 }
 
 async function runPf(): Promise<void> {
@@ -522,7 +537,7 @@ registerTool({
     q<HTMLSelectElement>(root, '[data-f="profile"]').addEventListener('change', () => { pfFor = ''; scheduleAuto(); });
     root.addEventListener('click', (e) => {
       const row = (e.target as HTMLElement).closest<HTMLElement>('.fs-acc-rule[data-page]');
-      if (row && !(e.target as HTMLElement).closest('button')) { host.ctx.viewer.goTo(Number(row.dataset.page)); return; }
+      if (row && !(e.target as HTMLElement).closest('button')) { showFinding(host, row); return; }
       const t = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-f]');
       if (!t || t.disabled) return;
       if (t.dataset.f === 'run') void runPf();
