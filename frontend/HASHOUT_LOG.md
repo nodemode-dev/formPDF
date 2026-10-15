@@ -57,6 +57,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 40. Existing shapes in Select · tools/content.ts shapes, editShapes, styleShapes; styles/tools.css .fs-cx-swatch
 41. Page boxes and bleed, spot colour command · tools/boxes.ts, tools/index.ts, styles/tools.css .fs-bx; tools/content.ts tool-shape-spot
 42. PDF/X version, check and PDF 2.0 in Print · tools/print.ts convertPdfx, checkPdfx, savePdf20, syncStd
+43. Preflight as you work · tools/print.ts scheduleAuto, autoRun, flagBadge, fillCheck; styles/tools.css .fs-pdfwb-tab[data-flags]
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -271,3 +272,7 @@ The boxes come from one boxes read per document version (all pages), cached by d
 ## 42. PDF/X version, check and PDF 2.0 in Print · _v0.19.0 (tools/print.ts section xver, xnote, xcheck, pdf20; convertPdfx version; checkPdfx; savePdf20; syncStd; commands tool-pdfx-check, tool-pdf20)
 
 The check result is one sentence in a note paragraph that already holds a sentence before any check, so the panel does not grow or shift when the result arrives: it either confirms the level and PDF version or names the first three findings and how many more. Both actions flush pending edits first, like the other Print actions, so the check sees what is on screen. Convert uses the chosen version in its busy text, undo label and toast. checkPdfx returns the report, so run_command tool-pdfx-check hands agents the same findings the window shows.
+
+## 43. Preflight as you work · _v0.20.0 (tools/print.ts AUTO_KEY, pfAuto, scheduleAuto, autoRun, flagBadge, syncPf, fillCheck data-page, mount auto and profile listeners, preflight tool sync; styles/tools.css badge and linked rows)
+
+The trigger is the preflight tool's sync, which the workbench calls after every change through syncChrome, whether or not the Print tab is open. scheduleAuto waits 900 ms after the last change and runs only when the stored report is for another document version and none is in flight for this one; a newer version arriving while a run is out simply schedules again when it returns. autoRun calls the action directly instead of host.ctx.run, so no busy indicator flashes and pending edits are not flushed (flushing would end text editing); the manual Run button keeps the flush and the indicator. The badge is the tab's data-flags attribute shown by ::after, positioned against the tab, so the tab row never reflows; it counts failures and warnings, not notes. A row with a page in its findings gets data-page and goes to the first one through viewer.goTo; the Fix button inside the row is excluded from that click. The setting is a per-viewer preference in localStorage fs-pf-auto, on by default.
