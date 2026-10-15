@@ -350,7 +350,7 @@ let autoBusy = '';
 function scheduleAuto(): void {
   const host = hostRef, d = host?.doc(), r = pfRoot;
   window.clearTimeout(autoTimer);
-  if (!pfAuto || !host || !d || !r || pfFor === d.id || autoBusy === d.id) return;
+  if (!pfAuto || !host || !d || !r || pfFor === d.id || autoBusy === d.id || host.ctx.viewer.large) return;
   autoTimer = window.setTimeout(() => void autoRun(), 900);
 }
 
@@ -509,7 +509,7 @@ registerTool({
   section: () => `<p class="fs-note fs-tool-note" data-f="note"></p>
 <div class="fs-prop-row"><span class="fs-prop-label">For</span><div class="fs-prop-ctl"><select data-f="profile" aria-label="Preflight profile"><option value="print">Commercial print</option><option value="office">Office printer</option><option value="screen">Screen and email</option></select></div></div>
 <div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-f="run">${icon('find', 14)}Run preflight</button><button class="fs-btn fs-btn-sm" type="button" data-f="fix" disabled>${icon('magic', 14)}Apply fixups</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-f="report" disabled>${icon('download', 14)}Report</button></div>
-<label class="fs-check"><input type="checkbox" data-f="auto" checked><span>Check as I work (after opening and every change)</span></label>
+<label class="fs-check"><input type="checkbox" data-f="auto" checked><span>Check as I work (after opening and every change; paused for files over 200 pages or 50 MB)</span></label>
 <div class="fs-tool-listbox"><div class="fs-list fs-tool-list" data-f="list"></div><p class="fs-note fs-tool-empty" data-f="empty">Run preflight to see the results.</p></div>`,
   mount: (root, host) => {
     hostRef = host;

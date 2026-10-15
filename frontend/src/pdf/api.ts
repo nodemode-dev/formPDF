@@ -111,6 +111,7 @@ export const pdfApi = {
     return { blob: await res.blob(), name: m?.[1] ?? name };
   },
   renderUrl: (id: string, page: number, scale: number) => `${base(id)}/render/${page}?scale=${scale.toFixed(3)}`,
+  previewUrl: (id: string, page: number, scale: number) => `${base(id)}/render/${page}?scale=${scale.toFixed(3)}&fmt=jpg`,
   zipUrl: (id: string, scale: number, pages?: string) => `${base(id)}/pages.zip?scale=${scale}${pages && pages.trim() ? `&pages=${encodeURIComponent(pages.trim())}` : ''}`,
   xlsxUrl: (id: string, pages?: string) => `${base(id)}/tables.xlsx${q(pages)}`,
   text: (id: string, pages?: string) => api.get<{ pages: Array<{ page: number; text: string }> }>(`${base(id)}/text${q(pages)}`),

@@ -26,6 +26,12 @@ export function openDocument(data: Uint8Array): Promise<PDFDocumentProxy> {
 export const CSS_UNITS = 96 / 72;
 const MAX_PIXELS = 16777216;
 const KEEP_CANVASES = 24;
+const KEEP_PREVIEWS = 300;
+const LARGE_PAGES = 200;
+const LARGE_BYTES = 50 * 1048576;
+const SETTLE_LARGE = 140;
+const TEXT_IDLE = 350;
+export type PreviewUrl = (page: number, scale: number) => string;
 const THUMB_W = 120;
 const THUMB_H = 156;
 const PAD = 16;
@@ -54,6 +60,9 @@ export class PageView {
   visible = false;
   seen = 0;
   linksGen = -1;
+  preview: HTMLImageElement | null = null;
+  previewKey = '';
+  shown = 0;
   constructor(readonly index: number, public size: PageSize) {
     this.box = el(`<div class="fs-pdf-page" data-key="${index}" data-page="${index + 1}"><div class="textLayer"></div><div class="fs-pdf-space"><div class="fs-pdf-hits"></div></div></div>`);
     this.textHost = this.box.querySelector('.textLayer') as HTMLElement;
@@ -96,6 +105,9 @@ export class Viewer {
   private thumbs = new Map<string, Promise<HTMLCanvasElement>>();
   private scrollQueued = false;
   private parked: { page: number; rel: number; ay: number; ax: number; left: number } | null = null;
+  large = false;
+  previewUrl: PreviewUrl | null = null;
+  private textTimer = 0;
 
   constructor(parent: HTMLElement, private readonly hooks: ViewerHooks) {
     this.scroller = el('<div class="fs-pdf-scroll" tabindex="-1"><div class="fs-pdf-pages"></div></div>');
@@ -104,14 +116,15 @@ export class Viewer {
     this.io = new IntersectionObserver((entries) => {
       for (const e of entries) {
         const pv = this.pages[Number((e.target as HTMLElement).dataset.key)];
-        if (pv) { pv.visible = e.isIntersecting; if (pv.visible) pv.seen = performance.now(); }
+        if (pv) { if (e.isIntersecting && !pv.visible) pv.shown = performance.now(); pv.visible = e.isIntersecting; if (pv.visible) pv.seen = performance.now(); }
       }
       this.schedule();
     }, { root: this.scroller, rootMargin: '900px 200px' });
     this.scroller.addEventListener('scroll', () => {
       if (this.scrollQueued) return;
       this.scrollQueued = true;
-      requestAnimationFrame(() => { this.scrollQueued = false; this.track(); });
+      requestAnimationFrame(() => { this.scrollQueued = false; this.track(); if (this.large && this.doc) this.previews(); });
+      if (this.large) { this.lastScroll = performance.now(); window.clearTimeout(this.textTimer); this.textTimer = window.setTimeout(() => this.idleText(), TEXT_IDLE); }
     }, { passive: true });
     new ResizeObserver(() => { if (this.fit && this.pages.length && this.scroller.clientWidth) this.applyFit(this.fit, false); }).observe(this.scroller);
     this.scroller.addEventListener('wheel', (e) => this.wheelFlip(e), { passive: true });
@@ -189,10 +202,12 @@ export class Viewer {
   total(pv: PageView | number): number { const s = typeof pv === 'number' ? this.sizes[pv] : pv.size; return ((s?.rotate ?? 0) + this.viewRot) % 360; }
   currentPage(): number { return this.current; }
 
-  async load(url: string, sizes: PageSize[], opts: { password?: string; onPassword?: (retry: boolean) => Promise<string | null>; keep?: boolean } = {}): Promise<PDFDocumentProxy> {
+  async load(url: string, sizes: PageSize[], opts: { password?: string; onPassword?: (retry: boolean) => Promise<string | null>; keep?: boolean; bytes?: number; preview?: PreviewUrl } = {}): Promise<PDFDocumentProxy> {
     const keepAt = opts.keep && this.scroller.clientHeight ? this.anchor() : null;
     this.task?.destroy().catch(() => undefined);
-    const task = getDocument({ url, password: opts.password, BinaryDataFactory: BinaryData, useWorkerFetch: false, enableXfa: false });
+    const large = sizes.length >= LARGE_PAGES || (opts.bytes ?? 0) >= LARGE_BYTES;
+    const task = getDocument({ url, password: opts.password, BinaryDataFactory: BinaryData, useWorkerFetch: false, enableXfa: false,
+      ...(large ? { disableAutoFetch: true, disableStream: true, rangeChunkSize: 1048576 } : {}) });
     this.task = task;
     if (opts.onPassword) {
       const ask = opts.onPassword;
@@ -206,6 +221,9 @@ export class Viewer {
     const old = this.doc;
     this.doc = doc;
     this.gen += 1;
+    this.large = large;
+    this.previewUrl = opts.preview ?? null;
+    if (this.host.hasAttribute('data-large') !== large) this.host.toggleAttribute('data-large', large);
     this.texts.clear();
     this.plain.clear();
     this.thumbs.clear();
@@ -419,15 +437,72 @@ export class Viewer {
 
   private key(pv: PageView): string { return `${this.gen}|${this.k().toFixed(4)}|${this.total(pv)}`; }
 
+  private previewScale(): number {
+    const want = this.k() * Math.min(2, window.devicePixelRatio || 1) * 0.5;
+    return [0.25, 0.5, 0.75, 1, 1.5].find((s) => s >= want) ?? 1.5;
+  }
+
+  private loading = new Set<PageView>();
+
+  private onScreen(pv: PageView): boolean {
+    const top = pv.box.offsetTop - this.scroller.scrollTop;
+    return top < this.scroller.clientHeight && top + pv.box.offsetHeight > 0;
+  }
+
+  private previews(): void {
+    if (!this.previewUrl || this.viewRot) return;
+    const key = `${this.gen}|${this.previewScale()}`;
+    for (const pv of [...this.loading]) {
+      if (!pv.visible && pv.preview && !this.onScreen(pv)) { pv.preview.removeAttribute('src'); pv.previewKey = ''; this.loading.delete(pv); }
+    }
+    const cur = this.current - 1;
+    const near = new Set(this.pages.filter((pv) => pv.visible));
+    for (let i = Math.max(0, cur - 2); i < Math.min(this.pages.length, cur + 4); i++) if (this.onScreen(this.pages[i])) near.add(this.pages[i]);
+    const want = [...near].filter((pv) => pv.previewKey !== key && !(pv.canvas && pv.renderedKey === this.key(pv)))
+      .sort((a, b) => Number(this.onScreen(b)) - Number(this.onScreen(a)) || Math.abs(a.index - cur) - Math.abs(b.index - cur));
+    const urgent = want.some((pv) => this.onScreen(pv));
+    for (const pv of want) {
+      if (this.loading.size >= 3 || (urgent && !this.onScreen(pv) && this.loading.size >= 1)) break;
+      let img = pv.preview;
+      if (!img) {
+        img = el<HTMLImageElement>('<img class="fs-pdf-preview" alt="" decoding="async" draggable="false">');
+        img.addEventListener('load', () => { this.loading.delete(pv); this.schedule(); });
+        img.addEventListener('error', () => { this.loading.delete(pv); pv.previewKey = ''; });
+        pv.box.insertBefore(img, pv.box.firstChild);
+        pv.preview = img;
+      }
+      pv.previewKey = key;
+      const src = this.previewUrl(pv.index + 1, this.previewScale());
+      if (img.getAttribute('src') !== src) { img.setAttribute('src', src); this.loading.add(pv); }
+      if (img.hidden && !(pv.canvas && pv.renderedKey === this.key(pv))) img.hidden = false;
+    }
+    const kept = this.pages.filter((p) => p.preview);
+    if (kept.length > KEEP_PREVIEWS) {
+      const cur = this.current - 1;
+      for (const pv of kept.filter((p) => !p.visible).sort((a, b) => Math.abs(b.index - cur) - Math.abs(a.index - cur)).slice(0, kept.length - KEEP_PREVIEWS)) {
+        pv.preview?.remove();
+        pv.preview = null;
+        pv.previewKey = '';
+      }
+    }
+  }
+
   private pump(): void {
     if (!this.doc) return;
+    this.previews();
     const wait = this.settleAt - performance.now();
     if (wait > 0) { window.setTimeout(() => this.schedule(), wait); return; }
     while (this.active < 2) {
       const cur = this.current - 1;
-      const want = this.pages.filter((p) => p.visible && !p.task && p.renderedKey !== this.key(p)).sort((a, b) => Math.abs(a.index - cur) - Math.abs(b.index - cur));
+      const now = performance.now();
+      let later = 0;
+      const want = this.pages.filter((p) => {
+        if (!p.visible || p.task || p.renderedKey === this.key(p)) return false;
+        if (this.large && p.preview && now - p.shown < SETTLE_LARGE) { later = Math.max(later, SETTLE_LARGE - (now - p.shown)); return false; }
+        return true;
+      }).sort((a, b) => Math.abs(a.index - cur) - Math.abs(b.index - cur));
       const pv = want[0];
-      if (!pv) { this.evict(); return; }
+      if (!pv) { if (later) window.setTimeout(() => this.schedule(), later + 5); this.evict(); return; }
       this.active += 1;
       void this.render(pv).catch(() => undefined).finally(() => { this.active -= 1; this.schedule(); });
     }
@@ -455,11 +530,35 @@ export class Viewer {
     pv.canvas = canvas;
     pv.renderedKey = key;
     pv.seen = performance.now();
+    if (pv.preview && !pv.preview.hidden) pv.preview.hidden = true;
     this.hooks.rendered(pv);
+    if (this.large && !this.idle()) return;
+    await this.decorate(pv, page, viewport, gen);
+  }
+
+  private idle(): boolean { return performance.now() - this.lastScroll > TEXT_IDLE; }
+
+  busy(): boolean { return this.loading.size > 0 || this.active > 0 || performance.now() - this.lastScroll < 250; }
+
+  private lastScroll = 0;
+
+  private async decorate(pv: PageView, page: Awaited<ReturnType<PDFDocumentProxy['getPage']>>, viewport: PageViewport, gen: number): Promise<void> {
     await this.ensureText(pv, viewport);
     if (pv.linksGen !== gen) {
       pv.linksGen = gen;
       void page.getAnnotations({ intent: 'display' }).then((list: LinkAnnot[]) => { if (gen === this.gen) this.paintLinks(pv, list, page.view); }).catch(() => undefined);
+    }
+  }
+
+  private idleText(): void {
+    const doc = this.doc, gen = this.gen;
+    if (!doc || !this.large) return;
+    for (const pv of this.pages) {
+      if (!pv.visible || !pv.canvas || pv.renderedKey !== this.key(pv) || (pv.textKey === `${gen}|${this.total(pv)}` && pv.linksGen === gen)) continue;
+      void doc.getPage(pv.index + 1).then((page) => {
+        if (gen !== this.gen || !pv.canvas) return;
+        return this.decorate(pv, page, page.getViewport({ scale: this.k(), rotation: this.total(pv) }), gen);
+      }).catch(() => undefined);
     }
   }
 
@@ -521,6 +620,7 @@ export class Viewer {
       pv.canvas.remove();
       pv.canvas = null;
       pv.renderedKey = '';
+      if (pv.preview) { pv.preview.hidden = false; pv.previewKey = ''; }
       pv.text?.cancel();
       pv.text = null;
       pv.textKey = '';
@@ -657,6 +757,28 @@ export class Thumbs {
         const next = [...this.visible].sort((a, b) => a - b).find((i) => this.drawn.get(i) !== String(gen) && i < this.viewer.pages.length);
         if (next === undefined || !this.viewer.doc) break;
         this.drawn.set(next, String(gen));
+        const url = this.viewer.large ? this.viewer.previewUrl : null;
+        if (url) {
+          const box = this.root.children[next]?.firstElementChild as HTMLElement | undefined;
+          if (!box) continue;
+          const s = this.viewer.sizes[next];
+          const scale = Math.max(0.125, Math.round((THUMB_W * Math.min(2, window.devicePixelRatio || 1) / Math.max(1, s ? s.w : 612)) * 8) / 8);
+          const img = (box.firstElementChild as HTMLImageElement | null)?.tagName === 'IMG' ? box.firstElementChild as HTMLImageElement : el<HTMLImageElement>('<img class="fs-pdf-thumb-img" alt="" decoding="async" draggable="false">');
+          const src = url(next + 1, scale);
+          if (img.getAttribute('src') !== src) {
+            for (let n = 0; this.viewer.busy() && n < 40; n++) await new Promise((r) => window.setTimeout(r, 150));
+            if (!this.visible.has(next)) { this.drawn.delete(next); continue; }
+            await new Promise<void>((resolve) => {
+              const done = (): void => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
+              img.addEventListener('load', done);
+              img.addEventListener('error', done);
+              img.setAttribute('src', src);
+              if (img.parentElement !== box) box.replaceChildren(img);
+            });
+            await new Promise((r) => window.setTimeout(r, this.viewer.busy() ? 120 : 0));
+          } else if (img.parentElement !== box) box.replaceChildren(img);
+          continue;
+        }
         try {
           const src = await this.viewer.thumb(next, 120);
           const box = this.root.children[next]?.firstElementChild as HTMLElement | undefined;

@@ -903,7 +903,8 @@ class Workbench {
     if (this.comparer.result && this.comparer.docId !== id && before !== sizes(info)) this.comparer.set(null);
     if (this.reading) void this.run('Preparing reading mode', () => this.reflow.show(id, info.pages, Math.min(this.reflow.currentPage(), info.pages)));
     try {
-      await this.viewer.load(pdfApi.fileUrl(id), info.sizes, { password: this.passwords.get(id), keep, onPassword: (retry) => this.askPassword(name, retry) });
+      await this.viewer.load(pdfApi.fileUrl(id), info.sizes, { password: this.passwords.get(id), keep, onPassword: (retry) => this.askPassword(name, retry),
+        bytes: info.bytes, preview: (page, scale) => pdfApi.previewUrl(id, page, scale) });
     } catch (err) {
       if (seq !== this.loadSeq) return;
       if (err instanceof Error && err.message === 'superseded') return;
