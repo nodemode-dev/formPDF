@@ -13,6 +13,7 @@ from app.services.pdf import actions, docs
 
 router = APIRouter()
 IMMUTABLE = {"Cache-Control": "private, max-age=31536000, immutable"}
+HEAVY = asyncio.Semaphore(1)
 
 
 def _path(doc_id: str) -> Path:
@@ -55,7 +56,9 @@ def _reprotect(src_id: str, new_id: str) -> None:
     out = docs.path_of(new_id)
     from pypdf import PdfReader
 
-    if PdfReader(str(out)).is_encrypted:
+    with Path(out).open("rb") as fh:
+        locked = PdfReader(fh).is_encrypted
+    if locked:
         docs.update_meta(new_id, protect=prot)
         return
     tmp = out.with_suffix(".enc.tmp")
@@ -166,7 +169,12 @@ async def act(doc_id: str, name: str, body: dict) -> Response:
         res = await _derive(doc_id, a.run, args=body, pages=pages, passwords=pw)
         return Response(json.dumps(res), media_type="application/json")
     if a.kind == "read":
-        text, data = await _run(a.run, _path(doc_id), args=body, pages=pages, passwords=pw)
+        src = _path(doc_id)
+        if src.stat().st_size >= pdfsvc.core.LAZY_BYTES:
+            async with HEAVY:
+                text, data = await _run(a.run, src, args=body, pages=pages, passwords=pw)
+        else:
+            text, data = await _run(a.run, src, args=body, pages=pages, passwords=pw)
         return Response(json.dumps({"text": text, **(data or {})}, default=str), media_type="application/json")
     tmp = docs.root() / f".act-{docs.new_id()}{a.ext}"
     try:
@@ -407,9 +415,10 @@ async def get_comments(doc_id: str) -> dict:
 
 
 @router.get("/pdf/{doc_id}/render/{page}")
-async def render(doc_id: str, page: int, scale: float = 2.0):
-    data = await _run(pdfsvc.render_png, _path(doc_id), page, scale, _pw(doc_id))
-    return Response(data, media_type="image/png", headers=IMMUTABLE)
+async def render(doc_id: str, page: int, scale: float = 2.0, fmt: str = "png"):
+    jpg = fmt == "jpg"
+    data = await _run(pdfsvc.render_png, _path(doc_id), page, scale, _pw(doc_id), "jpg" if jpg else "png")
+    return Response(data, media_type="image/jpeg" if jpg else "image/png", headers=IMMUTABLE)
 
 
 @router.get("/pdf/{doc_id}/pages.zip")

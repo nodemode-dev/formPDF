@@ -32,8 +32,12 @@ def render_pil(page, scale: float):
         bitmap.close()
 
 
+LAZY_BYTES = 32 * 1048576
+
+
 def reader(path, passwords: list[str] | None = None) -> PdfReader:
-    r = PdfReader(str(path))
+    p = Path(str(path))
+    r = PdfReader(p.open("rb")) if p.is_file() and p.stat().st_size >= LAZY_BYTES else PdfReader(str(path))
     if r.is_encrypted:
         for pw in [*(passwords or []), ""]:
             try:
@@ -200,7 +204,7 @@ def _outline(r: PdfReader, limit: int = 600) -> list[dict]:
 def info(path, passwords: list[str] | None = None) -> dict:
     p = Path(path)
     out: dict = {"bytes": p.stat().st_size, "encrypted": False, "locked": False}
-    r = PdfReader(str(p))
+    r = PdfReader(p.open("rb")) if out["bytes"] >= LAZY_BYTES else PdfReader(str(p))
     if r.is_encrypted:
         out["encrypted"] = True
         try:
@@ -427,26 +431,56 @@ def split(path, ranges: list[str], out_dir, passwords: list[str] | None = None) 
     return paths
 
 
-@serial
-def render_png(path, page: int, scale: float = 2.0, passwords: list[str] | None = None) -> bytes:
-    doc = pdfium_doc(path, passwords)
-    try:
-        if not 1 <= page <= len(doc):
-            raise ValueError(f"Page {page} is out of range (1 to {len(doc)})")
+OPEN_DOCS: "dict[tuple, object]" = {}
+KEEP_OPEN = 3
+
+
+def _render_doc(path, passwords):
+    p = Path(str(path))
+    st = p.stat()
+    key = (str(p), st.st_mtime_ns, st.st_size, tuple(passwords or ()))
+    doc = OPEN_DOCS.pop(key, None)
+    if doc is None:
+        doc = pdfium_doc(path, passwords)
         try:
             doc.init_forms()
         except Exception:
             pass
-        pg = doc[page - 1]
-        w, h = pg.get_size()
-        s = max(0.05, min(float(scale), 8.0, 8000 / max(w, h, 1)))
-        pil = render_pil(pg, s)
-        pg.close()
-        buf = io.BytesIO()
+    OPEN_DOCS[key] = doc
+    while len(OPEN_DOCS) > KEEP_OPEN:
+        old = OPEN_DOCS.pop(next(iter(OPEN_DOCS)))
+        try:
+            old.close()
+        except Exception:
+            pass
+    return doc
+
+
+@serial
+def render_png(path, page: int, scale: float = 2.0, passwords: list[str] | None = None, fmt: str = "png") -> bytes:
+    doc = _render_doc(path, passwords)
+    if not 1 <= page <= len(doc):
+        raise ValueError(f"Page {page} is out of range (1 to {len(doc)})")
+    pg = doc[page - 1]
+    w, h = pg.get_size()
+    s = max(0.05, min(float(scale), 8.0, 8000 / max(w, h, 1)))
+    pil = render_pil(pg, s)
+    pg.close()
+    buf = io.BytesIO()
+    if fmt == "jpg":
+        pil.convert("RGB").save(buf, "JPEG", quality=72)
+    else:
         pil.save(buf, "PNG", compress_level=6)
-        return buf.getvalue()
-    finally:
-        doc.close()
+    return buf.getvalue()
+
+
+@serial
+def forget(path) -> None:
+    for key in [k for k in OPEN_DOCS if k[0] == str(Path(str(path)))]:
+        try:
+            OPEN_DOCS.pop(key).close()
+        except Exception:
+            pass
 
 
 @serial

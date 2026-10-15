@@ -118,6 +118,9 @@ def adopt(src: Path, name: str, parent: str | None = None) -> str:
 
 
 def discard(doc_id: str) -> None:
+    from . import core
+
+    core.forget(root() / f"{doc_id}.pdf")
     for suffix in (".pdf", ".json"):
         try:
             (root() / f"{doc_id}{suffix}").unlink()
