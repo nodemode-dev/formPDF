@@ -65,6 +65,15 @@
 .fs-bx-trim { border: 1px solid #0ea5e9; }
 .fs-bx-bleed { border: 1px dashed #e11d48; }
 .fs-bx-art { border: 1px dotted #16a34a; }
+.fs-sep-shot { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+.fs-sep-inks { display: flex; flex-direction: column; gap: 2px; }
+.fs-sep-ink { gap: 8px; }
+.fs-sep-chip { width: 12px; height: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-light); flex: none; }
+.fs-sep-chip[data-kind="cyan"] { background: #00aeef; }
+.fs-sep-chip[data-kind="magenta"] { background: #ec008c; }
+.fs-sep-chip[data-kind="yellow"] { background: #fff200; }
+.fs-sep-chip[data-kind="black"] { background: #111; }
+.fs-sep-chip[data-kind="spot"] { background: repeating-linear-gradient(45deg, #f7931d 0 3px, #fff 3px 5px); }
 .fs-bx-tag { position: absolute; top: 2px; left: 2px; padding: 0 4px; border-radius: var(--radius-xs); background: rgba(255, 255, 255, 0.85); color: #111; font-size: 10px; line-height: 14px; font-family: var(--font-ui); }
 .fs-bx-bleed .fs-bx-tag { left: auto; right: 2px; }
 .fs-bx-art .fs-bx-tag { top: auto; bottom: 2px; }
