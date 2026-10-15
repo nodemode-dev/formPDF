@@ -19,8 +19,8 @@ STANDARD = {"/Document", "/DocumentFragment", "/Part", "/Art", "/Sect", "/Div", 
 GROUPS = {"/Document", "/DocumentFragment", "/Part", "/Art", "/Sect", "/Div", "/NonStruct", "/Private", "/Aside", "/StructTreeRoot"}
 HEADS = {"/H", "/H1", "/H2", "/H3", "/H4", "/H5", "/H6"}
 RETAG = ("P", "H1", "H2", "H3", "H4", "H5", "H6", "BlockQuote", "Caption", "Note", "Code", "Formula", "Figure", "Span")
-GROUP_NAMES = ("Document", "Page content", "Forms", "Alternate text", "Tables", "Lists", "Headings")
-FIXES = ("tag", "title", "lang", "tabs", "annotations", "descriptions", "summaries", "bookmarks")
+GROUP_NAMES = ("Document", "Page content", "Forms", "Alternate text", "Tables", "Lists", "Headings", "Tag correctness")
+FIXES = ("tag", "title", "lang", "tabs", "annotations", "descriptions", "summaries", "bookmarks", "headings", "spans")
 MAX_NODES = 200_000
 MAX_DEPTH = 256
 TEXT_OPS = {b"Tj", b"TJ", b"'", b'"'}
@@ -59,6 +59,7 @@ class Marks:
     def __init__(self):
         self.boxes: dict[int, list[float]] = {}
         self.texts: dict[int, str] = {}
+        self.sizes: dict[int, Counter] = {}
         self.untagged = Counter()
         self.glyphs = 0
         self.images = 0
@@ -103,6 +104,7 @@ def page_marks(page, pdf) -> Marks:
         if mcid is None or not here:
             continue
         _grow(m.boxes, mcid, g.box)
+        m.sizes.setdefault(mcid, Counter())[round((g.box[3] - g.box[1]) * 2) / 2] += 1
         t = m.texts.get(mcid, "")
         prev = last.get(mcid)
         if prev is not None and t and t[-1] != " " and (g.origin[0] < prev[0] - 1 or g.origin[0] - prev[1] > g.size * 0.25
@@ -288,6 +290,164 @@ def _heading_level(t: str) -> int | None:
     return int(t[2]) if re.fullmatch(r"/H[1-6]", t) else None
 
 
+SCRIPT_NAMES = (("ARABIC", "Arabic"), ("HEBREW", "Hebrew"), ("GREEK", "Greek"), ("CYRILLIC", "Cyrillic"), ("HIRAGANA", "Kana"), ("KATAKANA", "Kana"),
+                ("CJK", "Han"), ("HANGUL", "Hangul"), ("THAI", "Thai"), ("DEVANAGARI", "Devanagari"), ("LATIN", "Latin"))
+SCRIPT_LANG = {"Arabic": "ar", "Hebrew": "he", "Greek": "el", "Cyrillic": "ru", "Han": "zh", "Kana": "ja", "Hangul": "ko", "Thai": "th", "Devanagari": "hi"}
+LANG_SCRIPT = {"ar": "Arabic", "fa": "Arabic", "ur": "Arabic", "ps": "Arabic", "he": "Hebrew", "yi": "Hebrew", "el": "Greek", "ru": "Cyrillic", "uk": "Cyrillic",
+               "bg": "Cyrillic", "be": "Cyrillic", "mk": "Cyrillic", "kk": "Cyrillic", "mn": "Cyrillic", "zh": "Han", "ja": "Kana", "ko": "Hangul", "th": "Thai",
+               "hi": "Devanagari", "mr": "Devanagari", "ne": "Devanagari", "sa": "Devanagari"}
+LANG_RE = re.compile(r"[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8})*")
+PLACEHOLDER_ALT = re.compile(r"(?i)(.*\.(png|jpe?g|gif|tiff?|bmp|webp|svg|emf|wmf)|(an?\s+)?(image|picture|photo|figure|graphic|img|alt|alt text|chart|logo|icon|"
+                             r"diagram|illustration|untitled|placeholder|description)(\s*[-_#]?\s*\d+)?|[\W\d_]{0,3})")
+
+
+def script_of(text: str) -> str | None:
+    import unicodedata
+
+    seen = Counter()
+    for ch in text[:2000]:
+        if not ch.isalpha():
+            continue
+        name = unicodedata.name(ch, "")
+        for key, script in SCRIPT_NAMES:
+            if name.startswith(key):
+                seen[script] += 1
+                break
+    if sum(seen.values()) < 3:
+        return None
+    if seen["Kana"] and seen["Kana"] + seen["Han"] >= sum(seen.values()) / 2:
+        return "Kana"
+    return seen.most_common(1)[0][0]
+
+
+def lang_script(lang: str) -> str:
+    return LANG_SCRIPT.get(lang.split("-")[0].lower(), "Latin")
+
+
+def _fits(script: str, lang: str) -> bool:
+    want = lang_script(lang)
+    return script == want or (want == "Kana" and script == "Han")
+
+
+def _node_lang(x: "Node", doc_lang: str) -> str:
+    n = x
+    while n is not None and n.obj is not None:
+        v = str(n.obj.get("/Lang") or "").strip()
+        if v:
+            return v
+        n = n.parent
+    return doc_lang
+
+
+def _own(x: "Node", marks: list) -> tuple[str, Counter, list]:
+    text, sizes, boxes = [], Counter(), []
+    for y in x.walk():
+        for pg, mc in y.mcids:
+            if pg is None or pg >= len(marks):
+                continue
+            m = marks[pg]
+            if mc in m.texts:
+                text.append(m.texts[mc])
+            sizes.update(m.sizes.get(mc, {}))
+            if mc in m.boxes:
+                boxes.append((pg, m.boxes[mc]))
+    return re.sub(r"\s+", " ", " ".join(text)).strip(), sizes, boxes
+
+
+def _size(c: Counter) -> float | None:
+    return c.most_common(1)[0][0] if c else None
+
+
+def validate(nodes: list, marks: list, doc_lang: str, where) -> list[dict]:
+    V = GROUP_NAMES[7]
+    rules = []
+    heads, paras, body = [], [], Counter()
+    for x in nodes:
+        lv = _heading_level(x.type)
+        if lv is None and x.type != "/P":
+            continue
+        text, sizes, _ = _own(x, marks)
+        size = _size(sizes)
+        if size is None or not text:
+            continue
+        if lv is not None:
+            heads.append((x, lv, size, text))
+        else:
+            paras.append((x, size, text))
+            body.update(sizes)
+    wrong = []
+    for x, lv, size, text in heads:
+        above = [(l2, s2) for _y, l2, s2, _t in heads if l2 < lv]
+        if above:
+            l2, s2 = min(above, key=lambda a: a[1])
+            if size > s2 * 1.15:
+                wrong.append(where(x, f"H{lv} \"{text[:40]}\" is set larger ({size:g} pt) than an H{l2} ({s2:g} pt)"))
+                continue
+        same = sorted(s for _y, l2, s, _t in heads if l2 == lv)
+        mid = same[len(same) // 2]
+        if len(same) >= 3 and abs(size - mid) > mid * 0.3:
+            wrong.append(where(x, f"H{lv} \"{text[:40]}\" is {size:g} pt where most H{lv} headings are {mid:g} pt"))
+    rules.append(_rule("heading_levels", V, "Heading levels match the page", "failed" if wrong else "passed",
+                       f"{_n(len(wrong), 'heading', 'has', 'have')} a level that does not match how it is set on the page; a sighted reader and a screen reader would see a different outline."
+                       if wrong else ("Heading levels follow their size on the page." if heads else "There are no numbered headings to compare."), wrong,
+                       fix="headings" if wrong else None))
+    base = _size(body)
+    looks = []
+    if base:
+        for x, size, text in paras:
+            if size >= base * 1.3 and 2 <= len(text) <= 120 and not text.endswith((".", ",", ";", ":")) and not re.fullmatch(r"[\d\W]+", text):
+                looks.append(where(x, f"\"{text[:50]}\" is {size:g} pt (body text is {base:g} pt) but tagged as a paragraph"))
+    rules.append(_rule("heading_like", V, "Headings tagged as paragraphs", "failed" if looks else "passed",
+                       f"{_n(len(looks), 'line', 'looks', 'look')} like a heading but {'is' if len(looks) == 1 else 'are'} tagged as a paragraph, so screen reader users cannot jump to {'it' if len(looks) == 1 else 'them'}. "
+                       "Retag in Accessibility > Reading order." if looks else "No paragraph is set like a heading.", looks))
+    jumps, last = [], {}
+    for x in nodes:
+        if not x.mcids or x.type in ("/Figure", "/Artifact"):
+            continue
+        text, _sizes, boxes = _own(x, marks)
+        if not boxes or not text:
+            continue
+        pg = boxes[0][0]
+        b = [min(v[1][0] for v in boxes if v[0] == pg), min(v[1][1] for v in boxes if v[0] == pg),
+             max(v[1][2] for v in boxes if v[0] == pg), max(v[1][3] for v in boxes if v[0] == pg)]
+        a = last.get(pg)
+        last[pg] = b
+        if a is None:
+            continue
+        ov = min(a[2], b[2]) - max(a[0], b[0])
+        narrow = max(1.0, min(a[2] - a[0], b[2] - b[0]))
+        if ov >= narrow * 0.5 and b[3] > a[3] + max(24.0, (a[3] - a[1]) * 0.5) and b[1] > a[3] - 2:
+            jumps.append(where(x, f"\"{text[:40]}\" is read after text below it"))
+    rules.append(_rule("visual_order", V, "Reading order follows the page", "failed" if jumps else "passed",
+                       f"The tags go back up the same column {_plural(len(jumps), 'time')}; screen readers will read those parts out of order. "
+                       "Fix the order in Accessibility > Reading order." if jumps else "Within each column, the tags read from top to bottom.", jumps))
+    alts = Counter(x.alt.strip().lower() for x in nodes if x.type == "/Figure" and x.alt)
+    poor = [where(x, f"Alternate text \"{x.alt[:40]}\" " + ("is used for several figures" if alts[x.alt.strip().lower()] >= 3 else "says nothing about the picture"))
+            for x in nodes if x.type == "/Figure" and x.alt and (PLACEHOLDER_ALT.fullmatch(x.alt.strip()) or alts[x.alt.strip().lower()] >= 3)]
+    rules.append(_rule("alt_quality", V, "Alternate text says something", "failed" if poor else "passed",
+                       f"{_n(len(poor), 'figure', 'has', 'have')} alternate text that is a file name, a placeholder or repeated; it passes a presence check but tells a listener nothing."
+                       if poor else "No figure has placeholder or repeated alternate text.", poor))
+    bad_lang, spans = [], []
+    for x in nodes:
+        v = str(x.obj.get("/Lang") or "").strip() if x.obj is not None else ""
+        if v and not LANG_RE.fullmatch(v):
+            bad_lang.append(where(x, f"Language \"{v[:20]}\" is not a language code"))
+        if x.kids and any(k.mcids for k in x.kids):
+            continue
+        text, _s, _b = _own(x, marks)
+        sc = script_of(text) if text else None
+        lang = _node_lang(x, doc_lang)
+        if sc and lang and not _fits(sc, lang):
+            spans.append(where(x, f"{sc} text \"{text[:30]}\" is marked as {lang}"))
+    if doc_lang and not LANG_RE.fullmatch(doc_lang):
+        bad_lang.insert(0, {"page": None, "id": "", "text": f"The document language \"{doc_lang[:20]}\" is not a language code"})
+    rules.append(_rule("language_spans", V, "Language of each part", "failed" if spans or bad_lang else "passed",
+                       (f"{_n(len(spans), 'part', 'is', 'are')} written in another script than the document language and {'has' if len(spans) == 1 else 'have'} no language of {'its' if len(spans) == 1 else 'their'} own, "
+                        "so a screen reader reads it with the wrong voice. " if spans else "") + (f"{_plural(len(bad_lang), 'language value')} {'is' if len(bad_lang) == 1 else 'are'} not a valid code." if bad_lang else "")
+                       if spans or bad_lang else "Every part's script matches its language.", bad_lang + spans, fix="spans" if spans else None))
+    return rules
+
+
 def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | None = None):
     r = core.reader(path, passwords)
     root = r.trailer["/Root"]
@@ -295,7 +455,7 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
     tree = Tree(root, r.pages) if "/StructTreeRoot" in root else None
     marks = [page_marks(p, r) for p in r.pages]
     rules = []
-    D, P, F, A, T, L, H = GROUP_NAMES
+    D, P, F, A, T, L, H, V = GROUP_NAMES
 
     allowed = True
     if r.is_encrypted:
@@ -423,7 +583,10 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
                              ("alt_content", A, "Associated with content"), ("alt_annotation", A, "Hides annotation"),
                              ("other_alt", A, "Other elements alternate text"), ("table_rows", T, "Rows"), ("table_cells", T, "TH and TD"),
                              ("table_headers", T, "Headers"), ("table_regular", T, "Regularity"), ("table_summary", T, "Summary"),
-                             ("list_items", L, "List items"), ("list_parts", L, "Lbl and LBody"), ("heading_nesting", H, "Appropriate nesting")):
+                             ("list_items", L, "List items"), ("list_parts", L, "Lbl and LBody"), ("heading_nesting", H, "Appropriate nesting"),
+                             ("heading_levels", V, "Heading levels match the page"), ("heading_like", V, "Headings tagged as paragraphs"),
+                             ("visual_order", V, "Reading order follows the page"), ("alt_quality", V, "Alternate text says something"),
+                             ("language_spans", V, "Language of each part")):
             rules.append(_rule(rid, g, name, "skipped", "Needs tags first."))
     else:
         def where(x: Node, text: str) -> dict:
@@ -503,6 +666,7 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
         rules.append(_rule("heading_nesting", H, "Appropriate nesting", "failed" if jumps else "passed",
                            "Heading levels skip a level; screen reader users move by headings." if jumps else
                            ("Headings go down one level at a time." if any(_heading_level(x.type) for x in nodes) else "There are no numbered headings."), jumps))
+        rules += validate(nodes, marks, lang, where)
 
     counts = Counter(x["status"] for x in rules)
     summary = {"passed": counts["passed"], "failed": counts["failed"], "manual": counts["manual"], "skipped": counts["skipped"]}
@@ -825,7 +989,18 @@ def _make(w: PdfWriter, el: dict, parent_ref, page_ref, page_box, refs: dict):
                                                 NameObject("/BBox"): ArrayObject(FloatObject(round(v, 2)) for v in el["pdfbox"])})
     if el["S"] == "/TH":
         d[NameObject("/A")] = DictionaryObject({NameObject("/O"): NameObject("/Table"), NameObject("/Scope"): NameObject("/Column")})
+    if el.get("lang"):
+        d[NameObject("/Lang")] = TextStringObject(el["lang"])
     return ref
+
+
+def _mark_scripts(el: dict, doc_lang: str) -> None:
+    sc = script_of(el.get("text") or "")
+    if sc and sc in SCRIPT_LANG and not _fits(sc, doc_lang):
+        el["lang"] = SCRIPT_LANG[sc]
+        return
+    for k in el["kids"]:
+        _mark_scripts(k, doc_lang)
 
 
 def _annot_elements(page, elements: list[dict], leaves: list[dict], mx0: float, my1: float) -> list:
@@ -902,6 +1077,11 @@ def _tag(w: PdfWriter, src, passwords, args: dict) -> dict:
             except Exception:
                 continue
         base = layout.body_size(sample) if sample else None
+        doc_lang = str(args.get("lang") or w._root_object.get("/Lang") or "").strip()
+        if not doc_lang:
+            sc = script_of(" ".join(str(s.get("text", "")) for s in sample[:600]))
+            doc_lang = SCRIPT_LANG.get(sc or "", "") or default_lang()
+        args = {**args, "lang": doc_lang}
         analysed = []
         for i, page in enumerate(w.pages):
             c = interp.walk(page, w)
@@ -951,6 +1131,7 @@ def _tag(w: PdfWriter, src, passwords, args: dict) -> dict:
             page_ref = page.indirect_reference
             for el in elements:
                 if _prune(el):
+                    _mark_scripts(el, doc_lang)
                     doc_kids.append(_make(w, el, doc_ref, page_ref, None, refs))
                     counts[el["S"]] += 1
             if used:
@@ -1090,7 +1271,7 @@ class _TextCache:
 
 def fix(src, out, *, args: dict | None = None, pages=None, passwords: list[str] | None = None) -> dict:
     args = args or {}
-    want = [str(f) for f in (args.get("fixes") or FIXES)]
+    want = [str(f) for f in (args.get("fixes") or [f for f in FIXES if f != "headings"])]
     bad = [f for f in want if f not in FIXES]
     if bad:
         raise ValueError(f"Unknown fix {bad[0]}; fixes are {', '.join(FIXES)}")
@@ -1127,6 +1308,40 @@ def fix(src, out, *, args: dict | None = None, pages=None, passwords: list[str] 
     if "lang" in want and (args.get("lang") or not str(root.get("/Lang") or "").strip()):
         root[NameObject("/Lang")] = TextStringObject(str(args.get("lang") or default_lang()).strip()[:35])
         done.append("lang")
+    if ("headings" in want or "spans" in want) and tree:
+        ml = [cache.marks(i) for i in range(len(w.pages))]
+        doc_lang = str(root.get("/Lang") or "").strip()
+        if "headings" in want:
+            heads = []
+            for x in tree.nodes():
+                lv = _heading_level(x.type)
+                size = _size(_own(x, ml)[1]) if lv is not None and x.raw == x.type else None
+                if size:
+                    heads.append((x, size))
+            steps: list[float] = []
+            for s in sorted({s for _x, s in heads}, reverse=True):
+                if not steps or s < steps[-1] / 1.1:
+                    steps.append(s)
+            moved = 0
+            for x, size in heads:
+                lv = min(6, 1 + next(i for i, s in enumerate(steps) if size >= s / 1.1))
+                if f"/H{lv}" != x.type:
+                    x.obj[NameObject("/S")] = NameObject(f"/H{lv}")
+                    moved += 1
+            if moved:
+                done.append("headings")
+        if "spans" in want:
+            marked = 0
+            for x in list(tree.nodes()):
+                if x.kids and any(k.mcids for k in x.kids):
+                    continue
+                text = _own(x, ml)[0]
+                sc = script_of(text) if text else None
+                if sc and sc in SCRIPT_LANG and not _fits(sc, _node_lang(x, doc_lang)):
+                    x.obj[NameObject("/Lang")] = TextStringObject(SCRIPT_LANG[sc])
+                    marked += 1
+            if marked:
+                done.append("spans")
     if "tabs" in want:
         n = 0
         for page in w.pages:
