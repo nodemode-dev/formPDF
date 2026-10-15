@@ -598,15 +598,22 @@ async function moveToPage(host: ToolHost, params?: Record<string, unknown>): Pro
   return { page: n, moved: moving.length };
 }
 
-interface FontRow { name: string; type: string; state: string; installed: boolean; familyInstalled: boolean; standard: boolean; pages: number[] }
+interface FontRow { name: string; type: string; state: string; installed: boolean; familyInstalled: boolean; standard: boolean; pages: number[]; editWith: string }
+
+const EDIT_WITH: Array<[string, string]> = [['', 'Its own font'], ['sans', 'Inter (sans)'], ['serif', 'Noto Serif'], ['mono', 'JetBrains Mono']];
 
 class FontsDialog extends Dialog {
   private readonly lead = el('<p class="fs-note"></p>');
   private readonly list = el('<div class="fs-fonts-list" role="list"></div>');
+  onMap: (name: string, family: string) => void = () => undefined;
   constructor() {
-    super('Fonts in this PDF', 560);
-    this.body.append(this.lead, this.list);
+    super('Fonts in this PDF', 640);
+    this.body.append(this.lead, this.list, el('<p class="fs-note">Edit with chooses the font page text is edited in when you change it; the page is not changed until you edit that text. The choice is saved in the PDF and can be undone.</p>'));
     this.button('Close', 'primary', () => this.close());
+    this.list.addEventListener('change', (e) => {
+      const s = (e.target as HTMLElement).closest<HTMLSelectElement>('select[data-font]');
+      if (s?.dataset.font) this.onMap(s.dataset.font, s.value);
+    });
   }
   show(rows: FontRow[], missing: string[]): void {
     setText(this.lead, `${rows.length} font${rows.length === 1 ? '' : 's'}. ${missing.length ? `${missing.length} neither embedded nor installed: printing and editing will substitute them.` : 'Every font is embedded, standard or installed.'} Editing text needs the font installed on this computer.`);
@@ -615,17 +622,33 @@ class FontsDialog extends Dialog {
       setText(q(n, '.fs-fonts-state'), `${r.state} · ${r.installed ? 'installed' : r.familyInstalled ? 'family installed' : 'not installed'}`);
       setText(q(n, '.fs-fonts-pages'), r.pages.length ? `p. ${r.pages.slice(0, 8).join(', ')}${r.pages.length > 8 ? '…' : ''}` : '');
       setClass(n, 'is-missing', missing.includes(r.name));
+      const s = q<HTMLSelectElement>(n, 'select');
+      s.dataset.font = r.name;
+      if (s.value !== r.editWith) s.value = r.editWith;
       return n;
     };
+    const options = EDIT_WITH.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
     patchList(this.list, rows, {
       key: (r) => r.name,
-      create: (r) => fill(el('<div class="fs-fonts-row" role="listitem"><span class="fs-fonts-name" data-no-i18n></span><span class="fs-fonts-state"></span><span class="fs-fonts-pages"></span></div>'), r),
+      create: (r) => fill(el(`<div class="fs-fonts-row" role="listitem"><span class="fs-fonts-name" data-no-i18n></span><span class="fs-fonts-state"></span><span class="fs-fonts-pages"></span><select class="fs-tool-unit fs-fonts-with" aria-label="Edit with">${options}</select></div>`), r),
       update: fill,
     });
     this.open();
   }
 }
 let fontsDlg: FontsDialog | null = null;
+
+async function mapFont(host: ToolHost, name: string, family: string): Promise<void> {
+  const d = host.doc();
+  if (!d) return;
+  await host.ctx.run('Saving the font choice', async () => {
+    try {
+      const res = await pdfApi.act<Derived>(d.id, 'font_map', { map: { [name]: family || null } });
+      await host.ctx.commit(res, family ? `Edit ${name} as ${family}` : `Edit ${name} in its own font`);
+      reload(host);
+    } catch (err) { toast((err as Error).message, 'error'); }
+  });
+}
 
 async function showFonts(host: ToolHost): Promise<void> {
   const d = host.doc();
@@ -634,6 +657,7 @@ async function showFonts(host: ToolHost): Promise<void> {
     try {
       const got = await pdfApi.act<{ fonts: FontRow[]; missing: string[] }>(d.id, 'fonts', {});
       fontsDlg ??= new FontsDialog();
+      fontsDlg.onMap = (name, family) => void mapFont(host, name, family);
       fontsDlg.show(got.fonts, got.missing);
     } catch (err) { toast((err as Error).message, 'error'); }
   });
