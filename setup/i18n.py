@@ -62,6 +62,92 @@ def keys() -> list[str]:
         if f.is_file():
             for m in RULE.finditer(f.read_text(encoding="utf-8")):
                 found.add(m.group(1) or m.group(2))
+    found |= set(patterns())
+    return sorted(found)
+
+
+def _templates(src: str):
+    """Top-level template literals as (text parts, expressions), nested templates kept inside their expression."""
+    i, n = 0, len(src)
+    while i < n:
+        c = src[i]
+        if c in "'\"":
+            j = i + 1
+            while j < n and src[j] != c and src[j] != "\n":
+                j += 2 if src[j] == "\\" else 1
+            i = j + 1
+            continue
+        if src.startswith("//", i):
+            i = src.find("\n", i)
+            i = n if i < 0 else i
+            continue
+        if c != "`":
+            i += 1
+            continue
+        parts, exprs, buf, j = [], [], "", i + 1
+        while j < n and src[j] != "`":
+            if src[j] == "\\":
+                buf += src[j:j + 2]
+                j += 2
+            elif src.startswith("${", j):
+                depth, k = 1, j + 2
+                while k < n and depth:
+                    if src[k] == "`":
+                        k = src.find("`", k + 1) + 1 or n
+                        continue
+                    depth += 1 if src[k] == "{" else -1 if src[k] == "}" else 0
+                    k += 1
+                parts.append(buf)
+                exprs.append(src[j + 2:k - 1])
+                buf, j = "", k
+            else:
+                buf += src[j]
+                j += 1
+        parts.append(buf)
+        yield parts, exprs
+        i = j + 1
+
+
+MARKUP = re.compile(r"icon\(|svg\(|\.map\(|\.join\(|Html|html|<|\bel\(|row\(|sec\(|btn|LOCAL\.|calc\(|style|class|\bnum\(|quad\(")
+
+
+def patterns(hints: dict | None = None) -> list[str]:
+    """Run-time text built from a template: each ${...} that holds a value becomes {0}, {1}... in order."""
+    found: set[str] = set()
+    for f in glob.glob(str(SRC / "**" / "*.ts"), recursive=True):
+        if "/i18n/" in f.replace("\\", "/") or f.endswith("i18n.ts"):
+            continue
+        for parts, exprs in _templates(Path(f).read_text(encoding="utf-8")):
+            if not exprs:
+                continue
+            text = parts[0]
+            for e, p in zip(exprs, parts[1:]):
+                text += ("\x00" if MARKUP.search(e) else "\x01") + p
+            values = [e for e in exprs if not MARKUP.search(e)]
+            used = 0
+            for seg in re.split(r"<[^>]*>|\x00", text):
+                if "\x01" not in seg:
+                    continue
+                mine = values[used:used + seg.count("\x01")]
+                used += seg.count("\x01")
+                if hints is not None:
+                    hints.setdefault(seg.strip().replace("\x01", "{}"), mine)
+                k = 0
+                out = ""
+                for ch in seg:
+                    if ch == "\x01":
+                        out += "{" + str(k) + "}"
+                        k += 1
+                    else:
+                        out += ch
+                s = out.strip()
+                words = re.sub(r"\{\d+\}", " ", s)
+                if (len(re.findall(r"[A-Za-z]{2,}", words)) < 2 or re.search(r"[\n;=]|=>|\bfs-|\$|\\|[{}](?!\d)|(?<!\d)}", re.sub(r"\{\d+\}", "", s))
+                        or not re.match(r"[A-Z\"(]|\{\d+\}\s?[A-Za-z]", s) or len(s) > 400 or re.fullmatch(r"[\w./:-]*\{\d+\}[\w./:-]*", s)):
+                    continue
+                found.add(s)
+                if hints is not None:
+                    hints[s] = mine
     return sorted(found)
 
 
@@ -75,7 +161,7 @@ def table(code: str) -> dict[str, str]:
 
 
 def holes(s: str) -> list[str]:
-    return sorted(re.findall(r"\{[a-z0-9_]+\}|%[sd]|\$\{[^}]*\}|<[^>]+>", s))
+    return sorted(re.findall(r"\{[a-z0-9_]+\}|%[sd]|\$\{[^}]*\}|<<?[^<>]+>>?", s))
 
 
 def parity() -> int:
@@ -90,7 +176,7 @@ def parity() -> int:
             continue
         missing = [] if code in VARIANTS else [k for k in want if k not in t]
         stale = [k for k in t if k not in want]
-        broken = [k for k, v in t.items() if holes(k) != holes(v) or not str(v).strip()]
+        broken = [k for k, v in t.items() if not str(v).strip() or (not set(holes(v)) <= set(holes(k)) if re.search(r"\{\d+\}", k) else holes(k) != holes(v))]
         if missing or broken:
             bad += 1
         print(f"{code:6} {len(t):5} entries, {len(missing)} missing, {len(stale)} no longer in the source, {len(broken)} broken placeholders"

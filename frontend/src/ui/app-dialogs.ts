@@ -22,7 +22,7 @@ export function langName(code: string): string {
 
 export function applyLang(code: string): void {
   const tag = (code || 'en_US').replace('_', '-');
-  if (document.documentElement.lang !== tag) document.documentElement.lang = tag;
+  if (document.documentElement.dataset.spellLang !== tag) document.documentElement.dataset.spellLang = tag;
 }
 interface AgentHooks { agentsAllowed: () => boolean; setAgents: (on: boolean) => void }
 

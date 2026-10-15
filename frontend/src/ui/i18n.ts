@@ -33,19 +33,68 @@ async function load(l: Lang): Promise<void> {
   for (const code of [LANG_PARENT[l], l]) {
     if (!code || code === 'en' || tables.has(code)) continue;
     tables.set(code, await LOADERS[code]());
+    compiled.clear();
   }
+}
+
+interface Pattern { key: string; head: string; re: RegExp; order: number[] }
+const compiled = new Map<Lang, Pattern[]>();
+const HOLE = /\{(\d+)\}/g;
+
+function look(k: string): string | undefined {
+  const parent = LANG_PARENT[current];
+  return tables.get(current)?.[k] ?? (parent ? tables.get(parent)?.[k] : undefined);
+}
+
+function plain(english: string): string | undefined {
+  const exact = look(english);
+  if (exact !== undefined) return exact;
+  const tail = english.endsWith('…') ? '…' : english.endsWith('...') ? '...' : english.endsWith(':') && !english.endsWith('::') ? ':' : '';
+  const found = tail ? look(english.slice(0, -tail.length).trimEnd()) : undefined;
+  return found === undefined ? undefined : `${found}${tail}`;
+}
+
+function patternsFor(l: Lang): Pattern[] {
+  let list = compiled.get(l);
+  if (list) return list;
+  const keys = new Set<string>();
+  for (const code of [l, LANG_PARENT[l]]) for (const k of Object.keys((code && tables.get(code)) || {})) if (k.includes('{')) keys.add(k);
+  list = [];
+  for (const key of keys) {
+    const order: number[] = [];
+    let src = '^', last = 0;
+    for (const m of key.matchAll(HOLE)) {
+      src += key.slice(last, m.index).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([\\s\\S]*?)';
+      order.push(Number(m[1]));
+      last = (m.index ?? 0) + m[0].length;
+    }
+    if (!order.length) continue;
+    src += `${key.slice(last).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
+    list.push({ key, head: key.slice(0, key.search(HOLE)), re: new RegExp(src), order });
+  }
+  list.sort((a, b) => b.head.length - a.head.length);
+  compiled.set(l, list);
+  return list;
+}
+
+function fromPattern(text: string): string | undefined {
+  if (!/[\d\S]/.test(text)) return undefined;
+  for (const p of patternsFor(current)) {
+    if (p.head && !text.startsWith(p.head)) continue;
+    const m = p.re.exec(text);
+    if (!m) continue;
+    const vals = new Map<number, string>();
+    p.order.forEach((n, i) => vals.set(n, m[i + 1]));
+    const out = look(p.key);
+    if (out === undefined) continue;
+    return out.replace(HOLE, (_s, n: string) => { const v = vals.get(Number(n)) ?? ''; return plain(v) ?? v; });
+  }
+  return undefined;
 }
 
 export function t(english: string): string {
   if (current === 'en') return english;
-  const tail = english.endsWith('…') ? '…' : english.endsWith('...') ? '...' : english.endsWith(':') && !english.endsWith('::') ? ':' : '';
-  const base = tail ? english.slice(0, -tail.length).trimEnd() : english;
-  const parent = LANG_PARENT[current];
-  const look = (k: string): string | undefined => tables.get(current)?.[k] ?? (parent ? tables.get(parent)?.[k] : undefined);
-  const exact = look(english);
-  if (exact !== undefined) return exact;
-  const found = tail ? look(base) : undefined;
-  return found === undefined ? english : `${found}${tail}`;
+  return plain(english) ?? fromPattern(english) ?? english;
 }
 
 const known = (text: string): boolean => current !== 'en' && t(text) !== text;
