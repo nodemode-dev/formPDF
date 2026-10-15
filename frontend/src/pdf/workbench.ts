@@ -20,6 +20,7 @@ import { recall, REFLOW_SIZES, Reflow, remember, Speaker } from './reading';
 import { loadPlugins } from './plugins';
 import { lateTools, mountTools, pageTools, renderedTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
 import { Thumbs, Viewer, type Layout } from './viewer';
+import { Workspaces } from './workspace';
 
 export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void; palette(): void }
 export interface WorkbenchOptions { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; app: AppHooks; restore?: { page: number; tab: string; dirty: boolean } }
@@ -134,6 +135,8 @@ class Workbench {
   private readonly cmds = new Commands();
   private readonly openMenu: PopupMenu;
   private readonly layoutMenu: PopupMenu;
+  private readonly wsMenu: PopupMenu;
+  private readonly ws: Workspaces;
   private reading = false;
   private menuClosed = 0;
   private voicesKey = '';
@@ -256,6 +259,15 @@ class Workbench {
       { id: 'pdf-preferences', label: 'Preferences…', keys: ['Mod+,'], run: () => this.opts.app.preferences() },
       { id: 'pdf-palette', label: 'Find a command or tool…', keys: ['Mod+K'], words: ['palette', 'search tools', 'all tools'], run: () => this.opts.app.palette() },
     );
+    this.ws = new Workspaces({
+      root: this.root, panes: this.panes, tab: () => this.tab, setTab: (t) => this.setTab(t), goPage: (n) => this.goPage(n),
+      ask: (text, value, done) => this.bar({ text, tone: 'info', input: { type: 'text', value }, actions: [
+        { label: 'Save', kind: 'primary', run: (v) => { try { done(v); this.hideBar(); } catch (err) { toast((err as Error).message, 'error'); } } },
+        { label: 'Cancel', kind: 'ghost', run: () => this.hideBar() },
+      ] }),
+    });
+    this.cmds.add(...this.ws.commands(), ...this.ws.customCommands());
+    this.ws.onChange = () => { for (const c of this.ws.customCommands()) if (!this.cmds.get(c.id)) this.cmds.add(c); this.wsMenu.setItems(this.ws.menuItems()); };
     this.cmds.add(...mountTools(this.panes.root, this.host));
     lateTools(this.panes.root, this.host, (cmds) => { this.cmds.add(...cmds); syncTools(this.host); });
     void loadPlugins();
@@ -264,6 +276,7 @@ class Workbench {
       { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'pdf-find'] },
       { label: 'View', items: [...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare'] },
       { label: 'Tools', items: [...TABS.map(([t]) => `pdf-tab-${t}`), '-', 'tool-lists', 'tool-lists-record'] },
+      { label: 'Window', items: () => this.ws.menuItems() },
       { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
     ];
     this.menubar = new MenuBar(q(this.root, '.fs-pdfwb-menubar'), this.cmds, menus);
@@ -275,6 +288,10 @@ class Workbench {
     this.layoutMenu.panel.classList.add('fs-pdfwb-menu');
     this.layoutMenu.onClose = () => { this.menuClosed = performance.now(); };
     this.layoutMenu.setItems([...LAYOUTS.map(([v]) => `pdf-layout-${v}`), '-', 'pdf-cover', '-', 'pdf-reading']);
+    this.wsMenu = new PopupMenu(this.cmds, null, true);
+    this.wsMenu.panel.classList.add('fs-pdfwb-menu');
+    this.wsMenu.onClose = () => { this.menuClosed = performance.now(); };
+    this.wsMenu.setItems(this.ws.menuItems());
     const saved = (recall(LAYOUT_KEY) ?? '').split('|');
     if (LAYOUTS.some(([v]) => v === saved[0])) this.viewer.setLayout(saved[0] as Layout, saved[1] === '1');
     const say = (recall(SAY_KEY) ?? '').split('|');
@@ -282,6 +299,7 @@ class Workbench {
     if (Number(say[1]) > 0) this.speaker.rate = Number(say[1]);
     this.wire();
     this.setTab('view');
+    if (this.ws.current !== 'all') this.ws.use(this.ws.current);
     this.syncChrome();
     this.syncView();
   }
@@ -616,6 +634,13 @@ class Workbench {
       case 'undo': this.undo(); break;
       case 'redo': this.redo(); break;
       case 'open': void this.pick(false).then((f) => { if (f[0]) void this.guard(() => this.openFile(f[0])); }); break;
+      case 'ws-menu': {
+        if (this.wsMenu.isOpen || performance.now() - this.menuClosed < 250) { this.wsMenu.close(); break; }
+        this.wsMenu.setItems(this.ws.menuItems());
+        const rc = b.getBoundingClientRect();
+        this.wsMenu.openAt(Math.max(8, rc.right - 260), rc.bottom + 6);
+        break;
+      }
       case 'open-menu': case 'layout-menu': {
         const menu = b.dataset.a === 'open-menu' ? this.openMenu : this.layoutMenu;
         if (menu.isOpen || performance.now() - this.menuClosed < 250) { menu.close(); break; }
@@ -1335,6 +1360,7 @@ class Workbench {
 
   private syncChrome(): void {
     syncTools(this.host);
+    this.ws?.refresh();
     const has = !!this.doc;
     setClass(this.root, 'has-doc', has);
     const can = this.history[this.hi - 1], next = this.history[this.hi + 1];

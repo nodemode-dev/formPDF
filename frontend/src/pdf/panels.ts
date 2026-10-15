@@ -49,7 +49,7 @@ const num = (a: string, value: number, min: number, max: number): string => `<di
 const quad = (prefix: string, title: Record<string, string>, value: number): string => `<div class="fs-pdfwb-quad">${Object.entries(title).map(([k, t]) => `<div class="fs-num" title="${t}"><span class="fs-num-label">${t[0]}</span><input type="number" min="0" step="1" value="${value}" data-a="${prefix}-${k}" aria-label="${t}"><span class="fs-unit">pt</span></div>`).join('')}</div>`;
 
 interface ReplyView { key: string; who: string; text: string; pending: boolean }
-interface ThreadView { key: string; pending: boolean; page: number; title: string; sub: string; color: string; status: Status; replies: ReplyView[]; open: boolean }
+export interface ThreadView { key: string; pending: boolean; page: number; title: string; sub: string; color: string; status: Status; replies: ReplyView[]; open: boolean }
 
 function parseRange(spec: string, n: number): number[] | null {
   const s = spec.trim();
@@ -100,6 +100,8 @@ export class Panes {
   private tab: Tab = 'view';
   private existing: PdfComment[] = [];
   private commentsFor = '';
+  wantComments = false;
+  onThreads: ((list: ThreadView[]) => void) | null = null;
   private marksFor = '';
   private filedMarks = 0;
   private commentsLoading = '';
@@ -319,7 +321,10 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     });
     this.threads(this.$('.fs-pdfwb-annots'), pending);
     this.threads(this.$('.fs-pdfwb-inpdf'), stored);
+    this.onThreads?.([...pending, ...stored]);
   }
+
+  comments(): void { void this.loadComments(); }
 
   private threads(host: HTMLElement, list: ThreadView[]): void {
     const update = (n: HTMLElement, t: ThreadView): void => {
@@ -360,7 +365,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
 
   private async loadComments(): Promise<void> {
     const d = this.ctx.doc();
-    if (!d || this.tab !== 'comment' || this.commentsFor === d.id || this.commentsLoading === d.id) return;
+    if (!d || (this.tab !== 'comment' && !this.wantComments) || this.commentsFor === d.id || this.commentsLoading === d.id) return;
     const id = d.id;
     this.commentsLoading = id;
     let list: PdfComment[] = [];
