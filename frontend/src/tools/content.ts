@@ -14,8 +14,9 @@ type Crop = { l: number; t: number; r: number; b: number };
 interface Item { id: string; kind: 'text' | 'picture'; thread?: string; seq?: number; overflow?: boolean; page: number; x: number; y: number; w: number; h: number; rot?: number; flipH?: boolean; flipV?: boolean; z: number; font?: Font; paras?: Para[]; crop?: Crop; iw?: number; ih?: number; merged?: boolean }
 interface Pic { page: number; op: number; x: number; y: number; w: number; h: number; rot: number; flipV: boolean; iw: number; ih: number }
 interface Txt { page: number; key: string; x: number; y: number; w: number; h: number; rot: number; font: Font; paras: Para[]; text: string; editable: boolean; fontName: string }
-type Kind = 'text' | 'picture' | 'pic' | 'ptext' | 'comment';
-interface Obj { key: string; kind: Kind; page: number; g: Geo; item?: Item; pic?: Pic; txt?: Txt; annot?: Annot }
+interface Shape { page: number; op: number; paint: string; box: { x: number; y: number; w: number; h: number } }
+type Kind = 'text' | 'picture' | 'pic' | 'ptext' | 'comment' | 'shape';
+interface Obj { key: string; kind: Kind; page: number; g: Geo; item?: Item; pic?: Pic; txt?: Txt; annot?: Annot; shape?: Shape }
 type Pt = { x: number; y: number };
 interface Drag { kind: 'move' | 'resize' | 'rotate' | 'crop' | 'width'; page: number; p0: Pt; handle: string; base: Map<string, Geo>; crop0: Crop; moved: boolean }
 type Mode = 'idle' | 'select' | 'text' | 'picture';
@@ -28,7 +29,9 @@ const STATE_CMD: Record<string, string> = { b: 'bold', i: 'italic', u: 'underlin
 let items: Item[] = [];
 let pics: Pic[] = [];
 let txts: Txt[] = [];
+let shapes: Shape[] = [];
 let pending = 0;
+const shapeKey = (s: Shape): string => `s:${s.page}:${s.op}`;
 let loadedFor = '';
 const loaded = new Set<number>();
 const queued = new Set<number>();
@@ -92,6 +95,7 @@ function objects(page: number, host: ToolHost): Obj[] {
   if (mode === 'select') {
     for (const t of txts) if (t.page === page) out.push({ key: txtKey(t), kind: 'ptext', page, g: { x: t.x, y: t.y, w: t.w, h: t.h, rot: t.rot }, txt: t });
     for (const a of host.ctx.annot.items) if (a.page === page && a.kind !== 'reply') out.push({ key: `c:${a.id}`, kind: 'comment', page, g: { ...bounds(a), rot: 0 }, annot: a });
+    for (const s of shapes) if (s.page === page) out.push({ key: shapeKey(s), kind: 'shape', page, g: { x: s.box.x, y: s.box.y, w: Math.max(2, s.box.w), h: Math.max(2, s.box.h), rot: 0 }, shape: s });
   }
   return out;
 }
@@ -103,7 +107,8 @@ function allSelected(host: ToolHost): Obj[] {
     const pic = k.startsWith('p:') ? pics.find((x) => `p:${x.page}:${x.op}` === k) : null;
     const a = k.startsWith('c:') ? host.ctx.annot.items.find((x) => x.id === k.slice(2)) : null;
     const t = k.startsWith('t:') ? txts.find((x) => txtKey(x) === k) : null;
-    const page = it?.page ?? pic?.page ?? a?.page ?? t?.page;
+    const s = k.startsWith('s:') ? shapes.find((x) => shapeKey(x) === k) : null;
+    const page = it?.page ?? pic?.page ?? a?.page ?? t?.page ?? s?.page;
     if (page) pages.add(page);
   }
   const out: Obj[] = [];
@@ -114,7 +119,7 @@ function allSelected(host: ToolHost): Obj[] {
 const geo = (o: Obj): Geo => preview.get(o.key) ?? o.g;
 
 function handlesFor(o: Obj, single: boolean): string {
-  if (!single || o.kind === 'comment') return '';
+  if (!single || o.kind === 'comment' || o.kind === 'shape') return '';
   if (cropping === o.key) return ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((h) => `<span class="fs-cx-h is-crop" data-h="${h}"></span>`).join('');
   const list = isText(o) ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
   return list.map((h) => `<span class="fs-cx-h" data-h="${h}"></span>`).join('') + '<span class="fs-cx-h is-rot" data-h="rot"></span>';
@@ -169,9 +174,13 @@ async function flush(): Promise<void> {
   if (!host || !d || !pages.length) { flushing = false; return; }
   for (const p of pages) loaded.add(p);
   try {
-    const got = await pdfApi.act<{ items: Item[]; pictures: Pic[]; paragraphs?: Txt[] }>(d.id, 'items', { pages: pages.join(',') });
+    const [got, drawn] = await Promise.all([
+      pdfApi.act<{ items: Item[]; pictures: Pic[]; paragraphs?: Txt[] }>(d.id, 'items', { pages: pages.join(',') }),
+      pdfApi.act<{ paths: Shape[] }>(d.id, 'paths', { pages: pages.join(',') }).catch(() => ({ paths: [] as Shape[] })),
+    ]);
     if (host.doc()?.id !== d.id) { flushing = false; return; }
     const set = new Set(pages);
+    shapes = [...shapes.filter((x) => !set.has(x.page)), ...drawn.paths];
     items = [...items.filter((x) => !set.has(x.page)), ...got.items];
     pics = [...pics.filter((x) => !set.has(x.page)), ...got.pictures];
     txts = [...txts.filter((x) => !set.has(x.page)), ...(got.paragraphs ?? [])];
@@ -261,8 +270,11 @@ function remap(res: { converted?: Record<string, string> } | null): void {
 async function applyGeo(host: ToolHost, changes: Map<string, Geo>, label: string): Promise<void> {
   const objs = allSelected(host).filter((o) => changes.has(o.key));
   const updates: Array<Record<string, unknown>> = [];
+  const shapeEdits = objs.filter((o) => o.shape).map((o) => { const g = changes.get(o.key) as Geo; return { page: o.page, op: o.shape?.op, dx: round(g.x - o.g.x), dy: round(g.y - o.g.y) }; }).filter((e) => e.dx || e.dy);
+  if (shapeEdits.length) await editShapes(host, shapeEdits, label);
   for (const o of objs) {
     const g = changes.get(o.key) as Geo;
+    if (o.shape) continue;
     if (o.kind === 'comment' && o.annot) {
       host.ctx.annot.update(o.annot.id, shifted(o.annot, g.x - o.g.x, g.y - o.g.y), label);
     } else {
@@ -282,6 +294,33 @@ async function applyGeo(host: ToolHost, changes: Map<string, Geo>, label: string
 
 const round = (v: number): number => Math.round(v * 100) / 100;
 
+async function editShapes(host: ToolHost, edits: Array<Record<string, unknown>>, label: string): Promise<void> {
+  const d = host.doc();
+  if (!d || !edits.length) return;
+  await host.ctx.run('Changing shapes', async () => {
+    pending++;
+    try {
+      const res = await pdfApi.act<Derived & { ops?: Record<string, Record<string, number>> }>(d.id, 'edit_paths', { edits });
+      await host.ctx.commit(res, label);
+      sel = sel.map((k) => {
+        const [, page, op] = k.split(':');
+        const next = k.startsWith('s:') ? res.ops?.[page]?.[op] : undefined;
+        return next !== undefined ? `s:${page}:${next}` : k;
+      });
+      reload(host);
+    } catch (err) { toast((err as Error).message, 'error'); } finally { pending--; }
+  });
+}
+
+const selectedShapes = (host: ToolHost): Obj[] => allSelected(host).filter((o) => !!o.shape);
+
+function styleShapes(host: ToolHost, what: 'fill' | 'stroke' | 'opacity', value: string): void {
+  const objs = selectedShapes(host);
+  if (!objs.length) return;
+  const v = what === 'opacity' ? Number(value) : value;
+  void editShapes(host, objs.map((o) => ({ page: o.page, op: o.shape?.op, [what]: v })), what === 'opacity' ? 'Shape opacity' : what === 'fill' ? 'Shape fill' : 'Shape stroke');
+}
+
 function repaint(): void { layers.repaint(); sync(); }
 
 function pick(o: Obj | null, add: boolean): void {
@@ -294,7 +333,8 @@ function pick(o: Obj | null, add: boolean): void {
 
 function hit(page: number, p: Pt, host: ToolHost): Obj | null {
   const list = objects(page, host);
-  const sorted = [...list.filter((o) => o.kind === 'comment'), ...list.filter((o) => o.kind === 'text' || o.kind === 'picture').reverse(), ...list.filter((o) => o.kind === 'ptext'), ...list.filter((o) => o.kind === 'pic').reverse()];
+  const sorted = [...list.filter((o) => o.kind === 'comment'), ...list.filter((o) => o.kind === 'text' || o.kind === 'picture').reverse(), ...list.filter((o) => o.kind === 'ptext'), ...list.filter((o) => o.kind === 'pic').reverse(),
+    ...list.filter((o) => o.kind === 'shape').sort((a, b) => a.g.w * a.g.h - b.g.w * b.g.h)];
   return sorted.find((o) => inside(geo(o), p)) ?? null;
 }
 
@@ -858,6 +898,8 @@ function sync(): void {
   const textOn = !!editing || texts.length > 0 || mode === 'text';
   for (const b of Array.from(root.querySelectorAll<HTMLButtonElement | HTMLInputElement | HTMLSelectElement>('[data-g="text"] [data-f]'))) setDisabled(b, !textOn);
   for (const b of Array.from(root.querySelectorAll<HTMLButtonElement>('[data-g="picture"] [data-p]'))) setDisabled(b, !picsSel.length || !!editing);
+  const shapeOn = objs.some((o) => !!o.shape) && !editing;
+  for (const s of Array.from(root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-s]'))) setDisabled(s, !shapeOn);
   setClass(q(root, '[data-p="crop"]'), 'is-active', !!cropping);
   for (const b of Array.from(root.querySelectorAll<HTMLButtonElement>('[data-z]'))) setDisabled(b, !engine.length || !!editing);
   for (const b of Array.from(root.querySelectorAll<HTMLButtonElement>('[data-a]'))) setDisabled(b, !samePage || objs.length < (b.dataset.a?.startsWith('dist') ? 3 : 2) || !!editing);
@@ -923,6 +965,8 @@ registerTool({
 </div>
 <div class="fs-pdfwb-subhead">Picture</div>
 <div class="fs-cx-btns" data-g="picture">${btn('data-p="left"', 'undo', 'Rotate left')}${btn('data-p="right"', 'redo', 'Rotate right')}${btn('data-p="flipH"', 'flipH', 'Flip horizontally')}${btn('data-p="flipV"', 'flipV', 'Flip vertically')}${btn('data-p="crop"', 'crop', 'Crop (Enter keeps it)')}<button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-p="uncrop">Reset crop</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-p="replace">Replace…</button></div>
+<div class="fs-pdfwb-subhead">Shape</div>
+<div class="fs-cx-row" data-g="shape"><label class="fs-cx-swatch" title="Fill colour of the selected shapes"><span>Fill</span><input type="color" data-s="fill" value="#E11D48" aria-label="Shape fill"></label><label class="fs-cx-swatch" title="Line colour of the selected shapes"><span>Line</span><input type="color" data-s="stroke" value="#111111" aria-label="Shape line colour"></label><select class="fs-tool-unit" data-s="opacity" aria-label="Shape opacity" title="Opacity of the selected shapes"><option value="1">100%</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option></select></div>
 <div class="fs-pdfwb-subhead">Arrange</div>
 <div class="fs-cx-btns">${btn('data-z="front"', 'bringFront', 'Bring to front')}${btn('data-z="forward"', 'bringForward', 'Bring forward')}${btn('data-z="backward"', 'sendBackward', 'Send backward')}${btn('data-z="back"', 'sendBack', 'Send to back')}</div>
 <div class="fs-pdfwb-subhead">Align and distribute</div>
@@ -952,6 +996,7 @@ registerTool({
       if (b.dataset.t === 'convert') void convertComment(host);
     });
     for (const f of ['family', 'line'] as const) q<HTMLSelectElement>(root, `[data-f="${f}"]`).addEventListener('change', (e) => void textFormat(host, f, (e.target as HTMLSelectElement).value));
+    for (const s of Array.from(root.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-s]'))) s.addEventListener('change', () => styleShapes(host, s.dataset.s as 'fill', s.value));
     q<HTMLInputElement>(root, '[data-f="size"]').addEventListener('change', (e) => void textFormat(host, 'size', (e.target as HTMLInputElement).value));
     q<HTMLInputElement>(root, '[data-f="color"]').addEventListener('change', (e) => void textFormat(host, 'color', (e.target as HTMLInputElement).value.toUpperCase()));
     editor.area.addEventListener('keydown', (e) => {

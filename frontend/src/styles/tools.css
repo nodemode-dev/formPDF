@@ -58,6 +58,9 @@
 .fs-cx-full { position: absolute; box-sizing: border-box; outline: 1px dashed rgba(0, 0, 0, 0.45); background: rgba(0, 0, 0, 0.06); }
 .fs-cx-group { display: grid; gap: var(--space-2); }
 .fs-tool-note.fs-cx-note { min-height: calc(4 * 1.45em); }
+.fs-cx-swatch { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--text-secondary); font-size: var(--fs-12); }
+.fs-cx-swatch input[type="color"] { width: 28px; height: 24px; padding: 0; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: transparent; }
+.fs-cx-swatch input:disabled { opacity: 0.4; }
 .fs-cx-port { position: absolute; width: 11px; height: 11px; box-sizing: border-box; border: 1.5px solid var(--accent-color); border-radius: 2px; background: #fff; pointer-events: none; }
 .fs-cx-port.is-in { left: -6px; top: 4px; }
 .fs-cx-port.is-out { right: -6px; bottom: 4px; pointer-events: auto; cursor: alias; }
