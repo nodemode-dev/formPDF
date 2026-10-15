@@ -332,6 +332,7 @@ class Workbench {
       insertPdfs: (files, at) => this.insertPdfs(files, at),
       applyOrganize: () => this.applyOrganize(),
       act: (name, value) => this.act(name, value),
+      undo: () => this.undo(),
     };
   }
 

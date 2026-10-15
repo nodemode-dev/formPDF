@@ -138,6 +138,7 @@
 .fs-pdf-notepop { position: absolute; z-index: 2; width: 220px; padding: 6px; border: 1px solid #d4b106; border-radius: 4px; background: #fff8c5; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); pointer-events: auto; }
 .fs-pdf-notepop .fs-pdf-edit { position: static; display: block; min-height: 96px; padding: 4px; outline: 0; background: transparent; color: #222; font-family: var(--font-ui); font-size: 13px; line-height: 1.45; resize: vertical; }
 .fs-pdf-annot[data-kind="redact"] { border: 1.5px solid #dc2626; background: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.55) 0 6px, rgba(220, 38, 38, 0.4) 6px 12px); pointer-events: auto; }
+.fs-pdf-annot[data-kind="redact"][data-white] { border: 1.5px dashed #64748b; background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.92) 0 6px, rgba(148, 163, 184, 0.45) 6px 12px); }
 .fs-pdfwb:not([data-tool="select"]):not([data-tool="redact"]) .fs-pdf-annot[data-kind="redact"] { pointer-events: none; }
 .fs-pdfwb[data-tool="redact"] .fs-pdf-annot[data-kind="redact"] { pointer-events: none; }
 .fs-pdf-draft { position: absolute; pointer-events: none; }
@@ -193,6 +194,10 @@
 .fs-pdfwb-dot { display: block; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text-primary) 18%, transparent); }
 .fs-pdfwb-annots-empty { padding: 20px 8px; }
 .fs-pdfwb-sigmode { margin-bottom: var(--space-2); }
+.fs-pdfwb-rmode { margin-bottom: var(--space-2); }
+.fs-pdfwb-redloglist { max-height: 240px; overflow-y: auto; overscroll-behavior: contain; }
+.fs-pdfwb-redrow { cursor: pointer; }
+.fs-pdfwb-redrow .fs-row-sub { white-space: normal; overflow-wrap: anywhere; }
 .fs-pdf-pad { position: relative; height: 128px; overflow: hidden; border: 1px dashed var(--line-3); border-radius: var(--radius-md); background: #fff; }
 .fs-pdf-pad > canvas { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 .fs-pdf-pad-hint { position: absolute; left: 0; right: 0; top: 40%; color: #9a9a9a; font-size: var(--fs-12); text-align: center; pointer-events: none; }

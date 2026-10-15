@@ -124,6 +124,7 @@ interface Move { id: string; pv: PageView; x0: number; y0: number; node: HTMLEle
 export class Annotator {
   items: Annot[] = [];
   areas: Area[] = [];
+  whiteout = false;
   cropBox: Area | null = null;
   selected: string | null = null;
   tool: Tool = 'select';
@@ -222,6 +223,10 @@ export class Annotator {
       if (n.title !== title) n.title = title;
     } else {
       setHtml(n, this.selected === it.key ? '<span class="fs-pdf-handle"></span>' : '', this.selected === it.key ? 'h' : '');
+      const white = (it.area as Area).white ? '1' : '';
+      if ((n.dataset.white ?? '') !== white) { if (white) n.dataset.white = white; else delete n.dataset.white; }
+      const tip = white ? 'Whiteout mark: removed and painted white when applied' : 'Redaction mark: removed and blacked out when applied';
+      if (n.title !== tip) n.title = tip;
     }
     setClass(n, 'is-selected', this.selected === it.key);
   }
@@ -461,7 +466,7 @@ export class Annotator {
     }
     if (s.tool === 'redact') {
       if ((a.w ?? 0) < 2 || (a.h ?? 0) < 2) return;
-      this.setAreas([...this.areas, { id, page: a.page, x: a.x ?? 0, y: a.y ?? 0, w: a.w ?? 0, h: a.h ?? 0 }]);
+      this.setAreas([...this.areas, { id, page: a.page, x: a.x ?? 0, y: a.y ?? 0, w: a.w ?? 0, h: a.h ?? 0, ...(this.whiteout ? { white: true } : {}) }]);
       return;
     }
     if (s.tool === 'freetext') {

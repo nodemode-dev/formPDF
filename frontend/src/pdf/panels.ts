@@ -2,7 +2,7 @@ import { el, escapeHtml, patchList, q, setClass, setDisabled, setHidden, setText
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 import { KIND_LABEL, uid, type Annotator, type Tool } from './annotate';
-import { pdfApi, type Annot, type Area, type Derived, type HeaderFooter, type HiddenItem, type ImageItem, type Match, type PdfComment, type PdfInfo, type Preset, type Status, type TableItem } from './api';
+import { pdfApi, type Annot, type Area, type Derived, type HeaderFooter, type HiddenItem, type ImageItem, type Match, type PdfComment, type PdfInfo, type Preset, type RedactEntry, type Status, type TableItem } from './api';
 import { SignaturePad, typedSignature, type Fields } from './fill';
 import type { Organizer } from './organize';
 import { recall, remember } from './reading';
@@ -24,6 +24,7 @@ export interface Ctx {
   insertPdfs(files: File[], at: number): Promise<void>;
   applyOrganize(): Promise<void>;
   act(name: string, value?: string): void;
+  undo(): void;
 }
 
 const stem = (name: string): string => name.replace(/\.pdf$/i, '');
@@ -100,6 +101,7 @@ export class Panes {
   private tab: Tab = 'view';
   private existing: PdfComment[] = [];
   private commentsFor = '';
+  private redLog: { for: string; before: string; entries: RedactEntry[]; more: number } | null = null;
   wantComments = false;
   onThreads: ((list: ThreadView[]) => void) | null = null;
   private marksFor = '';
@@ -155,9 +157,10 @@ ${sec('Tables', `<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" typ
 ${sec('Password', `${row('Password', '<input class="fs-input" type="password" data-a="pw1" autocomplete="new-password">')}${row('Confirm', '<input class="fs-input" type="password" data-a="pw2" autocomplete="new-password">')}${row('Owner', '<input class="fs-input" type="password" data-a="pw-owner" placeholder="Optional" autocomplete="new-password">')}<div class="fs-pdfwb-perms"><label class="fs-check"><input type="checkbox" data-perm="print" checked>Printing</label><label class="fs-check"><input type="checkbox" data-perm="copy" checked>Copying text</label><label class="fs-check"><input type="checkbox" data-perm="modify" checked>Editing</label><label class="fs-check"><input type="checkbox" data-perm="annotate" checked>Comments</label><label class="fs-check"><input type="checkbox" data-perm="fill" checked>Filling forms</label><label class="fs-check"><input type="checkbox" data-perm="assemble" checked>Page changes</label></div><p class="fs-note">AES-256. Readers need the password to open the file; the owner password unlocks the restrictions.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="protect">${icon('lockFile', 14)}Protect</button></div>`)}
 ${sec('Remove password', `${row('Password', '<input class="fs-input" type="password" data-a="unlock-pw" autocomplete="current-password">')}<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="unlock">${icon('unlock', 14)}Remove protection</button></div>`, 'data-part="unlock"')}
 ${sec('Find text to redact', `${row('Find', '<select data-a="fr-mode" aria-label="What to find"><option value="text">Words or phrase</option><option value="email">Email addresses</option><option value="phone">Phone numbers</option><option value="card">Credit card numbers</option><option value="date">Dates</option><option value="regex">Pattern (regular expression)</option></select>')}<div class="fs-pdfwb-frq"><label class="fs-search">${icon('search', 14)}<input type="search" data-a="fr-query" placeholder="Word or phrase" spellcheck="false" aria-label="Text to find"></label></div><div class="fs-pdfwb-fropts"><label class="fs-check"><input type="checkbox" data-a="fr-case">Match case</label><label class="fs-check"><input type="checkbox" data-a="fr-whole">Whole words</label></div><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="fr-find">${icon('find', 14)}Find</button></div><div class="fs-pdfwb-frhead" hidden><span class="fs-pdfwb-frcount"></span><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="fr-all">Select all</button></div><div class="fs-list fs-pdfwb-matches"></div><div class="fs-pdfwb-btns fs-pdfwb-frbtns" hidden><button class="fs-btn fs-btn-sm" type="button" data-a="fr-mark">${icon('eraser', 14)}Mark ticked</button><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="fr-redact">Redact all matches</button></div>`)}
-${sec('Redact', `<p class="fs-note fs-pdfwb-redactnote">Mark areas to black out, then apply.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="redact-tool">${icon('eraser', 14)}Mark areas</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-clear">Clear</button></div>${row('Fill', '<input type="color" class="fs-pdfwb-color" value="#000000" data-a="redact-color" aria-label="Fill colour">')}${row('Text on box', '<input class="fs-input" type="text" data-a="redact-overlay" maxlength="120" placeholder="None, or REDACTED" spellcheck="false">')}<label class="fs-check"><input type="checkbox" data-a="redact-scan">Scanned pages: flatten marked pages to pictures</label><p class="fs-pdfwb-warn">${icon('warning', 14)}<span>Redaction is permanent. The text, pictures, shapes, comments and form fields under each box are removed from the file, not covered; the rest of the page stays selectable and searchable. Redaction marks already in the file are applied too.</span></p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="redact-apply">Apply redactions</button></div>`)}
+${sec('Redact', `<p class="fs-note fs-pdfwb-redactnote">Mark areas to black out, then apply.</p><div class="fs-seg fs-pdfwb-rmode" role="radiogroup" aria-label="Kind of mark"><button type="button" role="radio" data-a="redact-black" class="is-on" aria-checked="true">Black out</button><button type="button" role="radio" data-a="redact-white" aria-checked="false">White out</button></div><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="redact-tool">${icon('eraser', 14)}Mark areas</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-clear">Clear</button></div>${row('Fill', '<input type="color" class="fs-pdfwb-color" value="#000000" data-a="redact-color" aria-label="Fill colour">')}${row('Text on box', '<input class="fs-input" type="text" data-a="redact-overlay" maxlength="120" placeholder="None, or REDACTED" spellcheck="false">')}<label class="fs-check"><input type="checkbox" data-a="redact-scan">Scanned pages: flatten marked pages to pictures</label><p class="fs-pdfwb-warn">${icon('warning', 14)}<span>Redaction is permanent. The text, pictures, shapes, comments and form fields under each box are removed from the file, not covered; the rest of the page stays selectable and searchable. Redaction marks already in the file are applied too. Until you save, Undo brings back the version before.</span></p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="redact-apply">Apply redactions</button></div><p class="fs-note">What each redaction removed is listed under Redaction log at the end of this tab.</p>`)}
 ${sec('Metadata', `${row('Title', '<input class="fs-input" type="text" data-m="title">')}${row('Author', '<input class="fs-input" type="text" data-m="author">')}${row('Subject', '<input class="fs-input" type="text" data-m="subject">')}${row('Keywords', '<input class="fs-input" type="text" data-m="keywords">')}<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="meta-save">${icon('check', 14)}Save metadata</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="meta-strip">Remove all</button></div>`)}
 ${sec('Remove hidden information', `<p class="fs-note fs-pdfwb-hidnote">Find what this PDF carries besides its visible pages: metadata, scripts, attachments, comments, form fields, hidden layers and more.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="hid-scan">${icon('find', 14)}<span>Find hidden information</span></button><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="hid-remove" hidden>Remove ticked</button></div><div class="fs-pdfwb-hidlist" hidden>${HIDDEN_KEYS.map(([k, l]) => `<label class="fs-check fs-pdfwb-hidrow" data-hk="${k}"><input type="checkbox" data-a="hid-tick" data-k="${k}"><span class="fs-pdfwb-hidlabel">${l}</span><span class="fs-pdfwb-hidcount"></span></label>`).join('')}</div><p class="fs-note fs-pdfwb-hidhelp" hidden></p>`)}
+${sec('Redaction log', `<p class="fs-note fs-pdfwb-redlognote"></p><div class="fs-list fs-pdfwb-redloglist"></div><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="redact-undo">${icon('undo', 14)}Undo redaction</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-log">${icon('download', 14)}Save log</button></div><p class="fs-note">The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.</p>`, 'data-part="redlog" hidden')}
 </div>
 <div class="fs-pdfwb-pane" data-for="convert" hidden>
 ${sec('PowerPoint', `<p class="fs-note">One slide per page at the page size. Words become editable text boxes (turned ones stay turned), tables PowerPoint tables, and lines, shapes and pictures PowerPoint objects; what cannot be rebuilt stays in the slide picture behind them.</p>${row('Pages', '<input class="fs-input" type="text" data-a="pptx-pages" placeholder="All pages">')}<label class="fs-check"><input type="checkbox" data-a="pptx-text" checked>Editable text, shapes and pictures</label><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-a="pptx">${icon('filePptx', 14)}Export to PowerPoint (.pptx)</button></div>`)}
@@ -259,6 +262,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
 
   syncDoc(): void {
     const d = this.ctx.doc();
+    this.syncRedLog();
     const props = this.$('.fs-pdfwb-props');
     if (this.matchesFor && d?.key !== this.matchesKey) { this.matches = []; this.ticked.clear(); this.matchesFor = ''; this.stale = false; this.syncMatches(); }
     else if (this.matchesFor && d?.id !== this.matchesFor && !this.stale) { this.ticked.clear(); this.stale = true; this.syncMatches(); }
@@ -462,10 +466,55 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     setDisabled(this.$<HTMLButtonElement>('[data-a="redact-apply"]'), !areas.length && !filed);
     setDisabled(this.$<HTMLButtonElement>('[data-a="redact-clear"]'), !areas.length);
     setClass(this.$('[data-a="redact-tool"]'), 'is-on', this.ctx.annot.tool === 'redact');
+    const sel = this.ctx.annot.areas.find((x) => x.id === this.ctx.annot.selected);
+    const white = sel ? !!sel.white : this.ctx.annot.whiteout;
+    for (const [k, on] of [['redact-black', !white], ['redact-white', white]] as const) {
+      const b = this.$(`[data-a="${k}"]`);
+      setClass(b, 'is-on', on);
+      if (b.getAttribute('aria-checked') !== String(on)) b.setAttribute('aria-checked', String(on));
+    }
+    this.syncRedLog();
     setClass(this.$('[data-a="crop-tool"]'), 'is-on', this.ctx.annot.tool === 'crop');
   }
 
   private hfVal(a: string): string { return this.$<HTMLInputElement>(`[data-a="${a}"]`).value; }
+
+  syncRedLog(): void {
+    const box = this.$('[data-part="redlog"]');
+    const L = this.redLog, cur = this.ctx.doc()?.id ?? '';
+    setHidden(box, !L);
+    if (!L) return;
+    const live = L.for === cur, undone = L.before === cur;
+    const kinds = new Map<string, number>();
+    for (const e of L.entries) kinds.set(e.kind, (kinds.get(e.kind) ?? 0) + 1);
+    const WORD: Record<string, [string, string]> = { text: ['text run', 'text runs'], picture: ['picture', 'pictures'], shape: ['shape', 'shapes'], comment: ['comment', 'comments'],
+      link: ['link', 'links'], field: ['form field', 'form fields'], item: ['editable item note', 'editable item notes'], page: ['flattened page', 'flattened pages'] };
+    const parts = [...kinds].map(([k, n]) => `${n} ${WORD[k]?.[n === 1 ? 0 : 1] ?? k}`);
+    const summary = L.entries.length ? `Removed ${parts.join(', ')}${L.more ? `, and ${L.more} more not listed` : ''}.` : 'Nothing was under the marks, so nothing was removed.';
+    setText(this.$('.fs-pdfwb-redlognote'), undone ? 'Undone: the PDF is the exact version from before this redaction. The log stays here until you redact again.'
+      : live ? summary : `${summary} The PDF has changed since; Undo steps back through the later changes first.`);
+    setDisabled(this.$<HTMLButtonElement>('[data-a="redact-undo"]'), !live);
+    const rows = L.entries.slice(0, 400).map((e, i) => ({ k: String(i), e }));
+    patchList(this.$('.fs-pdfwb-redloglist'), rows, {
+      key: (r) => r.k,
+      create: (r) => { const n = el(`<div class="fs-row fs-pdfwb-redrow" data-a="redact-row" role="button" tabindex="0"><span class="fs-row-main"><span class="fs-row-title"></span><span class="fs-row-sub" data-no-i18n></span></span></div>`); this.redRow(n, r.e); return n; },
+      update: (n, r) => this.redRow(n, r.e),
+    });
+  }
+
+  private redRow(n: HTMLElement, e: RedactEntry): void {
+    if (n.dataset.page !== String(e.page)) n.dataset.page = String(e.page);
+    const kind = { text: 'Text', picture: 'Picture', shape: 'Shape', comment: 'Comment', link: 'Link', field: 'Form field', item: 'Editable items', page: 'Whole page' }[e.kind] ?? e.kind;
+    setText(n.querySelector('.fs-row-title'), `Page ${e.page} · ${kind}`);
+    setText(n.querySelector('.fs-row-sub'), e.text);
+  }
+
+  private redLogCsv(name: string): string {
+    const q2 = (s: string): string => `"${s.replace(/"/g, '""')}"`;
+    const L = this.redLog;
+    const lines = ['page,kind,text,x,y,w,h', ...(L?.entries ?? []).map((e) => [e.page, e.kind, q2(e.text), e.box?.x ?? '', e.box?.y ?? '', e.box?.w ?? '', e.box?.h ?? ''].join(','))];
+    return `# Redaction log for ${name}; boxes in points from the top left of the page\n${lines.join('\n')}\n`;
+  }
 
   private redactLook(): { color: string; overlay: string; mode: 'content' | 'raster' } {
     return { color: this.hfVal('redact-color'), overlay: this.hfVal('redact-overlay').trim(), mode: this.$<HTMLInputElement>('[data-a="redact-scan"]').checked ? 'raster' : 'content' };
@@ -692,6 +741,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     const c = this.ctx;
     const d = c.doc();
     switch (a) {
+      case 'redact-row': c.viewer.goTo(Number(t.dataset.page) || 1); return;
       case 'annot-del': { const id = (t.closest('.fs-pdfwb-thread') as HTMLElement | null)?.dataset.key; if (id) c.annot.remove(id); return; }
       case 'thread-pick': case 'thread-reply': case 'thread-status': case 'reply-del': this.threadAction(a, t); return;
       case 'hf-token': {
@@ -850,7 +900,19 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
         c.annot.setAreas([]);
         c.tool('select');
         await c.commit(res, 'Redact');
+        this.redLog = { for: res.id, before: id, entries: res.log ?? [], more: res.logMore ?? 0 };
+        this.syncRedLog();
       }); return;
+      case 'redact-black': case 'redact-white': {
+        const white = a === 'redact-white';
+        c.annot.whiteout = white;
+        const sel = c.annot.selected;
+        if (sel && c.annot.areas.some((x) => x.id === sel)) c.annot.setAreas(c.annot.areas.map((x) => (x.id === sel ? { ...x, white: white || undefined } : x)));
+        this.syncAreas();
+        return;
+      }
+      case 'redact-undo': if (this.redLog && this.redLog.for === d.id) c.undo(); return;
+      case 'redact-log': if (this.redLog) void c.deliver(new Blob([this.redLogCsv(d.name)], { type: 'text/csv' }), `${stem(d.name)}-redaction-log.csv`); return;
       case 'meta-save': case 'meta-strip': void c.run('Updating metadata', async () => {
         const id = await c.flush() ?? d.id;
         const body = a === 'meta-strip' ? { strip: true } : { title: this.mval('title'), author: this.mval('author'), subject: this.mval('subject'), keywords: this.mval('keywords') };
