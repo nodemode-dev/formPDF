@@ -98,7 +98,9 @@ version: X-4 | X-6} converts for a press (X-6 is PDF 2.0); read pdfx_check {leve
 file claims} lists what stops the file meeting it, by formpdf's own checks; pdf20 rewrites the file as PDF 2.0 with XMP metadata;
 read preflight {profile: print | office | screen, tac: ink limit in percent, default 300} checks fonts, picture resolution, colour, ink
 coverage, white set to overprint, artwork at the trim edge without bleed, transparency, hairlines, trim boxes and scripts, each with
-its pages and a fix where one exists; preflight_fix {fixes} applies them; read inks lists the process and spot inks; read separation_preview
+its pages and a fix where one exists; preflight_fix {fixes} applies them; import_xfdf {xfdf: path | data: text, pages} adds a reviewer's comments, recognises ones already here even under another name and
+takes their status; export_changes writes a JSON change list (delete, replace, insert, comment, each with the words around it) for a
+layout app; highlights and underlines move with their words when edit_items changes page text (comments_followed); read inks lists the process and spot inks; read separation_preview
 {page, hide: inks to turn off} returns that page as a PNG data URL with those inks removed; ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
 computer and adds invisible, searchable text; tilted full-page scans are straightened; get_context says whether OCR is installed).
 Export: split {ranges: ["1-3", "4-"], out: folder}; to_docx {out} (columns, lists, header and footer kept); to_pptx {out, text: true}

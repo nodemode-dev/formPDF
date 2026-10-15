@@ -1,5 +1,5 @@
 from . import docs
-from . import access, attach, boxes, exports, fontreport, items, links, measure, ocr, paths, pdfa, pdfx, preflight, printing, redact as redaction, separations, sign as signing, spell, textedit, xfdf
+from . import access, attach, boxes, changes, exports, fontreport, items, links, measure, ocr, paths, pdfa, pdfx, preflight, printing, redact as redaction, separations, sign as signing, spell, textedit, xfdf
 from .annot import annotate, comments
 from .core import (Locked, extract_images, extract_tables, extract_text, info, merge, page_count, pages_zip, parse_pages, render_png,
                    split, tables_xlsx)

@@ -147,6 +147,16 @@ def export(src, out, *, args: dict | None = None, pages=None, passwords: list[st
     return {"comments": counts["comments"], "replies": counts["replies"]}
 
 
+def _alike(pi: int, a) -> tuple:
+    r = [float(v) for v in (a.get("/Rect") or [0, 0, 0, 0])]
+    return (pi, str(a.get("/Subtype")), round((r[0] + r[2]) / 16), round((r[1] + r[3]) / 16), _str(a.get("/Contents")).strip()[:200])
+
+
+def _alike_el(pi: int, el: ET.Element) -> tuple:
+    r = _floats(el.get("rect"), 4)
+    return (pi, SUBTYPE.get(el.tag, ""), round((r[0] + r[2]) / 16), round((r[1] + r[3]) / 16), (el.findtext("contents") or "").strip()[:200])
+
+
 def _floats(s, n: int | None = None) -> list[float]:
     vals = [float(x) for x in re.split(r"[\s,;]+", str(s or "").strip()) if x]
     if n is not None and len(vals) < n:
@@ -315,16 +325,28 @@ def import_(src, out, *, args: dict | None = None, pages=None, passwords: list[s
         x0, y0, x1, y1 = core.view_box(page)
         geo.append((x0, y0, x1 - x0, y1 - y0))
     known: dict[str, object] = {}
+    where: dict[int, int] = {}
+    alike: dict[tuple, object] = {}
+    status: dict[int, tuple[str, str]] = {}
     for pi, page in enumerate(w.pages):
         arr = page.get("/Annots")
-        for ref in (arr.get_object() if arr is not None else []):
+        for k, ref in enumerate(arr.get_object() if arr is not None else []):
             a = ref.get_object()
-            nm = _str(a.get("/NM")).strip() if isinstance(a, DictionaryObject) else ""
-            if nm and hasattr(ref, "idnum"):
-                known[nm] = ref
+            if not isinstance(a, DictionaryObject) or not hasattr(ref, "idnum"):
+                continue
+            known[_name_of(a, pi, k)] = ref
+            where[ref.idnum] = pi
+            alike.setdefault(_alike(pi, a), ref)
+            irt = a.raw_get("/IRT") if "/IRT" in a else None
+            if irt is not None and "/State" in a and str(a.get("/StateModel") or "/Review") == "/Review":
+                when = _str(a.get("/M") or a.get("/CreationDate"))
+                pid = getattr(irt, "idnum", -1)
+                if pid not in status or when >= status[pid][1]:
+                    status[pid] = (str(a["/State"])[1:].lower(), when)
+    idx = set(core.parse_pages(pages, len(w.pages))) if pages else None
     tops = [el for el in items if not el.get("inreplyto")]
     replies = [el for el in items if el.get("inreplyto")]
-    counts = {"comments": 0, "replies": 0, "skipped": 0, "drawn": 0}
+    counts = {"comments": 0, "replies": 0, "skipped": 0, "drawn": 0, "duplicates": 0, "outside": 0, "statuses": 0}
     blank = None
     touched: set[int] = set()
     drawn: list[tuple[int, dict, DictionaryObject]] = []
@@ -333,8 +355,44 @@ def import_(src, out, *, args: dict | None = None, pages=None, passwords: list[s
         later = []
         for el in pending:
             nm = el.get("name") or ""
-            if nm and nm in known:
-                counts["skipped"] += 1
+            try:
+                epi = int(el.get("page", "0"))
+            except ValueError:
+                epi = -1
+            if idx is not None and epi + 1 not in idx:
+                counts["outside"] += 1
+                continue
+            same = known.get(nm) if nm else None
+            if same is None and not el.get("inreplyto") and 0 <= epi < len(w.pages):
+                try:
+                    same = alike.get(_alike_el(epi, el))
+                except ValueError:
+                    same = None
+                if same is not None:
+                    counts["duplicates"] += 1
+                    if nm:
+                        known[nm] = same
+            if same is not None:
+                a = same.get_object()
+                state = (el.get("state") or "").strip()
+                before = counts["statuses"]
+                if state.lower() in annot.STATES and str(el.get("statemodel") or "Review") == "Review":
+                    spi = where.get(same.idnum, max(0, epi))
+                    if el.get("inreplyto"):
+                        if str(a.get("/State") or "")[1:].lower() != state.lower():
+                            a[NameObject("/State")] = NameObject(annot.STATES[state.lower()])
+                            if el.get("date"):
+                                a[NameObject("/M")] = TextStringObject(el.get("date")[:60])
+                            counts["statuses"] += 1
+                            touched.add(spi)
+                    elif status.get(same.idnum, ("none", ""))[0] != state.lower():
+                        blank = blank or annot._blank_ap(w)
+                        annot._thread(w, spi, same, [], state.lower(), (el.get("title") or "Reviewer")[:200], blank)
+                        status[same.idnum] = (state.lower(), "")
+                        counts["statuses"] += 1
+                        touched.add(spi)
+                if counts["statuses"] == before:
+                    counts["skipped"] += 1
                 continue
             try:
                 pi = int(el.get("page", "0"))
@@ -407,13 +465,14 @@ def import_(src, out, *, args: dict | None = None, pages=None, passwords: list[s
             d[NameObject("/AP")] = DictionaryObject({NameObject("/N"): annot._form(w, ov.pages[k], bb)})
             d[NameObject("/Rect")] = annot._arr([llx + bb[0], lly + bb[1], llx + bb[2], lly + bb[3]])
             counts["drawn"] += 1
-    if not counts["comments"] and not counts["replies"]:
+    if not counts["comments"] and not counts["replies"] and not counts["statuses"]:
         raise ValueError(f"Nothing to bring in: {counts['skipped']} comment{'s' if counts['skipped'] != 1 else ''} already in this PDF or not readable"
                          if counts["skipped"] else "The XFDF file has no comments")
     core.keep_pages(w, touched)
     with open(out, "wb") as fh:
         w.write(fh)
-    return {"pages": len(w.pages), "comments": counts["comments"], "replies": counts["replies"], "skipped": counts["skipped"]}
+    return {"pages": len(w.pages), "comments": counts["comments"], "replies": counts["replies"], "skipped": counts["skipped"],
+            "duplicates": counts["duplicates"], "statuses": counts["statuses"], "outside": counts["outside"]}
 
 
 actions.register(actions.Action("export_xfdf", "export", "Export comments (XFDF)", ext=".xfdf", words=("xfdf", "export comments", "share review", "fdf"),
