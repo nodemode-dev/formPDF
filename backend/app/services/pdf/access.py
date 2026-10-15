@@ -1491,7 +1491,7 @@ def structure(path, *, args: dict | None = None, pages=None, passwords: list[str
         page = r.pages[p]
         vb = core.view_box(page)
         item = {"id": x.path, "page": p + 1, "order": order[p], "type": x.type.lstrip("/"), "tag": x.raw.lstrip("/"), "text": re.sub(r"\s+", " ", text)[:160],
-                "alt": x.alt, "box": frame.from_pdf(page, ub) if ub else None, "pw": round(vb[2] - vb[0], 2), "ph": round(vb[3] - vb[1], 2)}
+                "alt": x.alt, "weak": bool(x.alt and PLACEHOLDER_ALT.fullmatch(x.alt.strip())), "box": frame.from_pdf(page, ub) if ub else None, "pw": round(vb[2] - vb[0], 2), "ph": round(vb[3] - vb[1], 2)}
         if want is None or p + 1 in want:
             out.append(item)
         if is_fig:

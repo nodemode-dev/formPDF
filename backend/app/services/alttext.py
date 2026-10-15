@@ -66,7 +66,7 @@ def drafts(src, *, args: dict | None = None, pages=None, passwords: list[str] | 
     if not got.get("tagged"):
         raise ValueError("Tag the PDF first (Accessibility > Tags); figures are found while tagging")
     want = {str(i) for i in args.get("ids") or []}
-    figs = [f for f in got["figures"] if f.get("box") and (str(f["id"]) in want if want else not f.get("alt"))][:MAX_FIGURES]
+    figs = [f for f in got["figures"] if f.get("box") and (str(f["id"]) in want if want else not f.get("alt") or f.get("weak"))][:MAX_FIGURES]
     if not figs:
         return "Every figure already has alternate text.", {"drafts": [], "waiting": False}
     context = _context(src, figs, passwords)
