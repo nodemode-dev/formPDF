@@ -190,6 +190,8 @@ function syncStd(): void {
   setDisabled(q<HTMLButtonElement>(r, '[data-s="check"]'), !id);
   setDisabled(q<HTMLButtonElement>(r, '[data-s="convert"]'), !id);
   setDisabled(q<HTMLButtonElement>(r, '[data-s="pdfx"]'), !id || !q<HTMLInputElement>(r, '[data-s="profile"]').value.trim());
+  setDisabled(q<HTMLButtonElement>(r, '[data-s="xcheck"]'), !id);
+  setDisabled(q<HTMLButtonElement>(r, '[data-s="pdf20"]'), !id);
   setText(q(r, '[data-s="note"]'), !pdfa ? 'PDF/A is the archive standard: everything the file needs to look the same in decades is inside it. Check first, then convert.'
     : !fresh ? 'These results are for an earlier version. Check again.'
       : pdfa.conforms ? `Conforms to PDF/A-${pdfa.level} in every check formpdf runs.` : `${pdfa.issues.length} kind${pdfa.issues.length === 1 ? '' : 's'} of problem for PDF/A-${pdfa.level}; ${pdfa.issues.filter((x) => x.fixable).length} can be fixed by converting.`);
@@ -245,12 +247,44 @@ async function convertPdfa(): Promise<void> {
 async function convertPdfx(): Promise<void> {
   const host = hostRef, d = host?.doc(), r = stdRoot;
   if (!host || !d || !r) return;
-  await host.ctx.run('Converting to PDF/X-4', async () => {
+  const version = val(r, 'xver', 's') || 'X-4';
+  await host.ctx.run(`Converting to PDF/${version}`, async () => {
     try {
       const id = await host.ctx.flush() ?? d.id;
-      const res = await pdfApi.act<Derived & { condition?: string }>(id, 'pdfx', { profile: val(r, 'profile', 's').trim(), condition: val(r, 'condition', 's').trim() || undefined });
-      await host.ctx.commit(res, 'Convert to PDF/X-4');
-      toast(`Converted to PDF/X-4 for ${res.condition ?? 'the printing condition'}.`);
+      const res = await pdfApi.act<Derived & { condition?: string }>(id, 'pdfx', { profile: val(r, 'profile', 's').trim(), condition: val(r, 'condition', 's').trim() || undefined, version });
+      await host.ctx.commit(res, `Convert to PDF/${version}`);
+      toast(`Converted to PDF/${version} for ${res.condition ?? 'the printing condition'}.`);
+    } catch (err) { toast((err as Error).message, 'error'); }
+  });
+}
+
+interface XReport { level: string; claim: string; version: string; conforms: boolean; issues: Array<{ id: string; text: string; pages: number[] }> }
+
+async function checkPdfx(level = ''): Promise<XReport | null> {
+  const host = hostRef, d = host?.doc(), r = stdRoot;
+  if (!host || !d || !r) return null;
+  let out: XReport | null = null;
+  await host.ctx.run('Checking PDF/X', async () => {
+    try {
+      const id = await host.ctx.flush() ?? d.id;
+      const rep = await pdfApi.act<XReport>(id, 'pdfx_check', level ? { level } : {});
+      out = rep;
+      const first = rep.issues.slice(0, 3).map((i) => i.text).join('; ');
+      setText(q(r, '[data-s="xnote"]'), rep.conforms ? `Conforms to PDF/${rep.level} by formpdf's checks (PDF ${rep.version}).` : `Not PDF/${rep.level} yet: ${first}${rep.issues.length > 3 ? `, and ${rep.issues.length - 3} more` : ''}.`);
+    } catch (err) { toast((err as Error).message, 'error'); }
+  });
+  return out;
+}
+
+async function savePdf20(): Promise<void> {
+  const host = hostRef, d = host?.doc();
+  if (!host || !d) return;
+  await host.ctx.run('Saving as PDF 2.0', async () => {
+    try {
+      const id = await host.ctx.flush() ?? d.id;
+      const res = await pdfApi.act<Derived>(id, 'pdf20', {});
+      await host.ctx.commit(res, 'Save as PDF 2.0');
+      toast('The PDF is now PDF 2.0, with its information in XMP metadata.');
     } catch (err) { toast((err as Error).message, 'error'); }
   });
 }
@@ -398,10 +432,12 @@ registerTool({
 <div class="fs-prop-row"><span class="fs-prop-label">Level</span><div class="fs-prop-ctl"><select data-s="level" aria-label="PDF/A level"><option value="2b">PDF/A-2b (looks the same)</option><option value="2u" selected>PDF/A-2u (and text can be copied)</option><option value="3b">PDF/A-3b (keeps attached files)</option></select></div></div>
 <div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="check">${icon('find', 14)}Check</button><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-s="convert">Convert to PDF/A</button></div>
 <div class="fs-tool-listbox"><div class="fs-list fs-tool-list" data-s="list"></div><p class="fs-note fs-tool-empty" data-s="empty"></p></div>
-<div class="fs-pdfwb-subhead">PDF/X-4 for a press</div>
+<div class="fs-pdfwb-subhead">PDF/X for a press</div>
+<div class="fs-prop-row"><span class="fs-prop-label">Version</span><div class="fs-prop-ctl"><select data-s="xver" aria-label="PDF/X version"><option value="X-4" selected>PDF/X-4 (PDF 1.6, live transparency)</option><option value="X-6">PDF/X-6 (PDF 2.0)</option></select></div></div>
+<p class="fs-note" data-s="xnote">Check tells you whether the file already meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT, by formpdf's own checks.</p>
 <div class="fs-prop-row"><span class="fs-prop-label">Profile</span><div class="fs-prop-ctl"><input class="fs-input" type="text" data-s="profile" placeholder="Path to the printer's .icc profile" spellcheck="false" aria-label="ICC profile path"></div></div>
 <div class="fs-prop-row"><span class="fs-prop-label">Condition</span><div class="fs-prop-ctl"><input class="fs-input" type="text" data-s="condition" placeholder="For example FOGRA39" spellcheck="false" aria-label="Printing condition"></div></div>
-<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="pdfx" disabled>Convert to PDF/X-4</button></div>`,
+<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="xcheck">${icon('find', 14)}Check PDF/X</button><button class="fs-btn fs-btn-sm" type="button" data-s="pdfx" disabled>Convert to PDF/X</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-s="pdf20">Save as PDF 2.0</button></div>`,
   mount: (root, host) => {
     hostRef = host;
     stdRoot = root;
@@ -411,6 +447,8 @@ registerTool({
       if (t.dataset.s === 'check') void checkPdfa();
       else if (t.dataset.s === 'convert') void convertPdfa();
       else if (t.dataset.s === 'pdfx') void convertPdfx();
+      else if (t.dataset.s === 'xcheck') void checkPdfx();
+      else if (t.dataset.s === 'pdf20') void savePdf20();
     });
     root.addEventListener('input', () => syncStd());
     syncStd();
@@ -418,6 +456,8 @@ registerTool({
   sync: (_root, host) => { hostRef = host; syncStd(); },
   commands: (host) => [
     { id: 'tool-pdfa', label: 'Convert to PDF/A', words: ['archive', 'pdf/a'], enabled: () => !!host.doc(), run: () => { host.setTab('print'); void convertPdfa(); } },
+    { id: 'tool-pdfx-check', label: 'Check PDF/X…', words: ['pdf/x', 'pdf/x-4', 'pdf/x-6', 'pdf/vt', 'press check', 'conformance'], group: 'Print', when: 'Use before sending a file to a press, to see whether it meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT and what is missing.', params: { level: { type: 'string', enum: ['X-1a', 'X-3', 'X-4', 'X-6', 'VT'], description: 'the standard to check against; the one the file claims when left out' } }, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: (p) => { host.setTab('print'); return checkPdfx(typeof p?.level === 'string' ? p.level : ''); } },
+    { id: 'tool-pdf20', label: 'Save as PDF 2.0', words: ['pdf 2.0', 'iso 32000-2', 'newest pdf'], group: 'Print', mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: () => savePdf20() },
   ],
 });
 
