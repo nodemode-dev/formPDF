@@ -9,11 +9,17 @@ app/main.py                  app, CORS, discovery file (~/Formpdf/engine.json), 
 app/core/                    config.py (ports 5198 and 8198, FORMPDF_* env, data folders, settings), ids.py
 app/routers/pdf.py           /api/pdf: open, recent, every operation, exports, save
 app/routers/live.py          /api/live WebSocket: windows, their open document, window tool results
+app/routers/agentdock.py     agent dock: /api/terminals, WebSocket /api/terminal/{id}, /api/claude, /api/chat, SSE /api/events
+app/routers/commands.py      /api/commands: the window's mirrored command catalogue, describe, run through the window
 app/routers/mcp.py           /mcp: the MCP server, tools, consent, turns, live landing
 app/routers/system.py        health, version, capabilities, settings
 app/routers/batch.py         /api/batch: upload copies, run one action on many files as a job, status, zip of results
 app/routers/media.py         extracted pictures
 app/services/bridge.py       window list, window document, window_call
+app/services/events.py       engine event bus behind SSE /api/events (terminal.*, chat.*)
+app/services/terminal.py     PTY sessions: login shells and Claude Code, scrollback, resize, restart
+app/services/claude_code.py  finds the claude binary, in-app MCP token, starts Claude Code in a dock tab
+app/services/chat.py         the Chat tab: claude -p stream-json to chat.* events, transcripts, hand-offs
 app/services/media.py        formpdf-owned picture store
 app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare, actions (registry)
 app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp.py (walk: glyphs, draws, streams), streams.py (write-back)
@@ -54,6 +60,8 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 31. Editing the text a PDF already has · services/pdf/textedit.py, items.py
 32. Text recognition (OCR) · services/pdf/ocr.py
 33. Connected scanners · services/scan.py, routers/scan.py
+48. The agent dock: terminals, Claude Code and Chat · services/terminal.py, claude_code.py, chat.py, events.py, routers/agentdock.py
+49. One command catalogue for every surface · routers/commands.py, routers/mcp.py list_commands to run_commands
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -336,3 +344,17 @@ Three ways to an AI model, as the person chose: their agent (the default answer 
 Grounding is by page: the text of each page is wrapped in a page tag (150,000 characters across all sources at most), and the system prompt asks for [p. N] after every statement and exact quotations before their citation. `citations` parses those, normalises quotes and spacing, and checks each quotation against the cited page's text, moving it to the page where it really is when it is elsewhere and marking it unverified when it is nowhere; the window shows unverified quotes as such. ai_ask and ai_summary are read actions returning the answer and its citations. ai_outline asks for JSON only, finds the object in the reply and cleans it (at most 30 slides, 8 points each, sources as document and page); sources are this PDF plus up to ten more paths, Office files converted through LibreOffice and text files read as one page. ai_deck writes a 16:9 deck with python-pptx's default template: a title slide, one title-and-content slide per outline slide, and speaker notes holding the notes and the source pages. ai_picture asks OpenAI's image API or an AUTOMATIC1111-compatible server for a PNG and places it through edit_items as an ordinary picture item (centred, half the page wide unless given), so Edit > Select moves, resizes and crops it; Anthropic and agents make no pictures and say so. ai_picture is kept out of Batch.
 
 With the agent as provider, the window's question is kept in memory (an hour at most) and get_context lists it with its id; the agent reads the PDF and calls answer_question, which checks the citations against that PDF and pushes the answer to the window over the live channel, while the window also polls every three seconds in case the push is missed. MCP sampling was not used because the agents formpdf supports do not offer it.
+
+## 48. The agent dock: terminals, Claude Code and Chat · _v0.14.0 (services/terminal.py open_session, _pump, restart; services/claude_code.py cli, argv, open_tab, INAPP_TOKEN; services/chat.py _run, send, adopt; services/events.py publish; routers/agentdock.py attach, stream; routers/mcp.py Agent.inapp, _consent; main.py lifespan)
+
+Ported from formlit 0.45.3 (the owner's Apache-2.0 repo) so formpdf drives the same way. The PTY lives in the engine, not in Rust: ptyprocess on POSIX and pywinpty on Windows (requirements markers), one reader thread per session that keeps 256 KB of scrollback and fans text out to asyncio queues through call_soon_threadsafe; a queue over 4000 items is skipped rather than blocking the reader. A generation counter on the session lets restart orphan the old reader. Shells start as the login shell in the home folder with TERM, COLORTERM and FORMPDF_ENGINE_URL / FORMPDF_MCP_URL set, and in a source checkout the repo folder is put first on PATH so `formpdf` resolves inside the dock.
+
+The terminal socket sends the scrollback first, then raw text; the end of the program is the literal text {"type": "exit"} (json.dumps spacing), which the window compares as a string. Input and resize arrive as JSON. Terminal lifecycle is REST (/api/terminals) and every route and socket accepts only local origins.
+
+Claude Code runs the person's own install and sign-in; nothing here holds a key. It is found from the claudeBin setting, FORMPDF_CLAUDE_BIN, PATH, the usual install folders, then the login shell, and started through the login shell so its PATH applies. It gets formpdf's MCP endpoint over HTTP with an x-formpdf-inapp header carrying a token made fresh each engine run; mcp.py marks such calls inapp and skips the outside-agent consent prompt for them, because the person opened that Claude Code themselves inside the window. Only mcp__formpdf is pre-allowed. CLAUDE* variables are stripped from the child except the ones that select an account or a cloud provider. The working folder is the claudeFolder setting, FORMPDF_AGENT_DIR or ~/Formpdf/Agent.
+
+Chat runs claude -p with stream-json, partial messages and --resume for continuity, and republishes text deltas, tool calls (name without the mcp__ prefix, input clipped to 160 characters, page numbers from page or pages arguments), tool results with any pictures (saved under ~/Formpdf/Chat and served by name only) and usage as chat.* events. Subagent events are ignored. The conversation is held in memory, 200 messages at most; From Claude Code reads ~/.claude/projects/[folder with non-alphanumerics as dashes]/*.jsonl. Events reach the window over SSE /api/events, with a 15 second ping and a hello on connect.
+
+## 49. One command catalogue for every surface · _v0.14.0 (routers/commands.py mirror, search, near, run; routers/mcp.py t_list_commands, t_describe_command, t_run_command, t_run_commands, _mutating; setup/commands_cli.py; setup/claude_launch.py)
+
+The formvis pattern: the window owns the registry, because undo, selection and dialogs live there, and mirrors its catalogue to POST /api/commands/catalogue on boot and on every change; the engine keeps the latest copy in memory and in ~/Formpdf/commands-catalogue.json so list and describe answer even with the window closed. Running always goes to the window over the live socket (bridge.window_call run_command, two minutes) and says plainly when no window is open. MCP run_command and run_commands count as writing when any named entry is flagged mutates or risky, so they go through the existing consent; unknown ids are not writes and fail at once with near-miss ids. The CLI is a thin urllib client of the same routes. `./formpdf claude` starts Claude Code in the person's terminal with formpdf's stdio MCP server attached and only mcp__formpdf pre-allowed.

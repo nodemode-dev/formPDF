@@ -36,6 +36,15 @@ Windows: `formpdf.bat install` then `formpdf.bat`. One-click installers: `formpd
 
 ## Desktop
 
+One command from the repo root builds the app start to finish: it checks the tools (and installs Rust if it is missing), installs the engine and the window, freezes the engine, builds with Tauri and, on macOS, packs a disk image and copies the app to Applications. Every step is logged to `build_app.log`.
+
+```
+./build_app                 # macOS and Linux; --install (Linux: apt install the .deb), --no-install, --open, --clean
+build_app.bat               # Windows: .msi and .exe installers; --open
+```
+
+On Debian or Ubuntu, Tauri first needs `sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev librsvg2-dev patchelf`. The steps one at a time:
+
 ```
 ./formpdf install-desktop   # PyInstaller and the Rust and Tauri toolchain check
 ./formpdf desktop dev
@@ -46,9 +55,15 @@ The desktop app opens .pdf files (Open With formpdf, or a double-click once asso
 
 ## Agents
 
+Inside formpdf: Ctrl+J (Cmd+J on a Mac) opens the agent dock at the bottom of the window. It holds real terminals, your own Claude Code (Shift+Ctrl+J), already connected to formpdf's tools, and a Chat tab (Alt+Ctrl+J) that answers about the open PDF with streaming replies, tool steps and page links. The line under the dock sends what you type, with the open PDF's name, page and path, to Chat or to Claude Code. Claude Code must be installed and signed in once (https://claude.com/claude-code); nothing else is needed.
+
 ```
 ./formpdf agents install   # writes .mcp.json, .codex/config.toml, .cursor/mcp.json and installs the skills
+./formpdf claude           # Claude Code in this terminal with formpdf's tools attached
+./formpdf cli list         # every window command; cli describe <id>; cli run pdf-go-page page=3
 ```
+
+Every menu item, palette entry and shortcut is one command in a single catalogue. The window, agents (MCP tools list_commands, describe_command, run_command, run_commands), `GET /api/commands` and `./formpdf cli` all list and run the same commands.
 
 Claude Code alone: `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`. Claude Desktop and other stdio clients: `./formpdf mcp`. Then ask, for example: "Use formpdf: add Bates numbers ACME-000001 to the PDF I have open and redact every email address." Changes land live in the window; Edit > Undo agent turn takes back the whole turn. The skills `formpdf-harness` (doing PDF work) and `formpdf-skillset` (developing formpdf) live in `.claude/skills`.
 
@@ -63,7 +78,8 @@ Everything stays in `~/Formpdf` (override with `FORMPDF_DATA_DIR`): `Pdf/` worki
 ```
 backend/    FastAPI engine: PDF services, /api/pdf, live channel, MCP server
 frontend/   Vanilla TypeScript and Vite app: Home, the PDF workbench, ui toolkit, styles
-setup/      install, boot, build, serve, freeze, desktop, doctor, clean, run, mcp_stdio, agents (with .bat twins)
+setup/      install, boot, build, serve, freeze, desktop, doctor, clean, run, mcp_stdio, agents, commands_cli, claude_launch (with .bat twins)
+build_app   the one-shot desktop build (build_app.bat on Windows)
 src-tauri/  desktop shell and the engine sidecar
 docs/       MANUAL.md
 ```
