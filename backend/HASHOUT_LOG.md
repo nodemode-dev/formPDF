@@ -63,6 +63,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 48. The agent dock: terminals, Claude Code and Chat · services/terminal.py, claude_code.py, chat.py, events.py, routers/agentdock.py
 49. One command catalogue for every surface · routers/commands.py, routers/mcp.py list_commands to run_commands
 50. Threaded text frames and the font report · services/pdf/items.py split_story, change; services/pdf/fontreport.py
+51. The document font map · services/pdf/fontreport.py font_map, change_map; services/pdf/textedit.py detect
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -369,3 +370,7 @@ Everything that touches a thread (an update of any frame, thread, unthread, remo
 Moving an item to another page (update to_page) removes it from its page and writes it on the other with the same parameters; a picture carries its image object across. Before this, a move across pages was refused.
 
 The font report reads fonts from every page and form resource through pdfa.fonts and pdfa.embedded, strips subset prefixes, and compares normalised names (lower case, letters and digits, MT and PS suffixes dropped) with the names fc-list reports and the font files in the platform folders, both cached for the engine's life. A family match (the name before Bold, Italic and similar) counts as family installed. The standard 14 fonts are reported as supplied by readers and never as missing.
+
+## 51. The document font map · _v0.16.0 (services/pdf/fontreport.py font_map, change_map, MAP_KEY; services/pdf/textedit.py detect swap)
+
+A swap is a choice about editing, not a rewrite of the page: font_map stores {font name: family} as a JSON text string under /FormpdfFontMap on the document catalog, so it travels with the file and every viewer ignores it. textedit.detect reads it once per call and, for a paragraph whose most used font is mapped, drops the original-font path (no orig) and uses the mapped family, so only text the person edits is redrawn in the new family; untouched text keeps its own font. Names are stored without the six-letter subset prefix, matching FontInfo.plain and the report. Change actions must return pages for the route's version record (routers/pdf.py _derive), which change_map does. The families are formpdf's font kit (Inter, Noto Serif, JetBrains Mono); activating any installed system font is not part of this yet.
