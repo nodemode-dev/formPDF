@@ -87,7 +87,7 @@ docs/       MANUAL.md
 ## Known gaps
 
 - Against Acrobat, formpdf scores 68.5 of 72 (95%); docs/PARITY.md has every row. The remaining gaps are sharing through a hosted service (formpdf is local only), form JavaScript beyond Acrobat's standard functions, designed themes for AI presentations, print production (CMYK and flattening), service-sent signing requests and a screen reader pass with VoiceOver and NVDA.
-- Print production has no CMYK conversion or transparency flattening; PDF/X-4 needs your printer's ICC profile and is not checked by an outside validator.
+- Print production has no CMYK conversion or transparency flattening; PDF/X-4 and PDF/X-6 need your printer's ICC profile, and Check PDF/X (X-1a, X-3, X-4, X-6, PDF/VT) is formpdf's own check, not an outside validator.
 - Tagging works out structure from the layout; check the reading order and add alternate text afterwards. Editing page content after tagging leaves the new content untagged until you tag again.
 - OCR adds about 150 MB to an install (set `FORMPDF_NO_OCR=1` before `./formpdf install` to leave it out). On macOS, USB scanners are reached only when they also speak eSCL (AirScan); network scanners work everywhere.
 - Signature validation trusts only certificates you trusted in formpdf (your own IDs are trusted automatically) and never checks revocation online; signing requests are sent by your own email.
