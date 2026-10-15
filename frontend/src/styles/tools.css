@@ -58,6 +58,12 @@
 .fs-cx-full { position: absolute; box-sizing: border-box; outline: 1px dashed rgba(0, 0, 0, 0.45); background: rgba(0, 0, 0, 0.06); }
 .fs-cx-group { display: grid; gap: var(--space-2); }
 .fs-tool-note.fs-cx-note { min-height: calc(4 * 1.45em); }
+.fs-fonts-list { display: flex; flex-direction: column; max-height: 360px; overflow-y: auto; border: 1px solid var(--line-1); border-radius: var(--radius-md); }
+.fs-fonts-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr) auto; gap: var(--space-2); align-items: center; padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--line-0); font-size: var(--fs-12); }
+.fs-fonts-row:last-child { border-bottom: 0; }
+.fs-fonts-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+.fs-fonts-state, .fs-fonts-pages { color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.fs-fonts-row.is-missing .fs-fonts-state { color: var(--accent-color); }
 .fs-sig-draft { position: absolute; border: 1.5px dashed var(--accent-color); background: var(--accent-tint-strong); pointer-events: none; }
 .fs-sig-ico.is-ok { color: var(--ok); }
 .fs-sig-ico.is-warn { color: var(--warn); }

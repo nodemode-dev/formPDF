@@ -3,6 +3,7 @@ import { bounds, shifted, type PageTool } from '../pdf/annotate';
 import { pdfApi, type Annot, type Derived } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
 import type { PageView } from '../pdf/viewer';
+import { Dialog } from '../ui/dialogs';
 import { el, patchList, q, setClass, setDisabled, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
@@ -10,7 +11,7 @@ import { calc, PageLayers } from './overlay';
 import { plain, TextEditor, type Font, type Geo, type Para } from './richtext';
 
 type Crop = { l: number; t: number; r: number; b: number };
-interface Item { id: string; kind: 'text' | 'picture'; page: number; x: number; y: number; w: number; h: number; rot?: number; flipH?: boolean; flipV?: boolean; z: number; font?: Font; paras?: Para[]; crop?: Crop; iw?: number; ih?: number; merged?: boolean }
+interface Item { id: string; kind: 'text' | 'picture'; thread?: string; seq?: number; overflow?: boolean; page: number; x: number; y: number; w: number; h: number; rot?: number; flipH?: boolean; flipV?: boolean; z: number; font?: Font; paras?: Para[]; crop?: Crop; iw?: number; ih?: number; merged?: boolean }
 interface Pic { page: number; op: number; x: number; y: number; w: number; h: number; rot: number; flipV: boolean; iw: number; ih: number }
 interface Txt { page: number; key: string; x: number; y: number; w: number; h: number; rot: number; font: Font; paras: Para[]; text: string; editable: boolean; fontName: string }
 type Kind = 'text' | 'picture' | 'pic' | 'ptext' | 'comment';
@@ -524,6 +525,71 @@ async function arrange(host: ToolHost, to: 'front' | 'back' | 'forward' | 'backw
   repaint();
 }
 
+const selectedText = (host: ToolHost): Obj[] => allSelected(host).filter((o) => o.kind === 'text' && o.item);
+
+async function threadSelected(host: ToolHost): Promise<void> {
+  const boxes = selectedText(host);
+  if (boxes.length !== 2) { toast('Select two added text boxes: the one the story starts in, then the one it continues in'); return; }
+  const [a, b] = sel.map((k) => boxes.find((o) => o.key === k)).filter((o): o is Obj => !!o);
+  await act(host, { thread: [{ from: a.item?.id, to: b.item?.id }] }, 'Thread text boxes', 'Threading');
+  reload(host);
+}
+
+async function unthreadSelected(host: ToolHost): Promise<void> {
+  const boxes = selectedText(host).filter((o) => o.item?.thread);
+  if (!boxes.length) { toast('Select a text box that is part of a thread'); return; }
+  await act(host, { unthread: boxes.map((o) => o.item?.id) }, 'Unthread text box', 'Unthreading');
+  reload(host);
+}
+
+async function growStory(host: ToolHost): Promise<void> {
+  const box = selectedText(host)[0];
+  if (!box?.item) { toast('Select the text box whose story should continue on new pages'); return; }
+  await act(host, { update: [{ id: box.item.id, grow: true }] }, 'Continue story on new pages', 'Adding pages');
+  reload(host);
+}
+
+interface FontRow { name: string; type: string; state: string; installed: boolean; familyInstalled: boolean; standard: boolean; pages: number[] }
+
+class FontsDialog extends Dialog {
+  private readonly lead = el('<p class="fs-note"></p>');
+  private readonly list = el('<div class="fs-fonts-list" role="list"></div>');
+  constructor() {
+    super('Fonts in this PDF', 560);
+    this.body.append(this.lead, this.list);
+    this.button('Close', 'primary', () => this.close());
+  }
+  show(rows: FontRow[], missing: string[]): void {
+    setText(this.lead, `${rows.length} font${rows.length === 1 ? '' : 's'}. ${missing.length ? `${missing.length} neither embedded nor installed: printing and editing will substitute them.` : 'Every font is embedded, standard or installed.'} Editing text needs the font installed on this computer.`);
+    const fill = (n: HTMLElement, r: FontRow): HTMLElement => {
+      setText(q(n, '.fs-fonts-name'), r.name);
+      setText(q(n, '.fs-fonts-state'), `${r.state} · ${r.installed ? 'installed' : r.familyInstalled ? 'family installed' : 'not installed'}`);
+      setText(q(n, '.fs-fonts-pages'), r.pages.length ? `p. ${r.pages.slice(0, 8).join(', ')}${r.pages.length > 8 ? '…' : ''}` : '');
+      setClass(n, 'is-missing', missing.includes(r.name));
+      return n;
+    };
+    patchList(this.list, rows, {
+      key: (r) => r.name,
+      create: (r) => fill(el('<div class="fs-fonts-row" role="listitem"><span class="fs-fonts-name" data-no-i18n></span><span class="fs-fonts-state"></span><span class="fs-fonts-pages"></span></div>'), r),
+      update: fill,
+    });
+    this.open();
+  }
+}
+let fontsDlg: FontsDialog | null = null;
+
+async function showFonts(host: ToolHost): Promise<void> {
+  const d = host.doc();
+  if (!d) return;
+  await host.ctx.run('Reading fonts', async () => {
+    try {
+      const got = await pdfApi.act<{ fonts: FontRow[]; missing: string[] }>(d.id, 'fonts', {});
+      fontsDlg ??= new FontsDialog();
+      fontsDlg.show(got.fonts, got.missing);
+    } catch (err) { toast((err as Error).message, 'error'); }
+  });
+}
+
 function align(host: ToolHost, how: AlignHow): void {
   const objs = allSelected(host);
   const page = objs[0]?.page;
@@ -843,5 +909,9 @@ registerTool({
     { id: 'tool-forward', label: 'Bring forward', keys: ['Mod+]'], enabled: () => sel.length > 0, run: () => void arrange(host, 'forward') },
     { id: 'tool-backward', label: 'Send backward', keys: ['Mod+['], enabled: () => sel.length > 0, run: () => void arrange(host, 'backward') },
     { id: 'tool-back', label: 'Send to back', keys: ['Shift+Mod+['], enabled: () => sel.length > 0, run: () => void arrange(host, 'back') },
+    { id: 'tool-thread-text', label: 'Thread text boxes', words: ['link text frames', 'text flow', 'continue story', 'overflow'], group: 'Edit', when: 'Use when two selected text boxes should hold one story that flows from the first into the second.', mutates: true, enabled: () => selectedText(host).length === 2, why: () => 'Select two added text boxes first', run: () => threadSelected(host) },
+    { id: 'tool-unthread-text', label: 'Unthread text box', words: ['unlink text frame', 'break thread'], group: 'Edit', mutates: true, enabled: () => selectedText(host).some((o) => !!o.item?.thread), why: () => 'Select a threaded text box first', run: () => unthreadSelected(host) },
+    { id: 'tool-grow-story', label: 'Continue story on new pages', words: ['add pages for text', 'autoflow', 'overflow pages'], group: 'Edit', when: 'Use when a text box overflows and the rest of its story should continue on new pages.', mutates: true, enabled: () => selectedText(host).length === 1, why: () => 'Select one added text box first', run: () => growStory(host) },
+    { id: 'tool-fonts', label: 'Fonts in this PDF…', words: ['font report', 'missing fonts', 'embedded fonts', 'installed fonts'], group: 'Edit', when: 'Use to see which fonts are embedded, subset, standard or installed before editing or printing.', enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: () => showFonts(host) },
   ],
 });
