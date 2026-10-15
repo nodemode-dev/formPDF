@@ -3,7 +3,7 @@ import { bounds, shifted, type PageTool } from '../pdf/annotate';
 import { pdfApi, type Annot, type Derived } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
 import type { PageView } from '../pdf/viewer';
-import { Dialog } from '../ui/dialogs';
+import { Dialog, promptName } from '../ui/dialogs';
 import { el, patchList, q, setClass, setDisabled, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
@@ -580,6 +580,24 @@ async function growStory(host: ToolHost): Promise<void> {
   reload(host);
 }
 
+async function moveToPage(host: ToolHost, params?: Record<string, unknown>): Promise<unknown> {
+  const objs = allSelected(host).filter((o) => o.item);
+  const total = host.ctx.viewer.pages.length;
+  if (!objs.length) throw new Error('Select an added text box or picture first');
+  let n = Number(params?.page);
+  if (params?.page === undefined) {
+    const raw = await promptName('Move to page', String(Math.min(total, objs[0].page + 1)), 'Move');
+    if (raw === null) return null;
+    n = Number(raw);
+  }
+  if (!Number.isInteger(n) || n < 1 || n > total) throw new Error(`Choose a page from 1 to ${total}`);
+  const moving = objs.filter((o) => o.page !== n);
+  if (!moving.length) return { page: n, moved: 0 };
+  await act(host, { update: moving.map((o) => ({ id: o.item?.id, page: o.page, to_page: n })) }, moving.length === 1 ? 'Move to another page' : `Move ${moving.length} items to another page`, 'Moving');
+  reload(host);
+  return { page: n, moved: moving.length };
+}
+
 interface FontRow { name: string; type: string; state: string; installed: boolean; familyInstalled: boolean; standard: boolean; pages: number[] }
 
 class FontsDialog extends Dialog {
@@ -943,6 +961,7 @@ registerTool({
     { id: 'tool-thread-text', label: 'Thread text boxes', words: ['link text frames', 'text flow', 'continue story', 'overflow'], group: 'Edit', when: 'Use when two selected text boxes should hold one story that flows from the first into the second.', mutates: true, enabled: () => selectedText(host).length === 2, why: () => 'Select two added text boxes first', run: () => threadSelected(host) },
     { id: 'tool-unthread-text', label: 'Unthread text box', words: ['unlink text frame', 'break thread'], group: 'Edit', mutates: true, enabled: () => selectedText(host).some((o) => !!o.item?.thread), why: () => 'Select a threaded text box first', run: () => unthreadSelected(host) },
     { id: 'tool-grow-story', label: 'Continue story on new pages', words: ['add pages for text', 'autoflow', 'overflow pages'], group: 'Edit', when: 'Use when a text box overflows and the rest of its story should continue on new pages.', mutates: true, enabled: () => selectedText(host).length === 1, why: () => 'Select one added text box first', run: () => growStory(host) },
+    { id: 'tool-move-to-page', label: 'Move to page…', words: ['move to another page', 'send to page', 'relocate'], group: 'Edit', when: 'Use when selected added text boxes or pictures belong on another page; they keep their position on the page.', params: { page: { type: 'integer', min: 1, description: 'the page to move the selection to; without it the window asks' } }, mutates: true, enabled: () => allSelected(host).some((o) => !!o.item), why: () => 'Select an added text box or picture first', run: (p) => moveToPage(host, p) },
     { id: 'tool-fonts', label: 'Fonts in this PDF…', words: ['font report', 'missing fonts', 'embedded fonts', 'installed fonts'], group: 'Edit', when: 'Use to see which fonts are embedded, subset, standard or installed before editing or printing.', enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: () => showFonts(host) },
   ],
 });
