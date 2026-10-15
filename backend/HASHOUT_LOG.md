@@ -21,7 +21,8 @@ app/services/terminal.py     PTY sessions: login shells and Claude Code, scrollb
 app/services/claude_code.py  finds the claude binary, in-app MCP token, starts Claude Code in a dock tab
 app/services/chat.py         the Chat tab: claude -p stream-json to chat.* events, transcripts, hand-offs
 app/services/media.py        formpdf-owned picture store
-app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare, actions (registry), fontreport (fonts action)
+app/services/pdf/            docs, core, edit, annot, forms, layout, word, slides, sanitize, search, create, compare, actions (registry), fontreport (fonts action),
+                             paths (paths, edit_paths), boxes (boxes, edit_boxes)
 app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp.py (walk: glyphs, draws, streams), streams.py (write-back)
 ```
 
@@ -64,6 +65,7 @@ app/services/pdf/content/    fonts.py (codes, widths, Unicode both ways), interp
 49. One command catalogue for every surface · routers/commands.py, routers/mcp.py list_commands to run_commands
 50. Threaded text frames and the font report · services/pdf/items.py split_story, change; services/pdf/fontreport.py
 51. The document font map · services/pdf/fontreport.py font_map, change_map; services/pdf/textedit.py detect
+52. Editing existing shapes and page boxes · services/pdf/paths.py, services/pdf/boxes.py
 
 ## 1. Versions, never edits in place · _v0.1.0 (services/pdf/docs.py derive, routers/pdf.py _derive)
 
@@ -374,3 +376,7 @@ The font report reads fonts from every page and form resource through pdfa.fonts
 ## 51. The document font map · _v0.16.0 (services/pdf/fontreport.py font_map, change_map, MAP_KEY; services/pdf/textedit.py detect swap)
 
 A swap is a choice about editing, not a rewrite of the page: font_map stores {font name: family} as a JSON text string under /FormpdfFontMap on the document catalog, so it travels with the file and every viewer ignores it. textedit.detect reads it once per call and, for a paragraph whose most used font is mapped, drops the original-font path (no orig) and uses the mapped family, so only text the person edits is redrawn in the new family; untouched text keeps its own font. Names are stored without the six-letter subset prefix, matching FontInfo.plain and the report. Change actions must return pages for the route's version record (routers/pdf.py _derive), which change_map does. The families are formpdf's font kit (Inter, Noto Serif, JetBrains Mono); activating any installed system font is not part of this yet.
+
+## 52. Editing existing shapes and page boxes · _v0.17.0 (services/pdf/paths.py _layout, _start, _paths, read, change, _gstate, _color; services/pdf/boxes.py describe, read, change)
+
+A shape edit never rewrites the drawing. The path object (every construction operator back from the paint operator, clip operators included) is wrapped in q ... Q, and the overrides go right after the q: a cm, an ExtGState, colour operators and a line width. Colour set before the path stays in force outside the wrapper, the override wins inside it, and removing the wrapper restores the original exactly. The cm is computed as CTM x T x CTM^-1 from the path's own transform, so dx, dy and scale are in page points and about the shape's centre whatever the drawing's scale. Only paths in the page's own content are offered (not inside form XObjects, not formpdf's item streams), and only when the whole path object lies in one content stream. That stream alone is replaced with a new decoded stream, so the item and wrap streams keep their keys. Operator indices are global over the concatenated streams (interp.page_operations), and _layout maps them to a stream and a local index by counting each stream's operators. Edits on a page are applied from the last operator back, so earlier indices do not move; the result maps each edited shape's old index to its new one (the index plus the operators inserted before it), which the window uses to keep the selection. Spot colours are not offered yet because they need a Separation colour space resource. Boxes are reported and set in points from the media box's top left. bleed_mm pads the trim box (or the crop or media box standing in for it) and grows the media box when needed; it then fixes the trim box and pins the crop box to the previously visible area, because formpdf stores item positions relative to the visible box and an enlarged view would shift every item on its next edit. The window does not draw boxes yet.

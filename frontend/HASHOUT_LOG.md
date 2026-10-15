@@ -54,6 +54,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 37. The command catalogue · ui/commands.ts, automation/catalogue.ts, live/agent.ts, app.ts
 38. Threading text boxes and the fonts dialog · tools/content.ts, styles/tools.css
 39. Thread ports, move to page and Edit with · tools/content.ts paintBox, selectTool, moveToPage, mapFont; styles/tools.css .fs-cx-port
+40. Existing shapes in Select · tools/content.ts shapes, editShapes, styleShapes; styles/tools.css .fs-cx-swatch
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -256,3 +257,7 @@ The four commands are the first tool commands written with the full catalogue fi
 Ports are drawn inside each text box's overlay markup, in the same string paintBox already compares before writing, so a repaint that changes nothing touches no node. Only the out-port takes pointer events; a press on it starts linking instead of a move, a press that does not travel more than 4 px counts as a click (which continues an overflowing story on new pages), and a release is hit-tested against the page objects so the target is whatever box is under the pointer, including empty frames. The overflow plus is drawn with two pseudo-elements, no icon. While linking, body carries fs-is-linking so the alias cursor holds across the page. The in-port fills when the frame continues a story; the out-port fills for any threaded frame because the next frame may be on a page not loaded yet. A double-click on a follower opens the first frame's editor when that frame is loaded, and otherwise says to edit the first frame, because a follower's own paras are empty and saving them would replace the story.
 
 Move to page validates against the viewer's page count, skips items already on that page, and returns {page, moved} so agents see what happened. Edit with in the Fonts dialog is one select per row, delegated from the list, set in place from the report; a change commits a font_map version and reloads items, which refetches every loaded page because the document id changed.
+
+## 40. Existing shapes in Select · _v0.17.0 (tools/content.ts Shape, shapes, shapeKey, flush paths, objects, hit, handlesFor, applyGeo, editShapes, styleShapes, sync shapeOn; styles/tools.css .fs-cx-swatch)
+
+Shapes load in the same flush as items (a second action call in parallel, which fails soft to no shapes), are keyed s:[page]:[op], and are only offered in Select mode. They are hit last and smallest first, so text and pictures win over the artwork under them and a small shape inside a big one can be picked; lines get a 2 pt minimum box so they can be clicked. Only selected shapes draw a box, because a page may hold thousands of paths. A move sends dx and dy from the preview, colour and opacity come from the new Shape group, and each goes through editShapes, which commits one version and rewrites selected keys with the engine's op mapping before reloading. Delete, arrange and crop skip shapes; deleting artwork is redaction's job.
