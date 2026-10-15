@@ -490,7 +490,10 @@ def redact(src, out, areas: list[dict], *, passwords: list[str] | None = None, d
         w.compress_identical_objects(remove_identicals=False, remove_orphans=True)
     except Exception:
         pass
-    return _write(w, out)
+    n = _write(w, out)
+    return {"pages": n, "areas": sum(len(b) for b in by_page.values()), "logMore": 0,
+            "log": [{"page": p, "kind": "page", "text": "Page turned into a picture: all text, links, comments and fields on it are gone, and the marked areas are painted over",
+                     "box": None} for p in sorted(by_page)]}
 
 
 def metadata(src, out, *, title=None, author=None, subject=None, keywords=None, strip: bool = False, passwords: list[str] | None = None) -> int:

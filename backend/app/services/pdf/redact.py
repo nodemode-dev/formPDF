@@ -162,6 +162,16 @@ def _strip_props(props) -> None:
                 del obj[k]
 
 
+MAX_LOG = 5000
+
+
+def _log(report: dict, kind: str, text: str, box) -> None:
+    if len(report["log"]) < MAX_LOG:
+        report["log"].append({"page": None, "kind": kind, "text": text[:2000], "pdfbox": tuple(float(v) for v in box) if box else None})
+    else:
+        report["more"] += 1
+
+
 def _rewrite(w: PdfWriter, content, where: tuple, areas, color, edited: dict, report: dict) -> list:
     stream = content.streams[where]
     ops = stream.operations
@@ -177,6 +187,10 @@ def _rewrite(w: PdfWriter, content, where: tuple, areas, color, edited: dict, re
         if hit:
             remove_text[op_i] = hit
             report["glyphs"] += len(hit)
+            gone = [g for g in gl if g.seq in hit]
+            words = "".join(g.text for g in gone).strip()
+            if words:
+                _log(report, "text", words, (min(g.box[0] for g in gone), min(g.box[1] for g in gone), max(g.box[2] for g in gone), max(g.box[3] for g in gone)))
     drop: set[int] = set()
     rename: dict[int, str] = {}
     for d in content.draws:
@@ -186,7 +200,9 @@ def _rewrite(w: PdfWriter, content, where: tuple, areas, color, edited: dict, re
             if d.kind == "inline" or _inside(d.box, areas):
                 drop.add(d.op)
                 report["pictures"] += 1
+                _log(report, "picture", f"Picture {str(d.name or 'inline').lstrip('/')} removed", d.box)
                 continue
+            _log(report, "picture", f"Part of picture {str(d.name).lstrip('/')} cleared", d.box)
             xobjects = res.get("/XObject") if res is not None else None
             xo = xobjects.get_object().get(d.name) if xobjects is not None else None
             new = _clear_image(w, xo.get_object(), d.ctm, areas, color) if xo is not None else None
@@ -204,6 +220,7 @@ def _rewrite(w: PdfWriter, content, where: tuple, areas, color, edited: dict, re
         elif d.kind == "path" and d.box is not None and _inside(d.box, areas):
             drop.add(d.op)
             report["shapes"] += 1
+            _log(report, "shape", "Shape removed", d.box)
         elif d.kind == "shading" and d.box is not None and _inside(d.box, areas):
             drop.add(d.op)
         elif d.kind == "form" and where + (d.op,) in edited:
@@ -309,8 +326,14 @@ def _annots(w: PdfWriter, page, areas, report: dict) -> set[int]:
             box = None
         if box is not None and str(a.get("/Subtype", "")) not in ("/Popup", "/Redact") and _touches(box, areas):
             gone_ids.add(getattr(ref, "idnum", -1))
-            if a.get("/Subtype") == "/Widget":
+            sub = str(a.get("/Subtype", ""))
+            if sub == "/Widget":
                 widgets.add(getattr(ref, "idnum", -1))
+                field = a.get("/Parent").get_object() if "/T" not in a and "/Parent" in a else a
+                _log(report, "field", f"Form field {str(field.get('/T') or '').strip() or 'without a name'} removed", box)
+            else:
+                said = str(a.get("/Contents") or "").strip()
+                _log(report, "link" if sub == "/Link" else "comment", f"{sub[1:]} removed" + (f": {said[:200]}" if said else ""), box)
             report["comments"] += 1
             continue
         keep.append(ref)
@@ -406,7 +429,8 @@ def apply(src, out, areas: list[dict], *, passwords: list[str] | None = None, co
             raise ValueError(f"Page {p} is out of range (1 to {n_pages})")
         if box[2] >= 0.5 and box[3] >= 0.5:
             by_page.setdefault(p, []).append(box)
-            looks.setdefault(p, []).append((fill, str(overlay or "")))
+            own = _rgb(str(a["color"])) if a.get("color") else fill
+            looks.setdefault(p, []).append((own, str(a["overlay"] if a.get("overlay") is not None else overlay or "")))
     if marks:
         for pi, page in enumerate(w.pages):
             for ref in page.get("/Annots") or []:
@@ -418,7 +442,7 @@ def apply(src, out, areas: list[dict], *, passwords: list[str] | None = None, co
                     looks.setdefault(pi + 1, []).append((mark_fill, str(a.get("/OverlayText") or overlay or "")))
     if not by_page:
         raise ValueError("Mark at least one area to redact")
-    report = {"glyphs": 0, "pictures": 0, "shapes": 0, "comments": 0, "cleared": set()}
+    report = {"glyphs": 0, "pictures": 0, "shapes": 0, "comments": 0, "cleared": set(), "log": [], "more": 0}
     widgets: set[int] = set()
     overlays: dict[int, list] = {}
     for p, boxes in sorted(by_page.items()):
@@ -445,8 +469,15 @@ def apply(src, out, areas: list[dict], *, passwords: list[str] | None = None, co
         streams.write_page(page, w, pre + list(top) + post)
         if "/Resources" in page:
             page[NameObject("/Resources")] = _pruned(page["/Resources"], top)
-        _strip_items(page, areas_pdf)
+        stripped = _strip_items(page, areas_pdf)
+        if stripped:
+            _log(report, "item", f"{stripped} editable text box{'es' if stripped != 1 else ''} or picture{'s' if stripped != 1 else ''} made plain page content", None)
         widgets |= _annots(w, page, areas_pdf, report)
+        for e in report["log"]:
+            if e["page"] is None:
+                e["page"] = p
+                b = e.pop("pdfbox")
+                e["box"] = frame.from_pdf(page, b) if b else None
         problem = _verify(w, p, areas_pdf, report["cleared"])
         if problem:
             raise ValueError(f"Redaction stopped: {problem}. Nothing was changed.")
@@ -474,7 +505,9 @@ def apply(src, out, areas: list[dict], *, passwords: list[str] | None = None, co
     with open(out, "wb") as fh:
         w.write(fh)
     apply.last = report
-    return n_pages
+    return {"pages": n_pages, "areas": sum(len(b) for b in by_page.values()), "log": report["log"], "logMore": report["more"],
+            "removed": {"text": sum(1 for e in report["log"] if e["kind"] == "text"), "glyphs": report["glyphs"], "pictures": report["pictures"],
+                        "shapes": report["shapes"], "annotations": report["comments"]}}
 
 
 def mark(src, out, *, args: dict, pages=None, passwords: list[str] | None = None) -> dict:
