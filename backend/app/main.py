@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core import config
-from app.routers import agentdock, ai, batch, identity, lists, live, mcp, media, pdf, reviews, scan, system
+from app.routers import agentdock, ai, batch, commands, identity, lists, live, mcp, media, pdf, reviews, scan, system
 from app.services import events, plugins, terminal
 
 
@@ -55,6 +55,7 @@ app.include_router(reviews.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(live.router)
 app.include_router(agentdock.router)
+app.include_router(commands.router)
 app.include_router(mcp.router)
 
 _dist = config.dist_dir()

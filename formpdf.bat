@@ -36,6 +36,9 @@ if /i "%CMD%"=="doctor" ( call setup\doctor.bat %REST% & goto :eof )
 if /i "%CMD%"=="mcp" ( python setup\mcp_stdio.py %REST% & goto :eof )
 if /i "%CMD%"=="agents" ( python setup\agents.py %REST% & goto :eof )
 if /i "%CMD%"=="run" ( call setup\run.bat %REST% & goto :eof )
+if /i "%CMD%"=="cli" ( python setup\commands_cli.py %REST% & goto :eof )
+if /i "%CMD%"=="claude" ( python setup\claude_launch.py %REST% & goto :eof )
+if /i "%CMD%"=="build-app" ( call build_app.bat %REST% & goto :eof )
 if /i "%CMD%"=="clean" ( call setup\clean.bat %REST% & goto :eof )
 if /i "%CMD%"=="help" ( call :usage & exit /b 0 )
 if /i "%CMD%"=="-h" ( call :usage & exit /b 0 )
@@ -64,6 +67,9 @@ echo   doctor              check the toolchain, installs and ports
 echo   mcp                 formpdf over MCP's stdio transport, for Claude Desktop and other MCP clients
 echo   agents install^|sync set up Claude Code, Codex and Cursor (install), or refresh the skills (sync)
 echo   run ^<action^> [args] a PDF job headlessly, without the window (formpdf.bat run actions lists them)
+echo   cli list^|describe^|run  the window's commands: list them, describe one, run one in the open window
+echo   claude [args]       Claude Code in this terminal with formpdf's MCP tools attached
+echo   build-app [options] build the desktop app start to finish (same as build_app.bat)
 echo   clean [--all]       remove build output (--all also venv and node_modules)
 echo   help                this text
 exit /b 0

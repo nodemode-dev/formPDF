@@ -1,3 +1,4 @@
+import { Catalogue } from './automation/catalogue';
 import { api } from './io/api';
 import { events } from './io/events';
 import { AgentBridge } from './live/agent';
@@ -104,7 +105,11 @@ export async function startApp(): Promise<void> {
   const reviews = new Reviews(home.root.querySelector<HTMLElement>('[data-page="reviews"]') as HTMLElement, (id) => open({ recent: id, restore: { page: 1, tab: 'comment', dirty: false } }));
   home.onView = (v) => { if (v === 'reviews') void reviews.load(); };
 
-  const bridge = new AgentBridge({ bench: () => bench, allow: () => setAgents(true) });
+  const catalogue = new Catalogue(() => bench.commands, () => homeCmds);
+  bench.commands.onChange = () => catalogue.mirror();
+  catalogue.mirror();
+  (window as unknown as { formpdf?: { catalogue: Catalogue } }).formpdf = { catalogue };
+  const bridge = new AgentBridge({ bench: () => bench, allow: () => setAgents(true), catalogue: () => catalogue });
   live.onTool = (name, args) => bridge.run(name, args);
   live.connect();
 

@@ -248,6 +248,7 @@ class Workbench {
       { id: 'pdf-fit-width', label: 'Fit width', keys: ['Mod+0'], enabled: () => !!this.doc, run: () => this.viewer.applyFit('width') },
       { id: 'pdf-fit-page', label: 'Fit page', enabled: () => !!this.doc, run: () => this.viewer.applyFit('page') },
       { id: 'pdf-rotate', label: 'Rotate view', enabled: () => !!this.doc, run: () => this.viewer.rotateView(90) },
+      { id: 'pdf-go-page', label: 'Go to page…', words: ['page number', 'jump'], when: 'Use when the person or a task needs a specific page shown in the window.', params: { page: { type: 'integer', min: 1, description: '1-based page number; without it the page box is focused' } }, enabled: () => !!this.doc, why: () => 'Open a PDF first', run: (p) => { const n = Number(p?.page); if (p?.page !== undefined && this.showPage(n)) return { page: n }; if (p?.page !== undefined) throw new Error(`page ${p.page} is outside 1 to ${this.viewer.pages.length}`); q<HTMLInputElement>(this.root, '.fs-pdfwb-pagein').select(); return null; } },
       ...TABS.map(([t, l]) => ({ id: `pdf-tab-${t}`, label: l, words: TAB_WORDS[t], checked: () => this.tab === t, enabled: () => !!this.doc || t === 'view', run: () => this.setTab(t) })),
       { id: 'pdf-agents', label: 'Agents and MCP…', run: () => this.opts.app.agents() },
       { id: 'pdf-help', label: 'formpdf Help', keys: ['F1'], run: () => this.opts.app.help() },

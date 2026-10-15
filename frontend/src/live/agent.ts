@@ -1,3 +1,4 @@
+import type { Catalogue } from '../automation/catalogue';
 import type { AgentReply, Workbench } from '../pdf/workbench';
 import { Dialog } from '../ui/dialogs';
 import { el, setText } from '../ui/dom';
@@ -41,10 +42,29 @@ export class AgentBridge {
   private consentAsk: Promise<boolean> | null = null;
   private consentDlg: Consent | null = null;
 
-  constructor(private readonly h: { bench: () => Workbench; allow: () => void }) {}
+  constructor(private readonly h: { bench: () => Workbench; allow: () => void; catalogue: () => Catalogue }) {}
 
   async run(name: string, args: Record<string, unknown>): Promise<ToolResult> {
     const wb = this.h.bench();
+    const cat = this.h.catalogue();
+    if (name === 'list_commands') {
+      const list = cat.list(str(args.group) || undefined, str(args.text) || undefined);
+      return { content: [{ type: 'text', text: `${list.length} commands.` }], structuredContent: { commands: list } };
+    }
+    if (name === 'describe_command') {
+      const e = cat.describe(str(args.id));
+      return e ? { content: [{ type: 'text', text: `${e.id}: ${e.label}` }], structuredContent: { command: e } } : reply({ ok: false, text: `No command ${str(args.id)}; list_commands gives every id.` });
+    }
+    if (name === 'run_command') {
+      const r = await cat.run(str(args.id), (args.params as Record<string, unknown>) ?? {});
+      return reply({ ok: r.ok, text: r.ok ? `Ran ${r.label}.` : r.error ?? 'Failed', data: { ...r } });
+    }
+    if (name === 'run_commands') {
+      const steps = Array.isArray(args.steps) ? (args.steps as Array<{ id: string; params?: Record<string, unknown> }>) : [];
+      const out = await cat.runMany(steps, args.stopOnError !== false);
+      const failed = out.find((r) => !r.ok);
+      return reply({ ok: !failed, text: failed ? `Stopped at ${failed.id}: ${failed.error}` : `Ran ${out.length} commands.`, data: { results: out } });
+    }
     if (name === 'consent') {
       const agent = str(args.agent) || 'An agent';
       this.consentAsk ??= this.ask(agent).finally(() => { this.consentAsk = null; });

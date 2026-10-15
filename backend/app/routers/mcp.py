@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request, Response
 
 from app.core import config
+from app.routers import commands as cmdcat
 from app.routers import pdf as routes
 from app.routers.live import local_origin
 from app.services import bridge, claude_code, office
@@ -25,7 +26,8 @@ INSTRUCTIONS = ("formpdf edits PDFs on this computer; the person watches the ope
                 "Workflow: get_context; open_pdf {path} to put a PDF in the window (or pass path to a pdf action to work on a file); "
                 "pdf {action} for the job: without path it changes the open PDF live as your turn, with path it writes a new file; "
                 "render_pages to look at the result; extract for text, tables or pictures; save {path} when the person wants a file; "
-                "undo reverts your last turn. Actions and arguments: resource formpdf://guide.")
+                "undo reverts your last turn. Actions and arguments: resource formpdf://guide. "
+                "Anything in the window's menus, palette or shortcuts: list_commands, describe_command, then run_command or run_commands.")
 READ_ACTIONS = actions.READ
 CHANGE_ACTIONS = actions.CHANGE
 EXPORT_ACTIONS = actions.EXPORT
@@ -157,6 +159,16 @@ TOOLS = [
     _tool("answer_question", "Answers a question the person asked in formpdf's Assistant tab (get_context lists them when the AI provider is your agent). Read the PDF "
           "first, cite every statement as [p. N] and quote exactly in double quotes before the citation; the answer appears in the window with page links.",
           {"id": {"type": "string", "description": "The question's id from get_context"}, "text": _S}, ["id", "text"]),
+    _tool("list_commands", "Every command the formpdf window can run (the same ones as its menus, palette and shortcuts): id, label, group, keys, params, "
+          "whether it is available now and why not, and mutates/risky flags. Filter with group (File, Edit, View, Tabs, Tools, Home, Help) or text.",
+          {"group": _S, "text": _S}, read=True),
+    _tool("describe_command", "One window command in full: label, description, when to use it, parameters with types, mutates and risky.", {"id": _S}, ["id"], read=True),
+    _tool("run_command", "Runs one window command by id with its params, exactly as if the person chose it (zoom, go to a page, switch tab, open a tool, "
+          "undo). The window must be open. Returns what the command returned or why it could not run.",
+          {"id": _S, "params": {"type": "object"}}, ["id"]),
+    _tool("run_commands", "Runs several window commands in order; stops at the first failure unless stopOnError is false.",
+          {"steps": {"type": "array", "items": {"type": "object", "properties": {"id": _S, "params": {"type": "object"}}, "required": ["id"]}},
+           "stopOnError": {"type": "boolean"}}, ["steps"]),
 ]
 NAMES = {t["name"] for t in TOOLS}
 
@@ -182,6 +194,9 @@ def _mutating(name: str, args: dict) -> bool:
         return True
     if name == "pdf":
         return args.get("action") in CHANGE_ACTIONS + EXPORT_ACTIONS
+    if name in ("run_command", "run_commands"):
+        ids = [args.get("id")] if name == "run_command" else [s.get("id") for s in args.get("steps") or [] if isinstance(s, dict)]
+        return any((c := cmdcat.find(str(i))) is not None and (c.get("mutates") or c.get("risky")) for i in ids)
     return False
 
 
@@ -782,6 +797,41 @@ async def t_undo(a: Agent, args: dict) -> dict:
     entry["id"] = hist[-1]["id"]
     docs.remember(entry["id"], await asyncio.to_thread(pdfsvc.page_count, docs.path_of(entry["id"]), routes._pw(entry["id"])))
     return _ok(f"Undid your last turn ({n} change{'s' if n != 1 else ''}); the open PDF is back to {hist[-1]['label']}.", {"id": entry["id"]})
+
+
+async def t_list_commands(a: Agent, args: dict) -> dict:
+    items = cmdcat.search(args.get("group"), args.get("text"))
+    if not cmdcat.catalogue():
+        return _fail("formpdf has not listed its commands yet: the window must be opened once (./formpdf or the desktop app).")
+    rows = [f"{c['id']} · {c.get('label', '')}{' [' + ', '.join(c.get('keys') or []) + ']' if c.get('keys') else ''}{'' if c.get('enabled', True) else ' (unavailable: ' + str(c.get('why') or '') + ')'}" for c in items]
+    live = "" if bridge.window_connected() else "\nThe window is closed right now; run_command needs it open."
+    return _ok(f"{len(items)} commands:\n" + "\n".join(rows) + live, {"commands": items})
+
+
+async def t_describe_command(a: Agent, args: dict) -> dict:
+    c = cmdcat.find(str(args.get("id") or ""))
+    if c is None:
+        guess = cmdcat.near(str(args.get("id") or ""))
+        return _fail(f"No command {args.get('id')}." + (f" Did you mean {', '.join(guess)}?" if guess else " list_commands gives every id."))
+    return _ok(json.dumps(c, ensure_ascii=False), {"command": c})
+
+
+async def t_run_command(a: Agent, args: dict) -> dict:
+    cid = str(args.get("id") or "")
+    params = args.get("params") if isinstance(args.get("params"), dict) else {}
+    out = await cmdcat.run(cid, params)
+    return _ok(f"Ran {out.get('label') or cid}.", out) if out.get("ok") else _fail(str(out.get("error") or f"{cid} failed"))
+
+
+async def t_run_commands(a: Agent, args: dict) -> dict:
+    steps = [s for s in args.get("steps") or [] if isinstance(s, dict) and s.get("id")]
+    results = []
+    for s in steps:
+        out = await cmdcat.run(str(s["id"]), s.get("params") if isinstance(s.get("params"), dict) else {})
+        results.append({"id": s["id"], **out})
+        if not out.get("ok") and args.get("stopOnError", True):
+            return _fail(f"Stopped at {s['id']}: {out.get('error')}")
+    return _ok(f"Ran {len(results)} commands.", {"results": results})
 
 
 HANDLERS = {name[2:]: fn for name, fn in globals().items() if name.startswith("t_") and callable(fn)}

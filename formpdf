@@ -22,6 +22,9 @@ usage: ./formpdf [command] [options]
   mcp                 formpdf over MCP's stdio transport, for Claude Desktop and other MCP clients
   agents install|sync set up Claude Code, Codex and Cursor (install), or refresh the skills (sync)
   run <action> [args] a PDF job headlessly, without the window (./formpdf run actions lists them)
+  cli list|describe|run  the window's commands: list them, describe one, run one in the open window
+  claude [args]       Claude Code in this terminal with formpdf's MCP tools attached
+  build-app [options] build the desktop app start to finish (same as ./build_app)
   clean [--all]       remove build output (--all also venv and node_modules)
   help                this text
 EOT
@@ -49,6 +52,9 @@ case "$cmd" in
   mcp) exec python3 setup/mcp_stdio.py "$@" ;;
   agents) exec python3 setup/agents.py "$@" ;;
   run) exec setup/run "$@" ;;
+  cli) exec python3 setup/commands_cli.py "$@" ;;
+  claude) exec python3 setup/claude_launch.py "$@" ;;
+  build-app) exec ./build_app "$@" ;;
   clean) exec setup/clean "$@" ;;
   help|-h|--help) usage ;;
   *) printf '[formpdf] unknown command: %s\n\n' "$cmd"; usage; exit 2 ;;
