@@ -58,6 +58,9 @@
 .fs-cx-full { position: absolute; box-sizing: border-box; outline: 1px dashed rgba(0, 0, 0, 0.45); background: rgba(0, 0, 0, 0.06); }
 .fs-cx-group { display: grid; gap: var(--space-2); }
 .fs-tool-note.fs-cx-note { min-height: calc(4 * 1.45em); }
+.fs-pdfwb-tab[data-flags]::after { content: attr(data-flags); position: absolute; top: -4px; right: -4px; min-width: 15px; height: 15px; padding: 0 4px; box-sizing: border-box; border-radius: var(--radius-pill); background: #e11d48; color: #fff; font-size: 10px; line-height: 15px; text-align: center; font-variant-numeric: tabular-nums; pointer-events: none; }
+.fs-acc-rule[data-page] { cursor: pointer; }
+.fs-acc-rule[data-page] .fs-row-title { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 2px; }
 .fs-bx { position: absolute; box-sizing: border-box; pointer-events: none; }
 .fs-bx-trim { border: 1px solid #0ea5e9; }
 .fs-bx-bleed { border: 1px dashed #e11d48; }

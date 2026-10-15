@@ -307,9 +307,14 @@ function syncPf(): void {
     update: fillCheck,
   });
   setHidden(q(r, '[data-f="empty"]'), items.length > 0);
+  const auto = q<HTMLInputElement>(r, '[data-f="auto"]');
+  if (auto.checked !== pfAuto) auto.checked = pfAuto;
+  flagBadge();
 }
 
 function fillCheck(n: HTMLElement, x: PCheck): void {
+  const first = x.findings.find((f) => f.page)?.page ?? null;
+  if (x.status !== 'pass' && first) n.dataset.page = String(first); else delete n.dataset.page;
   const [ic, cls] = PICON[x.status];
   const ico = q(n, '.fs-acc-ico');
   if (ico.dataset.s !== x.status) { ico.innerHTML = icon(ic, 14); ico.dataset.s = x.status; ico.className = `fs-row-icon fs-acc-ico ${cls}`; }
@@ -335,6 +340,41 @@ async function runPf(): Promise<void> {
     } catch (err) { toast((err as Error).message, 'error'); }
   });
   syncPf();
+}
+
+const AUTO_KEY = 'fs-pf-auto';
+let pfAuto = ((): boolean => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch { return true; } })();
+let autoTimer = 0;
+let autoBusy = '';
+
+function scheduleAuto(): void {
+  const host = hostRef, d = host?.doc(), r = pfRoot;
+  window.clearTimeout(autoTimer);
+  if (!pfAuto || !host || !d || !r || pfFor === d.id || autoBusy === d.id) return;
+  autoTimer = window.setTimeout(() => void autoRun(), 900);
+}
+
+async function autoRun(): Promise<void> {
+  const host = hostRef, d = host?.doc(), r = pfRoot;
+  if (!host || !d || !r || pfFor === d.id) return;
+  autoBusy = d.id;
+  try {
+    const rep = await pdfApi.act<PReport>(d.id, 'preflight', { profile: val(r, 'profile', 'f') });
+    if (host.doc()?.id === d.id) { pf = rep; pfFor = d.id; }
+  } catch { pfFor = pfFor || ''; } finally { autoBusy = ''; }
+  syncPf();
+  scheduleAuto();
+}
+
+function flagBadge(): void {
+  const tab = document.querySelector<HTMLElement>('.fs-pdfwb-tab[data-tab="print"]');
+  if (!tab) return;
+  const fresh = !!pf && pfFor === hostRef?.doc()?.id;
+  const n = fresh && pf ? pf.summary.fail + pf.summary.warn : 0;
+  const v = n ? String(Math.min(n, 99)) : '';
+  if ((tab.dataset.flags ?? '') !== v) { if (v) tab.dataset.flags = v; else delete tab.dataset.flags; }
+  const t = fresh && pf && n ? `Print: preflight found ${pf.summary.fail} problem${pf.summary.fail === 1 ? '' : 's'} and ${pf.summary.warn} warning${pf.summary.warn === 1 ? '' : 's'}` : '';
+  if (tab.title !== t) tab.title = t;
 }
 
 async function fixPf(fixes: string[]): Promise<void> {
@@ -469,11 +509,20 @@ registerTool({
   section: () => `<p class="fs-note fs-tool-note" data-f="note"></p>
 <div class="fs-prop-row"><span class="fs-prop-label">For</span><div class="fs-prop-ctl"><select data-f="profile" aria-label="Preflight profile"><option value="print">Commercial print</option><option value="office">Office printer</option><option value="screen">Screen and email</option></select></div></div>
 <div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-f="run">${icon('find', 14)}Run preflight</button><button class="fs-btn fs-btn-sm" type="button" data-f="fix" disabled>${icon('magic', 14)}Apply fixups</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-f="report" disabled>${icon('download', 14)}Report</button></div>
+<label class="fs-check"><input type="checkbox" data-f="auto" checked><span>Check as I work (after opening and every change)</span></label>
 <div class="fs-tool-listbox"><div class="fs-list fs-tool-list" data-f="list"></div><p class="fs-note fs-tool-empty" data-f="empty">Run preflight to see the results.</p></div>`,
   mount: (root, host) => {
     hostRef = host;
     pfRoot = root;
+    q<HTMLInputElement>(root, '[data-f="auto"]').addEventListener('change', (e) => {
+      pfAuto = (e.target as HTMLInputElement).checked;
+      try { localStorage.setItem(AUTO_KEY, pfAuto ? '1' : '0'); } catch { pfAuto = (e.target as HTMLInputElement).checked; }
+      scheduleAuto();
+    });
+    q<HTMLSelectElement>(root, '[data-f="profile"]').addEventListener('change', () => { pfFor = ''; scheduleAuto(); });
     root.addEventListener('click', (e) => {
+      const row = (e.target as HTMLElement).closest<HTMLElement>('.fs-acc-rule[data-page]');
+      if (row && !(e.target as HTMLElement).closest('button')) { host.ctx.viewer.goTo(Number(row.dataset.page)); return; }
       const t = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-f]');
       if (!t || t.disabled) return;
       if (t.dataset.f === 'run') void runPf();
@@ -483,5 +532,5 @@ registerTool({
     });
     syncPf();
   },
-  sync: (_root, host) => { hostRef = host; syncPf(); },
+  sync: (_root, host) => { hostRef = host; syncPf(); scheduleAuto(); },
 });
