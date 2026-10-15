@@ -65,6 +65,18 @@
 .fs-bx-trim { border: 1px solid #0ea5e9; }
 .fs-bx-bleed { border: 1px dashed #e11d48; }
 .fs-bx-art { border: 1px dotted #16a34a; }
+.fs-bx-h { position: absolute; display: none; pointer-events: none; }
+.fs-bx-h[data-e="n"], .fs-bx-h[data-e="s"] { left: 6px; right: 6px; height: 8px; cursor: ns-resize; }
+.fs-bx-h[data-e="e"], .fs-bx-h[data-e="w"] { top: 6px; bottom: 6px; width: 8px; cursor: ew-resize; }
+.fs-bx-h[data-e="n"] { top: -4px; }
+.fs-bx-h[data-e="s"] { bottom: -4px; }
+.fs-bx-h[data-e="w"] { left: -4px; }
+.fs-bx-h[data-e="e"] { right: -4px; }
+.fs-pdfwb[data-tab="print"] .fs-bx-h { display: block; pointer-events: auto; }
+.fs-bx-h:hover { background: color-mix(in srgb, currentColor 25%, transparent); }
+.fs-bx-trim .fs-bx-h { color: #0ea5e9; }
+.fs-bx-bleed .fs-bx-h { color: #e11d48; }
+.fs-bx-art .fs-bx-h { color: #16a34a; }
 .fs-sep-shot { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; }
 .fs-sep-inks { display: flex; flex-direction: column; gap: 2px; }
 .fs-sep-ink { gap: 8px; }
