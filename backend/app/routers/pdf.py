@@ -113,10 +113,11 @@ async def open_path(body: dict) -> dict:
     path = Path(raw).expanduser()
     if not path.is_file():
         raise HTTPException(404, f"{path} does not exist")
-    data = await asyncio.to_thread(path.read_bytes)
-    if not _is_pdf(data):
+    with open(path, "rb") as fh:
+        head = fh.read(1024)
+    if not _is_pdf(head):
         raise HTTPException(415, f"{path.name} is not a PDF")
-    doc_id = await asyncio.to_thread(docs.put_bytes, data, path.name, str(path))
+    doc_id = await asyncio.to_thread(docs.put_path, path, path.name, str(path))
     return await _opened(doc_id)
 
 

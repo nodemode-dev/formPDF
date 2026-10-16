@@ -111,6 +111,61 @@ def put_bytes(data: bytes, name: str, path: str | None = None) -> str:
     return doc_id
 
 
+def _digest(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _clone(src: Path, dst: Path) -> bool:
+    """A copy-on-write clone (APFS, Btrfs, XFS, ReFS through the OS) costs no space or time; False when the file system cannot."""
+    import os
+    import sys
+    try:
+        if sys.platform == "darwin":
+            import ctypes
+            lib = ctypes.CDLL("/usr/lib/libSystem.dylib", use_errno=True)
+            return lib.clonefile(os.fsencode(str(src)), os.fsencode(str(dst)), 0) == 0
+        if sys.platform.startswith("linux"):
+            import fcntl
+            with open(src, "rb") as a, open(dst, "wb") as b:
+                fcntl.ioctl(b.fileno(), 0x40049409, a.fileno())  # FICLONE
+            return True
+    except (OSError, AttributeError):
+        try:
+            dst.unlink()
+        except OSError:
+            pass
+    return False
+
+
+def put_path(src: Path, name: str, path: str | None = None) -> str:
+    """Brings a PDF on disk into the library without reading it into memory: hashed in chunks, cloned where the file
+    system can (so a large file takes no extra space), copied in chunks where it cannot."""
+    digest = _digest(src)
+    with _lock:
+        known = _hashes().get(digest)
+        if known and valid(known) and (root() / f"{known}.pdf").is_file() and meta(known).get("name") == clean_name(name):
+            if path:
+                update_meta(known, path=path)
+            return known
+        doc_id, out = target(name)
+        tmp = out.with_suffix(".pdf.tmp")
+        if not _clone(src, tmp):
+            shutil.copyfile(src, tmp)
+        tmp.replace(out)
+        table = _hashes()
+        table[digest] = doc_id
+        hp = root() / "hashes.json"
+        hp.with_suffix(".tmp").write_text(json.dumps(table), encoding="utf-8")
+        hp.with_suffix(".tmp").replace(hp)
+    if path:
+        update_meta(doc_id, path=path)
+    return doc_id
+
+
 def _redaction_file(doc_id: str) -> Path:
     digest = hashlib.sha256((root() / f"{doc_id}.pdf").read_bytes()).hexdigest()
     return root() / f"redaction-{digest[:32]}.json"

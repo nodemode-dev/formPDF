@@ -547,8 +547,7 @@ async def _merge(a: Agent, src: Source, args: dict) -> dict:
         return _ok(f"Merged {len(paths) + 1} files into {out} ({res['pages']} pages).", {"path": str(out), "pages": res["pages"]})
     ids = [src.id]
     for p in paths:
-        data = await asyncio.to_thread(p.read_bytes)
-        ids.append(await asyncio.to_thread(docs.put_bytes, data, p.name, str(p)))
+        ids.append(await asyncio.to_thread(docs.put_path, p, p.name, str(p)))
     try:
         res = await routes.merge({"ids": ids})
     except HTTPException as e:
@@ -696,18 +695,21 @@ async def t_open_pdf(a: Agent, args: dict) -> dict:
     p = _abs(args.get("path"))
     if not p.is_file():
         raise ToolError(f"{p} is not a file.")
-    data = await asyncio.to_thread(p.read_bytes)
-    origin: str | None = str(p)
-    name = p.name
-    if b"%PDF-" not in data[:1024] and office.is_office(p.name):
+    with open(p, "rb") as fh:
+        head = fh.read(1024)
+    if b"%PDF-" not in head and office.is_office(p.name):
         try:
-            data = await asyncio.to_thread(office.convert, data, p.name)
+            data = await asyncio.to_thread(office.convert, await asyncio.to_thread(p.read_bytes), p.name)
         except ValueError as e:
             raise ToolError(str(e)) from None
-        origin, name = None, f"{p.stem}.pdf"
-    elif b"%PDF-" not in data[:1024]:
+        origin: str | None = None
+        name = f"{p.stem}.pdf"
+        doc_id = await asyncio.to_thread(docs.put_bytes, data, name, origin)
+    elif b"%PDF-" not in head:
         raise ToolError(f"{p.name} is not a PDF or an Office file.")
-    doc_id = await asyncio.to_thread(docs.put_bytes, data, name, origin)
+    else:
+        origin, name = str(p), p.name
+        doc_id = await asyncio.to_thread(docs.put_path, p, name, origin)
     info = await asyncio.to_thread(pdfsvc.info, docs.path_of(doc_id), routes._pw(doc_id))
     entry = docs.remember(doc_id, info.get("pages", 0))
     OPEN.pop(entry["key"], None)
