@@ -540,5 +540,37 @@ def mark(src, out, *, args: dict, pages=None, passwords: list[str] | None = None
     return {"pages": len(w.pages), "added": added}
 
 
+def take(src, out, *, args: dict | None = None, pages=None, passwords: list[str] | None = None) -> dict:
+    """Lifts the redaction marks saved in the file out of it and returns them as areas, so they can be changed before they are applied."""
+    w = PdfWriter(clone_from=core.reader(src, passwords))
+    want = set(core.parse_pages(pages or (args or {}).get("pages"), len(w.pages)))
+    areas = []
+    for pi, page in enumerate(w.pages):
+        if pi + 1 not in want or not page.get("/Annots"):
+            continue
+        keep = ArrayObject()
+        for ref in page["/Annots"]:
+            a = ref.get_object()
+            if a.get("/Subtype") != "/Redact" or a.get("/Rect") is None:
+                keep.append(ref)
+                continue
+            box = frame.from_pdf(page, a["/Rect"])
+            ic = a.get("/IC")
+            rgb = [float(c) for c in ic][:3] if ic is not None and len(ic) >= 3 else [0.0, 0.0, 0.0]
+            area = {"page": pi + 1, **{k: round(float(box[k]), 2) for k in ("x", "y", "w", "h")},
+                    "color": "#" + "".join(f"{max(0, min(255, round(c * 255))):02x}" for c in rgb), "overlay": str(a.get("/OverlayText") or "")}
+            if min(rgb) > 0.99:
+                area["white"] = True
+            areas.append(area)
+        page[NameObject("/Annots")] = keep
+    if not areas:
+        raise ValueError("There are no redaction marks in the file")
+    with open(out, "wb") as fh:
+        w.write(fh)
+    return {"pages": len(w.pages), "areas": areas}
+
+
 actions.register(actions.Action("mark_redactions", "change", "Mark for redaction", "marked", ("mark redactions", "redaction marks"),
                                 run=mark))
+actions.register(actions.Action("take_redactions", "change", "Edit redaction marks saved in the file", "unmarked",
+                                ("edit redaction marks", "move redaction marks", "redaction marks in the file"), run=take))
