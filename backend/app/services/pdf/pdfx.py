@@ -124,6 +124,21 @@ def verify(path, *, args: dict | None = None, pages=None, passwords: list[str] |
             fail("transparency", f"{level} does not allow transparency", tr)
     if level == "VT" and "/DPartRoot" not in root:
         fail("dpart", "PDF/VT needs a document part hierarchy (DPartRoot) that marks each record")
+    elif level == "VT":
+        dpr = _o(root["/DPartRoot"])
+        if _o(dpr.get("/DPartRootNode")) is None:
+            fail("dpart", "The document part hierarchy has no root node")
+        unmarked = {n for n, page in enumerate(r.pages, 1) if page.get("/DPart") is None}
+        if unmarked:
+            fail("dpart", "Pages that belong to no record (no DPart)", unmarked)
+        xmp = ""
+        if meta is not None:
+            try:
+                xmp = meta.get_data().decode("utf-8", "replace")
+            except Exception:
+                xmp = ""
+        if not re.search(r"GTS_PDFVTVersion(?:>|=\")\s*PDF/VT", xmp):
+            fail("claim", "The XMP metadata does not say the file is PDF/VT (pdfvtid:GTS_PDFVTVersion)")
     ok = not issues
     head = f"{'Conforms to' if ok else 'Does not conform to'} {level} by formpdf's checks ({len(issues)} finding{'s' if len(issues) != 1 else ''}); it is not an outside validator."
     lines = [f"- {i['text']}{' (pages ' + ', '.join(map(str, i['pages'][:12])) + ')' if i['pages'] else ''}" for i in issues]

@@ -4,6 +4,7 @@ import { registerTool, type ToolHost } from '../pdf/tools';
 import { el, patchList, q, setClass, setDisabled, setHidden, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
+import type { Command } from '../ui/commands';
 import { t } from '../ui/i18n';
 
 interface Box { x: number; y: number; w: number; h: number }
@@ -277,6 +278,28 @@ async function checkPdfx(level = ''): Promise<XReport | null> {
   return out;
 }
 
+/** PDF/VT from the PDF/X-4 file shown: records of the same page count, or one per top-level bookmark. */
+async function makeVt(params?: Record<string, unknown>): Promise<unknown> {
+  const host = hostRef, d = host?.doc(), r = stdRoot;
+  if (!host || !d) throw new Error('Open a PDF first');
+  const by = String(params?.by ?? (params?.pages_per_record !== undefined ? 'pages' : r ? val(r, 'vtby', 's') : 'pages'));
+  const per = Number(params?.pages_per_record ?? (r ? val(r, 'vtper', 's') : '1'));
+  const args = by === 'bookmarks' ? { by: 'bookmarks' } : { pages_per_record: per };
+  let out: unknown = null;
+  let failed: Error | null = null;
+  await host.ctx.run('Making PDF/VT', async () => {
+    try {
+      const id = await host.ctx.flush() ?? d.id;
+      const res = await pdfApi.act<Derived & { records: number }>(id, 'pdfvt', args);
+      await host.ctx.commit(res, 'Make PDF/VT');
+      toast(`PDF/VT with ${res.records} records.`);
+      out = { records: res.records };
+    } catch (err) { failed = err as Error; throw err; }
+  });
+  if (failed) throw failed;
+  return out;
+}
+
 async function savePdf20(): Promise<void> {
   const host = hostRef, d = host?.doc();
   if (!host || !d) return;
@@ -493,7 +516,12 @@ registerTool({
 <p class="fs-note" data-s="xnote">Check tells you whether the file already meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT, by formpdf's own checks.</p>
 <div class="fs-prop-row"><span class="fs-prop-label">Profile</span><div class="fs-prop-ctl"><input class="fs-input" type="text" data-s="profile" placeholder="Path to the printer's .icc profile" spellcheck="false" aria-label="ICC profile path"></div></div>
 <div class="fs-prop-row"><span class="fs-prop-label">Condition</span><div class="fs-prop-ctl"><input class="fs-input" type="text" data-s="condition" placeholder="For example FOGRA39" spellcheck="false" aria-label="Printing condition"></div></div>
-<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="xcheck">${icon('find', 14)}Check PDF/X</button><button class="fs-btn fs-btn-sm" type="button" data-s="pdfx" disabled>Convert to PDF/X</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-s="pdf20">Save as PDF 2.0</button></div>`,
+<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="xcheck">${icon('find', 14)}Check PDF/X</button><button class="fs-btn fs-btn-sm" type="button" data-s="pdfx" disabled>Convert to PDF/X</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-s="pdf20">Save as PDF 2.0</button></div>
+<div class="fs-pdfwb-subhead">PDF/VT records</div>
+<p class="fs-note">For variable-data printing: marks where each record (one letter, one card) starts, so the press can handle them one by one. Convert to PDF/X-4 first.</p>
+<div class="fs-prop-row"><span class="fs-prop-label">Records</span><div class="fs-prop-ctl"><select data-s="vtby" aria-label="How records are found"><option value="pages" selected>Same number of pages each</option><option value="bookmarks">One per top-level bookmark</option></select></div></div>
+<div class="fs-prop-row"><span class="fs-prop-label">Pages each</span><div class="fs-prop-ctl"><input class="fs-input" type="number" data-s="vtper" min="1" step="1" value="1" aria-label="Pages per record"></div></div>
+<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="pdfvt">Make PDF/VT</button></div>`,
   mount: (root, host) => {
     hostRef = host;
     stdRoot = root;
@@ -505,14 +533,16 @@ registerTool({
       else if (t.dataset.s === 'pdfx') void convertPdfx();
       else if (t.dataset.s === 'xcheck') void checkPdfx();
       else if (t.dataset.s === 'pdf20') void savePdf20();
+      else if (t.dataset.s === 'pdfvt') void makeVt().catch((err: Error) => toast(err.message, 'error'));
     });
     root.addEventListener('input', () => syncStd());
     syncStd();
   },
   sync: (_root, host) => { hostRef = host; syncStd(); },
-  commands: (host) => [
+  commands: (host): Command[] => [
     { id: 'tool-pdfa', label: 'Convert to PDF/A', words: ['archive', 'pdf/a'], enabled: () => !!host.doc(), run: () => { host.setTab('print'); void convertPdfa(); } },
     { id: 'tool-pdfx-check', label: 'Check PDF/X…', words: ['pdf/x', 'pdf/x-4', 'pdf/x-6', 'pdf/vt', 'press check', 'conformance'], group: 'Print', when: 'Use before sending a file to a press, to see whether it meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT and what is missing.', params: { level: { type: 'string', enum: ['X-1a', 'X-3', 'X-4', 'X-6', 'VT'], description: 'the standard to check against; the one the file claims when left out' } }, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: (p) => { host.setTab('print'); return checkPdfx(typeof p?.level === 'string' ? p.level : ''); } },
+    { id: 'tool-pdfvt', label: 'Make PDF/VT…', words: ['pdf/vt', 'variable data', 'records', 'mail merge', 'personalised print'], group: 'Print', when: 'Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.', params: { pages_per_record: { type: 'integer', min: 1, description: 'pages in every record' }, by: { type: 'string', enum: ['pages', 'bookmarks'], description: 'bookmarks: one record per top-level bookmark' } }, mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: (p) => { host.setTab('print'); return makeVt(p); } },
     { id: 'tool-pdf20', label: 'Save as PDF 2.0', words: ['pdf 2.0', 'iso 32000-2', 'newest pdf'], group: 'Print', mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: () => savePdf20() },
   ],
 });

@@ -96,7 +96,8 @@ Normal | Multiply | Screen | Overlay | ...}]} changes them in place (result ops 
 crop, bleed, trim and art boxes; edit_boxes {pages, trim | bleed | crop | art | media: {x, y, w, h}, bleed_mm (bleed around the trim box,
 growing the media box and keeping the visible area), clear: [box names]}; pdfx {profile: path to the printer's .icc, condition,
 version: X-4 | X-6} converts for a press (X-6 is PDF 2.0); read pdfx_check {level: X-1a | X-3 | X-4 | X-6 | VT, default the one the
-file claims} lists what stops the file meeting it, by formpdf's own checks; pdf20 rewrites the file as PDF 2.0 with XMP metadata;
+file claims} lists what stops the file meeting it, by formpdf's own checks; pdfvt {pages_per_record | by: bookmarks | starts: [first
+page of each record], names} turns a PDF/X-4 file into PDF/VT-1 with one document part per record; pdf20 rewrites the file as PDF 2.0 with XMP metadata;
 read preflight {profile: print | office | screen, tac: ink limit in percent, default 300} checks fonts, picture resolution, colour, ink
 coverage, white set to overprint, artwork at the trim edge without bleed, transparency, hairlines, trim boxes and scripts, each with
 its pages and a fix where one exists; preflight_fix {fixes} applies them; read accessibility runs Acrobat's 32 rules plus a Tag correctness group (heading levels against their size, headings tagged as
