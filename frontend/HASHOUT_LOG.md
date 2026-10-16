@@ -380,3 +380,7 @@ Carrying lives beside the XFDF import in Share comments because it is an import 
 ## 67. veraPDF in the window · _v0.40.0 (tools/verapdf.ts veraInstalled, runVera, showVera; tools/access.ts PDF/UA section, claimUa, veraUa; tools/print.ts Outside check; styles/tools.css fs-vera-note)
 
 The same report shows in two places, the Accessibility tab for PDF/UA and the Print tab for PDF/A, so one module asks the engine once per session whether veraPDF is there and fills a note and a list in either. When it is missing the buttons are disabled and the note says how to install it, rather than hiding the section, so the panel keeps its height. The verdict sentence is built in the window from the report's fields instead of shown as the engine wrote it, so it is a pattern every language can translate; veraPDF's own rule descriptions stay in English, like the ISO clause texts in the PDF/A list. The note has a fixed height because the verdict changes length with the profile name.
+
+## 68. The right-to-left fix in the check list · _v0.41.0 (tools/access.ts FIX_LABEL rtl)
+
+The new rule needed no new control: its Fix button is the row's existing one, which every rule has and hides when there is nothing to fix, so the list keeps its layout. Only its label is new, and it says what the fix does (Add their reading order) rather than naming ActualText, which the rule's sentence explains.
