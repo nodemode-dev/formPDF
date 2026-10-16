@@ -99,6 +99,7 @@ export const META: Record<string, Meta> = {
   'tool-add-bleed': { d: 'Adds bleed around the trim box, growing the page without moving anything on it.' },
   'tool-output-preview': { d: 'Shows the page with chosen inks (process or spot) turned off.' },
   'tool-xfdf-import': { d: "Brings a reviewer's comments and their status from XFDF into this PDF, without duplicates." },
+  'tool-carry-comments': { d: "Moves a reviewed PDF's comments onto this new version of it, each to where its words now are." },
   'tool-changes-export': { d: 'Saves the text changes and notes on text as a JSON list for a layout app.' },
   'form-align-left': { d: 'Lines up the selected form fields on their left edges.', w: 'Use while laying out a form.', m: true },
   'form-align-center': { d: 'Lines up the selected form fields on their centres.', w: 'Use while laying out a form.', m: true },

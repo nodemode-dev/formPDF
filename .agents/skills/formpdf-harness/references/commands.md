@@ -1,11 +1,11 @@
 # formpdf window commands
 
-Generated from the window's command catalogue (135 commands) by `./formpdf agents sync`; do not edit by hand. The live list is the MCP tool `list_commands` (and `describe_command` for one); run one with `run_command`, or from a shell with `./formpdf cli run <id> key=value`. Changes (marked below) go through the person's consent like every other change.
+Generated from the window's command catalogue (136 commands) by `./formpdf agents sync`; do not edit by hand. The live list is the MCP tool `list_commands` (and `describe_command` for one); run one with `run_command`, or from a shell with `./formpdf cli run <id> key=value`. Changes (marked below) go through the person's consent like every other change.
 
 ## Contents
 
 - Accessibility: 1
-- Comment: 2
+- Comment: 3
 - Edit: 12
 - File: 8
 - Forms: 8
@@ -31,8 +31,13 @@ Generated from the window's command catalogue (135 commands) by `./formpdf agent
 
 | Id | Name | Does | Use when |
 | --- | --- | --- | --- |
+| `tool-carry-comments` | Carry comments from the reviewed version… | Moves a reviewed PDF's comments onto this new version of it, each to where its words now are. Changes the PDF. | Use when this PDF is a new version of a reviewed one (exported again from the layout app) and the reviewer's comments should move onto it, following their words; give from, the reviewed PDF's path, or leave it out to ask the person for the file. |
 | `tool-changes-export` | Export text changes (JSON) | Saves the text changes and notes on text as a JSON list for a layout app. | Use to hand struck-out, replaced and inserted text to a layout app as a JSON change list with the surrounding words. |
 | `tool-xfdf-import` | Import comments (XFDF)… | Brings a reviewer's comments and their status from XFDF into this PDF, without duplicates. Changes the PDF. | Use to bring a reviewer's comments and their status (accepted, completed, rejected) back into this PDF; give the XFDF text as data, or leave it out to ask the person for a file. |
+
+### tool-carry-comments parameters
+
+- `from`: string; path of the reviewed PDF; a file picker opens when left out
 
 ### tool-xfdf-import parameters
 

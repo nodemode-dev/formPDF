@@ -105,7 +105,8 @@ its pages and a fix where one exists; preflight_fix {fixes} applies them; read a
 paragraphs, reading order against the page, placeholder alternate text, language of each part); fix_accessibility {fixes: [..., headings,
 spans]} re-levels headings by size and marks parts in another script with their language; an "Alternate text request" in get_context
 asks you to look at figures and answer_question with JSON {figure id: alt text or DECORATIVE}; import_xfdf {xfdf: path | data: text, pages} adds a reviewer's comments, recognises ones already here even under another name and
-takes their status; export_changes writes a JSON change list (delete, replace, insert, comment, each with the words around it) for a
+takes their status; carry_comments {from: the reviewed PDF's path} moves its comments onto this new version, each to where its
+words now are (followed, in_place, left_out); export_changes writes a JSON change list (delete, replace, insert, comment, each with the words around it) for a
 layout app; highlights and underlines move with their words when edit_items changes page text (comments_followed); read inks lists the process and spot inks; read separation_preview
 {page, hide: inks to turn off} returns that page as a PNG data URL with those inks removed; ocr {dpi: 300, skip_text: true, deskew: true, redo: false, pages} (recognises scanned pages on this
 computer and adds invisible, searchable text; tilted full-page scans are straightened; get_context says whether OCR is installed).

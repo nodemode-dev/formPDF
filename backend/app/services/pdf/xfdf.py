@@ -140,7 +140,9 @@ def export(src, out, *, args: dict | None = None, pages=None, passwords: list[st
     ids = ""
     tid = r.trailer.get("/ID")
     if tid and len(tid) == 2:
-        ids = f'<ids original="{bytes(tid[0]).hex().upper()}" modified="{bytes(tid[1]).hex().upper()}"/>'
+        # an ID read as text (as some writers' hex strings are) still has its bytes
+        raw = [v.original_bytes if hasattr(v, "original_bytes") else bytes(v) for v in (tid[0], tid[1])]
+        ids = f'<ids original="{raw[0].hex().upper()}" modified="{raw[1].hex().upper()}"/>'
     doc = (f'<?xml version="1.0" encoding="UTF-8"?>\n<xfdf xmlns="{NS}" xml:space="preserve">\n<annots>\n' + "\n".join(parts)
            + f"\n</annots>\n<f href={quoteattr(href)}/>\n{ids}\n</xfdf>\n")
     Path(out).write_text(doc, encoding="utf-8")
