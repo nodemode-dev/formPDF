@@ -11,6 +11,8 @@ export interface Layout {
   fx: number; fy: number; fh: number;
   notes: boolean; labels: boolean;
   tabs: Tab[] | null; sections: string[] | null; tab: Tab;
+  /** Sections floating on their own over the pages, by section id: [left, top, width] in pixels. */
+  floats?: Record<string, [number, number, number]>;
 }
 interface Store { current: string; edits: Record<string, Layout>; mine: Record<string, Layout> }
 export interface WsHost { root: HTMLElement; panes: Panes; tab(): Tab; setTab(t: Tab): void; goPage(n: number): void; ask(text: string, value: string, done: (name: string) => void): void }
@@ -43,7 +45,7 @@ export class Workspaces {
   private readonly main: HTMLElement;
   private readonly notes: HTMLElement;
   private readonly btn: HTMLButtonElement;
-  private drag: { kind: 'a' | 'b' | 'grip'; x: number; y: number; w: number; h: number; fx: number; fy: number } | null = null;
+  private drag: { kind: 'a' | 'b' | 'grip' | 'sec'; x: number; y: number; w: number; h: number; fx: number; fy: number; sec?: string } | null = null;
   private threads: ThreadView[] = [];
   onChange: (() => void) | null = null;
 
@@ -172,6 +174,41 @@ export class Workspaces {
       for (const s of secs) setClass(s, 'is-ws-off', !!listed && !l.sections!.includes(s.dataset.section ?? ''));
     }
     for (const b of Array.from(this.host.root.querySelectorAll<HTMLElement>('.fs-pdfwb-tab'))) setClass(b, 'is-ws-off', !!l.tabs && !l.tabs.includes(b.dataset.tab as Tab));
+    this.syncFloats();
+  }
+
+  /**
+   * A section with an id can float on its own: it stays where it is in the panel's DOM (so its tool's listeners keep
+   * working) and is placed with position: fixed, which escapes the panel's scrolling. It shows while its tab is open.
+   */
+  private syncFloats(): void {
+    const floats = this.lay.floats ?? {};
+    const vw = window.innerWidth, vh = window.innerHeight;
+    for (const s of Array.from(this.host.panes.root.querySelectorAll<HTMLElement>('.fs-pdfwb-sec[data-section]'))) {
+      const id = s.dataset.section ?? '';
+      const head = s.querySelector<HTMLElement>(':scope > .fs-pdfwb-sec-title');
+      if (head && !head.querySelector('[data-ws="pop"]')) {
+        head.appendChild(el(`<button class="fs-icon-btn is-sm fs-ws-pop" type="button" data-ws="pop" title="Float this section over the pages" aria-label="Float this section over the pages">${icon('maximize', 12)}</button>`));
+      }
+      const f = floats[id];
+      setClass(s, 'is-ws-float', !!f);
+      const style = f ? `--sec-x:${clamp(f[0], 0, Math.max(0, vw - 160))}px;--sec-y:${clamp(f[1], 0, Math.max(0, vh - 60))}px;--sec-w:${clamp(f[2], 240, 640)}px` : '';
+      if ((s.getAttribute('style') ?? '') !== style) { if (style) s.setAttribute('style', style); else s.removeAttribute('style'); }
+      const pop = head?.querySelector<HTMLElement>('[data-ws="pop"]');
+      const label = f ? 'Put this section back in the panel' : 'Float this section over the pages';
+      if (pop && pop.title !== label) { pop.title = label; pop.setAttribute('aria-label', label); pop.innerHTML = icon(f ? 'panelProps' : 'maximize', 12); }
+    }
+  }
+
+  private toggleFloat(s: HTMLElement): void {
+    const id = s.dataset.section ?? '';
+    const floats = { ...(this.lay.floats ?? {}) };
+    if (floats[id]) delete floats[id];
+    else {
+      const r = s.getBoundingClientRect();
+      floats[id] = [Math.round(r.left - Math.min(r.width, 360) - 24), Math.round(r.top), Math.round(Math.min(Math.max(r.width, 280), 420))];
+    }
+    this.set({ floats });
   }
 
   private apply(): void {
@@ -243,9 +280,24 @@ export class Workspaces {
     });
     this.main.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('[data-ws="dock"]')) this.set({ panel: 'right', panelOpen: true });
+      const pop = (e.target as HTMLElement).closest<HTMLElement>('[data-ws="pop"]');
+      const sec = pop?.closest<HTMLElement>('.fs-pdfwb-sec[data-section]');
+      if (sec) this.toggleFloat(sec);
     });
     this.main.addEventListener('pointerdown', (e) => {
       const t = e.target as HTMLElement;
+      const head = !t.closest('button') ? t.closest<HTMLElement>('.fs-pdfwb-sec.is-ws-float > .fs-pdfwb-sec-title') : null;
+      const fs = head?.parentElement;
+      if (head && fs && e.button === 0) {
+        const id = fs.dataset.section ?? '';
+        const f = this.lay.floats?.[id];
+        if (!f) return;
+        this.drag = { kind: 'sec', x: e.clientX, y: e.clientY, w: f[2], h: 0, fx: f[0], fy: f[1], sec: id };
+        head.setPointerCapture(e.pointerId);
+        this.main.classList.add('is-sizing');
+        e.preventDefault();
+        return;
+      }
       const s = t.closest<HTMLElement>('.fs-ws-split');
       const grip = !s && !t.closest('button') ? t.closest<HTMLElement>('.fs-ws-grip') : null;
       if ((!s && !grip) || e.button !== 0) return;
@@ -262,6 +314,7 @@ export class Workspaces {
       const d = this.drag;
       if (!d) return;
       const dx = e.clientX - d.x, dy = e.clientY - d.y;
+      if (d.kind === 'sec' && d.sec) { this.set({ floats: { ...(this.lay.floats ?? {}), [d.sec]: [d.fx + dx, d.fy + dy, d.w] } }, false); return; }
       if (d.kind === 'grip') { this.set({ fx: d.fx + dx, fy: d.fy + dy }, false); return; }
       if (d.kind === 'a') { const w = d.w + (this.lay.side === 'left' ? dx : -dx); this.set(w < 80 ? { sideOpen: false } : { sideOpen: true, sideW: w }, false); return; }
       if (this.lay.panel === 'bottom') { const h = d.h - dy; this.set(h < 100 ? { panelOpen: false } : { panelOpen: true, panelH: h }, false); return; }

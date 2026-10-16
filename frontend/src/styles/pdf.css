@@ -473,6 +473,11 @@
 .fs-pdfwb-main[data-ws-panel="bottom"] > .fs-pdfwb-panel { border-left: 0; border-top: 1px solid var(--line-0); }
 .fs-pdfwb-main[data-ws-panel="bottom"] .fs-pdfwb-pane:not([hidden]) { columns: 320px; column-gap: 0; }
 .fs-pdfwb-main[data-ws-panel="bottom"] .fs-pdfwb-sec { break-inside: avoid; }
+.fs-pdfwb-sec.is-ws-float { position: fixed; left: var(--sec-x); top: var(--sec-y); width: var(--sec-w); max-height: 70vh; overflow-y: auto; z-index: var(--z-float); visibility: visible; background: var(--surface-0); border: 1px solid var(--line-2); border-radius: var(--radius-md); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
+.fs-pdfwb-sec.is-ws-float > .fs-pdfwb-sec-title { cursor: move; }
+.fs-pdfwb-sec[data-section] > .fs-pdfwb-sec-title { position: relative; padding-right: 24px; }
+.fs-ws-pop { position: absolute; right: 0; top: 50%; translate: 0 -50%; opacity: 0; transition: opacity var(--transition-fast); }
+.fs-pdfwb-sec:hover .fs-ws-pop, .fs-ws-pop:focus-visible, .fs-pdfwb-sec.is-ws-float .fs-ws-pop { opacity: 1; }
 .fs-pdfwb-main[data-ws-panel="float"] > .fs-pdfwb-panel { position: fixed; left: var(--ws-fx); top: var(--ws-fy); width: var(--ws-fw); height: var(--ws-fh); z-index: var(--z-float); border: 1px solid var(--line-2); border-radius: var(--radius-md); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
 .fs-ws-grip { display: none; }
 .fs-pdfwb-main[data-ws-panel="float"] .fs-ws-grip { position: sticky; top: 0; z-index: var(--z-raised); display: flex; align-items: center; justify-content: space-between; height: 28px; padding: 0 4px 0 var(--space-3); background: var(--group-head); border-bottom: 1px solid var(--line-0); color: var(--text-muted); font-size: var(--fs-12); cursor: move; touch-action: none; }
