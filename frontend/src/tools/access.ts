@@ -21,7 +21,7 @@ interface Structure { text: string; tagged: boolean; regions: Region[]; figures:
 const STATUS_ICON: Record<Status, [string, string]> = { failed: ['warning', 'is-bad'], manual: ['info', 'is-warn'], passed: ['success', 'is-ok'], skipped: ['minus', ''] };
 const STATUS_WORD: Record<Status, string> = { failed: 'Failed', manual: 'Check by hand', passed: 'Passed', skipped: 'Skipped' };
 const FIX_LABEL: Record<string, string> = { tag: 'Tag the PDF', title: 'Set the title', lang: 'Set the language', tabs: 'Fix tab order', annotations: 'Add to the tags',
-  descriptions: 'Add descriptions', summaries: 'Add summaries', bookmarks: 'Make bookmarks', headings: 'Re-level headings by size', spans: 'Mark their language' };
+  descriptions: 'Add descriptions', summaries: 'Add summaries', bookmarks: 'Make bookmarks', headings: 'Re-level headings by size', spans: 'Mark their language', rtl: 'Add their reading order' };
 const TYPE_LABEL: Record<string, string> = { P: 'Paragraph', H1: 'Heading 1', H2: 'Heading 2', H3: 'Heading 3', H4: 'Heading 4', H5: 'Heading 5', H6: 'Heading 6',
   BlockQuote: 'Quotation', Caption: 'Caption', Note: 'Note', Code: 'Code', Formula: 'Formula', Figure: 'Figure', Span: 'Text span', L: 'List', Table: 'Table',
   Link: 'Link', Form: 'Form field', Annot: 'Comment', TOC: 'Contents', LI: 'List item', TR: 'Table row', TH: 'Header cell', TD: 'Cell', Artifact: 'Background (not read)' };

@@ -20,7 +20,7 @@ GROUPS = {"/Document", "/DocumentFragment", "/Part", "/Art", "/Sect", "/Div", "/
 HEADS = {"/H", "/H1", "/H2", "/H3", "/H4", "/H5", "/H6"}
 RETAG = ("P", "H1", "H2", "H3", "H4", "H5", "H6", "BlockQuote", "Caption", "Note", "Code", "Formula", "Figure", "Span")
 GROUP_NAMES = ("Document", "Page content", "Forms", "Alternate text", "Tables", "Lists", "Headings", "Tag correctness")
-FIXES = ("tag", "title", "lang", "tabs", "annotations", "descriptions", "summaries", "bookmarks", "headings", "spans")
+FIXES = ("tag", "title", "lang", "tabs", "annotations", "descriptions", "summaries", "bookmarks", "headings", "spans", "rtl")
 MAX_NODES = 200_000
 MAX_DEPTH = 256
 TEXT_OPS = {b"Tj", b"TJ", b"'", b'"'}
@@ -65,6 +65,7 @@ class Marks:
         self.images = 0
         self.nouni = Counter()
         self.content = None
+        self.drawn: dict[int, list[tuple]] = {}  # per id: (left, baseline, right, text, size) of each glyph, for reading order
 
 
 def _grow(boxes: dict, key: int, b) -> None:
@@ -107,11 +108,16 @@ def page_marks(page, pdf) -> Marks:
         m.sizes.setdefault(mcid, Counter())[round((g.box[3] - g.box[1]) * 2) / 2] += 1
         t = m.texts.get(mcid, "")
         prev = last.get(mcid)
-        if prev is not None and t and t[-1] != " " and (g.origin[0] < prev[0] - 1 or g.origin[0] - prev[1] > g.size * 0.25
-                                                       or abs(g.origin[1] - prev[2]) > g.size * 0.5):
+        rtl = bool(layout.RTL_RE.search(g.text))
+        same_line = prev is not None and abs(g.origin[1] - prev[2]) <= g.size * 0.5
+        # right-to-left text drawn in reading order steps left: the next glyph ends where the last one began
+        leftward = same_line and rtl and prev[4] and g.origin[0] < prev[0] - 1 and abs(g.box[2] - prev[3]) <= g.size * 0.25
+        if prev is not None and t and t[-1] != " " and not leftward and (g.origin[0] < prev[0] - 1 or g.origin[0] - prev[1] > g.size * 0.25
+                                                                          or not same_line):
             t += " "
         m.texts[mcid] = t + g.text
-        last[mcid] = (g.origin[0], g.box[2], g.origin[1])
+        m.drawn.setdefault(mcid, []).append((g.box[0], g.origin[1], g.box[2], g.text, g.size))
+        last[mcid] = (g.origin[0], g.box[2], g.origin[1], g.box[0], rtl)
     for d in c.draws:
         if d.kind in ("form", "nop", "clip"):
             continue
@@ -125,8 +131,29 @@ def page_marks(page, pdf) -> Marks:
     return m
 
 
+def reading_text(drawn: list[tuple]) -> str:
+    """The words of some glyphs in reading order, whichever order they were drawn in: lines from the top, each line read
+    off the page left to right and, where right-to-left letters lead, turned around word by word the way layout does."""
+    lines: list[list[tuple]] = []
+    for g in sorted(drawn, key=lambda g: -g[1]):
+        if lines and abs(lines[-1][0][1] - g[1]) <= g[4] * 0.5:
+            lines[-1].append(g)
+        else:
+            lines.append([g])
+    out = []
+    for line in lines:
+        s, right = "", None
+        for g in sorted(line, key=lambda g: g[0]):
+            if right is not None and s and s[-1] != " " and g[0] - right > g[4] * 0.2:
+                s += " "
+            s += g[3]
+            right = g[2]
+        out.append(layout.reading_line([layout.logical(x) for x in s.split()]))
+    return " ".join(x for x in out if x)
+
+
 class Node:
-    __slots__ = ("obj", "ref", "parent", "type", "raw", "kids", "mcids", "objrs", "formmc", "page", "path")
+    __slots__ =("obj", "ref", "parent", "type", "raw", "kids", "mcids", "objrs", "formmc", "page", "path")
 
     def __init__(self, obj, ref, parent, rolemap):
         self.obj, self.ref, self.parent = obj, ref, parent
@@ -452,7 +479,49 @@ def validate(nodes: list, marks: list, doc_lang: str, where) -> list[dict]:
                          "so a screen reader reads them with the wrong voice. ") if spans else "")
                        + ((f"{len(bad_lang)} language value is not a valid code." if len(bad_lang) == 1 else f"{len(bad_lang)} language values are not valid codes.") if bad_lang else "")
                        if spans or bad_lang else "Every part's script matches its language.", bad_lang + spans, fix="spans" if spans else None))
+    seen_rtl, visual = False, []
+    for x, text in visual_rtl(nodes, marks):
+        if x is None:
+            seen_rtl = True
+            continue
+        visual.append(where(x, f"\"{text[:40]}\" is drawn in visual order"))
+    rules.append(_rule("rtl_order", V, "Right-to-left reading order", "failed" if visual else "passed",
+                       (f"{len(visual)} part with right-to-left text is drawn in visual order and has no ActualText, so a screen reader reads its letters backwards."
+                        if len(visual) == 1 else
+                        f"{len(visual)} parts with right-to-left text are drawn in visual order and have no ActualText, so a screen reader reads their letters backwards.")
+                       if visual else ("Right-to-left text is drawn in reading order or gives its reading order as ActualText." if seen_rtl
+                                       else "There is no right-to-left text."), visual, fix="rtl" if visual else None))
     return rules
+
+
+def visual_rtl(nodes, marks):
+    """Leaf elements whose right-to-left text the page draws in visual order with no ActualText on them or above them,
+    each with its text in reading order; (None, "") stands for one that is fine, so callers know there was some."""
+    for x in nodes:
+        if not x.mcids or (x.kids and any(k.mcids for k in x.kids)):
+            continue
+        drawn = []
+        for pg, mc in x.mcids:
+            if pg is not None and pg < len(marks):
+                drawn += marks[pg].drawn.get(mc, [])
+        # steps from one right-to-left glyph to the next on its line, in drawing order: rightward is visual order
+        right = left = 0
+        for a, b in zip(drawn, drawn[1:]):
+            if layout.RTL_RE.search(a[3]) and layout.RTL_RE.search(b[3]) and abs(a[1] - b[1]) <= b[4] * 0.5:
+                if b[0] > a[0] + 0.5:
+                    right += 1
+                elif b[0] < a[0] - 0.5:
+                    left += 1
+        if not right and not left:
+            continue
+        y, said = x, False
+        while y is not None and not said:
+            said = bool(y.text_of("/ActualText"))
+            y = y.parent
+        if said or left >= right:
+            yield None, ""
+            continue
+        yield x, reading_text(drawn)
 
 
 def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | None = None):
@@ -1386,7 +1455,7 @@ def fix(src, out, *, args: dict | None = None, pages=None, passwords: list[str] 
     if "lang" in want and (args.get("lang") or not str(root.get("/Lang") or "").strip()):
         root[NameObject("/Lang")] = TextStringObject(str(args.get("lang") or default_lang()).strip()[:35])
         done.append("lang")
-    if ("headings" in want or "spans" in want) and tree:
+    if ("headings" in want or "spans" in want or "rtl" in want) and tree:
         ml = [cache.marks(i) for i in range(len(w.pages))]
         doc_lang = str(root.get("/Lang") or "").strip()
         if "headings" in want:
@@ -1420,6 +1489,14 @@ def fix(src, out, *, args: dict | None = None, pages=None, passwords: list[str] 
                     marked += 1
             if marked:
                 done.append("spans")
+        if "rtl" in want:
+            said = 0
+            for x, text in list(visual_rtl(list(tree.nodes()), ml)):
+                if x is not None and text:
+                    x.obj[NameObject("/ActualText")] = TextStringObject(text[:4000])  # what it reads, in reading order
+                    said += 1
+            if said:
+                done.append("rtl")
     if "tabs" in want:
         n = 0
         for page in w.pages:

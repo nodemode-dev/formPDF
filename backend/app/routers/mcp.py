@@ -105,8 +105,9 @@ embedding its fonts, and is refused while read accessibility still finds a faile
 read preflight {profile: print | office | screen, tac: ink limit in percent, default 300} checks fonts, picture resolution, colour, ink
 coverage, white set to overprint, artwork at the trim edge without bleed, transparency, hairlines, trim boxes and scripts, each with
 its pages and a fix where one exists; preflight_fix {fixes} applies them; read accessibility runs Acrobat's 32 rules plus a Tag correctness group (heading levels against their size, headings tagged as
-paragraphs, reading order against the page, placeholder alternate text, language of each part); fix_accessibility {fixes: [..., headings,
-spans]} re-levels headings by size and marks parts in another script with their language; an "Alternate text request" in get_context
+paragraphs, reading order against the page, placeholder alternate text, language of each part, right-to-left text drawn in visual order
+without ActualText); fix_accessibility {fixes: [..., headings, spans, rtl]} re-levels headings by size, marks parts in another script with
+their language and gives right-to-left parts their reading order as ActualText; an "Alternate text request" in get_context
 asks you to look at figures and answer_question with JSON {figure id: alt text or DECORATIVE}; import_xfdf {xfdf: path | data: text, pages} adds a reviewer's comments, recognises ones already here even under another name and
 takes their status; carry_comments {from: the reviewed PDF's path} moves its comments onto this new version, each to where its
 words now are (followed, in_place, left_out); export_changes writes a JSON change list (delete, replace, insert, comment, each with the words around it) for a
