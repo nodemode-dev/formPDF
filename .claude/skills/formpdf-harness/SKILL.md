@@ -31,7 +31,7 @@ formpdf is a PDF editor running on this computer: an engine on 127.0.0.1:8198 an
 | `save {path}` | Write the open PDF's current version to a file |
 | `undo` | Revert your last turn on the open PDF |
 
-Full arguments and results: `references/tools.md`. Every pdf action: `references/pdf-actions.md`.
+Full arguments and results: `references/tools.md`. Every pdf action: `references/pdf-actions.md`. Every window command, with what it does and when to use it: `references/commands.md` (written by `./formpdf agents sync`).
 
 ## The loop
 

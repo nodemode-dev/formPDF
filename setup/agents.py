@@ -12,7 +12,8 @@ SKILLS = ["formpdf-harness", "formpdf-skillset"]
 PORT = int(os.environ.get("FORMPDF_PORT") or 8198)
 PY = "python" if os.name == "nt" else "python3"
 USAGE = """usage: ./formpdf agents install [--dry-run]   set up Claude Code, Codex and Cursor here and in the folder you ran it from
-       ./formpdf agents sync [--check]       copy the formpdf skills again (and mirror .claude/skills to .agents/skills)"""
+       ./formpdf agents sync [--check]       write the window commands reference from the catalogue, then copy the formpdf skills again
+                                             (and mirror .claude/skills to .agents/skills)"""
 
 
 def home() -> Path:
@@ -142,14 +143,74 @@ Next:
     return 0
 
 
+def catalogue_file() -> Path:
+    raw = os.environ.get("FORMPDF_DATA_DIR")
+    return (Path(raw).expanduser() if raw else home() / "Formpdf") / "commands-catalogue.json"
+
+
+def _cell(text: object) -> str:
+    return " ".join(str(text or "").split()).replace("|", "/")
+
+
+def _param(name: str, p: dict) -> str:
+    kind = p.get("type", "any") + (f" ({' | '.join(map(str, p['enum']))})" if "enum" in p and len(p["enum"]) <= 12 else "")
+    bounds = f" {p['min']} to {p['max']}" if "min" in p and "max" in p else f" from {p['min']}" if "min" in p else ""
+    return f"`{name}`: {kind}{bounds}{'; required' if p.get('required') else ''}; {_cell(p.get('description'))}"
+
+
+def commands_reference(rows: list[dict]) -> str:
+    """The window's commands as a skill reference, grouped as the catalogue groups them."""
+    groups: dict[str, list[dict]] = {}
+    for c in sorted(rows, key=lambda c: (str(c.get("group") or "Other"), c["id"])):
+        groups.setdefault(c.get("group") or "Other", []).append(c)
+    out = ["# formpdf window commands", "",
+           f"Generated from the window's command catalogue ({len(rows)} commands) by `./formpdf agents sync`; do not edit by hand. "
+           "The live list is the MCP tool `list_commands` (and `describe_command` for one); run one with `run_command`, or from a shell with "
+           "`./formpdf cli run <id> key=value`. Changes (marked below) go through the person's consent like every other change.", "",
+           "## Contents", ""]
+    out += [f"- {g}: {len(v)}" for g, v in groups.items()]
+    out.append("")
+    for g, items in groups.items():
+        out += [f"## {g}", "", "| Id | Name | Does | Use when |", "| --- | --- | --- | --- |"]
+        for c in items:
+            flags = (" Changes the PDF." if c.get("mutates") else "") + (" Asks first." if c.get("risky") else "")
+            out.append(f"| `{c['id']}` | {_cell(c.get('label'))} | {_cell(c.get('description'))}{flags} | {_cell(c.get('when'))} |")
+        out.append("")
+        for c in items:
+            if c.get("params"):
+                out += [f"### {c['id']} parameters", ""] + [f"- {_param(k, v)}" for k, v in c["params"].items()] + [""]
+    return "\n".join(out).rstrip() + "\n"
+
+
+def generated() -> dict[Path, str]:
+    """Skill files written from the running app's data; empty when the window has never published its catalogue."""
+    try:
+        rows = json.loads(catalogue_file().read_text(encoding="utf-8")).get("commands") or []
+    except (OSError, ValueError):
+        return {}
+    rows = [c for c in rows if isinstance(c, dict) and c.get("id") and not str(c["id"]).startswith(("plugin.", "recent-"))]
+    return {ROOT / ".claude" / "skills" / "formpdf-harness" / "references" / "commands.md": commands_reference(rows)} if rows else {}
+
+
 def sync(check: bool) -> int:
     said: list = []
-    n = skills(check, said)
+    drift = 0
+    made = generated()
+    if not made:
+        said.append(f"Commands reference: no catalogue at {catalogue_file()} yet; open formpdf once, then sync again")
+    for ref, want in made.items():
+        if not ref.exists() or ref.read_text(encoding="utf-8") != want:
+            drift += 1
+            said.append(f"  {'would write' if check else 'wrote'} {ref.relative_to(ROOT)}")
+            if not check:
+                ref.parent.mkdir(parents=True, exist_ok=True)
+                ref.write_text(want, encoding="utf-8")
+    n = skills(check, said) + drift
     print("\n".join(said))
     if check:
         print("agents: in step" if n == 0 else "agents: skills drifted (run ./formpdf agents sync)")
         return 1 if n else 0
-    print(f"agents: {n} skill cop{'ies' if n != 1 else 'y'} updated")
+    print(f"agents: {n} file{'s' if n != 1 else ''} and skill cop{'ies' if n != 1 else 'y'} updated")
     return 0
 
 

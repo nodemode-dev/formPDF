@@ -1,5 +1,6 @@
 import { api } from '../io/api';
 import type { Command, CommandParam, Commands } from '../ui/commands';
+import { META } from './command-meta';
 
 export interface CatalogueEntry {
   id: string;
@@ -26,6 +27,7 @@ const GROUPS: Array<[RegExp, string]> = [
   [/^(view-agent|view-new-terminal|agent-)/, 'Agents'],
   [/^tool-/, 'Tools'],
   [/^home-/, 'Home'],
+  [/^form-/, 'Forms'],
 ];
 const MUTATES = new Set(['pdf-save', 'pdf-undo', 'pdf-redo', 'pdf-undo-agent']);
 const RISKY = new Set(['pdf-save', 'pdf-close', 'pdf-home', 'pdf-undo-agent']);
@@ -71,8 +73,8 @@ export class Catalogue {
     const label = typeof c.label === 'function' ? c.label() : c.label;
     const on = this.enabled(c);
     return {
-      id: c.id, label, group: groupOf(c), description: c.description ?? label, when: c.when ?? '', keys: [...(c.keys ?? [])],
-      params: c.params ?? {}, mutates: c.mutates ?? MUTATES.has(c.id), risky: c.risky ?? RISKY.has(c.id), enabled: on,
+      id: c.id, label, group: groupOf(c), description: c.description ?? META[c.id]?.d ?? label, when: c.when || (META[c.id]?.w ?? ''), keys: [...(c.keys ?? [])],
+      params: c.params ?? {}, mutates: c.mutates ?? META[c.id]?.m ?? MUTATES.has(c.id), risky: c.risky ?? META[c.id]?.r ?? RISKY.has(c.id), enabled: on,
       why: on ? '' : (c.why?.() ?? 'Not available right now'), ...(c.checked ? { checked: c.checked() } : {}),
     };
   }

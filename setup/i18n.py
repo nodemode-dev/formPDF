@@ -49,7 +49,7 @@ def clean(s: str) -> str | None:
 def keys() -> list[str]:
     found: set[str] = set()
     for f in glob.glob(str(SRC / "**" / "*.ts"), recursive=True):
-        if "/i18n/" in f.replace("\\", "/") or f.endswith("i18n.ts"):
+        if "/i18n/" in f.replace("\\", "/") or f.endswith("i18n.ts") or f.endswith("command-meta.ts"):  # command-meta is for agents, never on screen
             continue
         src = Path(f).read_text(encoding="utf-8")
         for m in TEXT.finditer(src):
