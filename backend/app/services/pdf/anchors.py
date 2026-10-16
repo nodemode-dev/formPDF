@@ -10,6 +10,7 @@ from . import annot, core
 from .search import _page_text, _rects
 
 MARKUP = {"/Highlight": "highlight", "/Underline": "underline", "/StrikeOut": "strikeout", "/Squiggly": "underline"}
+POINT = ("/Text", "/Caret")  # notes and carets sit beside words rather than on them, and move with the nearest ones
 MAX_ANCHORS = 400
 
 
@@ -31,11 +32,19 @@ def _marked(r: PdfReader) -> list[tuple[int, int, DictionaryObject]]:
     for pi, page in enumerate(r.pages):
         for k, ref in enumerate(_o(page.get("/Annots")) or []):
             a = _o(ref)
-            if isinstance(a, DictionaryObject) and str(a.get("/Subtype")) in MARKUP and a.get("/QuadPoints") and "/IRT" not in a:
+            if not isinstance(a, DictionaryObject) or "/IRT" in a:
+                continue
+            sub = str(a.get("/Subtype"))
+            if (sub in MARKUP and a.get("/QuadPoints")) or (sub in POINT and a.get("/Rect")):
                 found.append((pi, k, a))
                 if len(found) >= MAX_ANCHORS:
                     return found
     return found
+
+
+def _rect(a) -> list[float]:
+    r = [float(v) for v in a.get("/Rect") or [0, 0, 0, 0]]
+    return [min(r[0], r[2]), min(r[1], r[3]), max(r[0], r[2]), max(r[1], r[3])]
 
 
 def _texts(path, passwords) -> list[tuple[str, object]]:
@@ -78,6 +87,11 @@ def capture(src, passwords: list[str] | None = None) -> list[dict]:
     try:
         for pi, k, a in marked:
             text, tp = pages[pi]
+            if str(a.get("/Subtype")) in POINT:
+                cap = _point(pages, pi, k, a)
+                if cap is not None:
+                    caps.append(cap)
+                continue
             quads = _quads(a)
             parts = []
             for q in quads:
@@ -104,7 +118,33 @@ def capture(src, passwords: list[str] | None = None) -> list[dict]:
     return caps
 
 
+def _point(pages, pi: int, k: int, a) -> dict | None:
+    """A note or caret tied to the words nearest it: the first phrase around them that occurs on its page, and the line
+    of that phrase nearest the comment, which is what it moves with."""
+    from .carry import _gap, _phrases
+
+    text, tp = pages[pi]
+    rect = _rect(a)
+    cx, cy = (rect[0] + rect[2]) / 2, (rect[1] + rect[3]) / 2
+    alts = []
+    for quote in _phrases(text, tp, rect):
+        hits = _hits(pages, quote)
+        mine = [i for i, (hp, _r) in enumerate(hits) if hp == pi]
+        if not mine:
+            continue
+        nth = min(mine, key=lambda i: min(_gap(rr, cx, cy) for rr in hits[i][1]))
+        olds = hits[nth][1]
+        oi = min(range(len(olds)), key=lambda i: _gap(olds[i], cx, cy))
+        alts.append({"quote": quote, "nth": nth, "count": len(hits), "line": oi, "lines": len(olds), "at": olds[oi]})
+    if not alts:
+        return None
+    # the first phrase stands in for the rest; follow tries them all and keeps one that occurs as often as before
+    return {"page": pi, "k": k, "point": True, "rect": rect, **alts[0], "alts": alts}
+
+
 def _same(a, cap) -> bool:
+    if cap.get("point"):
+        return all(abs(x - y) < 0.01 for x, y in zip(_rect(a), cap["rect"]))
     q = _quads(a)
     return len(q) == len(cap["quads"]) and all(abs(x - y) < 0.01 for qa, qb in zip(q, cap["quads"]) for x, y in zip(qa, qb))
 
@@ -116,6 +156,19 @@ def follow(out, caps: list[dict], passwords: list[str] | None = None) -> int:
     pages, doc = _texts(out, passwords)
     try:
         found = {c["quote"]: _hits(pages, c["quote"]) for c in caps}
+        for c in caps:
+            if not c.get("point"):
+                continue
+            choice = None
+            for alt in c["alts"]:
+                hits = found.setdefault(alt["quote"], _hits(pages, alt["quote"]))
+                if hits and len(hits) == alt["count"]:
+                    choice = alt
+                    break
+                if hits and choice is None:
+                    choice = alt
+            if choice is not None:
+                c.update(choice)
     finally:
         doc.close()
     w = PdfWriter(clone_from=PdfReader(str(out)))
@@ -130,6 +183,9 @@ def follow(out, caps: list[dict], passwords: list[str] | None = None) -> int:
         else:
             ax = c["at"]
             hp, rects = min(hits, key=lambda h: abs(h[0] - c["page"]) * 100000 + abs(h[1][0][0] - ax[0]) + abs(h[1][0][3] - ax[3]))
+        if c.get("point"):
+            moved += _follow_point(w, c, hp, rects)
+            continue
         old = c["quads"]
         if hp == c["page"] and len(rects) == len(old) and all(abs(x - y) < 0.5 for qa, qb in zip(rects, old) for x, y in zip(qa, qb)):
             continue
@@ -165,6 +221,31 @@ def follow(out, caps: list[dict], passwords: list[str] | None = None) -> int:
         w.write(buf)
         Path(out).write_bytes(buf.getvalue())
     return moved
+
+
+def _follow_point(w: PdfWriter, c: dict, hp: int, rects: list[list[float]]) -> int:
+    """Moves a note or caret by as much as its line moved; its popup moves with it."""
+    ni = c["line"] if len(rects) == c["lines"] else (0 if c["line"] == 0 else len(rects) - 1)
+    dx, dy = rects[ni][0] - c["at"][0], rects[ni][3] - c["at"][3]
+    if hp == c["page"] and abs(dx) < 0.5 and abs(dy) < 0.5:
+        return 0
+    arr = list(_o(w.pages[c["page"]].get("/Annots")) or [])
+    # by its place first, then by its box: an earlier comment moving to another page shifts the places after it
+    order = ([arr[c["k"]]] if c["k"] < len(arr) else []) + arr
+    ref = next((x for x in order if isinstance(_o(x), DictionaryObject) and str(_o(x).get("/Subtype")) in POINT
+                and "/IRT" not in _o(x) and _same(_o(x), c)), None)
+    if ref is None:
+        return 0
+    a = _o(ref)
+    r = c["rect"]
+    a[NameObject("/Rect")] = annot._arr([r[0] + dx, r[1] + dy, r[2] + dx, r[3] + dy])
+    popup = _o(a.get("/Popup")) if "/Popup" in a else None
+    if isinstance(popup, DictionaryObject) and popup.get("/Rect") is not None:
+        p = _rect(popup)
+        popup[NameObject("/Rect")] = annot._arr([p[0] + dx, p[1] + dy, p[2] + dx, p[3] + dy])
+    if hp != c["page"]:
+        _move(w, c["page"], hp, ref)
+    return 1
 
 
 def _move(w: PdfWriter, src: int, dst: int, ref) -> None:
