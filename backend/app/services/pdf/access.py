@@ -254,10 +254,6 @@ def _plural(n: int, word: str) -> str:
     return f"{n} {word}{'' if n == 1 else 's'}"
 
 
-def _n(n: int, word: str, one: str, many: str) -> str:
-    return f"{_plural(n, word)} {one if n == 1 else many}"
-
-
 def _on(pages: list[int]) -> str:
     ps = sorted(set(pages))
     return f"on page {ps[0]}" if len(ps) == 1 else f"on pages {_pages_text(ps)}"
@@ -388,7 +384,9 @@ def validate(nodes: list, marks: list, doc_lang: str, where) -> list[dict]:
         if len(same) >= 3 and abs(size - mid) > mid * 0.3:
             wrong.append(where(x, f"H{lv} \"{text[:40]}\" is {size:g} pt where most H{lv} headings are {mid:g} pt"))
     rules.append(_rule("heading_levels", V, "Heading levels match the page", "failed" if wrong else "passed",
-                       f"{_n(len(wrong), 'heading', 'has', 'have')} a level that does not match how it is set on the page; a sighted reader and a screen reader would see a different outline."
+                       (f"{len(wrong)} heading has a level that does not match how it is set on the page; a sighted reader and a screen reader would see a different outline."
+                        if len(wrong) == 1 else
+                        f"{len(wrong)} headings have a level that does not match how they are set on the page; a sighted reader and a screen reader would see a different outline.")
                        if wrong else ("Heading levels follow their size on the page." if heads else "There are no numbered headings to compare."), wrong,
                        fix="headings" if wrong else None))
     base = _size(body)
@@ -398,8 +396,10 @@ def validate(nodes: list, marks: list, doc_lang: str, where) -> list[dict]:
             if size >= base * 1.3 and 2 <= len(text) <= 120 and not text.endswith((".", ",", ";", ":")) and not re.fullmatch(r"[\d\W]+", text):
                 looks.append(where(x, f"\"{text[:50]}\" is {size:g} pt (body text is {base:g} pt) but tagged as a paragraph"))
     rules.append(_rule("heading_like", V, "Headings tagged as paragraphs", "failed" if looks else "passed",
-                       f"{_n(len(looks), 'line', 'looks', 'look')} like a heading but {'is' if len(looks) == 1 else 'are'} tagged as a paragraph, so screen reader users cannot jump to {'it' if len(looks) == 1 else 'them'}. "
-                       "Retag in Accessibility > Reading order." if looks else "No paragraph is set like a heading.", looks))
+                       (f"{len(looks)} line looks like a heading but is tagged as a paragraph, so screen reader users cannot jump to it. "
+                        "Retag in Accessibility > Reading order." if len(looks) == 1 else
+                        f"{len(looks)} lines look like a heading but are tagged as a paragraph, so screen reader users cannot jump to them. "
+                        "Retag in Accessibility > Reading order.") if looks else "No paragraph is set like a heading.", looks))
     jumps, last = [], {}
     for x in nodes:
         if not x.mcids or x.type in ("/Figure", "/Artifact"):
@@ -419,13 +419,17 @@ def validate(nodes: list, marks: list, doc_lang: str, where) -> list[dict]:
         if ov >= narrow * 0.5 and b[3] > a[3] + max(24.0, (a[3] - a[1]) * 0.5) and b[1] > a[3] - 2:
             jumps.append(where(x, f"\"{text[:40]}\" is read after text below it"))
     rules.append(_rule("visual_order", V, "Reading order follows the page", "failed" if jumps else "passed",
-                       f"The tags go back up the same column {_plural(len(jumps), 'time')}; screen readers will read those parts out of order. "
-                       "Fix the order in Accessibility > Reading order." if jumps else "Within each column, the tags read from top to bottom.", jumps))
+                       ("The tags go back up the same column once; screen readers will read that part out of order. "
+                        "Fix the order in Accessibility > Reading order." if len(jumps) == 1 else
+                        f"The tags go back up the same column {len(jumps)} times; screen readers will read those parts out of order. "
+                        "Fix the order in Accessibility > Reading order.") if jumps else "Within each column, the tags read from top to bottom.", jumps))
     alts = Counter(x.alt.strip().lower() for x in nodes if x.type == "/Figure" and x.alt)
     poor = [where(x, f"Alternate text \"{x.alt[:40]}\" " + ("is used for several figures" if alts[x.alt.strip().lower()] >= 3 else "says nothing about the picture"))
             for x in nodes if x.type == "/Figure" and x.alt and (PLACEHOLDER_ALT.fullmatch(x.alt.strip()) or alts[x.alt.strip().lower()] >= 3)]
     rules.append(_rule("alt_quality", V, "Alternate text says something", "failed" if poor else "passed",
-                       f"{_n(len(poor), 'figure', 'has', 'have')} alternate text that is a file name, a placeholder or repeated; it passes a presence check but tells a listener nothing."
+                       (f"{len(poor)} figure has alternate text that is a file name, a placeholder or repeated; it passes a presence check but tells a listener nothing."
+                        if len(poor) == 1 else
+                        f"{len(poor)} figures have alternate text that is a file name, a placeholder or repeated; it passes a presence check but tells a listener nothing.")
                        if poor else "No figure has placeholder or repeated alternate text.", poor))
     bad_lang, spans = [], []
     for x in nodes:
@@ -442,8 +446,11 @@ def validate(nodes: list, marks: list, doc_lang: str, where) -> list[dict]:
     if doc_lang and not LANG_RE.fullmatch(doc_lang):
         bad_lang.insert(0, {"page": None, "id": "", "text": f"The document language \"{doc_lang[:20]}\" is not a language code"})
     rules.append(_rule("language_spans", V, "Language of each part", "failed" if spans or bad_lang else "passed",
-                       (f"{_n(len(spans), 'part', 'is', 'are')} written in another script than the document language and {'has' if len(spans) == 1 else 'have'} no language of {'its' if len(spans) == 1 else 'their'} own, "
-                        "so a screen reader reads it with the wrong voice. " if spans else "") + (f"{_plural(len(bad_lang), 'language value')} {'is' if len(bad_lang) == 1 else 'are'} not a valid code." if bad_lang else "")
+                       ((f"{len(spans)} part is written in another script than the document language and has no language of its own, "
+                         "so a screen reader reads it with the wrong voice. " if len(spans) == 1 else
+                         f"{len(spans)} parts are written in another script than the document language and have no language of their own, "
+                         "so a screen reader reads them with the wrong voice. ") if spans else "")
+                       + ((f"{len(bad_lang)} language value is not a valid code." if len(bad_lang) == 1 else f"{len(bad_lang)} language values are not valid codes.") if bad_lang else "")
                        if spans or bad_lang else "Every part's script matches its language.", bad_lang + spans, fix="spans" if spans else None))
     return rules
 
@@ -468,7 +475,8 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
                        "The security settings stop assistive technology from reading the text. Remove the password or allow text access for accessibility."))
     pictures = [i + 1 for i, m in enumerate(marks) if m.glyphs == 0 and m.images > 0]
     rules.append(_rule("image_only", D, "Image-only PDF", "failed" if pictures else "passed",
-                       f"{_n(len(pictures), 'page', 'is a picture', 'are pictures')} with no text ({_on(pictures)}); run Convert > Make searchable (OCR), then tag again."
+                       (f"{len(pictures)} page is a picture with no text ({_on(pictures)}); run Convert > Make searchable (OCR), then tag again." if len(pictures) == 1 else
+                        f"{len(pictures)} pages are pictures with no text ({_on(pictures)}); run Convert > Make searchable (OCR), then tag again.")
                        if pictures else "Every page with pictures also has text.", [{"page": p, "text": "No text on this page"} for p in pictures]))
     mark_info = _o(root.get("/MarkInfo"))
     marked = bool(isinstance(mark_info, DictionaryObject) and mark_info.get("/Marked"))
@@ -536,7 +544,8 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
                 (widgets_loose if sub == "/Widget" else loose).append(i + 1)
     fix_ann = "annotations" if tagged else "tag"
     rules.append(_rule("annotations", P, "Tagged annotations", "failed" if loose else "passed",
-                       f"{_n(len(loose), 'comment or link', 'is', 'are')} not in the tags ({_on(loose)})." if loose else "Every comment and link is in the tags.",
+                       (f"{len(loose)} comment or link is not in the tags ({_on(loose)})." if len(loose) == 1 else
+                        f"{len(loose)} comments or links are not in the tags ({_on(loose)}).") if loose else "Every comment and link is in the tags.",
                        [{"page": p, "text": "Annotation not tagged"} for p in loose], fix=fix_ann if loose else None))
     rules.append(_rule("tab_order", P, "Tab order", "failed" if untabbed else "passed",
                        f"Tab does not move through links and fields in reading order {_on(untabbed)}." if untabbed else "Tab order follows the tags.",
@@ -548,8 +557,11 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
             nouni.update(m.nouni)
             nouni_pages.append(i + 1)
     rules.append(_rule("encoding", P, "Character encoding", "failed" if nouni else "passed",
-                       f"{_plural(sum(nouni.values()), 'character')} in {_plural(len(nouni), 'font')} cannot be turned into text ({', '.join(list(nouni)[:4])}); "
-                       "screen readers skip them. Making the pages searchable with OCR or retyping the text fixes it." if nouni else "Every character maps to text.",
+                       (f"{sum(nouni.values())} character" if sum(nouni.values()) == 1 else f"{sum(nouni.values())} characters")
+                       + (f" in {len(nouni)} font cannot be turned into text ({', '.join(list(nouni)[:4])}); "
+                          "screen readers skip them. Making the pages searchable with OCR or retyping the text fixes it." if len(nouni) == 1 else
+                          f" in {len(nouni)} fonts cannot be turned into text ({', '.join(list(nouni)[:4])}); "
+                          "screen readers skip them. Making the pages searchable with OCR or retyping the text fixes it.") if nouni else "Every character maps to text.",
                        [{"page": p, "text": "Characters without text"} for p in nouni_pages]))
     bad_media = [p for p, good in media if not good]
     rules.append(_rule("multimedia", P, "Tagged multimedia", "failed" if bad_media else "passed",
@@ -581,11 +593,13 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
             if not str(f.get("/TU") or "").strip():
                 undescribed.append({"page": i + 1, "text": f"Field {f.get('/T') or ''} has no description"})
     rules.append(_rule("form_tags", F, "Tagged form fields", "failed" if widgets_loose else "passed",
-                       f"{_n(len(widgets_loose), 'form field', 'is', 'are')} not in the tags ({_on(widgets_loose)})." if widgets_loose else
+                       (f"{len(widgets_loose)} form field is not in the tags ({_on(widgets_loose)})." if len(widgets_loose) == 1 else
+                        f"{len(widgets_loose)} form fields are not in the tags ({_on(widgets_loose)}).") if widgets_loose else
                        ("Every form field is in the tags." if fields_total else "There are no form fields."),
                        [{"page": p, "text": "Field not tagged"} for p in widgets_loose], fix=fix_ann if widgets_loose else None))
     rules.append(_rule("field_descriptions", F, "Field descriptions", "failed" if undescribed else "passed",
-                       f"{_n(len(undescribed), 'field', 'has', 'have')} no description (tooltip) for screen readers to announce." if undescribed else
+                       (f"{len(undescribed)} field has no description (tooltip) for screen readers to announce." if len(undescribed) == 1 else
+                        f"{len(undescribed)} fields have no description (tooltip) for screen readers to announce.") if undescribed else
                        ("Every field has a description." if fields_total else "There are no form fields."), undescribed,
                        fix="descriptions" if undescribed else None))
 
@@ -608,7 +622,8 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
         figs = [x for x in nodes if x.type == "/Figure"]
         nofig = [where(x, "Figure without alternate text") for x in figs if not x.described]
         rules.append(_rule("figures_alt", A, "Figures alternate text", "failed" if nofig else "passed",
-                           f"{_n(len(nofig), 'figure', 'has', 'have')} no alternate text. Add it in Accessibility > Alternate text, or mark a figure as decorative."
+                           (f"{len(nofig)} figure has no alternate text. Add it in Accessibility > Alternate text, or mark the figure as decorative." if len(nofig) == 1 else
+                            f"{len(nofig)} figures have no alternate text. Add it in Accessibility > Alternate text, or mark a figure as decorative.")
                            if nofig else ("Every figure has alternate text." if figs else "There are no figures."), nofig))
         nested = [where(x, f"{x.type[1:]} has alternate text inside another element's") for x in nodes
                   if x.alt and any(y.alt for y in x.walk() if y is not x)]
@@ -624,7 +639,7 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
                            "No alternate text hides a link or comment.", hides))
         formulas = [where(x, "Formula without alternate text") for x in nodes if x.type == "/Formula" and not x.described]
         rules.append(_rule("other_alt", A, "Other elements alternate text", "failed" if formulas else "passed",
-                           f"{_n(len(formulas), 'formula', 'has', 'have')} no alternate text." if formulas else "Elements that need alternate text have it.", formulas))
+                           (f"{len(formulas)} formula has no alternate text." if len(formulas) == 1 else f"{len(formulas)} formulas have no alternate text.") if formulas else "Elements that need alternate text have it.", formulas))
 
         tables = [x for x in nodes if x.type == "/Table"]
         sections = {"/THead", "/TBody", "/TFoot"}
@@ -650,13 +665,13 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
         rules.append(_rule("table_cells", T, "TH and TD", "failed" if bad_cells else "passed", "Every cell is inside a row." if not bad_cells else
                            "Header and data cells must sit inside a row.", bad_cells))
         rules.append(_rule("table_headers", T, "Headers", "failed" if no_head else "passed",
-                           f"{_n(len(no_head), 'table', 'has', 'have')} no header cells." if no_head else ("Every table has headers." if tables else "There are no tables."),
+                           (f"{len(no_head)} table has no header cells." if len(no_head) == 1 else f"{len(no_head)} tables have no header cells.") if no_head else ("Every table has headers." if tables else "There are no tables."),
                            no_head))
         rules.append(_rule("table_regular", T, "Regularity", "failed" if irregular else "passed",
                            "Every row of a table should have the same number of cells." if irregular else
                            ("Tables are regular." if tables else "There are no tables."), irregular))
         rules.append(_rule("table_summary", T, "Summary", "failed" if no_summary else "passed",
-                           f"{_n(len(no_summary), 'table', 'has', 'have')} no summary." if no_summary else ("Every table has a summary." if tables else "There are no tables."),
+                           (f"{len(no_summary)} table has no summary." if len(no_summary) == 1 else f"{len(no_summary)} tables have no summary.") if no_summary else ("Every table has a summary." if tables else "There are no tables."),
                            no_summary, fix="summaries" if no_summary else None))
         bad_li = [where(x, "List item outside a list") for x in nodes if x.type == "/LI" and (x.parent is None or x.parent.type != "/L")]
         bad_li += [where(k, f"{k.type[1:]} directly inside a list") for x in nodes if x.type == "/L" for k in x.kids if k.type not in ("/LI", "/L", "/Caption")]

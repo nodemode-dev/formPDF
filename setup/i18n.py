@@ -214,7 +214,7 @@ def _py_texts(node):
         yield from _py_texts(node.orelse)
     elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         left, right = list(_py_texts(node.left)), list(_py_texts(node.right))
-        if len(left) * len(right) <= 4:
+        if len(left) * len(right) <= 9:  # e.g. two optional parts that each come singular or plural
             for a, ca in left:
                 for b, cb in right:
                     yield a + re.sub(r"\{(\d+)\}", lambda m, k=len(ca): "{%d}" % (int(m.group(1)) + k), b), ca + cb
@@ -258,6 +258,18 @@ def holes(s: str) -> list[str]:
     return sorted(re.findall(r"\{[a-z0-9_]+\}|%[sd]|\$\{[^}]*\}|<<?[^<>]+>>?", s))
 
 
+PLURAL = {"zero", "one", "two", "few", "many", "other"}
+
+
+def counted_ok(key: str, value: str) -> bool:
+    """A count-aware word {0|one:..|few:..|other:..} names a hole the key has, only plural categories, and an other form."""
+    for n, forms in re.findall(r"\{(\d+)\|([^{}]*)\}", value):
+        cats = [p.split(":", 1)[0] for p in forms.split("|")]
+        if "{%s}" % n not in key or not all(":" in p for p in forms.split("|")) or not set(cats) <= PLURAL or "other" not in cats:
+            return False
+    return True
+
+
 def parity() -> int:
     want = keys()
     bad = 0
@@ -270,7 +282,8 @@ def parity() -> int:
             continue
         missing = [] if code in VARIANTS else [k for k in want if k not in t]
         stale = [k for k in t if k not in want]
-        broken = [k for k, v in t.items() if not str(v).strip() or (not set(holes(v)) <= set(holes(k)) if re.search(r"\{\d+\}", k) else holes(k) != holes(v))]
+        broken = [k for k, v in t.items() if not str(v).strip() or (not set(holes(v)) <= set(holes(k)) if re.search(r"\{\d+\}", k) else holes(k) != holes(v))
+                  or not counted_ok(k, str(v))]
         if missing or broken:
             bad += 1
         print(f"{code:6} {len(t):5} entries, {len(missing)} missing, {len(stale)} no longer in the source, {len(broken)} broken placeholders"

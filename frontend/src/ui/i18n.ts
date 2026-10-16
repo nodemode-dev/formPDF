@@ -41,6 +41,22 @@ async function load(l: Lang): Promise<void> {
 interface Pattern { key: string; head: string; re: RegExp; order: number[] }
 const compiled = new Map<Lang, Pattern[]>();
 const HOLE = /\{(\d+)\}/g;
+/** A count-aware word in a translation: {0|one:файл|few:файла|many:файлов|other:файла} picks by the number in hole 0 with the language's plural rules. */
+const COUNTED = /\{(\d+)\|([^{}]*)\}/g;
+const rules = new Map<Lang, Intl.PluralRules>();
+
+function counted(out: string, value: (n: number) => string): string {
+  if (!out.includes('|')) return out;
+  return out.replace(COUNTED, (whole, n: string, forms: string) => {
+    const num = Number(value(Number(n)).trim().replace(/[\s,.](?=\d{3}\b)/g, ''));
+    if (!Number.isFinite(num)) return whole;
+    let pr = rules.get(current);
+    if (!pr) { try { pr = new Intl.PluralRules(current); } catch { pr = new Intl.PluralRules('en'); } rules.set(current, pr); }
+    const pick = new Map<string, string>();
+    for (const part of forms.split('|')) { const i = part.indexOf(':'); if (i > 0) pick.set(part.slice(0, i), part.slice(i + 1)); }
+    return pick.get(pr.select(num)) ?? pick.get('other') ?? whole;
+  });
+}
 
 function look(k: string): string | undefined {
   const parent = LANG_PARENT[current];
@@ -88,7 +104,7 @@ function fromPattern(text: string, depth = 0): string | undefined {
     p.order.forEach((n, i) => vals.set(n, m[i + 1]));
     const out = look(p.key);
     if (out === undefined) continue;
-    return out.replace(HOLE, (_s, n: string) => {
+    return counted(out, (n) => vals.get(n) ?? '').replace(HOLE, (_s, n: string) => {
       const v = vals.get(Number(n)) ?? '';
       const core = v.trim();  // a value often carries its own leading space (" (pages 2, 5)"); keep it around the translation
       const tr = core ? plain(core) ?? fromPattern(core, depth + 1) : undefined;
@@ -106,7 +122,7 @@ export function t(english: string): string {
 /** A message built from a template key with {0}, {1}... holes: the template and every value are translated on their own, so a message that wraps another one (an action name and the engine's error) reads whole in the interface language. */
 export function tf(template: string, ...values: string[]): string {
   const out = current === 'en' ? template : plain(template) ?? template;
-  return out.replace(HOLE, (_s, n: string) => t(values[Number(n)] ?? ''));
+  return counted(out, (n) => values[n] ?? '').replace(HOLE, (_s, n: string) => t(values[Number(n)] ?? ''));
 }
 
 const known = (text: string): boolean => current !== 'en' && t(text) !== text;
