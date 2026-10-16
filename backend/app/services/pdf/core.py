@@ -264,6 +264,21 @@ def page_count(path, passwords: list[str] | None = None) -> int:
 
 
 @serial
+def _rtl_lines(text: str) -> str:
+    """pdfium gives each right-to-left run its letters in reading order but leaves the runs, and the words, as they sit
+    on the page from left to right, so a Hebrew or Arabic line reads backwards; this turns those lines around."""
+    from . import layout
+
+    if not layout.RTL_RE.search(text):
+        return text
+    out = []
+    for line in text.split("\n"):
+        if layout.RTL_RE.search(line):
+            line = layout.reading_line(["".join(reversed(layout._RTL_RUNS.findall(w))) for w in line.split()])
+        out.append(line)
+    return "\n".join(out)
+
+
 def extract_text(path, pages=None, passwords: list[str] | None = None) -> list[dict]:
     doc = pdfium_doc(path, passwords)
     try:
@@ -274,7 +289,7 @@ def extract_text(path, pages=None, passwords: list[str] | None = None) -> list[d
             text = tp.get_text_range().replace("\r\n", "\n").replace("\r", "\n").replace("\x00", "")
             tp.close()
             page.close()
-            out.append({"page": i, "text": re.sub(r"[ \t]+\n", "\n", text).strip()})
+            out.append({"page": i, "text": _rtl_lines(re.sub(r"[ \t]+\n", "\n", text).strip())})
         return out
     finally:
         doc.close()

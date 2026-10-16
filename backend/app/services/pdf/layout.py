@@ -18,6 +18,23 @@ def logical(text: str) -> str:
     return "".join(r[::-1] if RTL_RE.match(r) else r for r in reversed(_RTL_RUNS.findall(text)))
 
 
+def reading_line(words: list[str]) -> str:
+    """Words already in logical letter order but placed as they sit on the page, left to right, put in reading order:
+    a line led by right-to-left letters reads from the right, and neighbouring Latin words ("New York") keep their order."""
+    rtl = sum(len(RTL_RE.findall(x)) for x in words)
+    latin = sum(len(re.findall(r"[A-Za-z]", x)) for x in words)
+    if rtl <= latin:
+        return " ".join(words)
+    groups: list[list[str]] = []
+    for x in words:
+        ltr = not RTL_RE.search(x) and bool(re.search(r"[A-Za-z]", x))
+        if ltr and groups and groups[-1][0] == "ltr":
+            groups[-1].append(x)
+        else:
+            groups.append(["ltr" if ltr else "rtl", x])
+    return " ".join(" ".join(g[1:]) for g in reversed(groups))
+
+
 def _clean_font(name: str) -> str:
     return re.sub(r"^[A-Z]{6}\+", "", str(name or ""))
 
