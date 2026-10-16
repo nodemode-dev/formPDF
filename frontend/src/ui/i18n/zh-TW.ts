@@ -1639,7 +1639,7 @@ export const zhTW: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "該文字方塊已在串接中;請先取消串接",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "你在此開啟過的 PDF,最新的在最前。「忘記」會將其從此清單中移除;檔案本身保持原位。",
 "The engine did not answer; try again in a moment.": "引擎沒有回應;請稍後再試。",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "記錄會列出被刪除的字詞。它不會寫入 PDF;請像保護原件一樣妥善保管儲存的副本。",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "記錄會列出被刪除的字詞。它不會寫入 PDF,而且 formpdf 重新啟動後只會保留刪除的位置,不再保留字詞本身;請像保護原件一樣妥善保管儲存的副本。",
 "There are no text changes or notes on text to export; the file lists none.": "沒有可匯出的文字變更或文字註記;檔案中為空。",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "此 PDF 已簽名。新增註解、填寫表單和追加簽名不會使簽名失效;其他變更會使簽名失效。",
 "Undo steps back through them; Save writes the PDF.": "「復原」可逐步回復這些變更;「儲存」會寫入 PDF。",
@@ -1997,5 +1997,18 @@ export const zhTW: Record<string, string> = {
 "There are no redaction marks in the file": "檔案中沒有塗黑標記",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "將此 PDF 中儲存的塗黑標記轉換為可在套用前移動、調整大小、切換或刪除的標記",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "用於包含大量個人化記錄（信函、卡片）的 PDF/X-4 檔案，讓印刷機能分別處理每筆記錄；請提供 pages_per_record，或使用 by: bookmarks 為每個頂層書籤產生一筆記錄。",
-"{0} pages do not divide into records of {1} pages": "{0} 頁無法依每筆 {1} 頁劃分為記錄"
+"{0} pages do not divide into records of {1} pages": "{0} 頁無法依每筆 {1} 頁劃分為記錄",
+"Characters removed: {0}": "已刪除字元數:{0}",
+"Did not start: {0}": "無法啟動:{0}",
+"Hide the removed words (also in the saved log)": "隱藏被刪除的字詞(儲存的記錄中也一併隱藏)",
+"Please sign: {0}": "請簽署:{0}",
+"Renamed from {0} ·": "原名 {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "此 PDF 含有 {0} 類隱藏資訊。請勾選要移除的項目;它們會一次全部移除,儲存之前都可以復原。",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} 此後 PDF 又有變更;復原時會先復原之後的變更。",
+"{0} area{1} marked on {2} page{3}": "已在 {2} 頁上標記 {0} 個區域",
+"{0} could not be read as a picture": "無法將 {0} 作為圖片讀取",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "此 PDF 中有 {0} 個欄位{2}。可直接在頁面上輸入。",
+"{0} measurements.csv": "{0} 測量.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "有 {0} 種字型既未內嵌也未安裝:列印和編輯時將以其他字型取代。",
+"{0} redaction mark{1} in the file": "檔案中有 {0} 個塗黑標記"
 };

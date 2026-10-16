@@ -1639,7 +1639,7 @@ export const cs: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Toto textové pole už je ve vláknu; nejprve ho z vlákna odeberte",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "PDF, která jste zde otevřeli, od nejnovějšího. Zapomenout odebere jedno z tohoto seznamu; samotný soubor zůstane, kde je.",
 "The engine did not answer; try again in a moment.": "Modul neodpověděl; zkuste to za chvíli znovu.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Protokol uvádí odstraněná slova. Nikdy se nezapisuje do PDF; uloženou kopii chraňte stejně jako originál.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Protokol uvádí odstraněná slova. Nikdy se nezapisuje do PDF a po restartu formpdf se uchová jen místo odstranění, ne slova; uloženou kopii chraňte stejně jako originál.",
 "There are no text changes or notes on text to export; the file lists none.": "Nejsou žádné změny textu ani poznámky k textu k exportu; soubor žádné neuvádí.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Toto PDF je podepsané. Komentáře, vyplňování formuláře a další podpisy platnost podpisů neruší; jiné změny ji ruší.",
 "Undo steps back through them; Save writes the PDF.": "Zpět se vrací krok za krokem; Uložit zapíše PDF.",
@@ -1997,5 +1997,18 @@ export const cs: Record<string, string> = {
 "There are no redaction marks in the file": "V souboru nejsou žádné značky začernění",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Změňte značky začernění uložené v tomto PDF na značky, které můžete před použitím přesouvat, měnit jejich velikost, přepínat nebo mazat",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Použijte u souboru PDF/X-4 s mnoha personalizovanými záznamy (dopisy, karty), aby tiskový stroj mohl každý záznam zpracovat zvlášť; zadejte pages_per_record, nebo by: bookmarks pro jeden záznam na záložku nejvyšší úrovně.",
-"{0} pages do not divide into records of {1} pages": "Počet stran ({0}) nelze rozdělit na záznamy po {1} stranách"
+"{0} pages do not divide into records of {1} pages": "Počet stran ({0}) nelze rozdělit na záznamy po {1} stranách",
+"Characters removed: {0}": "Odstraněno znaků: {0}",
+"Did not start: {0}": "Nepodařilo se spustit: {0}",
+"Hide the removed words (also in the saved log)": "Skrýt odstraněná slova (i v uloženém protokolu)",
+"Please sign: {0}": "Podepište: {0}",
+"Renamed from {0} ·": "Přejmenováno z {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Počet druhů skrytých informací v tomto PDF: {0}. Zaškrtněte, co odstranit; vše se odstraní jedním krokem, který lze vrátit zpět do uložení.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} PDF se od té doby změnilo; Zpět nejprve vrací pozdější změny.",
+"{0} area{1} marked on {2} page{3}": "Označené oblasti: {0}, stran: {2}",
+"{0} could not be read as a picture": "{0} nelze přečíst jako obrázek",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Polí v tomto PDF: {0}{2}. Pište přímo na stránku.",
+"{0} measurements.csv": "{0} měření.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Písma nejsou vložena ani nainstalována: {0}. Tisk a úpravy je nahradí.",
+"{0} redaction mark{1} in the file": "Značek začernění v souboru: {0}"
 };

@@ -1639,7 +1639,7 @@ export const it: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Questa casella di testo fa già parte di un collegamento; separala prima",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "I PDF che hai aperto qui, dal più recente. Dimentica ne rimuove uno da questo elenco; il file stesso resta dov'è.",
 "The engine did not answer; try again in a moment.": "Il motore non ha risposto; riprova tra un momento.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Il registro elenca le parole rimosse. Non viene mai scritto nel PDF; conserva una copia salvata riservata quanto l'originale.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Il registro elenca le parole rimosse. Non viene mai scritto nel PDF e, dopo il riavvio di formpdf, resta solo il punto in cui qualcosa è stato rimosso, non le parole; conserva una copia salvata riservata quanto l'originale.",
 "There are no text changes or notes on text to export; the file lists none.": "Non ci sono modifiche al testo né note sul testo da esportare; il file non ne elenca nessuna.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Questo PDF è firmato. Commenti, compilazione dei moduli e ulteriori firme mantengono valide le firme; le altre modifiche le invalidano.",
 "Undo steps back through them; Save writes the PDF.": "Annulla li ripercorre a ritroso; Salva scrive il PDF.",
@@ -1997,5 +1997,18 @@ export const it: Record<string, string> = {
 "There are no redaction marks in the file": "Non ci sono segni di oscuramento nel file",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Trasforma i segni di oscuramento salvati in questo PDF in segni che puoi spostare, ridimensionare, attivare o eliminare prima di applicarli",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Da usare su un file PDF/X-4 con molti record personalizzati (lettere, biglietti) perché una macchina da stampa tratti ogni record separatamente; indica pages_per_record, oppure by: bookmarks per un record per segnalibro di primo livello.",
-"{0} pages do not divide into records of {1} pages": "{0} pagine non si dividono in record di {1} pagine"
+"{0} pages do not divide into records of {1} pages": "{0} pagine non si dividono in record di {1} pagine",
+"Characters removed: {0}": "Caratteri rimossi: {0}",
+"Did not start: {0}": "Avvio non riuscito: {0}",
+"Hide the removed words (also in the saved log)": "Nascondi le parole rimosse (anche nel registro salvato)",
+"Please sign: {0}": "Firma richiesta: {0}",
+"Renamed from {0} ·": "Rinominato da {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Questo PDF contiene {0} tipi di informazioni nascoste. Seleziona cosa rimuovere; tutto avviene in un unico passaggio che puoi annullare con Annulla fino al salvataggio.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} Il PDF è cambiato da allora; Annulla ripercorre prima le modifiche successive.",
+"{0} area{1} marked on {2} page{3}": "Aree contrassegnate: {0}, pagine: {2}",
+"{0} could not be read as a picture": "Impossibile leggere {0} come immagine",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Campi in questo PDF: {0}{2}. Scrivi direttamente nella pagina.",
+"{0} measurements.csv": "{0} misurazioni.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Font non incorporati né installati: {0}. Stampa e modifica li sostituiranno.",
+"{0} redaction mark{1} in the file": "Segni di oscuramento nel file: {0}"
 };

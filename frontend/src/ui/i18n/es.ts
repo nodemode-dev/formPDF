@@ -1639,7 +1639,7 @@ export const es: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Ese cuadro de texto ya está en una cadena; desenlácelo primero",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Los PDF que abrió aquí, del más reciente al más antiguo. Olvidar quita uno de esta lista; el archivo en sí permanece donde está.",
 "The engine did not answer; try again in a moment.": "El motor no respondió; vuelva a intentarlo en un momento.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "El registro enumera las palabras eliminadas. Nunca se escribe en el PDF; mantenga una copia guardada tan privada como el original.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "El registro enumera las palabras eliminadas. Nunca se escribe en el PDF, y tras reiniciar formpdf solo se conserva dónde se eliminó algo, no las palabras; mantenga una copia guardada tan privada como el original.",
 "There are no text changes or notes on text to export; the file lists none.": "No hay cambios de texto ni notas sobre el texto que exportar; el archivo no incluye ninguno.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Este PDF está firmado. Los comentarios, el relleno de formularios y las firmas adicionales mantienen válidas las firmas; otros cambios las invalidan.",
 "Undo steps back through them; Save writes the PDF.": "Deshacer retrocede por ellos; Guardar escribe el PDF.",
@@ -1997,5 +1997,18 @@ export const es: Record<string, string> = {
 "There are no redaction marks in the file": "No hay marcas de censura en el archivo",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Convierta las marcas de censura guardadas en este PDF en marcas que pueda mover, redimensionar, alternar o eliminar antes de aplicarlas",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Úselo en un archivo PDF/X-4 con muchos registros personalizados (cartas, tarjetas) para que una imprenta trate cada registro por separado; indique pages_per_record, o by: bookmarks para un registro por marcador de nivel superior.",
-"{0} pages do not divide into records of {1} pages": "{0} páginas no se dividen en registros de {1} páginas"
+"{0} pages do not divide into records of {1} pages": "{0} páginas no se dividen en registros de {1} páginas",
+"Characters removed: {0}": "Caracteres eliminados: {0}",
+"Did not start: {0}": "No se inició: {0}",
+"Hide the removed words (also in the saved log)": "Ocultar las palabras eliminadas (también en el registro guardado)",
+"Please sign: {0}": "Firme, por favor: {0}",
+"Renamed from {0} ·": "Renombrado desde {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Este PDF tiene {0} tipos de información oculta. Marque lo que quiera eliminar; todo se quita en un solo paso que Deshacer puede revertir hasta que guarde.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} El PDF ha cambiado desde entonces; Deshacer retrocede primero por los cambios posteriores.",
+"{0} area{1} marked on {2} page{3}": "Áreas marcadas: {0}, páginas: {2}",
+"{0} could not be read as a picture": "No se pudo leer {0} como imagen",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Campos en este PDF: {0}{2}. Escriba directamente en la página.",
+"{0} measurements.csv": "{0} medidas.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Fuentes sin incrustar ni instalar: {0}. La impresión y la edición las sustituirán.",
+"{0} redaction mark{1} in the file": "Marcas de censura en el archivo: {0}"
 };

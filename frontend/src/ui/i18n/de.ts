@@ -1639,7 +1639,7 @@ export const de: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Dieses Textfeld ist bereits Teil einer Verkettung; heben Sie die Verkettung zuerst auf",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Die hier geöffneten PDFs, die neuesten zuerst. Vergessen entfernt eines aus dieser Liste; die Datei selbst bleibt, wo sie ist.",
 "The engine did not answer; try again in a moment.": "Die Engine hat nicht geantwortet; versuchen Sie es gleich noch einmal.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Das Protokoll listet die entfernten Wörter auf. Es wird nie ins PDF geschrieben; behandeln Sie eine gespeicherte Kopie so vertraulich wie das Original.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Das Protokoll listet die entfernten Wörter auf. Es wird nie ins PDF geschrieben, und nach einem Neustart von formpdf bleibt nur erhalten, wo etwas entfernt wurde, nicht die Wörter; behandeln Sie eine gespeicherte Kopie so vertraulich wie das Original.",
 "There are no text changes or notes on text to export; the file lists none.": "Es gibt keine Textänderungen oder Notizen zu Text zu exportieren; die Datei enthält keine.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Dieses PDF ist signiert. Kommentare, Formularausfüllung und weitere Signaturen lassen die Signaturen gültig; andere Änderungen machen sie ungültig.",
 "Undo steps back through them; Save writes the PDF.": "Rückgängig geht sie Schritt für Schritt zurück; Speichern schreibt das PDF.",
@@ -1997,5 +1997,18 @@ export const de: Record<string, string> = {
 "There are no redaction marks in the file": "In der Datei sind keine Schwärzungsmarkierungen vorhanden",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Wandelt die in diesem PDF gespeicherten Schwärzungsmarkierungen in Markierungen um, die Sie vor dem Anwenden verschieben, in der Größe ändern, umschalten oder löschen können",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Für eine PDF/X-4-Datei mit vielen personalisierten Datensätzen (Briefe, Karten), damit eine Druckmaschine jeden Datensatz getrennt behandeln kann; geben Sie pages_per_record an oder by: bookmarks für einen Datensatz pro Lesezeichen der obersten Ebene.",
-"{0} pages do not divide into records of {1} pages": "{0} Seiten lassen sich nicht in Datensätze zu je {1} Seiten aufteilen"
+"{0} pages do not divide into records of {1} pages": "{0} Seiten lassen sich nicht in Datensätze zu je {1} Seiten aufteilen",
+"Characters removed: {0}": "Entfernte Zeichen: {0}",
+"Did not start: {0}": "Nicht gestartet: {0}",
+"Hide the removed words (also in the saved log)": "Entfernte Wörter ausblenden (auch im gespeicherten Protokoll)",
+"Please sign: {0}": "Bitte unterschreiben: {0}",
+"Renamed from {0} ·": "Umbenannt von {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Dieses PDF enthält {0} Arten versteckter Informationen. Wählen Sie aus, was entfernt werden soll; alles geschieht in einem Schritt, den Sie bis zum Speichern mit Rückgängig zurücknehmen können.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} Das PDF hat sich seitdem geändert; Rückgängig nimmt zuerst die späteren Änderungen zurück.",
+"{0} area{1} marked on {2} page{3}": "Markierte Bereiche: {0}, Seiten: {2}",
+"{0} could not be read as a picture": "{0} konnte nicht als Bild gelesen werden",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Felder in diesem PDF: {0}{2}. Tippen Sie direkt auf die Seite.",
+"{0} measurements.csv": "{0} Messwerte.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Weder eingebettete noch installierte Schriften: {0}. Beim Drucken und Bearbeiten werden sie ersetzt.",
+"{0} redaction mark{1} in the file": "Schwärzungsmarkierungen in der Datei: {0}"
 };

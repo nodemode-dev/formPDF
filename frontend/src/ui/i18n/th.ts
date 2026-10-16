@@ -1639,7 +1639,7 @@ export const th: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "กล่องข้อความนั้นอยู่ในสายข้อความแล้ว ให้ยกเลิกการเชื่อมต่อก่อน",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "PDF ที่คุณเปิดที่นี่ เรียงจากใหม่สุด ลืม จะลบรายการออกจากรายการนี้ ตัวไฟล์ยังอยู่ที่เดิม",
 "The engine did not answer; try again in a moment.": "เอนจินไม่ตอบสนอง ลองอีกครั้งในอีกสักครู่",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "บันทึกจะแสดงรายการคำที่ถูกลบ และจะไม่ถูกเขียนลงใน PDF โปรดเก็บสำเนาที่บันทึกไว้เป็นความลับเช่นเดียวกับต้นฉบับ",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "บันทึกจะแสดงรายการคำที่ถูกลบ และจะไม่ถูกเขียนลงใน PDF เมื่อเปิด formpdf ใหม่ จะเก็บไว้เฉพาะตำแหน่งที่ลบ ไม่เก็บตัวคำ โปรดเก็บสำเนาที่บันทึกไว้เป็นความลับเช่นเดียวกับต้นฉบับ",
 "There are no text changes or notes on text to export; the file lists none.": "ไม่มีการเปลี่ยนแปลงข้อความหรือบันทึกย่อบนข้อความให้ส่งออก ไฟล์จะไม่มีรายการใด ๆ",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "PDF นี้ลงนามแล้ว การใส่ความคิดเห็น กรอกแบบฟอร์ม และลงนามเพิ่มจะไม่ทำให้ลายเซ็นเสียหาย แต่การเปลี่ยนแปลงอื่นจะทำให้ลายเซ็นใช้ไม่ได้",
 "Undo steps back through them; Save writes the PDF.": "เลิกทำจะย้อนกลับทีละขั้น บันทึก จะเขียนลงใน PDF",
@@ -1997,5 +1997,18 @@ export const th: Record<string, string> = {
 "There are no redaction marks in the file": "ไม่มีเครื่องหมายปกปิดข้อมูลในไฟล์",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "แปลงเครื่องหมายปกปิดข้อมูลที่บันทึกไว้ใน PDF นี้เป็นเครื่องหมายที่ย้าย ปรับขนาด สลับ หรือลบได้ก่อนนำไปใช้",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "ใช้กับไฟล์ PDF/X-4 ที่มีระเบียนเฉพาะบุคคลจำนวนมาก (จดหมาย การ์ด) เพื่อให้เครื่องพิมพ์จัดการแต่ละระเบียนแยกกัน โดยระบุ pages_per_record หรือใช้ by: bookmarks เพื่อให้หนึ่งระเบียนต่อที่คั่นหน้าระดับบนสุดหนึ่งรายการ",
-"{0} pages do not divide into records of {1} pages": "{0} หน้าไม่สามารถแบ่งเป็นระเบียนละ {1} หน้าได้ลงตัว"
+"{0} pages do not divide into records of {1} pages": "{0} หน้าไม่สามารถแบ่งเป็นระเบียนละ {1} หน้าได้ลงตัว",
+"Characters removed: {0}": "ตัวอักษรที่ลบ: {0}",
+"Did not start: {0}": "เริ่มไม่สำเร็จ: {0}",
+"Hide the removed words (also in the saved log)": "ซ่อนคำที่ลบ (รวมถึงในบันทึกที่บันทึกไว้)",
+"Please sign: {0}": "โปรดลงนาม: {0}",
+"Renamed from {0} ·": "เปลี่ยนชื่อจาก {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "PDF นี้มีข้อมูลที่ซ่อนอยู่ {0} ประเภท เลือกรายการที่จะลบ ระบบจะลบทั้งหมดในขั้นตอนเดียว และเลิกทำได้จนกว่าจะบันทึก",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} PDF มีการเปลี่ยนแปลงหลังจากนั้น การเลิกทำจะย้อนการเปลี่ยนแปลงล่าสุดก่อน",
+"{0} area{1} marked on {2} page{3}": "ทำเครื่องหมาย {0} พื้นที่ใน {2} หน้า",
+"{0} could not be read as a picture": "อ่าน {0} เป็นรูปภาพไม่ได้",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "PDF นี้มี {0} ช่อง{2} พิมพ์ลงบนหน้าได้โดยตรง",
+"{0} measurements.csv": "{0} การวัด.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "ฟอนต์ {0} รายการไม่ได้ฝังไว้และไม่ได้ติดตั้ง การพิมพ์และการแก้ไขจะใช้ฟอนต์อื่นแทน",
+"{0} redaction mark{1} in the file": "มีเครื่องหมายปกปิดข้อมูล {0} รายการในไฟล์"
 };

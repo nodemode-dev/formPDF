@@ -1639,7 +1639,7 @@ export const ptBR: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Essa caixa de texto já está em um encadeamento; desencadeie-a primeiro",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Os PDFs que você abriu aqui, do mais recente ao mais antigo. Esquecer remove um desta lista; o arquivo em si permanece onde está.",
 "The engine did not answer; try again in a moment.": "O mecanismo não respondeu; tente novamente em instantes.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "O registro lista as palavras removidas. Ele nunca é gravado no PDF; mantenha uma cópia salva tão privada quanto o original.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "O registro lista as palavras removidas. Ele nunca é gravado no PDF e, depois que o formpdf é reiniciado, só se mantém onde algo foi removido, não as palavras; mantenha uma cópia salva tão privada quanto o original.",
 "There are no text changes or notes on text to export; the file lists none.": "Não há alterações de texto nem anotações sobre texto para exportar; o arquivo não lista nenhuma.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Este PDF está assinado. Comentários, preenchimento de formulários e novas assinaturas mantêm as assinaturas válidas; outras alterações as invalidam.",
 "Undo steps back through them; Save writes the PDF.": "Desfazer volta por eles; Salvar grava o PDF.",
@@ -1997,5 +1997,18 @@ export const ptBR: Record<string, string> = {
 "There are no redaction marks in the file": "Não há marcas de remoção no arquivo",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Transforme as marcas de remoção salvas neste PDF em marcas que você pode mover, redimensionar, alternar ou excluir antes de aplicar",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Use em um arquivo PDF/X-4 com muitos registros personalizados (cartas, cartões) para que uma gráfica trate cada registro separadamente; informe pages_per_record, ou by: bookmarks para um registro por marcador de nível superior.",
-"{0} pages do not divide into records of {1} pages": "{0} páginas não se dividem em registros de {1} páginas"
+"{0} pages do not divide into records of {1} pages": "{0} páginas não se dividem em registros de {1} páginas",
+"Characters removed: {0}": "Caracteres removidos: {0}",
+"Did not start: {0}": "Não iniciou: {0}",
+"Hide the removed words (also in the saved log)": "Ocultar as palavras removidas (também no registro salvo)",
+"Please sign: {0}": "Assine, por favor: {0}",
+"Renamed from {0} ·": "Renomeado de {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Este PDF tem {0} tipos de informações ocultas. Marque o que remover; tudo é removido em uma só etapa que Desfazer pode reverter até você salvar.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} O PDF mudou desde então; Desfazer volta primeiro pelas alterações mais recentes.",
+"{0} area{1} marked on {2} page{3}": "Áreas marcadas: {0}, páginas: {2}",
+"{0} could not be read as a picture": "Não foi possível ler {0} como imagem",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Campos neste PDF: {0}{2}. Digite diretamente na página.",
+"{0} measurements.csv": "{0} medidas.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Fontes não incorporadas nem instaladas: {0}. A impressão e a edição vão substituí-las.",
+"{0} redaction mark{1} in the file": "Marcas de remoção no arquivo: {0}"
 };

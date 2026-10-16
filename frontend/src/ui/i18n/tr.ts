@@ -1639,7 +1639,7 @@ export const tr: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Bu metin kutusu zaten bir zincirde; önce zincirden çıkarın",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Burada açtığınız PDF'ler, en yeniden başlayarak. Unut, birini bu listeden kaldırır; dosyanın kendisi olduğu yerde kalır.",
 "The engine did not answer; try again in a moment.": "Motor yanıt vermedi; biraz sonra tekrar deneyin.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Günlük kaldırılan sözcükleri listeler. PDF'ye asla yazılmaz; kaydedilmiş kopyayı orijinal kadar gizli tutun.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Günlük kaldırılan sözcükleri listeler. PDF'ye asla yazılmaz ve formpdf yeniden başlatıldıktan sonra sözcükler değil, yalnızca nerelerin kaldırıldığı saklanır; kaydedilmiş kopyayı orijinal kadar gizli tutun.",
 "There are no text changes or notes on text to export; the file lists none.": "Dışa aktarılacak metin değişikliği veya metne ait not yok; dosya hiçbirini listelemez.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Bu PDF imzalı. Yorumlar, form doldurma ve ek imzalar imzaları geçerli tutar; diğer değişiklikler bozar.",
 "Undo steps back through them; Save writes the PDF.": "Geri al, adımlar arasında geri gider; Kaydet PDF'yi yazar.",
@@ -1997,5 +1997,18 @@ export const tr: Record<string, string> = {
 "There are no redaction marks in the file": "Dosyada karartma işareti yok",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Bu PDF'de kayıtlı karartma işaretlerini, uygulamadan önce taşıyabileceğiniz, yeniden boyutlandırabileceğiniz, değiştirebileceğiniz veya silebileceğiniz işaretlere dönüştürün",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Baskı makinesinin her kaydı ayrı işleyebilmesi için çok sayıda kişiselleştirilmiş kayıt (mektup, kart) içeren bir PDF/X-4 dosyasında kullanın; pages_per_record verin veya üst düzey yer imi başına bir kayıt için by: bookmarks kullanın.",
-"{0} pages do not divide into records of {1} pages": "{0} sayfa, {1} sayfalık kayıtlara bölünemiyor"
+"{0} pages do not divide into records of {1} pages": "{0} sayfa, {1} sayfalık kayıtlara bölünemiyor",
+"Characters removed: {0}": "Kaldırılan karakter: {0}",
+"Did not start: {0}": "Başlatılamadı: {0}",
+"Hide the removed words (also in the saved log)": "Kaldırılan sözcükleri gizle (kaydedilen günlükte de)",
+"Please sign: {0}": "Lütfen imzalayın: {0}",
+"Renamed from {0} ·": "Önceki adı {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Bu PDF'de {0} tür gizli bilgi var. Kaldırılacakları işaretleyin; hepsi tek adımda kaldırılır ve kaydedene kadar Geri al ile geri alınabilir.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} PDF o zamandan beri değişti; Geri al önce sonraki değişiklikleri geri alır.",
+"{0} area{1} marked on {2} page{3}": "İşaretli alan: {0}, sayfa: {2}",
+"{0} could not be read as a picture": "{0} resim olarak okunamadı",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Bu PDF'de {0} alan var{2}. Doğrudan sayfaya yazın.",
+"{0} measurements.csv": "{0} ölçümler.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "{0} yazı tipi ne gömülü ne yüklü: yazdırma ve düzenleme bunların yerine başka yazı tipi kullanır.",
+"{0} redaction mark{1} in the file": "Dosyada {0} karartma işareti var"
 };

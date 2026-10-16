@@ -1639,7 +1639,7 @@ export const fi: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Tämä tekstiruutu on jo ketjussa; poista ensin sen ketjutus",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Täällä avaamasi PDF-tiedostot, uusin ensin. Unohda poistaa yhden tästä luettelosta; itse tiedosto pysyy paikallaan.",
 "The engine did not answer; try again in a moment.": "Moottori ei vastannut; yritä hetken kuluttua uudelleen.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Loki luettelee poistetut sanat. Sitä ei koskaan kirjoiteta PDF-tiedostoon; pidä tallennettu kopio yhtä yksityisenä kuin alkuperäinen.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Loki luettelee poistetut sanat. Sitä ei koskaan kirjoiteta PDF-tiedostoon, ja formpdf:n uudelleenkäynnistyksen jälkeen säilyy vain se, mistä jotain poistettiin, ei sanoja; pidä tallennettu kopio yhtä yksityisenä kuin alkuperäinen.",
 "There are no text changes or notes on text to export; the file lists none.": "Vietäviä tekstimuutoksia tai tekstiin liittyviä muistiinpanoja ei ole; tiedostossa ei luetella yhtään.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Tämä PDF on allekirjoitettu. Kommentit, lomakkeen täyttö ja lisäallekirjoitukset pitävät allekirjoitukset voimassa; muut muutokset mitätöivät ne.",
 "Undo steps back through them; Save writes the PDF.": "Kumoa palaa niiden läpi askel kerrallaan; Tallenna kirjoittaa PDF-tiedoston.",
@@ -1997,5 +1997,18 @@ export const fi: Record<string, string> = {
 "There are no redaction marks in the file": "Tiedostossa ei ole sensurointimerkkejä",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Muuta tähän PDF:ään tallennetut sensurointimerkit merkeiksi, joita voit siirtää, koon muuttaa, vaihtaa tai poistaa ennen käyttöönottoa",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Käytä PDF/X-4-tiedostossa, jossa on paljon yksilöityjä tietueita (kirjeitä, kortteja), jotta painokone voi käsitellä jokaisen tietueen erikseen; anna pages_per_record tai by: bookmarks, jos haluat yhden tietueen ylimmän tason kirjanmerkkiä kohti.",
-"{0} pages do not divide into records of {1} pages": "{0} sivua ei voi jakaa {1} sivun tietueisiin"
+"{0} pages do not divide into records of {1} pages": "{0} sivua ei voi jakaa {1} sivun tietueisiin",
+"Characters removed: {0}": "Poistetut merkit: {0}",
+"Did not start: {0}": "Käynnistys epäonnistui: {0}",
+"Hide the removed words (also in the saved log)": "Piilota poistetut sanat (myös tallennetussa lokissa)",
+"Please sign: {0}": "Allekirjoita: {0}",
+"Renamed from {0} ·": "Aiempi nimi: {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Tässä PDF-tiedostossa on {0} lajia piilotettua tietoa. Valitse poistettavat; kaikki tehdään yhdellä kertaa, ja Kumoa voi perua sen tallennukseen asti.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} PDF-tiedosto on muuttunut sen jälkeen; Kumoa peruu ensin myöhemmät muutokset.",
+"{0} area{1} marked on {2} page{3}": "Merkityt alueet: {0}, sivut: {2}",
+"{0} could not be read as a picture": "Kohdetta {0} ei voitu lukea kuvana",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Kenttiä tässä PDF-tiedostossa: {0}{2}. Kirjoita suoraan sivulle.",
+"{0} measurements.csv": "{0} mittaukset.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Upottamattomat ja asentamattomat fontit: {0}. Tulostus ja muokkaus korvaavat ne.",
+"{0} redaction mark{1} in the file": "Sensurointimerkit tiedostossa: {0}"
 };

@@ -1639,7 +1639,7 @@ export const ru: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Это текстовое поле уже входит в цепочку; сначала уберите его из цепочки",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "PDF, открытые здесь, сначала новейшие. «Забыть» убирает файл из этого списка; сам файл остаётся на месте.",
 "The engine did not answer; try again in a moment.": "Движок не ответил; повторите попытку через минуту.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "В журнале перечислены удалённые слова. Он никогда не записывается в PDF; храните сохранённую копию так же закрыто, как оригинал.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "В журнале перечислены удалённые слова. Он никогда не записывается в PDF, а после перезапуска formpdf сохраняется только место удаления, но не сами слова; храните сохранённую копию так же закрыто, как оригинал.",
 "There are no text changes or notes on text to export; the file lists none.": "Нет изменений текста или заметок к тексту для экспорта; в файле их нет.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Этот PDF подписан. Комментарии, заполнение формы и дополнительные подписи не нарушают действительность подписей; другие изменения нарушают её.",
 "Undo steps back through them; Save writes the PDF.": "«Отменить» возвращает назад по шагам; «Сохранить» записывает PDF.",
@@ -1997,5 +1997,18 @@ export const ru: Record<string, string> = {
 "There are no redaction marks in the file": "В файле нет меток скрытия",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Преобразуйте метки скрытия, сохранённые в этом PDF, в метки, которые можно перемещать, изменять в размере, переключать или удалять перед применением",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Используйте для файла PDF/X-4 со множеством персонализированных записей (письма, карточки), чтобы печатная машина обрабатывала каждую запись отдельно; укажите pages_per_record или by: bookmarks, чтобы каждой закладке верхнего уровня соответствовала одна запись.",
-"{0} pages do not divide into records of {1} pages": "Страницы ({0}) нельзя разделить на записи по {1} стр."
+"{0} pages do not divide into records of {1} pages": "Страницы ({0}) нельзя разделить на записи по {1} стр.",
+"Characters removed: {0}": "Удалено символов: {0}",
+"Did not start: {0}": "Не удалось запустить: {0}",
+"Hide the removed words (also in the saved log)": "Скрывать удалённые слова (в том числе в сохранённом журнале)",
+"Please sign: {0}": "Подпишите: {0}",
+"Renamed from {0} ·": "Переименовано из {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Типов скрытой информации в этом PDF: {0}. Отметьте, что удалить; всё удаляется за один шаг, который можно отменить до сохранения.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} С тех пор PDF изменился; отмена сначала откатывает более поздние изменения.",
+"{0} area{1} marked on {2} page{3}": "Помечено областей: {0}, страниц: {2}",
+"{0} could not be read as a picture": "Не удалось прочитать {0} как изображение",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Полей в этом PDF: {0}{2}. Вводите прямо на странице.",
+"{0} measurements.csv": "{0} измерения.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Шрифты не встроены и не установлены: {0}. При печати и редактировании они будут заменены.",
+"{0} redaction mark{1} in the file": "Пометок скрытия в файле: {0}"
 };

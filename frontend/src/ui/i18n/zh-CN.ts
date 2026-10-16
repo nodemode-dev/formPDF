@@ -1639,7 +1639,7 @@ export const zhCN: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "该文本框已在串接中;请先取消串接",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "你在此打开过的 PDF,最新的在最前。“忘记”会将其从此列表中移除;文件本身保持原位。",
 "The engine did not answer; try again in a moment.": "引擎没有响应;请稍后重试。",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "日志会列出被删除的字词。它不会写入 PDF;请像保护原件一样妥善保管保存的副本。",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "日志会列出被删除的字词。它不会写入 PDF,而且 formpdf 重新启动后只会保留删除的位置,不再保留字词本身;请像保护原件一样妥善保管保存的副本。",
 "There are no text changes or notes on text to export; the file lists none.": "没有可导出的文字更改或文字批注;文件中为空。",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "此 PDF 已签名。添加注释、填写表单和追加签名不会使签名失效;其他更改会使签名失效。",
 "Undo steps back through them; Save writes the PDF.": "“撤销”可逐步回退这些更改;“保存”会写入 PDF。",
@@ -1997,5 +1997,18 @@ export const zhCN: Record<string, string> = {
 "There are no redaction marks in the file": "文件中没有涂黑标记",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "将此 PDF 中保存的涂黑标记转换为可在应用前移动、调整大小、切换或删除的标记",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "用于包含大量个性化记录（信函、卡片）的 PDF/X-4 文件，使印刷机能分别处理每条记录；请提供 pages_per_record，或使用 by: bookmarks 为每个顶级书签生成一条记录。",
-"{0} pages do not divide into records of {1} pages": "{0} 页无法按每条 {1} 页划分为记录"
+"{0} pages do not divide into records of {1} pages": "{0} 页无法按每条 {1} 页划分为记录",
+"Characters removed: {0}": "已删除字符数:{0}",
+"Did not start: {0}": "未能启动:{0}",
+"Hide the removed words (also in the saved log)": "隐藏被删除的字词(保存的日志中也一并隐藏)",
+"Please sign: {0}": "请签署:{0}",
+"Renamed from {0} ·": "原名 {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "此 PDF 含有 {0} 类隐藏信息。请勾选要删除的内容;它们会一次性全部删除,保存之前都可以撤销。",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} 此后 PDF 又有改动;撤销时会先撤销之后的更改。",
+"{0} area{1} marked on {2} page{3}": "已在 {2} 页上标记 {0} 个区域",
+"{0} could not be read as a picture": "无法将 {0} 作为图片读取",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "此 PDF 中有 {0} 个字段{2}。可直接在页面上输入。",
+"{0} measurements.csv": "{0} 测量.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "有 {0} 种字体既未嵌入也未安装:打印和编辑时将被替代。",
+"{0} redaction mark{1} in the file": "文件中有 {0} 个涂黑标记"
 };

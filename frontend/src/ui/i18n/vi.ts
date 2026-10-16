@@ -1639,7 +1639,7 @@ export const vi: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Hộp văn bản đó đã nằm trong một chuỗi; hãy gỡ khỏi chuỗi trước",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Các PDF bạn đã mở ở đây, mới nhất trước. Quên sẽ xóa một mục khỏi danh sách này; bản thân tệp vẫn ở nguyên chỗ cũ.",
 "The engine did not answer; try again in a moment.": "Công cụ không phản hồi; hãy thử lại sau giây lát.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Nhật ký liệt kê các từ đã bị xóa. Nhật ký không bao giờ được ghi vào PDF; hãy giữ bản đã lưu riêng tư như bản gốc.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Nhật ký liệt kê các từ đã bị xóa. Nhật ký không bao giờ được ghi vào PDF, và sau khi formpdf khởi động lại chỉ vị trí đã xóa được giữ lại, không giữ các từ; hãy giữ bản đã lưu riêng tư như bản gốc.",
 "There are no text changes or notes on text to export; the file lists none.": "Không có thay đổi văn bản hay ghi chú trên văn bản để xuất; tệp không liệt kê mục nào.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "PDF này đã được ký. Thêm nhận xét, điền biểu mẫu và ký thêm không làm mất hiệu lực chữ ký; các thay đổi khác sẽ làm mất hiệu lực.",
 "Undo steps back through them; Save writes the PDF.": "Hoàn tác lùi lại từng bước; Lưu sẽ ghi PDF.",
@@ -1997,5 +1997,18 @@ export const vi: Record<string, string> = {
 "There are no redaction marks in the file": "Không có dấu che nội dung trong tệp",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Chuyển các dấu che nội dung đã lưu trong PDF này thành dấu có thể di chuyển, đổi kích thước, bật/tắt hoặc xóa trước khi áp dụng",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Dùng cho tệp PDF/X-4 gồm nhiều bản ghi được cá nhân hóa (thư, thẻ) để máy in xử lý riêng từng bản ghi; đặt pages_per_record, hoặc by: bookmarks để mỗi dấu trang cấp cao nhất là một bản ghi.",
-"{0} pages do not divide into records of {1} pages": "{0} trang không chia hết thành các bản ghi {1} trang"
+"{0} pages do not divide into records of {1} pages": "{0} trang không chia hết thành các bản ghi {1} trang",
+"Characters removed: {0}": "Ký tự đã xóa: {0}",
+"Did not start: {0}": "Không khởi động được: {0}",
+"Hide the removed words (also in the saved log)": "Ẩn các từ đã xóa (cả trong nhật ký đã lưu)",
+"Please sign: {0}": "Vui lòng ký: {0}",
+"Renamed from {0} ·": "Đổi tên từ {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "PDF này có {0} loại thông tin ẩn. Chọn những mục cần xóa; tất cả được xóa trong một bước và có thể hoàn tác cho đến khi bạn lưu.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} PDF đã thay đổi kể từ đó; Hoàn tác sẽ lùi lại các thay đổi sau cùng trước.",
+"{0} area{1} marked on {2} page{3}": "Đã đánh dấu {0} vùng trên {2} trang",
+"{0} could not be read as a picture": "Không thể đọc {0} dưới dạng ảnh",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "PDF này có {0} trường{2}. Nhập trực tiếp vào trang.",
+"{0} measurements.csv": "{0} số đo.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "{0} phông chữ chưa được nhúng cũng chưa được cài đặt: khi in và chỉnh sửa sẽ dùng phông thay thế.",
+"{0} redaction mark{1} in the file": "{0} dấu che nội dung trong tệp"
 };

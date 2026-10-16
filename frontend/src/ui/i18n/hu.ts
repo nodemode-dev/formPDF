@@ -1639,7 +1639,7 @@ export const hu: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Ez a szövegdoboz már szálban van; előbb vegye ki a szálból",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Az itt megnyitott PDF-ek, legújabbak elöl. Az Elfelejtés eltávolít egyet a listáról; maga a fájl a helyén marad.",
 "The engine did not answer; try again in a moment.": "A motor nem válaszolt; próbálja újra egy pillanat múlva.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "A napló felsorolja az eltávolított szavakat. Soha nem íródik bele a PDF-be; a mentett másolatot tartsa ugyanolyan bizalmasan, mint az eredetit.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "A napló felsorolja az eltávolított szavakat. Soha nem íródik bele a PDF-be, és a formpdf újraindítása után csak az marad meg, hogy hol történt eltávolítás, a szavak nem; a mentett másolatot tartsa ugyanolyan bizalmasan, mint az eredetit.",
 "There are no text changes or notes on text to export; the file lists none.": "Nincs exportálható szövegmódosítás vagy szöveghez fűzött jegyzet; a fájl egyet sem sorol fel.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Ez a PDF alá van írva. A megjegyzések, az űrlapkitöltés és a további aláírások nem érvénytelenítik az aláírásokat; más módosítások igen.",
 "Undo steps back through them; Save writes the PDF.": "A Visszavonás lépésenként visszalép; a Mentés kiírja a PDF-et.",
@@ -1997,5 +1997,18 @@ export const hu: Record<string, string> = {
 "There are no redaction marks in the file": "Nincsenek kitakarási jelölések a fájlban",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "A PDF-be mentett kitakarási jelöléseket alakítsa át olyan jelölésekké, amelyeket alkalmazás előtt mozgathat, átméretezhet, átkapcsolhat vagy törölhet",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Sok személyre szabott rekordot (levelek, kártyák) tartalmazó PDF/X-4-fájlon használja, hogy a nyomda minden rekordot külön kezelhessen; adja meg a pages_per_record értéket, vagy a by: bookmarks beállítást, ha legfelső szintű könyvjelzőnként egy rekordot szeretne.",
-"{0} pages do not divide into records of {1} pages": "{0} oldal nem osztható fel {1} oldalas rekordokra"
+"{0} pages do not divide into records of {1} pages": "{0} oldal nem osztható fel {1} oldalas rekordokra",
+"Characters removed: {0}": "Eltávolított karakterek: {0}",
+"Did not start: {0}": "Nem indult el: {0}",
+"Hide the removed words (also in the saved log)": "Az eltávolított szavak elrejtése (a mentett naplóban is)",
+"Please sign: {0}": "Kérjük, írja alá: {0}",
+"Renamed from {0} ·": "Régi neve: {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "A rejtett információk fajtái ebben a PDF-ben: {0}. Jelölje be, mit töröljön; minden egyetlen lépésben törlődik, amelyet a Visszavonás mentésig visszavonhat.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} A PDF azóta módosult; a Visszavonás előbb a későbbi módosításokat vonja vissza.",
+"{0} area{1} marked on {2} page{3}": "Megjelölt területek: {0}, oldalak: {2}",
+"{0} could not be read as a picture": "A(z) {0} nem olvasható be képként",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Mezők ebben a PDF-ben: {0}{2}. Írjon közvetlenül az oldalra.",
+"{0} measurements.csv": "{0} mérések.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Be nem ágyazott és nem telepített betűtípusok: {0}. Nyomtatáskor és szerkesztéskor helyettesítve lesznek.",
+"{0} redaction mark{1} in the file": "Kitakarási jelölések a fájlban: {0}"
 };

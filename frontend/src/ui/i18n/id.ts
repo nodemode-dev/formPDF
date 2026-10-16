@@ -1639,7 +1639,7 @@ export const id: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Kotak teks itu sudah berada dalam rangkaian; lepaskan dari rangkaian terlebih dahulu",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "PDF yang Anda buka di sini, terbaru lebih dulu. Lupakan menghapus satu dari daftar ini; file itu sendiri tetap di tempatnya.",
 "The engine did not answer; try again in a moment.": "Mesin tidak merespons; coba lagi sebentar lagi.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Log berisi daftar kata yang dihapus. Log tidak pernah ditulis ke dalam PDF; jaga kerahasiaan salinan yang disimpan seperti aslinya.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Log berisi daftar kata yang dihapus. Log tidak pernah ditulis ke dalam PDF, dan setelah formpdf dimulai ulang hanya lokasi penghapusan yang disimpan, bukan kata-katanya; jaga kerahasiaan salinan yang disimpan seperti aslinya.",
 "There are no text changes or notes on text to export; the file lists none.": "Tidak ada perubahan teks atau catatan pada teks untuk diekspor; file tidak berisi apa pun.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "PDF ini sudah ditandatangani. Komentar, pengisian formulir, dan tanda tangan tambahan tidak membatalkan tanda tangan; perubahan lain akan membatalkannya.",
 "Undo steps back through them; Save writes the PDF.": "Urungkan mundur selangkah demi selangkah; Simpan menulis PDF.",
@@ -1997,5 +1997,18 @@ export const id: Record<string, string> = {
 "There are no redaction marks in the file": "Tidak ada tanda penyensoran di dalam file",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Ubah tanda penyensoran yang tersimpan di PDF ini menjadi tanda yang dapat dipindahkan, diubah ukurannya, dialihkan, atau dihapus sebelum diterapkan",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Gunakan pada file PDF/X-4 berisi banyak rekaman yang dipersonalisasi (surat, kartu) agar mesin cetak dapat memperlakukan tiap rekaman secara terpisah; berikan pages_per_record, atau by: bookmarks untuk satu rekaman per markah tingkat atas.",
-"{0} pages do not divide into records of {1} pages": "{0} halaman tidak dapat dibagi menjadi rekaman berisi {1} halaman"
+"{0} pages do not divide into records of {1} pages": "{0} halaman tidak dapat dibagi menjadi rekaman berisi {1} halaman",
+"Characters removed: {0}": "Karakter dihapus: {0}",
+"Did not start: {0}": "Gagal dimulai: {0}",
+"Hide the removed words (also in the saved log)": "Sembunyikan kata yang dihapus (juga di log tersimpan)",
+"Please sign: {0}": "Mohon tanda tangani: {0}",
+"Renamed from {0} ·": "Sebelumnya bernama {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "PDF ini memiliki {0} jenis informasi tersembunyi. Centang yang akan dihapus; semuanya dihapus dalam satu langkah yang dapat dibatalkan dengan Urungkan sampai Anda menyimpan.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} PDF telah berubah sejak itu; Urungkan akan membatalkan perubahan yang lebih baru terlebih dahulu.",
+"{0} area{1} marked on {2} page{3}": "{0} area ditandai di {2} halaman",
+"{0} could not be read as a picture": "{0} tidak dapat dibaca sebagai gambar",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "{0} kolom di PDF ini{2}. Ketik langsung di halaman.",
+"{0} measurements.csv": "{0} pengukuran.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "{0} font tidak disematkan dan tidak terpasang: pencetakan dan pengeditan akan memakai font pengganti.",
+"{0} redaction mark{1} in the file": "{0} tanda sensor di file"
 };

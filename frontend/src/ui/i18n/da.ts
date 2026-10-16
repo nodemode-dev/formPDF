@@ -1639,7 +1639,7 @@ export const da: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Det tekstfelt er allerede i en kæde; fjern først sammenkædningen",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "De PDF'er, du har åbnet her, nyeste først. Glem fjerner én fra listen; selve filen bliver, hvor den er.",
 "The engine did not answer; try again in a moment.": "Motoren svarede ikke; prøv igen om et øjeblik.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Loggen viser de fjernede ord. Den skrives aldrig ind i PDF'en; hold en gemt kopi lige så privat som originalen.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Loggen viser de fjernede ord. Den skrives aldrig ind i PDF'en, og når formpdf genstartes, bevares kun hvor noget blev fjernet, ikke ordene; hold en gemt kopi lige så privat som originalen.",
 "There are no text changes or notes on text to export; the file lists none.": "Der er ingen tekstændringer eller noter til tekst at eksportere; filen indeholder ingen.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Denne PDF er underskrevet. Kommentarer, formularudfyldning og yderligere underskrifter bevarer underskrifternes gyldighed; andre ændringer ugyldiggør dem.",
 "Undo steps back through them; Save writes the PDF.": "Fortryd går trin for trin tilbage; Gem skriver PDF'en.",
@@ -1997,5 +1997,18 @@ export const da: Record<string, string> = {
 "There are no redaction marks in the file": "Der er ingen censureringsmarkeringer i filen",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Gør de censureringsmarkeringer, der er gemt i denne PDF, til markeringer, du kan flytte, ændre størrelse på, skifte eller slette, før du anvender dem",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Bruges på en PDF/X-4-fil med mange personaliserede poster (breve, kort), så en trykpresse kan behandle hver post for sig; angiv pages_per_record, eller by: bookmarks for én post pr. bogmærke på øverste niveau.",
-"{0} pages do not divide into records of {1} pages": "{0} sider kan ikke deles op i poster på {1} sider"
+"{0} pages do not divide into records of {1} pages": "{0} sider kan ikke deles op i poster på {1} sider",
+"Characters removed: {0}": "Fjernede tegn: {0}",
+"Did not start: {0}": "Startede ikke: {0}",
+"Hide the removed words (also in the saved log)": "Skjul de fjernede ord (også i den gemte log)",
+"Please sign: {0}": "Underskriv venligst: {0}",
+"Renamed from {0} ·": "Omdøbt fra {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Denne PDF indeholder {0} slags skjulte oplysninger. Markér det, der skal fjernes; alt sker i ét trin, som Fortryd kan rulle tilbage, indtil du gemmer.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} PDF'en er ændret siden; Fortryd går først tilbage gennem de senere ændringer.",
+"{0} area{1} marked on {2} page{3}": "Markerede områder: {0}, sider: {2}",
+"{0} could not be read as a picture": "{0} kunne ikke læses som et billede",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Felter i denne PDF: {0}{2}. Skriv direkte på siden.",
+"{0} measurements.csv": "{0} målinger.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Skrifttyper, der hverken er indlejret eller installeret: {0}. Udskrivning og redigering erstatter dem.",
+"{0} redaction mark{1} in the file": "Censureringsmarkeringer i filen: {0}"
 };

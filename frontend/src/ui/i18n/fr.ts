@@ -1639,7 +1639,7 @@ export const fr: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Cette zone de texte fait déjà partie d'un chaînage ; dissociez-la d'abord",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Les PDF que vous avez ouverts ici, du plus récent au plus ancien. Oublier en retire un de cette liste ; le fichier lui-même reste où il se trouve.",
 "The engine did not answer; try again in a moment.": "Le moteur n'a pas répondu ; réessayez dans un instant.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Le journal liste les mots supprimés. Il n'est jamais écrit dans le PDF ; gardez une copie enregistrée aussi confidentielle que l'original.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Le journal liste les mots supprimés. Il n'est jamais écrit dans le PDF, et après un redémarrage de formpdf seuls les emplacements des suppressions sont conservés, pas les mots ; gardez une copie enregistrée aussi confidentielle que l'original.",
 "There are no text changes or notes on text to export; the file lists none.": "Il n'y a aucune modification de texte ni note sur le texte à exporter ; le fichier n'en liste aucune.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Ce PDF est signé. Les commentaires, le remplissage de formulaire et les signatures supplémentaires maintiennent les signatures valides ; les autres modifications les invalident.",
 "Undo steps back through them; Save writes the PDF.": "Annuler les défait pas à pas ; Enregistrer écrit le PDF.",
@@ -1997,5 +1997,18 @@ export const fr: Record<string, string> = {
 "There are no redaction marks in the file": "Il n'y a aucune marque de caviardage dans le fichier",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Transformez les marques de caviardage enregistrées dans ce PDF en marques que vous pouvez déplacer, redimensionner, basculer ou supprimer avant de les appliquer",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "À utiliser sur un fichier PDF/X-4 de nombreux enregistrements personnalisés (lettres, cartes) pour qu'une presse traite chaque enregistrement séparément ; indiquez pages_per_record, ou by: bookmarks pour un enregistrement par signet de premier niveau.",
-"{0} pages do not divide into records of {1} pages": "{0} pages ne se divisent pas en enregistrements de {1} pages"
+"{0} pages do not divide into records of {1} pages": "{0} pages ne se divisent pas en enregistrements de {1} pages",
+"Characters removed: {0}": "Caractères supprimés : {0}",
+"Did not start: {0}": "Échec du démarrage : {0}",
+"Hide the removed words (also in the saved log)": "Masquer les mots supprimés (aussi dans le journal enregistré)",
+"Please sign: {0}": "Veuillez signer : {0}",
+"Renamed from {0} ·": "Renommé depuis {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Ce PDF contient {0} types d'informations masquées. Cochez ce qu'il faut supprimer ; tout est retiré en une seule étape que Annuler peut défaire jusqu'à l'enregistrement.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} Le PDF a changé depuis ; Annuler revient d'abord sur les modifications les plus récentes.",
+"{0} area{1} marked on {2} page{3}": "Zones marquées : {0}, pages : {2}",
+"{0} could not be read as a picture": "Impossible de lire {0} comme image",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Champs dans ce PDF : {0}{2}. Saisissez directement dans la page.",
+"{0} measurements.csv": "{0} mesures.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Polices ni incorporées ni installées : {0}. L'impression et la modification les remplaceront.",
+"{0} redaction mark{1} in the file": "Marques de caviardage dans le fichier : {0}"
 };

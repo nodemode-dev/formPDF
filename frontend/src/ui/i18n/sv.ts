@@ -1639,7 +1639,7 @@ export const sv: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "Den textrutan ingår redan i en tråd; ta bort den ur tråden först",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "PDF-filerna du har öppnat här, nyaste först. Glöm tar bort en från listan; själva filen ligger kvar där den är.",
 "The engine did not answer; try again in a moment.": "Motorn svarade inte; försök igen om en stund.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Loggen listar de borttagna orden. Den skrivs aldrig in i PDF-filen; håll en sparad kopia lika privat som originalet.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Loggen listar de borttagna orden. Den skrivs aldrig in i PDF-filen, och när formpdf har startats om sparas bara var något togs bort, inte orden; håll en sparad kopia lika privat som originalet.",
 "There are no text changes or notes on text to export; the file lists none.": "Det finns inga textändringar eller anteckningar om text att exportera; filen listar inga.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Den här PDF-filen är signerad. Kommentarer, formulärifyllning och ytterligare signaturer håller signaturerna giltiga; andra ändringar bryter dem.",
 "Undo steps back through them; Save writes the PDF.": "Ångra stegar tillbaka genom dem; Spara skriver PDF-filen.",
@@ -1997,5 +1997,18 @@ export const sv: Record<string, string> = {
 "There are no redaction marks in the file": "Det finns inga maskeringsmarkeringar i filen",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Gör om maskeringsmarkeringarna som sparats i den här PDF-filen till markeringar som du kan flytta, ändra storlek på, växla eller ta bort innan du verkställer dem",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Använd på en PDF/X-4-fil med många personliga poster (brev, kort) så att en tryckpress kan behandla varje post separat; ange pages_per_record, eller by: bookmarks för en post per bokmärke på översta nivån.",
-"{0} pages do not divide into records of {1} pages": "{0} sidor går inte att dela upp i poster med {1} sidor"
+"{0} pages do not divide into records of {1} pages": "{0} sidor går inte att dela upp i poster med {1} sidor",
+"Characters removed: {0}": "Tecken borttagna: {0}",
+"Did not start: {0}": "Kunde inte startas: {0}",
+"Hide the removed words (also in the saved log)": "Dölj de borttagna orden (även i den sparade loggen)",
+"Please sign: {0}": "Signera: {0}",
+"Renamed from {0} ·": "Bytt namn från {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Antal typer av dold information i den här PDF-filen: {0}. Markera vad som ska tas bort; allt tas bort i ett steg som Ångra kan återställa tills du sparar.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} PDF-filen har ändrats sedan dess; Ångra går först tillbaka genom de senare ändringarna.",
+"{0} area{1} marked on {2} page{3}": "Markerade områden: {0}, sidor: {2}",
+"{0} could not be read as a picture": "{0} kunde inte läsas som en bild",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Fält i den här PDF-filen: {0}{2}. Skriv direkt på sidan.",
+"{0} measurements.csv": "{0} mätvärden.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Typsnitt som varken är inbäddade eller installerade: {0}. Utskrift och redigering ersätter dem.",
+"{0} redaction mark{1} in the file": "Maskeringsmarkeringar i filen: {0}"
 };

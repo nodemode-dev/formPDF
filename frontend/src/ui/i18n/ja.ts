@@ -1639,7 +1639,7 @@ export const ja: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "そのテキストボックスはすでにスレッドに含まれています。先にスレッドを解除してください",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "ここで開いた PDF を新しい順に表示します。「履歴から削除」で一覧から外せますが、ファイル自体は元の場所に残ります。",
 "The engine did not answer; try again in a moment.": "エンジンから応答がありません。しばらくしてからもう一度お試しください。",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "ログには削除された語句が一覧されます。PDF には書き込まれません。保存したコピーも元のファイルと同様に厳重に管理してください。",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "ログには削除された語句が一覧されます。PDF には書き込まれません。formpdf を再起動すると、削除された位置だけが保持され、語句は残りません。保存したコピーも元のファイルと同様に厳重に管理してください。",
 "There are no text changes or notes on text to export; the file lists none.": "書き出すテキストの変更やテキストへのメモはありません。ファイルには何も記載されません。",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "この PDF には署名があります。コメント、フォーム入力、追加の署名では署名は有効なままですが、それ以外の変更を行うと無効になります。",
 "Undo steps back through them; Save writes the PDF.": "「元に戻す」で順に戻せます。「保存」で PDF に書き込まれます。",
@@ -1997,5 +1997,18 @@ export const ja: Record<string, string> = {
 "There are no redaction marks in the file": "ファイルに墨消しマークがありません",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "この PDF に保存されている墨消しマークを、適用前に移動、サイズ変更、切り替え、削除できるマークに変換します",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "個人別に作成した多数のレコード（手紙、カード）を含む PDF/X-4 ファイルに使用すると、印刷機が各レコードを個別に扱えます。pages_per_record を指定するか、by: bookmarks で最上位のしおりごとに 1 レコードにします。",
-"{0} pages do not divide into records of {1} pages": "{0} ページはレコードあたり {1} ページに割り切れません"
+"{0} pages do not divide into records of {1} pages": "{0} ページはレコードあたり {1} ページに割り切れません",
+"Characters removed: {0}": "削除された文字数: {0}",
+"Did not start: {0}": "起動できませんでした: {0}",
+"Hide the removed words (also in the saved log)": "削除された語句を非表示にする (保存したログも同様)",
+"Please sign: {0}": "署名をお願いします: {0}",
+"Renamed from {0} ·": "元の名前: {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "この PDF には {0} 種類の非表示情報があります。削除する項目にチェックを付けてください。すべて 1 回の操作で削除され、保存するまでは「元に戻す」で取り消せます。",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} その後 PDF が変更されています。「元に戻す」は後の変更から順に取り消します。",
+"{0} area{1} marked on {2} page{3}": "{2} ページに {0} 個の領域をマークしました",
+"{0} could not be read as a picture": "{0} を画像として読み込めませんでした",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "この PDF には {0} 個のフィールドがあります{2}。ページに直接入力できます。",
+"{0} measurements.csv": "{0} 寸法.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "{0} 個のフォントが埋め込まれておらず、インストールもされていません。印刷と編集では代替フォントが使われます。",
+"{0} redaction mark{1} in the file": "ファイル内の墨消しマーク: {0} 個"
 };

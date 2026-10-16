@@ -1639,7 +1639,7 @@ export const pl: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "To pole tekstowe jest już w wątku; najpierw usuń je z wątku",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "Pliki PDF otwarte tutaj, od najnowszych. Zapomnij usuwa jeden z tej listy; sam plik zostaje tam, gdzie jest.",
 "The engine did not answer; try again in a moment.": "Silnik nie odpowiedział; spróbuj ponownie za chwilę.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "Dziennik wymienia usunięte słowa. Nigdy nie jest zapisywany w PDF-ie; chroń zapisaną kopię tak samo jak oryginał.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "Dziennik wymienia usunięte słowa. Nigdy nie jest zapisywany w PDF-ie, a po ponownym uruchomieniu formpdf zachowywane jest tylko miejsce usunięcia, a nie słowa; chroń zapisaną kopię tak samo jak oryginał.",
 "There are no text changes or notes on text to export; the file lists none.": "Brak zmian tekstu ani notatek do tekstu do wyeksportowania; plik żadnych nie zawiera.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "Ten PDF jest podpisany. Komentarze, wypełnianie formularza i kolejne podpisy nie unieważniają podpisów; inne zmiany je unieważniają.",
 "Undo steps back through them; Save writes the PDF.": "Cofnij cofa po kolei te zmiany; Zapisz zapisuje PDF.",
@@ -1997,5 +1997,18 @@ export const pl: Record<string, string> = {
 "There are no redaction marks in the file": "W pliku nie ma znaczników redakcji",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "Zamień znaczniki redakcji zapisane w tym PDF na znaczniki, które można przesuwać, zmieniać ich rozmiar, przełączać lub usuwać przed zastosowaniem",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "Użyj dla pliku PDF/X-4 z wieloma spersonalizowanymi rekordami (listy, karty), aby maszyna drukarska mogła traktować każdy rekord osobno; podaj pages_per_record lub by: bookmarks, aby uzyskać jeden rekord na zakładkę najwyższego poziomu.",
-"{0} pages do not divide into records of {1} pages": "Liczba stron ({0}) nie dzieli się na rekordy po {1} str."
+"{0} pages do not divide into records of {1} pages": "Liczba stron ({0}) nie dzieli się na rekordy po {1} str.",
+"Characters removed: {0}": "Usunięto znaków: {0}",
+"Did not start: {0}": "Nie udało się uruchomić: {0}",
+"Hide the removed words (also in the saved log)": "Ukryj usunięte słowa (także w zapisanym dzienniku)",
+"Please sign: {0}": "Podpisz: {0}",
+"Renamed from {0} ·": "Zmieniono nazwę z {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "Rodzajów ukrytych informacji w tym PDF-ie: {0}. Zaznacz, co usunąć; wszystko jest usuwane jednym krokiem, który można cofnąć do czasu zapisu.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} Od tego czasu PDF się zmienił; Cofnij najpierw cofa późniejsze zmiany.",
+"{0} area{1} marked on {2} page{3}": "Zaznaczone obszary: {0}, strony: {2}",
+"{0} could not be read as a picture": "Nie można odczytać {0} jako obrazu",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "Pól w tym PDF-ie: {0}{2}. Wpisuj bezpośrednio na stronie.",
+"{0} measurements.csv": "{0} pomiary.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "Czcionki nieosadzone ani niezainstalowane: {0}. Drukowanie i edycja zastąpią je innymi.",
+"{0} redaction mark{1} in the file": "Znaczników redakcji w pliku: {0}"
 };

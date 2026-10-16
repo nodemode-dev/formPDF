@@ -1639,7 +1639,7 @@ export const ko: Record<string, string> = {
 "That text box is already in a thread; unthread it first": "해당 텍스트 상자는 이미 스레드에 속해 있습니다. 먼저 스레드를 해제하세요",
 "The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.": "여기에서 연 PDF를 최신순으로 표시합니다. 기록 삭제는 목록에서만 제거하며 파일 자체는 그대로 유지됩니다.",
 "The engine did not answer; try again in a moment.": "엔진이 응답하지 않습니다. 잠시 후 다시 시도하세요.",
-"The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.": "로그에는 삭제된 단어가 나열됩니다. 로그는 PDF에 기록되지 않습니다. 저장한 사본도 원본처럼 비공개로 보관하세요.",
+"The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.": "로그에는 삭제된 단어가 나열됩니다. 로그는 PDF에 기록되지 않으며, formpdf를 다시 시작하면 삭제된 위치만 남고 단어는 보관되지 않습니다. 저장한 사본도 원본처럼 비공개로 보관하세요.",
 "There are no text changes or notes on text to export; the file lists none.": "내보낼 텍스트 변경 사항이나 텍스트 메모가 없습니다. 파일에는 아무것도 나열되지 않습니다.",
 "This PDF is signed. Comments, form filling and further signatures keep the signatures valid; other changes break them.": "이 PDF는 서명되어 있습니다. 주석, 양식 작성, 추가 서명은 서명을 유효하게 유지하지만, 그 밖의 변경은 서명을 무효로 만듭니다.",
 "Undo steps back through them; Save writes the PDF.": "실행 취소로 한 단계씩 되돌릴 수 있으며, 저장하면 PDF에 기록됩니다.",
@@ -1997,5 +1997,18 @@ export const ko: Record<string, string> = {
 "There are no redaction marks in the file": "파일에 가림 처리 표시가 없습니다",
 "Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying": "이 PDF에 저장된 가림 처리 표시를 적용 전에 이동, 크기 조정, 전환 또는 삭제할 수 있는 표시로 바꿉니다",
 "Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.": "개인별로 맞춘 레코드(편지, 카드)가 많은 PDF/X-4 파일에 사용하면 인쇄기가 각 레코드를 따로 처리할 수 있습니다. pages_per_record를 지정하거나, by: bookmarks로 최상위 책갈피마다 레코드 하나를 만드세요.",
-"{0} pages do not divide into records of {1} pages": "{0}페이지를 레코드당 {1}페이지로 나눌 수 없습니다"
+"{0} pages do not divide into records of {1} pages": "{0}페이지를 레코드당 {1}페이지로 나눌 수 없습니다",
+"Characters removed: {0}": "삭제된 문자 수: {0}",
+"Did not start: {0}": "시작하지 못했습니다: {0}",
+"Hide the removed words (also in the saved log)": "삭제된 단어 숨기기 (저장된 로그에도 적용)",
+"Please sign: {0}": "서명해 주세요: {0}",
+"Renamed from {0} ·": "이전 이름: {0} ·",
+"This PDF has {0} kind{1} of hidden information. Tick what to remove; it all goes in one step that Undo can take back until you save.": "이 PDF에는 숨겨진 정보가 {0}종류 있습니다. 제거할 항목을 선택하세요. 모두 한 번에 제거되며 저장하기 전에는 실행 취소로 되돌릴 수 있습니다.",
+"{0} The PDF has changed since; Undo steps back through the later changes first.": "{0} 이후 PDF가 변경되었습니다. 실행 취소는 나중에 변경된 내용부터 차례로 되돌립니다.",
+"{0} area{1} marked on {2} page{3}": "{2}페이지에 영역 {0}개 표시됨",
+"{0} could not be read as a picture": "{0}을(를) 그림으로 읽을 수 없습니다",
+"{0} field{1} in this PDF{2}. Type straight into the page.": "이 PDF에는 필드가 {0}개 있습니다{2}. 페이지에 바로 입력하세요.",
+"{0} measurements.csv": "{0} 측정.csv",
+"{0} neither embedded nor installed: printing and editing will substitute them.": "글꼴 {0}개가 포함되어 있지도 설치되어 있지도 않아 인쇄와 편집 시 다른 글꼴로 대체됩니다.",
+"{0} redaction mark{1} in the file": "파일에 가림 처리 표시 {0}개"
 };
