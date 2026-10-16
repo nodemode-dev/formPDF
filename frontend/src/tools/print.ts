@@ -4,6 +4,7 @@ import { registerTool, type ToolHost } from '../pdf/tools';
 import { el, patchList, q, setClass, setDisabled, setHidden, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
+import { t } from '../ui/i18n';
 
 interface Box { x: number; y: number; w: number; h: number }
 interface Cell { page: number; x: number; y: number; w: number; h: number; rot: number; clip: Box; scale: number }
@@ -320,7 +321,7 @@ function fillCheck(n: HTMLElement, x: PCheck): void {
   const ico = q(n, '.fs-acc-ico');
   if (ico.dataset.s !== x.status) { ico.innerHTML = icon(ic, 14); ico.dataset.s = x.status; ico.className = `fs-row-icon fs-acc-ico ${cls}`; }
   setText(q(n, '.fs-row-title'), x.name);
-  setText(q(n, '.fs-row-sub'), `${PWORD[x.status]}. ${x.say}`);
+  setText(q(n, '.fs-row-sub'), `${t(PWORD[x.status])}. ${t(x.say)}`);
   n.title = x.findings.length ? x.findings.slice(0, 12).map((f) => `${f.page ? `Page ${f.page}: ` : ''}${f.text}`).join('\n') : x.say;
   const b = q<HTMLButtonElement>(n, '[data-f="one"]');
   b.style.visibility = x.fix ? '' : 'hidden';

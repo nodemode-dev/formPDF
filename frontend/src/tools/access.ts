@@ -4,6 +4,7 @@ import { registerTool, type ToolHost } from '../pdf/tools';
 import { el, patchList, q, setClass, setDisabled, setHidden, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
+import { t } from '../ui/i18n';
 import { PageLayers, place } from './overlay';
 
 type Status = 'passed' | 'failed' | 'manual' | 'skipped';
@@ -148,7 +149,7 @@ function fillRule(n: HTMLElement, r: Rule): void {
   const ico = q(n, '.fs-acc-ico');
   if (ico.dataset.s !== r.status) { ico.innerHTML = icon(ic, 14); ico.dataset.s = r.status; ico.className = `fs-row-icon fs-acc-ico ${cls}`; }
   setText(q(n, '.fs-row-title'), `${r.group} · ${r.name}`);
-  setText(q(n, '.fs-row-sub'), `${STATUS_WORD[r.status]}. ${r.say}`);
+  setText(q(n, '.fs-row-sub'), `${t(STATUS_WORD[r.status])}. ${t(r.say)}`);
   const tip = r.findings.length ? r.findings.slice(0, 12).map((f) => `${f.page ? `Page ${f.page}: ` : ''}${f.text}`).join('\n') + (r.findings.length > 12 || r.more ? '\n…' : '') : r.say;
   if (n.title !== tip) n.title = tip;
   const fix = q<HTMLButtonElement>(n, '[data-x="fix"]');

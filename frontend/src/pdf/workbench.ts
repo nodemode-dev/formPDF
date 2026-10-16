@@ -5,6 +5,7 @@ import { delayedIndicator, el, escapeHtml, patchList, q, setClass, setDisabled, 
 import { icon } from '../ui/icons';
 import { MenuBar, PopupMenu, type MenuDef } from '../ui/menu';
 import { toast } from '../ui/toast';
+import { tf } from '../ui/i18n';
 import { Annotator, DRAW_TOOLS, MARKUP_TOOLS, type Tool } from './annotate';
 import { deliver, isTauri, pdfApi, type Annot, type Derived, type NewFieldType, type Opened, type PdfInfo, type RecentItem } from './api';
 import { Comparer, ComparePanel } from './compare';
@@ -1185,7 +1186,7 @@ class Workbench {
       this.busyOff = delayedIndicator(() => node.classList.add('is-shown'), () => node.classList.remove('is-shown'));
     }
     try { return await fn(); } catch (err) {
-      if (!(err instanceof Error && err.message === 'superseded')) toast(`${label} failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
+      if (!(err instanceof Error && err.message === 'superseded')) toast(tf('{0} failed: {1}', label, err instanceof Error ? err.message : String(err)), 'error');
       return undefined;
     } finally {
       this.busy -= 1;

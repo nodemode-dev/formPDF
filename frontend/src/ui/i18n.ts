@@ -77,8 +77,8 @@ function patternsFor(l: Lang): Pattern[] {
   return list;
 }
 
-function fromPattern(text: string): string | undefined {
-  if (!/[\d\S]/.test(text)) return undefined;
+function fromPattern(text: string, depth = 0): string | undefined {
+  if (!/[\d\S]/.test(text) || depth > 2) return undefined;
   for (const p of patternsFor(current)) {
     if (p.head && !text.startsWith(p.head)) continue;
     const m = p.re.exec(text);
@@ -87,7 +87,7 @@ function fromPattern(text: string): string | undefined {
     p.order.forEach((n, i) => vals.set(n, m[i + 1]));
     const out = look(p.key);
     if (out === undefined) continue;
-    return out.replace(HOLE, (_s, n: string) => { const v = vals.get(Number(n)) ?? ''; return plain(v) ?? v; });
+    return out.replace(HOLE, (_s, n: string) => { const v = vals.get(Number(n)) ?? ''; return plain(v) ?? fromPattern(v, depth + 1) ?? v; });
   }
   return undefined;
 }
@@ -95,6 +95,12 @@ function fromPattern(text: string): string | undefined {
 export function t(english: string): string {
   if (current === 'en') return english;
   return plain(english) ?? fromPattern(english) ?? english;
+}
+
+/** A message built from a template key with {0}, {1}... holes: the template and every value are translated on their own, so a message that wraps another one (an action name and the engine's error) reads whole in the interface language. */
+export function tf(template: string, ...values: string[]): string {
+  const out = current === 'en' ? template : plain(template) ?? template;
+  return out.replace(HOLE, (_s, n: string) => t(values[Number(n)] ?? ''));
 }
 
 const known = (text: string): boolean => current !== 'en' && t(text) !== text;

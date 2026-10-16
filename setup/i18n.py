@@ -24,6 +24,7 @@ KEEP_ENGLISH = {"PDF", "PDF/A", "PDF/X", "PDF/UA", "XFDF", "JSON", "CSV", "PNG",
                 "Cmd", "Esc", "Tab", "Enter", "formpdf", "Claude Code", "Codex", "Cursor", "Anthropic", "OpenAI", "Ollama", "LM Studio", "Bates"}
 
 TEXT = re.compile(r">((?:[^<>`]|(?<= )>(?= ))+)<")  # a > between spaces is a menu path in the text, not the end of a tag
+TF = re.compile(r"\btf\('((?:[^'\\\n]|\\.)+)'")  # message templates the window builds with tf()
 EXPR = re.compile(r"\$\{(?:[^{}]|\{[^{}]*\})*\}")
 ATTR = re.compile(r'\b(?:title|aria-label|placeholder)="([^"$]+)"')
 QUOTED = re.compile(r"'((?:[^'\\\n]|\\.){2,400})'")
@@ -60,6 +61,8 @@ def keys() -> list[str]:
             for part in EXPR.split(m.group(1)):
                 if "${" not in part and "}" not in part and re.match(r"\s*[A-Za-z]", part) and (s := clean(part)):
                     found.add(s)
+        for m in TF.finditer(src):
+            found.add(m.group(1))
         for m in ATTR.finditer(src):
             if s := clean(m.group(1)):
                 found.add(s)
@@ -191,9 +194,10 @@ def _py_texts(node):
         yield from _py_texts(node.orelse)
     elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         left, right = list(_py_texts(node.left)), list(_py_texts(node.right))
-        if len(left) == 1 and len(right) == 1:
-            (a, ca), (b, cb) = left[0], right[0]
-            yield a + re.sub(r"\{(\d+)\}", lambda m: "{%d}" % (int(m.group(1)) + len(ca)), b), ca + cb
+        if len(left) * len(right) <= 4:
+            for a, ca in left:
+                for b, cb in right:
+                    yield a + re.sub(r"\{(\d+)\}", lambda m, k=len(ca): "{%d}" % (int(m.group(1)) + k), b), ca + cb
 
 
 def engine(hints: dict | None = None) -> list[str]:
