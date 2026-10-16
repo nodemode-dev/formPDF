@@ -53,6 +53,7 @@ def _pages(pages: set) -> str:
 def images(doc) -> list[dict]:
     out = []
     for pi, page in enumerate(doc.pages):
+        core.lean(doc)
         try:
             c = interp.walk(page, doc)
         except Exception:
@@ -116,6 +117,7 @@ def _press(doc, limit: float = TAC_LIMIT) -> dict:
     found = {"tac": {}, "overprint": set(), "edge": {}, "boxes": {"tac": {}, "overprint": {}, "rgb": {}}}
     for pi, page in enumerate(doc.pages):
         n = pi + 1
+        core.lean(doc)
         try:
             c = interp.walk(page, doc)
         except Exception:
@@ -184,6 +186,7 @@ def _press(doc, limit: float = TAC_LIMIT) -> dict:
                     found["edge"][n] = _view(page, d.box)
                     break
     for im in images(doc):
+        core.lean(doc)
         try:
             st, name = im["ref"]
             obj = _o(_o(_o(st.resources).get("/XObject")).raw_get(name))
@@ -210,6 +213,7 @@ def _hairlines(doc) -> dict:
     """Pages with a line thinner than HAIRLINE, each with the box of its first one (or None)."""
     pages: dict = {}
     for pi, page in enumerate(doc.pages):
+        core.lean(doc)
         try:
             c = interp.walk(page, doc)
         except Exception:

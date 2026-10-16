@@ -35,9 +35,17 @@ def render_pil(page, scale: float):
 LAZY_BYTES = 32 * 1048576
 
 
+def lean(doc) -> None:
+    """Drops what a lazily read large file has loaded so far; objects still in use stay alive, the rest are read again if needed."""
+    if getattr(doc, "_fp_lean", False):
+        doc.resolved_objects.clear()
+
+
 def reader(path, passwords: list[str] | None = None) -> PdfReader:
     p = Path(str(path))
-    r = PdfReader(p.open("rb")) if p.is_file() and p.stat().st_size >= LAZY_BYTES else PdfReader(str(path))
+    lazy = p.is_file() and p.stat().st_size >= LAZY_BYTES
+    r = PdfReader(p.open("rb")) if lazy else PdfReader(str(path))
+    r._fp_lean = lazy
     if r.is_encrypted:
         for pw in [*(passwords or []), ""]:
             try:

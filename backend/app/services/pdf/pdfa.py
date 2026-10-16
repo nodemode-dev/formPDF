@@ -65,38 +65,39 @@ class Issues:
 
 
 def walk(doc):
+    """Every resource dictionary, XObject and annotation, page by page. A generator, and on a large file read lazily the
+    reader's object cache is dropped after each page, so a file of big pictures is never held in memory at once."""
     seen: set = set()
-    out = []
 
     def res(r, pi, depth=0):
         r = _o(r)
         if not isinstance(r, DictionaryObject) or id(r) in seen or depth > 16:
             return
         seen.add(id(r))
-        out.append(("res", pi, r))
+        yield ("res", pi, r)
         for _n, xo in (_o(r.get("/XObject")) or {}).items():
             x = _o(xo)
             if isinstance(x, StreamObject) and id(x) not in seen:
                 seen.add(id(x))
-                out.append(("xobject", pi, x))
+                yield ("xobject", pi, x)
                 if x.get("/Subtype") == "/Form":
-                    res(x.get("/Resources"), pi, depth + 1)
+                    yield from res(x.get("/Resources"), pi, depth + 1)
         for _n, pat in (_o(r.get("/Pattern")) or {}).items():
             p = _o(pat)
             if isinstance(p, DictionaryObject) and p.get("/Resources") is not None:
-                res(p.get("/Resources"), pi, depth + 1)
+                yield from res(p.get("/Resources"), pi, depth + 1)
         for _n, f in (_o(r.get("/Font")) or {}).items():
             fo = _o(f)
             if isinstance(fo, DictionaryObject) and fo.get("/Subtype") == "/Type3" and fo.get("/Resources") is not None:
-                res(fo.get("/Resources"), pi, depth + 1)
+                yield from res(fo.get("/Resources"), pi, depth + 1)
 
     for pi, page in enumerate(doc.pages):
-        res(page.get("/Resources"), pi)
+        yield from res(page.get("/Resources"), pi)
         for ref in _o(page.get("/Annots")) or []:
             a = _o(ref)
             if not isinstance(a, DictionaryObject):
                 continue
-            out.append(("annot", pi, a))
+            yield ("annot", pi, a)
             ap = _o(a.get("/AP"))
             if isinstance(ap, DictionaryObject):
                 for key in ap:
@@ -105,13 +106,13 @@ def walk(doc):
                     for s in streams:
                         if isinstance(s, StreamObject) and id(s) not in seen:
                             seen.add(id(s))
-                            out.append(("xobject", pi, s))
-                            res(s.get("/Resources"), pi)
+                            yield ("xobject", pi, s)
+                            yield from res(s.get("/Resources"), pi)
+        core.lean(doc)
     root = doc.trailer["/Root"] if hasattr(doc, "trailer") else doc._root_object
     form = _o(root.get("/AcroForm"))
     if isinstance(form, DictionaryObject):
-        res(form.get("/DR"), None)
-    return out
+        yield from res(form.get("/DR"), None)
 
 
 def fonts(doc) -> list[tuple]:

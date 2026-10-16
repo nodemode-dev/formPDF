@@ -5,7 +5,9 @@ from pypdf import PdfWriter
 from pypdf.generic import (ArrayObject, ContentStream, DecodedStreamObject, DictionaryObject, EncodedStreamObject, FloatObject, IndirectObject,
                            NameObject, NumberObject, StreamObject)
 
-KINDS = ("gray", "rgb", "cmyk")
+from . import core
+
+KINDS =("gray", "rgb", "cmyk")
 DEVICE = {"/DeviceGray": "gray", "/DeviceRGB": "rgb", "/DeviceCMYK": "cmyk", "/G": "gray", "/RGB": "rgb", "/CMYK": "cmyk"}
 TARGET_SPACE = {"gray": NameObject("/DeviceGray"), "rgb": NameObject("/DeviceRGB")}
 MAX_STREAMS = 20_000
@@ -328,4 +330,5 @@ def scan(w, pages=None) -> Converter:
     for i, page in enumerate(w.pages):
         if pages is None or i in pages:
             c.page_all(i, page)
+            core.lean(w)
     return c
