@@ -25,7 +25,7 @@ import { VERSION } from './version';
 
 export async function startApp(): Promise<void> {
   applyTheme();
-  await startLanguage();
+  await startLanguage(() => api.settings().then((s) => s.language));
   startPageTranslator();
   document.title = `formpdf ${VERSION}`;
   const live = new LiveClient(navigator.platform || 'window');

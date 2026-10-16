@@ -23,6 +23,7 @@ const tables = new Map<Lang, Table>([['en', {}]]);
 const listeners = new Set<() => void>();
 
 const stored = ((): Lang => { try { const v = localStorage.getItem(KEY); return isLang(v) ? v : 'en'; } catch { return 'en'; } })();
+const remembered = ((): boolean => { try { return localStorage.getItem(KEY) !== null; } catch { return false; } })();
 let current: Lang = 'en';
 let wanted: Lang = stored;
 
@@ -116,12 +117,24 @@ export async function setLanguage(l: Lang): Promise<void> {
   translatePage();
 }
 
-export async function startLanguage(): Promise<void> {
-  if (stored === 'en') return;
-  try { await load(stored); } catch { return; }
-  if (wanted !== stored) return;
-  current = stored;
-  document.documentElement.lang = stored;
+/**
+ * Picks the language before the first paint. This browser's remembered choice wins; when there is none (a new
+ * profile or app origin), the engine's setting is asked for, briefly, so the window does not paint in English and
+ * then switch, which would move everything on screen.
+ */
+export async function startLanguage(ask?: () => Promise<unknown>): Promise<void> {
+  let lang: Lang = stored;
+  if (!remembered && ask) {
+    const timeout = new Promise<undefined>((done) => { window.setTimeout(() => done(undefined), 1500); });
+    try { const got = await Promise.race([ask(), timeout]); if (isLang(got)) lang = got; } catch { lang = stored; }
+  }
+  if (lang === 'en') return;
+  try { await load(lang); } catch { return; }
+  if (wanted !== stored && wanted !== lang) return;
+  wanted = lang;
+  current = lang;
+  document.documentElement.lang = lang;
+  try { localStorage.setItem(KEY, lang); } catch { /* the engine setting keeps it */ }
 }
 
 export function onLanguage(fn: () => void): () => void {
