@@ -3,7 +3,7 @@ import io
 import zlib
 
 from pypdf import PdfWriter
-from pypdf.generic import ArrayObject, ContentStream, DictionaryObject, FloatObject, NameObject, NumberObject, StreamObject
+from pypdf.generic import ArrayObject, ContentStream, DecodedStreamObject, DictionaryObject, FloatObject, NameObject, NumberObject, StreamObject
 
 from . import actions, colour, core, pdfa
 from .preflight import _nums
@@ -36,6 +36,10 @@ def inks(path, *, args: dict | None = None, pages=None, passwords: list[str] | N
         spaces = []
         if kind == "res":
             spaces = [cs for _n, cs in (_o(obj.get("/ColorSpace")) or {}).items()]
+            # shadings name their colour space themselves, directly or through a shading pattern
+            shades = [_o(sh) for _n, sh in (_o(obj.get("/Shading")) or {}).items()]
+            shades += [_o(_o(p).get("/Shading")) for _n, p in (_o(obj.get("/Pattern")) or {}).items() if isinstance(_o(p), DictionaryObject)]
+            spaces += [sh.get("/ColorSpace") for sh in shades if isinstance(sh, DictionaryObject) and sh.get("/ColorSpace") is not None]
         elif kind == "xobject" and obj.get("/ColorSpace") is not None:
             spaces = [obj.get("/ColorSpace")]
         for cs in spaces:
@@ -60,54 +64,99 @@ def _cmyk(kind: str, v: list[float]) -> list[float] | None:
     return None
 
 
-def _func_out(fn, convert) -> bool:
-    """Applies convert to the output colours of an exponential function (C0, C1) or a stitching of them; False when the
-    function is sampled or PostScript, whose outputs cannot be changed this way."""
-    fn = _o(fn)
-    if not isinstance(fn, DictionaryObject):
-        return False
-    kind = int(_o(fn.get("/FunctionType", -1)))
-    if kind == 2:
-        n = len(_o(fn.get("/C0")) or [0.0]) if fn.get("/C0") is not None else len(_o(fn.get("/C1")) or [1.0])
-        c0 = [float(_o(v)) for v in _o(fn.get("/C0")) or [0.0] * n]
-        c1 = [float(_o(v)) for v in _o(fn.get("/C1")) or [1.0] * n]
-        a, b = convert(c0), convert(c1)
-        if a is None or b is None:
-            return False
-        fn[NameObject("/C0")] = ArrayObject(FloatObject(round(x, 4)) for x in a)
-        fn[NameObject("/C1")] = ArrayObject(FloatObject(round(x, 4)) for x in b)
-        if fn.get("/Range") is not None:
-            fn[NameObject("/Range")] = ArrayObject(FloatObject(v) for v in [0, 1] * len(a))
-        return True
-    if kind == 3:
-        return all(_func_out(f, convert) for f in _o(fn.get("/Functions")) or [])
-    return False
+def _zero(n: int, idx: list[int]) -> str:
+    """PostScript calculator code that sets the given stack entries (0 the deepest of n) to 0 and keeps the others in place."""
+    return " ".join(f"{n - i} -1 roll pop 0 {n - i} 1 roll" for i in idx)
 
 
-def _shading(sh, res, hide: set, process: bool, seen: set) -> None:
-    """Hidden inks taken out of an axial or radial shading's colours: process inks by turning its colours into CMYK, spot
-    inks by zeroing their tint. Mesh shadings and sampled functions are left as drawn."""
+def _calc(doc, body: str, n_in: int, n_out: int):
+    """A PostScript calculator function (type 4) over [0 1] inputs and outputs, as an indirect stream."""
+    fn = DecodedStreamObject()
+    fn[NameObject("/FunctionType")] = NumberObject(4)
+    fn[NameObject("/Domain")] = ArrayObject(FloatObject(v) for v in [0, 1] * n_in)
+    fn[NameObject("/Range")] = ArrayObject(FloatObject(v) for v in [0, 1] * n_out)
+    fn.set_data(("{ " + body + " }").encode("ascii"))
+    return doc._add_object(fn)
+
+
+# The colours of the inputs to CMYK, as calculator code: gray is all black; RGB uses the same rule as fills (k is one minus
+# the largest component, and each ink is how far its component falls short of that largest one).
+_TO_CMYK = {
+    "gray": "1 exch sub 0 0 0 4 -1 roll",
+    "rgb": "3 copy 2 copy lt {exch} if pop 2 copy lt {exch} if pop dup 0.0001 le "
+           "{ pop pop pop pop 0 0 0 1 } "
+           "{ 4 1 roll 3 index exch sub 3 index div exch 3 index exch sub 3 index div 3 -1 roll 3 index exch sub 3 index div "
+           "3 1 roll exch 4 -1 roll 1 exch sub } ifelse",
+    "cmyk": "",
+}
+
+
+def _masked(doc, fn, n: int, hidden: list[int]):
+    """A tint transform that reads the hidden inputs as 0 and the others as given, or None when that cannot be built.
+    One input: a stitching function whose Encode sends every value to the start of the original's domain. Sampled:
+    Encode [0 0] pins a hidden input to its first sample. Calculator: the program zeroes those inputs first."""
+    f = _o(fn)
+    if not isinstance(f, DictionaryObject):
+        return None
+    kind = int(_o(f.get("/FunctionType", -1)))
+    dom = [float(_o(v)) for v in _o(f.get("/Domain")) or [0, 1] * n]
+    if n == 1:
+        return DictionaryObject({NameObject("/FunctionType"): NumberObject(3), NameObject("/Domain"): ArrayObject([FloatObject(0), FloatObject(1)]),
+                                 NameObject("/Functions"): ArrayObject([fn]), NameObject("/Bounds"): ArrayObject(),
+                                 NameObject("/Encode"): ArrayObject([FloatObject(dom[0]), FloatObject(dom[0])])})
+    if kind == 0 and isinstance(f, StreamObject):
+        size = [int(_o(v)) for v in _o(f.get("/Size")) or []]
+        enc = [float(_o(v)) for v in _o(f.get("/Encode")) or []] or [x for s in size for x in (0, s - 1)]
+        for i in hidden:
+            enc[2 * i:2 * i + 2] = [0.0, 0.0]
+        new = StreamObject()
+        for k, v in f.items():
+            new[NameObject(k)] = v
+        new[NameObject("/Encode")] = ArrayObject(FloatObject(v) for v in enc)
+        new._data = f._data
+        return doc._add_object(new)
+    if kind == 4 and isinstance(f, StreamObject):
+        code = f.get_data().decode("latin-1").strip()
+        if not code.startswith("{"):
+            return None
+        new = DecodedStreamObject()
+        for k, v in f.items():
+            if k not in ("/Filter", "/DecodeParms", "/Length"):
+                new[NameObject(k)] = v
+        new.set_data(("{ " + _zero(n, hidden) + " " + code[1:]).encode("latin-1"))
+        return doc._add_object(new)
+    return None
+
+
+def _shading(sh, res, doc, hide: set, process: bool, seen: set) -> None:
+    """Hidden inks taken out of a shading of any type (axial, radial, function-based, triangle and patch meshes) by
+    wrapping its colour space rather than its colours, which may sit in functions of any kind or in mesh vertex data.
+    A spot space keeps its inks with a tint transform that reads the hidden ones as 0; a gray, RGB or CMYK space becomes
+    a DeviceN over the same components whose transform turns them into CMYK without the hidden process inks."""
     sh = _o(sh)
-    if not isinstance(sh, DictionaryObject) or id(sh) in seen or sh.get("/Function") is None:
+    if not isinstance(sh, DictionaryObject) or id(sh) in seen:
         return
     seen.add(id(sh))
     cs = sh.get("/ColorSpace")
-    spots = _names(cs)
-    fns = _o(sh["/Function"])
-    fns = list(fns) if isinstance(fns, ArrayObject) else [fns]
+    table = _o(res.get("/ColorSpace")) if isinstance(res, DictionaryObject) else None
+    arr = _o(table.get(str(cs))) if isinstance(cs, NameObject) and isinstance(table, DictionaryObject) and str(cs) in table else _o(cs)
+    spots = _names(arr)
     if spots:
-        if len(fns) != 1:
+        hidden = [i for i, name in enumerate(spots) if name in hide]
+        if not hidden or len(arr) < 4:
             return
-        _func_out(fns[0], lambda v: [0.0 if n in hide else x for n, x in zip(spots, v)] if len(v) == len(spots) else None)
+        tint = _masked(doc, arr[3], len(spots), hidden)
+        if tint is not None:
+            sh[NameObject("/ColorSpace")] = ArrayObject([arr[0], arr[1], arr[2], tint] + list(arr[4:]))
         return
     kind = colour.space_kind(cs, res)
-    if process and kind in ("gray", "rgb", "cmyk") and len(fns) == 1:
-        def to_cmyk(v):
-            c = _cmyk(kind, v)
-            return None if c is None else [0.0 if PROCESS[i] in hide else x for i, x in enumerate(c)]
-        if _func_out(fns[0], to_cmyk):
-            sh[NameObject("/ColorSpace")] = NameObject("/DeviceCMYK")
-            sh.pop("/Background", None)
+    if not process or kind not in _TO_CMYK:
+        return
+    n = {"gray": 1, "rgb": 3, "cmyk": 4}[kind]
+    out = [i for i, name in enumerate(PROCESS) if name in hide]
+    body = (_TO_CMYK[kind] + " " + _zero(4, out)).strip()
+    sh[NameObject("/ColorSpace")] = ArrayObject([NameObject("/DeviceN"), ArrayObject(NameObject(f"/FsIn{i + 1}") for i in range(n)),
+                                                 NameObject("/DeviceCMYK"), _calc(doc, body, n, 4)])
 
 
 def _inline(operands, res, doc, idx: int, hide: set, process: bool):
@@ -165,9 +214,9 @@ def _rewrite(st: StreamObject, res, doc, hide: set, process: bool, seen: set) ->
             if isinstance(p, StreamObject) and int(_o(p.get("/PatternType", 1))) == 1:
                 _rewrite(p, p.get("/Resources") or res, doc, hide, process, seen)
             elif isinstance(p, DictionaryObject) and int(_o(p.get("/PatternType", 0))) == 2:
-                _shading(p.get("/Shading"), res, hide, process, seen)
+                _shading(p.get("/Shading"), res, doc, hide, process, seen)
         for _n, sh in (_o(res.get("/Shading")) or {}).items():
-            _shading(sh, res, hide, process, seen)
+            _shading(sh, res, doc, hide, process, seen)
     try:
         cs_ = ContentStream(st, doc)
     except Exception:
