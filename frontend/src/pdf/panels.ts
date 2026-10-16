@@ -101,7 +101,9 @@ export class Panes {
   private tab: Tab = 'view';
   private existing: PdfComment[] = [];
   private commentsFor = '';
-  private redLog: { for: string; before: string; entries: RedactEntry[]; more: number } | null = null;
+  /** kept: read back from the engine after a restart, which never stores the removed words. */
+  private redLog: { for: string; before: string; entries: RedactEntry[]; more: number; kept?: boolean } | null = null;
+  private redHide = false;
   wantComments = false;
   onThreads: ((list: ThreadView[]) => void) | null = null;
   private marksFor = '';
@@ -160,7 +162,7 @@ ${sec('Find text to redact', `${row('Find', '<select data-a="fr-mode" aria-label
 ${sec('Redact', `<p class="fs-note fs-pdfwb-redactnote">Mark areas to black out, then apply.</p><div class="fs-seg fs-pdfwb-rmode" role="radiogroup" aria-label="Kind of mark"><button type="button" role="radio" data-a="redact-black" class="is-on" aria-checked="true">Black out</button><button type="button" role="radio" data-a="redact-white" aria-checked="false">White out</button></div><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="redact-tool">${icon('eraser', 14)}Mark areas</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-clear">Clear</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-take" title="Turn the redaction marks saved in this PDF into marks you can move, resize, switch or delete before applying">Edit marks in the file</button></div>${row('Fill', '<input type="color" class="fs-pdfwb-color" value="#000000" data-a="redact-color" aria-label="Fill colour">')}${row('Text on box', '<input class="fs-input" type="text" data-a="redact-overlay" maxlength="120" placeholder="None, or REDACTED" spellcheck="false">')}<label class="fs-check"><input type="checkbox" data-a="redact-scan">Scanned pages: flatten marked pages to pictures</label><p class="fs-pdfwb-warn">${icon('warning', 14)}<span>Redaction is permanent. The text, pictures, shapes, comments and form fields under each box are removed from the file, not covered; the rest of the page stays selectable and searchable. Redaction marks already in the file are applied too. Until you save, Undo brings back the version before.</span></p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="redact-apply">Apply redactions</button></div><p class="fs-note">What each redaction removed is listed under Redaction log at the end of this tab.</p>`)}
 ${sec('Metadata', `${row('Title', '<input class="fs-input" type="text" data-m="title">')}${row('Author', '<input class="fs-input" type="text" data-m="author">')}${row('Subject', '<input class="fs-input" type="text" data-m="subject">')}${row('Keywords', '<input class="fs-input" type="text" data-m="keywords">')}<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="meta-save">${icon('check', 14)}Save metadata</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="meta-strip">Remove all</button></div>`)}
 ${sec('Remove hidden information', `<p class="fs-note fs-pdfwb-hidnote">Find what this PDF carries besides its visible pages: metadata, scripts, attachments, comments, form fields, hidden layers and more.</p><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="hid-scan">${icon('find', 14)}<span>Find hidden information</span></button><button class="fs-btn fs-btn-sm fs-btn-danger" type="button" data-a="hid-remove" hidden>Remove ticked</button></div><div class="fs-pdfwb-hidlist" hidden>${HIDDEN_KEYS.map(([k, l]) => `<label class="fs-check fs-pdfwb-hidrow" data-hk="${k}"><input type="checkbox" data-a="hid-tick" data-k="${k}"><span class="fs-pdfwb-hidlabel">${l}</span><span class="fs-pdfwb-hidcount"></span></label>`).join('')}</div><p class="fs-note fs-pdfwb-hidhelp" hidden></p>`)}
-${sec('Redaction log', `<p class="fs-note fs-pdfwb-redlognote"></p><div class="fs-list fs-pdfwb-redloglist"></div><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="redact-undo">${icon('undo', 14)}Undo redaction</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-log">${icon('download', 14)}Save log</button></div><p class="fs-note">The log lists the removed words. It is never written into the PDF; keep a saved copy as private as the original.</p>`, 'data-part="redlog" hidden')}
+${sec('Redaction log', `<p class="fs-note fs-pdfwb-redlognote"></p><label class="fs-check"><input type="checkbox" data-a="redact-hide">Hide the removed words (also in the saved log)</label><div class="fs-list fs-pdfwb-redloglist"></div><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-a="redact-undo">${icon('undo', 14)}Undo redaction</button><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="redact-log">${icon('download', 14)}Save log</button></div><p class="fs-note">The log lists the removed words. It is never written into the PDF, and after formpdf restarts only where things were removed is kept, not the words; keep a saved copy as private as the original.</p>`, 'data-part="redlog" hidden')}
 </div>
 <div class="fs-pdfwb-pane" data-for="convert" hidden>
 ${sec('PowerPoint', `<p class="fs-note">One slide per page at the page size. Words become editable text boxes (turned ones stay turned), tables PowerPoint tables, and lines, shapes and pictures PowerPoint objects; what cannot be rebuilt stays in the slide picture behind them.</p>${row('Pages', '<input class="fs-input" type="text" data-a="pptx-pages" placeholder="All pages">')}<label class="fs-check"><input type="checkbox" data-a="pptx-text" checked>Editable text, shapes and pictures</label><div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-a="pptx">${icon('filePptx', 14)}Export to PowerPoint (.pptx)</button></div>`)}
@@ -274,6 +276,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     }
     void this.loadComments();
     void this.loadMarks();
+    void this.loadRedLog();
     this.syncHF();
     this.syncCrop();
     const i = d.info, n = this.ctx.viewer.currentPage(), s = i.sizes[n - 1];
@@ -494,7 +497,10 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     const summary = L.entries.length ? `Removed ${parts.join(', ')}${L.more ? `, and ${L.more} more not listed` : ''}.` : 'Nothing was under the marks, so nothing was removed.';
     setText(this.$('.fs-pdfwb-redlognote'), undone ? 'Undone: the PDF is the exact version from before this redaction. The log stays here until you redact again.'
       : live ? summary : `${summary} The PDF has changed since; Undo steps back through the later changes first.`);
-    setDisabled(this.$<HTMLButtonElement>('[data-a="redact-undo"]'), !live);
+    setDisabled(this.$<HTMLButtonElement>('[data-a="redact-undo"]'), !live || !!L.kept);
+    const hide = this.$<HTMLInputElement>('[data-a="redact-hide"]');
+    if (hide.checked !== (this.redHide || !!L.kept)) hide.checked = this.redHide || !!L.kept;
+    setDisabled(hide, !!L.kept);
     const rows = L.entries.slice(0, 400).map((e, i) => ({ k: String(i), e }));
     patchList(this.$('.fs-pdfwb-redloglist'), rows, {
       key: (r) => r.k,
@@ -503,17 +509,36 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     });
   }
 
+  /** The words of an entry, or only how many characters there were when they are hidden or were not kept. */
+  private redWords(e: RedactEntry & { chars?: number }): string {
+    const n = e.chars ?? e.text.length;
+    return this.redHide || this.redLog?.kept ? (n ? `${n} character${n === 1 ? '' : 's'}` : '') : e.text;
+  }
+
   private redRow(n: HTMLElement, e: RedactEntry): void {
     if (n.dataset.page !== String(e.page)) n.dataset.page = String(e.page);
     const kind = { text: 'Text', picture: 'Picture', shape: 'Shape', comment: 'Comment', link: 'Link', field: 'Form field', item: 'Editable items', page: 'Whole page' }[e.kind] ?? e.kind;
     setText(n.querySelector('.fs-row-title'), `Page ${e.page} · ${kind}`);
-    setText(n.querySelector('.fs-row-sub'), e.text);
+    setText(n.querySelector('.fs-row-sub'), this.redWords(e));
+  }
+
+  /** After a restart the log comes back from the engine, which kept it with the redacted version but without the words. */
+  private async loadRedLog(): Promise<void> {
+    const d = this.ctx.doc();
+    if (!d || this.tab !== 'protect' || (this.redLog && (this.redLog.for === d.id || this.redLog.before === d.id))) return;
+    const id = d.id;
+    try {
+      const got = await pdfApi.redactionLog(id);
+      if (got.none || this.ctx.doc()?.id !== id || (this.redLog && (this.redLog.for === id || this.redLog.before === id))) return;
+      this.redLog ={ for: id, before: got.before, entries: got.entries.map((e) => ({ ...e, text: '' })), more: got.more, kept: true };
+      this.syncRedLog();
+    } catch { /* no log for this version */ }
   }
 
   private redLogCsv(name: string): string {
     const q2 = (s: string): string => `"${s.replace(/"/g, '""')}"`;
     const L = this.redLog;
-    const lines = ['page,kind,text,x,y,w,h', ...(L?.entries ?? []).map((e) => [e.page, e.kind, q2(e.text), e.box?.x ?? '', e.box?.y ?? '', e.box?.w ?? '', e.box?.h ?? ''].join(','))];
+    const lines = ['page,kind,text,x,y,w,h', ...(L?.entries ?? []).map((e) => [e.page, e.kind, q2(this.redWords(e)), e.box?.x ?? '', e.box?.y ?? '', e.box?.w ?? '', e.box?.h ?? ''].join(','))];
     return `# Redaction log for ${name}; boxes in points from the top left of the page\n${lines.join('\n')}\n`;
   }
 
@@ -692,6 +717,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
       this.syncHidden();
     } else if ((a === 'say-voice' || a === 'say-rate') && e.type === 'change') this.ctx.act(a, t.value);
     else if (a === 'cover' && e.type === 'change') this.ctx.act('cover', t.checked ? '1' : '');
+    else if (a === 'redact-hide' && e.type === 'change') { this.redHide = t.checked; this.syncRedLog(); }
     else if (a === 'fr-tick') {
       const i = Number(t.dataset.i);
       if (t.checked) this.ticked.add(i); else this.ticked.delete(i);

@@ -135,6 +135,7 @@ export const pdfApi = {
   crop: (id: string, body: { box?: Rect; margins?: Margins; auto?: boolean; pages?: string }) => api.post<Derived & { cropped: number }>(`${base(id)}/crop`, body).then(rec('crop', body)),
   find: (id: string, body: FindBody) => api.post<{ matches: Match[]; count: number; pages: number; truncated: boolean }>(`${base(id)}/find`, body),
   comments: (id: string) => api.get<{ comments: PdfComment[] }>(`${base(id)}/comments`),
+  redactionLog: (id: string) => api.get<{ before: string; entries: Array<Omit<RedactEntry, 'text'> & { chars: number }>; more: number; none?: boolean }>(`${base(id)}/redaction-log`),
   identities: () => api.get<{ identities: Identity[]; trusted: Identity[] }>('/api/identities'),
   makeIdentity: (body: { name: string; email: string; org: string; password: string }) => api.post<Identity>('/api/identities', body),
   importIdentity(file: File, password: string): Promise<Identity> {

@@ -340,8 +340,18 @@ async def redact(doc_id: str, body: dict) -> dict:
     if not isinstance(areas, list):
         raise HTTPException(400, "areas must be a list")
     mode = "raster" if body.get("mode") == "raster" else "content"
-    return await _derive(doc_id, pdfsvc.redact, areas, passwords=_pw(doc_id), mode=mode, color=str(body.get("color") or "#000000"),
-                         overlay=str(body.get("overlay") or "")[:120])
+    res = await _derive(doc_id, pdfsvc.redact, areas, passwords=_pw(doc_id), mode=mode, color=str(body.get("color") or "#000000"),
+                        overlay=str(body.get("overlay") or "")[:120])
+    # Kept with the new version so the log survives a restart, without the removed words: a copy of them on disk would undo the point.
+    kept = [{"page": e.get("page"), "kind": e.get("kind"), "box": e.get("box"), "chars": len(str(e.get("text") or ""))} for e in res.get("log") or []]
+    await asyncio.to_thread(docs.keep_redaction, res["id"], {"before": doc_id, "entries": kept, "more": int(res.get("logMore") or 0)})
+    return res
+
+
+@router.get("/pdf/{doc_id}/redaction-log")
+async def redaction_log(doc_id: str) -> dict:
+    _path(doc_id)
+    return await asyncio.to_thread(docs.redaction, doc_id) or {"before": "", "entries": [], "more": 0, "none": True}
 
 
 @router.post("/pdf/{doc_id}/metadata")

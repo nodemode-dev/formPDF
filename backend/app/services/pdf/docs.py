@@ -111,6 +111,30 @@ def put_bytes(data: bytes, name: str, path: str | None = None) -> str:
     return doc_id
 
 
+def _redaction_file(doc_id: str) -> Path:
+    digest = hashlib.sha256((root() / f"{doc_id}.pdf").read_bytes()).hexdigest()
+    return root() / f"redaction-{digest[:32]}.json"
+
+
+def keep_redaction(doc_id: str, log: dict) -> None:
+    """Keeps a redaction log (never the removed words) with the version, and by the bytes, so reopening the saved file finds it."""
+    update_meta(doc_id, redaction=log)
+    try:
+        _redaction_file(doc_id).write_text(json.dumps(log), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def redaction(doc_id: str) -> dict | None:
+    kept = meta(doc_id).get("redaction")
+    if kept:
+        return kept
+    try:
+        return json.loads(_redaction_file(doc_id).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 def adopt(src: Path, name: str, parent: str | None = None) -> str:
     doc_id, out = target(name, parent)
     shutil.move(str(src), out)
