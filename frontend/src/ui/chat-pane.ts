@@ -190,7 +190,7 @@ export class ChatPane {
     this.usage = u;
     if (!u.context && !u.input && reply < 0) { setText(this.meter, ''); return; }
     const parts: string[] = [];
-    if (u.context) parts.push(`Memory ${tokens(u.context)}${u.window ? ` of ${tokens(u.window)}` : ''}`);
+    if (u.context) parts.push(u.window ? `Memory ${tokens(u.context)} of ${tokens(u.window)}` : `Memory ${tokens(u.context)}`);
     if (reply >= 0) parts.push(`Reply ${tokens(reply)} tokens`);
     if (u.input || u.output) parts.push(`Chat ${tokens(u.input + u.output)} tokens`);
     setText(this.meter, parts.join(' · '));

@@ -89,9 +89,18 @@ function patternsFor(l: Lang): Pattern[] {
     src += `${key.slice(last).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
     list.push({ key, head: key.slice(0, key.search(HOLE)), re: new RegExp(src), order });
   }
-  list.sort((a, b) => b.head.length - a.head.length);
+  // longest literal start first, then the longer key, so "Page {0} of {1}" is tried before the bare label "Page {0}"
+  list.sort((a, b) => b.head.length - a.head.length || b.key.length - a.key.length);
   compiled.set(l, list);
   return list;
+}
+
+/** A label lowercased to sit inside a sentence ("Add highlight") is found under its own key ("Highlight"); German keeps nouns capitalised. */
+function lowered(core: string): string | undefined {
+  if (!/^[a-z]/.test(core)) return undefined;
+  const found = plain(core[0].toUpperCase() + core.slice(1));
+  if (found === undefined || current === 'de') return found;
+  return found.charAt(0).toLocaleLowerCase(current) + found.slice(1);
 }
 
 function fromPattern(text: string, depth = 0): string | undefined {
@@ -107,7 +116,7 @@ function fromPattern(text: string, depth = 0): string | undefined {
     return counted(out, (n) => vals.get(n) ?? '').replace(HOLE, (_s, n: string) => {
       const v = vals.get(Number(n)) ?? '';
       const core = v.trim();  // a value often carries its own leading space (" (pages 2, 5)"); keep it around the translation
-      const tr = core ? plain(core) ?? fromPattern(core, depth + 1) : undefined;
+      const tr = core ? plain(core) ?? fromPattern(core, depth + 1) ?? lowered(core) : undefined;
       return tr === undefined ? v : v.replace(core, tr);
     });
   }

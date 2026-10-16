@@ -174,7 +174,9 @@ def patterns(hints: dict | None = None) -> list[str]:
                         out += ch
                 s = out.strip()
                 words = re.sub(r"\{\d+\}", " ", s)
-                if (len(re.findall(r"[A-Za-z]{2,}", words)) < 2 or re.search(r"[\n=]|^;|;\s*$|=>|\bfs-|\$|\\|[{}](?!\d)|(?<!\d)}", re.sub(r"\{\d+\}", "", s))
+                # one word joined to a value ("Undo {0}", "Page {0}") is a label too, when the word leads
+                one = len(re.findall(r"[A-Za-z]{2,}", words)) == 1 and re.match(r"[A-Z][a-z]+ \{\d+\}", s)
+                if ((len(re.findall(r"[A-Za-z]{2,}", words)) < 2 and not one) or re.search(r"[\n=]|^;|;\s*$|=>|\bfs-|\$|\\|[{}](?!\d)|(?<!\d)}", re.sub(r"\{\d+\}", "", s))
                         or not re.match(r"[A-Z\"(]|\{\d+\}\s?[A-Za-z]", s) or len(s) > 400 or re.fullmatch(r"[\w./:-]*\{\d+\}[\w./:-]*", s)):
                     continue
                 found.add(s)

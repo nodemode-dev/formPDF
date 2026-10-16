@@ -248,8 +248,8 @@ async function runTag(): Promise<void> {
       const res = await pdfApi.act<Derived & { elements?: number; headings?: number; tables?: number; figures?: number; lists?: number }>(id, 'autotag', body);
       await host.ctx.commit(res, 'Tag for accessibility');
       ok = true;
-      const n = (v: number | undefined, w: string): string => `${v ?? 0} ${w}${v === 1 ? '' : 's'}`;
-      toast(`Tagged ${n(res.elements, 'region')}: ${n(res.headings, 'heading')}, ${n(res.lists, 'list')}, ${n(res.tables, 'table')}, ${n(res.figures, 'figure')}.`);
+      // a label form, so the sentence reads right for any count in English and needs no count words joined in code
+      toast(`Tagged. Regions: ${res.elements ?? 0}, headings: ${res.headings ?? 0}, lists: ${res.lists ?? 0}, tables: ${res.tables ?? 0}, figures: ${res.figures ?? 0}.`);
     } catch (err) { toast((err as Error).message, 'error'); }
   });
   if (ok) { refreshAll(); await runCheck(); }
