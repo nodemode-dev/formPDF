@@ -63,6 +63,11 @@ export class PageView {
   preview: HTMLImageElement | null = null;
   previewKey = '';
   shown = 0;
+  /** A sharp canvas over the part of the page on screen, for pages too large to draw whole at this zoom. */
+  detail: HTMLCanvasElement | null = null;
+  detailKey = '';
+  detailRect: [number, number, number, number] | null = null;
+  detailTask: RenderTask | null = null;
   constructor(readonly index: number, public size: PageSize) {
     this.box = el(`<div class="fs-pdf-page" data-key="${index}" data-page="${index + 1}"><div class="textLayer"></div><div class="fs-pdf-space"><div class="fs-pdf-hits"></div></div></div>`);
     this.textHost = this.box.querySelector('.textLayer') as HTMLElement;
@@ -124,6 +129,8 @@ export class Viewer {
       if (this.scrollQueued) return;
       this.scrollQueued = true;
       requestAnimationFrame(() => { this.scrollQueued = false; this.track(); if (this.large && this.doc) this.previews(); });
+      window.clearTimeout(this.detailTimer);
+      this.detailTimer = window.setTimeout(() => this.schedule(), 120);  // sharpen the part of a huge page that scrolled into view
       if (this.large) { this.lastScroll = performance.now(); window.clearTimeout(this.textTimer); this.textTimer = window.setTimeout(() => this.idleText(), TEXT_IDLE); }
     }, { passive: true });
     new ResizeObserver(() => { if (this.fit && this.pages.length && this.scroller.clientWidth) this.applyFit(this.fit, false); }).observe(this.scroller);
@@ -489,6 +496,7 @@ export class Viewer {
 
   private pump(): void {
     if (!this.doc) return;
+    for (const pv of this.pages) if (pv.detail && pv.detailKey !== this.key(pv) && !this.tooBig(pv)) this.dropDetail(pv);  // zoomed back to where the whole page is sharp
     this.previews();
     const wait = this.settleAt - performance.now();
     if (wait > 0) { window.setTimeout(() => this.schedule(), wait); return; }
@@ -502,7 +510,7 @@ export class Viewer {
         return true;
       }).sort((a, b) => Math.abs(a.index - cur) - Math.abs(b.index - cur));
       const pv = want[0];
-      if (!pv) { if (later) window.setTimeout(() => this.schedule(), later + 5); this.evict(); return; }
+      if (!pv) { if (later) window.setTimeout(() => this.schedule(), later + 5); this.evict(); this.details(); return; }
       this.active += 1;
       void this.render(pv).catch(() => undefined).finally(() => { this.active -= 1; this.schedule(); });
     }
@@ -536,11 +544,75 @@ export class Viewer {
     await this.decorate(pv, page, viewport, gen);
   }
 
+  /** Deep zoom: a page whose whole canvas would pass MAX_PIXELS is drawn softer, so the part on screen (and half
+   * as much again around it) gets a second canvas at full sharpness. It is placed in percentages of the page, so a
+   * zoom in progress scales it with the page until the next one replaces it. */
+  private details(): void {
+    for (const pv of this.pages) {
+      const key = this.key(pv);
+      // a zoom keeps the old sharp part, scaled, until its replacement draws; new content or a turn does not
+      const [g, , turn] = pv.detailKey.split('|');
+      if (pv.detail && (!pv.visible || !this.tooBig(pv) || g !== String(this.gen) || turn !== String(this.total(pv)))) this.dropDetail(pv);
+      if (!pv.visible || !pv.canvas || pv.detailTask || !this.tooBig(pv)) continue;  // the sharp part need not wait for the whole page to redraw
+      const W = pv.box.clientWidth, H = pv.box.clientHeight;
+      const r = pv.box.getBoundingClientRect(), s = this.scroller.getBoundingClientRect();
+      const x0 = Math.max(r.left, s.left) - r.left, y0 = Math.max(r.top, s.top) - r.top;
+      const x1 = Math.min(r.right, s.right) - r.left, y1 = Math.min(r.bottom, s.bottom) - r.top;
+      if (x1 - x0 < 1 || y1 - y0 < 1) continue;
+      const had = pv.detailRect;
+      if (pv.detail && pv.detailKey === key && had && had[0] <= x0 && had[1] <= y0 && had[0] + had[2] >= x1 && had[1] + had[3] >= y1) continue;
+      const mx = (x1 - x0) * 0.5, my = (y1 - y0) * 0.5;
+      const rx = Math.max(0, Math.floor(x0 - mx)), ry = Math.max(0, Math.floor(y0 - my));
+      const rect: [number, number, number, number] = [rx, ry, Math.min(W, Math.ceil(x1 + mx)) - rx, Math.min(H, Math.ceil(y1 + my)) - ry];
+      void this.renderDetail(pv, rect, key, W, H).catch(() => undefined);
+    }
+  }
+
+  private tooBig(pv: PageView): boolean {
+    const dpr = window.devicePixelRatio || 1, k = this.k();
+    return pv.size.w * k * pv.size.h * k * dpr * dpr > MAX_PIXELS * 1.02;
+  }
+
+  private dropDetail(pv: PageView): void {
+    pv.detailTask?.cancel();
+    pv.detailTask = null;
+    if (pv.detail) { pv.detail.width = 0; pv.detail.remove(); }
+    pv.detail = null;
+    pv.detailKey = '';
+    pv.detailRect = null;
+  }
+
+  private async renderDetail(pv: PageView, rect: [number, number, number, number], key: string, W: number, H: number): Promise<void> {
+    const doc = this.doc, gen = this.gen;
+    if (!doc) return;
+    const page = await doc.getPage(pv.index + 1);
+    if (gen !== this.gen || key !== this.key(pv)) return;
+    const viewport = page.getViewport({ scale: this.k(), rotation: this.total(pv) });
+    const [rx, ry, rw, rh] = rect;
+    const ratio = Math.min(window.devicePixelRatio || 1, Math.sqrt(MAX_PIXELS / Math.max(1, rw * rh)));
+    const canvas = document.createElement('canvas');
+    canvas.className = 'fs-pdf-detail';
+    canvas.width = Math.max(1, Math.floor(rw * ratio));
+    canvas.height = Math.max(1, Math.floor(rh * ratio));
+    const task = page.render({ canvas, viewport, transform: [ratio, 0, 0, ratio, -rx * ratio, -ry * ratio], annotationMode: AnnotationMode.ENABLE });
+    pv.detailTask = task;
+    try { await task.promise; } finally { if (pv.detailTask === task) pv.detailTask = null; }
+    if (gen !== this.gen || key !== this.key(pv) || !pv.canvas || !pv.visible) { canvas.width = 0; return; }
+    const pct = (v: number, of: number): string => `${(v / of) * 100}%`;
+    canvas.style.cssText = `left:${pct(rx, W)};top:${pct(ry, H)};width:${pct(rw, W)};height:${pct(rh, H)}`;
+    if (pv.detail) { pv.detail.replaceWith(canvas); pv.detail.width = 0; } else pv.canvas.after(canvas);
+    pv.detail = canvas;
+    pv.detailKey = key;
+    pv.detailRect = rect;
+    this.schedule();  // the view may have moved on while this one drew
+  }
+
   private idle(): boolean { return performance.now() - this.lastScroll > TEXT_IDLE; }
 
   busy(): boolean { return this.loading.size > 0 || this.active > 0 || performance.now() - this.lastScroll < 250; }
 
   private lastScroll = 0;
+  private detailTimer = 0;
 
   private async decorate(pv: PageView, page: Awaited<ReturnType<PDFDocumentProxy['getPage']>>, viewport: PageViewport, gen: number): Promise<void> {
     await this.ensureText(pv, viewport);
@@ -616,6 +688,7 @@ export class Viewer {
     const victims = drawn.filter((p) => !p.visible).sort((a, b) => a.seen - b.seen).slice(0, drawn.length - KEEP_CANVASES);
     for (const pv of victims) {
       if (!pv.canvas) continue;
+      this.dropDetail(pv);
       pv.canvas.width = 0;
       pv.canvas.remove();
       pv.canvas = null;
