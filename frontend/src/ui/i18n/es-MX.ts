@@ -38,6 +38,6 @@ export const esMX: Record<string, string> = {
 "Opened an unlocked working copy. Use Protect to add a password before saving if you need one.": "Se abrió una copia de trabajo desbloqueada. Use Proteger para agregar una contraseña antes de guardar si la necesita.",
 "Page added": "Página agregada",
 "Read, comment, fill and sign, organize, protect and convert PDFs on this computer.": "Lea, comente, llene y firme, organice, proteja y convierta PDF en esta computadora.",
-"Select. Needs OpenAI or a picture server on this computer.": "Seleccione. Requiere OpenAI o un servidor de imágenes en esta computadora.",
+"Describe a picture; it is placed on the current page as a picture you can move, resize and crop with Edit > Select. Needs OpenAI or a picture server on this computer.": "Describa una imagen; se coloca en la página actual como una imagen que puede mover, cambiar de tamaño y recortar con Editar > Seleccionar. Requiere OpenAI o un servidor de imágenes en esta computadora.",
 "Short (this computer)": "Corto (esta computadora)"
 };
