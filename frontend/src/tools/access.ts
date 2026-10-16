@@ -135,7 +135,7 @@ function syncCheck(): void {
   patchList(q(root, '[data-x="list"]'), rules, {
     key: (r) => r.id,
     create: (r) => {
-      const n = el(`<div class="fs-row fs-tool-row fs-acc-rule" data-x="pick"><span class="fs-row-icon fs-acc-ico"></span><span class="fs-row-main"><span class="fs-row-title"></span><span class="fs-row-sub"></span></span><span class="fs-tool-acts"><button class="fs-btn fs-btn-sm fs-btn-ghost fs-acc-fix" type="button" data-x="fix">Fix</button></span></div>`);
+      const n = el(`<div class="fs-row fs-tool-row fs-acc-rule" data-x="pick"><span class="fs-row-icon fs-acc-ico"></span><span class="fs-row-main"><span class="fs-row-title"></span><span class="fs-row-sub"><span data-r="st"></span>. <span data-r="say"></span></span></span><span class="fs-tool-acts"><button class="fs-btn fs-btn-sm fs-btn-ghost fs-acc-fix" type="button" data-x="fix">Fix</button></span></div>`);
       fillRule(n, r);
       return n;
     },
@@ -149,7 +149,9 @@ function fillRule(n: HTMLElement, r: Rule): void {
   const ico = q(n, '.fs-acc-ico');
   if (ico.dataset.s !== r.status) { ico.innerHTML = icon(ic, 14); ico.dataset.s = r.status; ico.className = `fs-row-icon fs-acc-ico ${cls}`; }
   setText(q(n, '.fs-row-title'), `${r.group} · ${r.name}`);
-  setText(q(n, '.fs-row-sub'), `${t(STATUS_WORD[r.status])}. ${t(r.say)}`);
+  // status and sentence in nodes of their own, so a language switch translates each as a whole (one node read "Failed. 3 pages are..." as the count)
+  setText(q(n, '[data-r="st"]'), t(STATUS_WORD[r.status]));
+  setText(q(n, '[data-r="say"]'), t(r.say));
   const tip = r.findings.length ? r.findings.slice(0, 12).map((f) => `${f.page ? `Page ${f.page}: ` : ''}${f.text}`).join('\n') + (r.findings.length > 12 || r.more ? '\n…' : '') : r.say;
   if (n.title !== tip) n.title = tip;
   const fix = q<HTMLButtonElement>(n, '[data-x="fix"]');

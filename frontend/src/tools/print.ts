@@ -327,7 +327,7 @@ function syncPf(): void {
   const items = pf && fresh ? pf.checks : [];
   patchList(q(r, '[data-f="list"]'), items, {
     key: (x) => x.id,
-    create: (x) => { const n = el(`<div class="fs-row fs-tool-row fs-acc-rule"><span class="fs-row-icon fs-acc-ico"></span><span class="fs-row-main"><span class="fs-row-title"></span><span class="fs-row-sub"></span></span><span class="fs-tool-acts"><button class="fs-btn fs-btn-sm fs-btn-ghost fs-acc-fix" type="button" data-f="one">Fix</button></span></div>`); fillCheck(n, x); return n; },
+    create: (x) => { const n = el(`<div class="fs-row fs-tool-row fs-acc-rule"><span class="fs-row-icon fs-acc-ico"></span><span class="fs-row-main"><span class="fs-row-title"></span><span class="fs-row-sub"><span data-r="st"></span>. <span data-r="say"></span></span></span><span class="fs-tool-acts"><button class="fs-btn fs-btn-sm fs-btn-ghost fs-acc-fix" type="button" data-f="one">Fix</button></span></div>`); fillCheck(n, x); return n; },
     update: fillCheck,
   });
   setHidden(q(r, '[data-f="empty"]'), items.length > 0);
@@ -344,7 +344,8 @@ function fillCheck(n: HTMLElement, x: PCheck): void {
   const ico = q(n, '.fs-acc-ico');
   if (ico.dataset.s !== x.status) { ico.innerHTML = icon(ic, 14); ico.dataset.s = x.status; ico.className = `fs-row-icon fs-acc-ico ${cls}`; }
   setText(q(n, '.fs-row-title'), x.name);
-  setText(q(n, '.fs-row-sub'), `${t(PWORD[x.status])}. ${t(x.say)}`);
+  setText(q(n, '[data-r="st"]'), t(PWORD[x.status]));  // in nodes of their own, as in the Accessibility tab
+  setText(q(n, '[data-r="say"]'), t(x.say));
   n.title = x.findings.length ? x.findings.slice(0, 12).map((f) => `${f.page ? `Page ${f.page}: ` : ''}${f.text}`).join('\n') : x.say;
   const b = q<HTMLButtonElement>(n, '[data-f="one"]');
   b.style.visibility = x.fix ? '' : 'hidden';
