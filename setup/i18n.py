@@ -22,7 +22,8 @@ VARIANTS = {"es-MX": "es", "fr-CA": "fr"}
 KEEP_ENGLISH = {"PDF", "PDF/A", "PDF/X", "PDF/UA", "XFDF", "JSON", "CSV", "PNG", "JPEG", "GIF", "TIFF", "SVG", "OCR", "MCP", "Ctrl", "Alt", "Shift",
                 "Cmd", "Esc", "Tab", "Enter", "formpdf", "Claude Code", "Codex", "Cursor", "Anthropic", "OpenAI", "Ollama", "LM Studio", "Bates"}
 
-TEXT = re.compile(r">([^<>`]+)<")
+TEXT = re.compile(r">((?:[^<>`]|(?<= )>(?= ))+)<")  # a > between spaces is a menu path in the text, not the end of a tag
+EXPR = re.compile(r"\$\{(?:[^{}]|\{[^{}]*\})*\}")
 ATTR = re.compile(r'\b(?:title|aria-label|placeholder)="([^"$]+)"')
 QUOTED = re.compile(r"'((?:[^'\\\n]|\\.){2,400})'")
 CODEISH = re.compile(r"[\n{}=]|^;|;\s*$|;\s*[A-Za-z_$][\w$.]*\s*[=(.\[]|&&|\|\||\bthis\.|\bq\(|\)\.|=>|\bawait\b|\bconst\b|\breturn\b|Promise|\?:|: (string|number|boolean)\b|\.fs-|\bfs-|^[a-z]")
@@ -50,8 +51,14 @@ def keys() -> list[str]:
             continue
         src = Path(f).read_text(encoding="utf-8")
         for m in TEXT.finditer(src):
-            if "${" not in m.group(1) and (s := clean(m.group(1))):
-                found.add(s)
+            if "${" not in m.group(1):
+                if s := clean(m.group(1)):
+                    found.add(s)
+                continue
+            # Text beside an expression (an icon before a button label, say) lands in its own text node on the page.
+            for part in EXPR.split(m.group(1)):
+                if "${" not in part and "}" not in part and re.match(r"\s*[A-Za-z]", part) and (s := clean(part)):
+                    found.add(s)
         for m in ATTR.finditer(src):
             if s := clean(m.group(1)):
                 found.add(s)
