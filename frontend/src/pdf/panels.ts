@@ -492,10 +492,15 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     const live = L.for === cur, undone = L.before === cur;
     const kinds = new Map<string, number>();
     for (const e of L.entries) kinds.set(e.kind, (kinds.get(e.kind) ?? 0) + 1);
-    const WORD: Record<string, [string, string]> = { text: ['text run', 'text runs'], picture: ['picture', 'pictures'], shape: ['shape', 'shapes'], comment: ['comment', 'comments'],
-      link: ['link', 'links'], field: ['form field', 'form fields'], item: ['editable item note', 'editable item notes'], page: ['flattened page', 'flattened pages'] };
-    const parts = [...kinds].map(([k, n]) => `${n} ${WORD[k]?.[n === 1 ? 0 : 1] ?? k}`);
-    const summary = L.entries.length ? `Removed ${parts.join(', ')}${L.more ? `, and ${L.more} more not listed` : ''}.` : 'Nothing was under the marks, so nothing was removed.';
+    // each kind as a whole phrase with only the count as a value, so the window translates every part on its own
+    const WORD: Record<string, (n: number) => string> = {
+      text: (n) => (n === 1 ? `${n} text run` : `${n} text runs`), picture: (n) => (n === 1 ? `${n} picture` : `${n} pictures`),
+      shape: (n) => (n === 1 ? `${n} shape` : `${n} shapes`), comment: (n) => (n === 1 ? `${n} comment` : `${n} comments`),
+      link: (n) => (n === 1 ? `${n} link` : `${n} links`), field: (n) => (n === 1 ? `${n} form field` : `${n} form fields`),
+      item: (n) => (n === 1 ? `${n} editable item note` : `${n} editable item notes`), page: (n) => (n === 1 ? `${n} flattened page` : `${n} flattened pages`) };
+    const parts = [...kinds].map(([k, n]) => WORD[k]?.(n) ?? `${n} ${k}`);
+    const list = parts.join(', ');  // a value of its own, so "Removed: {0}." is a key and each part translates inside it
+    const summary = L.entries.length ? (L.more ? `Removed: ${list}, and ${L.more} more not listed.` : `Removed: ${list}.`) : 'Nothing was under the marks, so nothing was removed.';
     setText(this.$('.fs-pdfwb-redlognote'), undone ? 'Undone: the PDF is the exact version from before this redaction. The log stays here until you redact again.'
       : live ? summary : `${summary} The PDF has changed since; Undo steps back through the later changes first.`);
     setDisabled(this.$<HTMLButtonElement>('[data-a="redact-undo"]'), !live || !!L.kept);

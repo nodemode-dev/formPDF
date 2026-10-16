@@ -386,8 +386,10 @@ ${sec('Fields in this PDF <span class="fs-badge is-count fs-pdfwb-fold">0</span>
 
   sync(): void {
     const f = this.forms;
-    const parts = [f.drafts.length ? `${f.drafts.length} new field${f.drafts.length === 1 ? '' : 's'}` : '', f.renames.size ? `${f.renames.size} renamed` : '', f.deletes.size ? `${f.deletes.size} to delete` : ''].filter(Boolean);
-    setText(this.$('.fs-pdfwb-fcount'), parts.length ? `${parts.join(' · ')}. Apply writes them into the PDF as real form fields.` : 'No changes yet.');
+    const nd = f.drafts.length;
+    const parts = [nd ? (nd === 1 ? `${nd} new field` : `${nd} new fields`) : '', f.renames.size ? `${f.renames.size} renamed` : '', f.deletes.size ? `${f.deletes.size} to delete` : ''].filter(Boolean);
+    const list = parts.join(' · ');  // a value of its own, so the sentence is a key and the parts translate inside it
+    setText(this.$('.fs-pdfwb-fcount'), parts.length ? `${list}. Apply writes them into the PDF as real form fields.` : 'No changes yet.');
     setDisabled(this.$<HTMLButtonElement>('[data-f="apply"]'), !f.dirty);
     setDisabled(this.$<HTMLButtonElement>('[data-f="discard"]'), !f.dirty);
     setText(this.$('.fs-pdfwb-fnew'), String(f.drafts.length));

@@ -103,6 +103,38 @@ function lowered(core: string): string | undefined {
   return found.charAt(0).toLocaleLowerCase(current) + found.slice(1);
 }
 
+/** A message made of parts joined in code ("3 pages made searchable, 420 words, 2 skipped."): each part is a key of its
+ * own, so the whole translates when every part with words in it does. Nothing changes unless all of them do. */
+const SEPS = [' · ', '; ', ', '];
+const CJK_SEP: Record<string, Record<string, string>> = { ja: { ', ': '、', '; ': '、' }, 'zh-CN': { ', ': '，', '; ': '；' }, 'zh-TW': { ', ': '，', '; ': '；' } };
+
+function joined(text: string, depth = 0): string | undefined {
+  if (depth > 2) return undefined;
+  const end = /[.:]$/.test(text) && !text.endsWith('...') ? text.slice(-1) : '';
+  const body = end ? text.slice(0, -1) : text;
+  for (const sep of SEPS) {
+    if (!body.includes(sep)) continue;
+    // a list needs two parts with words, and a comma list words in every part: "on pages 1, 2, 3" is one phrase
+    const worded = body.split(sep).map((p) => /[A-Za-z]{2}/.test(p));
+    if (worded.filter(Boolean).length < 2 || (sep !== ' · ' && worded.includes(false))) continue;
+    let changed = false;
+    const out: string[] = [];
+    for (const p of body.split(sep)) {
+      const c = p.trim();
+      if (!/[A-Za-z]{2}/.test(c)) { out.push(p); continue; }
+      const tr = plain(c) ?? fromPattern(c, depth + 1) ?? lowered(c) ?? joined(c, depth + 1);
+      if (tr === undefined) return undefined;
+      changed = true;
+      out.push(p.replace(c, tr));
+    }
+    if (!changed) return undefined;
+    const cjk = CJK_SEP[current];
+    const stop = end === '.' && cjk ? '。' : end;
+    return out.join(cjk?.[sep] ?? sep) + stop;
+  }
+  return undefined;
+}
+
 function fromPattern(text: string, depth = 0): string | undefined {
   if (!/[\d\S]/.test(text) || depth > 2) return undefined;
   for (const p of patternsFor(current)) {
@@ -111,12 +143,17 @@ function fromPattern(text: string, depth = 0): string | undefined {
     if (!m) continue;
     const vals = new Map<number, string>();
     p.order.forEach((n, i) => vals.set(n, m[i + 1]));
+    // a hole does not swallow a list mark its key lacks ("Memory {0} of {1}" against "... · Reply 300 tokens"); the list is split instead
+    if ([' · ', '; '].some((s) => !p.key.includes(s.trim()) && [...vals.values()].some((v) => v.includes(s)))) continue;
     const out = look(p.key);
     if (out === undefined) continue;
+    // a count-aware word needs a number in its hole: "Removed 3" in "{0} text runs" is a wrong match, so try the next pattern
+    if (out.includes('|') && [...out.matchAll(COUNTED)].some((c) => !/^\s*[\d\s,.]+\s*$/.test(vals.get(Number(c[1])) ?? ''))) continue;
     return counted(out, (n) => vals.get(n) ?? '').replace(HOLE, (_s, n: string) => {
       const v = vals.get(Number(n)) ?? '';
       const core = v.trim();  // a value often carries its own leading space (" (pages 2, 5)"); keep it around the translation
-      const tr = core ? plain(core) ?? fromPattern(core, depth + 1) ?? lowered(core) : undefined;
+      // a value holding a list ("3 text runs, 1 picture") is split before patterns are tried, or "{0} pictures" would take the whole list as its count
+      const tr = core ? plain(core) ?? joined(core, depth + 1) ?? fromPattern(core, depth + 1) ?? lowered(core) : undefined;
       return tr === undefined ? v : v.replace(core, tr);
     });
   }
@@ -125,7 +162,7 @@ function fromPattern(text: string, depth = 0): string | undefined {
 
 export function t(english: string): string {
   if (current === 'en') return english;
-  return plain(english) ?? fromPattern(english) ?? english;
+  return plain(english) ?? fromPattern(english) ?? joined(english) ?? english;
 }
 
 /** A message built from a template key with {0}, {1}... holes: the template and every value are translated on their own, so a message that wraps another one (an action name and the engine's error) reads whole in the interface language. */

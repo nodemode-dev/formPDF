@@ -47,7 +47,8 @@ async function recognise(host: ToolHost): Promise<void> {
       const res = await pdfApi.act<Result>(id, 'ocr', body);
       await host.ctx.commit(res, 'Recognise text');
       const n = res.recognised ?? 0;
-      const parts = [`${n} page${n === 1 ? '' : 's'} made searchable`, `${res.words ?? 0} words`];
+      const w = res.words ?? 0;  // whole phrases with only the count as a value, so each part translates on its own
+      const parts = [n === 1 ? `${n} page made searchable` : `${n} pages made searchable`, w === 1 ? `${w} word` : `${w} words`];
       if (res.straightened) parts.push(`${res.straightened} straightened`);
       if (res.skipped) parts.push(`${res.skipped} skipped`);
       last = `${parts.join(', ')}.`;

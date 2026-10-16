@@ -468,8 +468,9 @@ class Workbench {
     await this.run('Writing the form fields', async () => {
       await this.flush();
       if (this.forms.dirty) return;
-      const parts = [made ? `${made} field${made === 1 ? '' : 's'} added` : '', renamed ? `${renamed} renamed` : '', gone ? `${gone} deleted` : ''].filter(Boolean);
-      toast(`${parts.join(', ') || 'Form updated'}. Fill & Sign can fill them now.`);
+      const parts = [made ? (made === 1 ? `${made} field added` : `${made} fields added`) : '', renamed ? `${renamed} renamed` : '', gone ? `${gone} deleted` : ''].filter(Boolean);
+      const list = parts.join(', ') || 'Form updated';  // a value of its own, so the sentence is a key and the parts translate inside it
+      toast(`${list}. Fill & Sign can fill them now.`);
     });
   }
 

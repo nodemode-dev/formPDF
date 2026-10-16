@@ -19,16 +19,15 @@ async function exportXfdf(host: ToolHost): Promise<void> {
 
 type Imported = Derived & { comments?: number; replies?: number; skipped?: number; duplicates?: number; statuses?: number; outside?: number };
 
-const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
-
+/** Each part is a whole phrase with only the number as a value, so the window can translate the parts one by one. */
 function said(res: Imported): string {
   const n = res.comments ?? 0, r = res.replies ?? 0, st = res.statuses ?? 0, dup = res.duplicates ?? 0, out = res.outside ?? 0;
   const left = Math.max(0, (res.skipped ?? 0) - dup);
-  const parts = [`Brought in ${plural(n, 'comment', 'comments')} and ${plural(r, 'reply', 'replies')}`];
-  if (st) parts.push(`updated the status of ${plural(st, 'comment', 'comments')}`);
-  if (dup) parts.push(`recognised ${plural(dup, 'comment', 'comments')} already here under another name`);
-  if (left) parts.push(`left out ${left} already here or unreadable`);
-  if (out) parts.push(`${out} on other pages were not imported`);
+  const parts = [n === 1 ? `${n} comment brought in` : `${n} comments brought in`, r === 1 ? `${r} reply brought in` : `${r} replies brought in`];
+  if (st) parts.push(st === 1 ? `${st} comment's status updated` : `${st} comments' status updated`);
+  if (dup) parts.push(dup === 1 ? `${dup} comment already here under another name` : `${dup} comments already here under another name`);
+  if (left) parts.push(`${left} left out as already here or unreadable`);
+  if (out) parts.push(out === 1 ? `${out} on another page not imported` : `${out} on other pages not imported`);
   return `${parts.join('; ')}.`;
 }
 
@@ -77,7 +76,7 @@ async function exportChanges(host: ToolHost): Promise<Record<string, unknown> | 
     await host.ctx.deliver(got.blob, `${stem(d.name)}-changes.json`);
     const n = body.changes.length;
     out = { changes: n, file: `${stem(d.name)}-changes.json` };
-    toast(n ? `Saved ${plural(n, 'change', 'changes')} for the layout app.` : 'There are no text changes or notes on text to export; the file lists none.');
+    toast(n ? (n === 1 ? `Saved ${n} change for the layout app.` : `Saved ${n} changes for the layout app.`) : 'There are no text changes or notes on text to export; the file lists none.');
   });
   return out;
 }
