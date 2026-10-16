@@ -376,3 +376,7 @@ A message joined from parts in code has no single English text to key, and chang
 ## 66. Carry comments in the Comment tab · _v0.39.0 (tools/xfdf.ts carriedSaid, carryFrom, pickCarry, tool-carry-comments; automation/command-meta.ts)
 
 Carrying lives beside the XFDF import in Share comments because it is an import whose source is another PDF. The reviewed file is opened into the library first, as Compare does, so the engine reads it by document id and never needs a path from the browser; an agent can give a path instead. The result is reported in parts with only counts as values, so it translates part by part like the other joined messages.
+
+## 67. veraPDF in the window · _v0.40.0 (tools/verapdf.ts veraInstalled, runVera, showVera; tools/access.ts PDF/UA section, claimUa, veraUa; tools/print.ts Outside check; styles/tools.css fs-vera-note)
+
+The same report shows in two places, the Accessibility tab for PDF/UA and the Print tab for PDF/A, so one module asks the engine once per session whether veraPDF is there and fills a note and a list in either. When it is missing the buttons are disabled and the note says how to install it, rather than hiding the section, so the panel keeps its height. The verdict sentence is built in the window from the report's fields instead of shown as the engine wrote it, so it is a pattern every language can translate; veraPDF's own rule descriptions stay in English, like the ISO clause texts in the PDF/A list. The note has a fixed height because the verdict changes length with the profile name.
