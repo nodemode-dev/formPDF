@@ -1,4 +1,5 @@
 import { el, escapeHtml, patchList, q, setClass, setDisabled, setHidden, setText, setValue } from '../ui/dom';
+import { tf } from '../ui/i18n';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 import { KIND_LABEL, uid, type Annotator, type Tool } from './annotate';
@@ -512,7 +513,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
   /** The words of an entry, or only how many characters there were when they are hidden or were not kept. */
   private redWords(e: RedactEntry & { chars?: number }): string {
     const n = e.chars ?? e.text.length;
-    return this.redHide || this.redLog?.kept ? (n ? `${n} character${n === 1 ? '' : 's'}` : '') : e.text;
+    return this.redHide || this.redLog?.kept ? (n ? tf('Characters removed: {0}', String(n)) : '') : e.text;
   }
 
   private redRow(n: HTMLElement, e: RedactEntry): void {

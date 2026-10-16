@@ -94,6 +94,23 @@ def _templates(src: str):
             i = src.find("\n", i)
             i = n if i < 0 else i
             continue
+        if src.startswith("/*", i):
+            i = src.find("*/", i + 2)
+            i = n if i < 0 else i + 2
+            continue
+        if c == "/" and src[:i].rstrip()[-1:] in tuple("(,=:[!&|?{};"):
+            # A regular expression literal: its quotes and backticks are not strings or templates.
+            j, cls = i + 1, False
+            while j < n and src[j] != "\n" and (cls or src[j] != "/"):
+                if src[j] == "\\":
+                    j += 1
+                elif src[j] == "[":
+                    cls = True
+                elif src[j] == "]":
+                    cls = False
+                j += 1
+            i = j + 1
+            continue
         if c != "`":
             i += 1
             continue
@@ -118,6 +135,8 @@ def _templates(src: str):
                 j += 1
         parts.append(buf)
         yield parts, exprs
+        for e in exprs:  # templates inside an expression (a section's body inside sec(...)) are text too
+            yield from _templates(e)
         i = j + 1
 
 
