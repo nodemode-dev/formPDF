@@ -6,6 +6,7 @@ import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 import type { Command } from '../ui/commands';
 import { t } from '../ui/i18n';
+import { runVera, showVera, veraInstalled, veraKnown, type VeraReport } from './verapdf';
 
 interface Box { x: number; y: number; w: number; h: number }
 interface Cell { page: number; x: number; y: number; w: number; h: number; rot: number; clip: Box; scale: number }
@@ -36,6 +37,8 @@ let pdfa: PdfaReport | null = null;
 let pdfaFor = '';
 let pf: PReport | null = null;
 let pfFor = '';
+let vera: VeraReport | null = null;
+let veraFor = '';
 
 function docId(): string { return hostRef?.doc()?.id ?? ''; }
 
@@ -205,6 +208,18 @@ function syncStd(): void {
   });
   setHidden(q(r, '[data-s="empty"]'), items.length > 0);
   setText(q(r, '[data-s="empty"]'), fresh && pdfa?.conforms ? 'No problems found.' : 'Run a check to list problems with their clause in ISO 19005.');
+  showVera(r, 'data-s', vera, !!vera && veraFor === id);
+  if (id && veraKnown() === null) void veraInstalled(id, syncStd);
+  if (!id) setDisabled(q<HTMLButtonElement>(r, '[data-s="vera"]'), true);
+}
+
+async function veraPdfa(): Promise<string> {
+  const host = hostRef, r = stdRoot;
+  if (!host || !r) return '';
+  const got = await runVera(host, val(r, 'level', 's'));
+  if (got) { vera = got.report; veraFor = got.id; }
+  syncStd();
+  return got?.report.text ?? '';
 }
 
 function fillIssue(n: HTMLElement, x: Issue): void {
@@ -521,6 +536,10 @@ registerTool({
 <div class="fs-prop-row"><span class="fs-prop-label">Level</span><div class="fs-prop-ctl"><select data-s="level" aria-label="PDF/A level"><option value="2b">PDF/A-2b (looks the same)</option><option value="2u" selected>PDF/A-2u (and text can be copied)</option><option value="3b">PDF/A-3b (keeps attached files)</option></select></div></div>
 <div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="check">${icon('find', 14)}Check</button><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-s="convert">Convert to PDF/A</button></div>
 <div class="fs-tool-listbox"><div class="fs-list fs-tool-list" data-s="list"></div><p class="fs-note fs-tool-empty" data-s="empty"></p></div>
+<div class="fs-pdfwb-subhead">Outside check</div>
+<p class="fs-note fs-vera-note" data-s="vnote"></p>
+<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="vera" disabled>${icon('find', 14)}Check with veraPDF</button></div>
+<div class="fs-tool-listbox fs-vera-listbox"><div class="fs-list fs-tool-list" data-s="vlist"></div><p class="fs-note fs-tool-empty" data-s="vempty"></p></div>
 <div class="fs-pdfwb-subhead">PDF/X for a press</div>
 <div class="fs-prop-row"><span class="fs-prop-label">Version</span><div class="fs-prop-ctl"><select data-s="xver" aria-label="PDF/X version"><option value="X-4" selected>PDF/X-4 (PDF 1.6, live transparency)</option><option value="X-6">PDF/X-6 (PDF 2.0)</option></select></div></div>
 <p class="fs-note" data-s="xnote">Check tells you whether the file already meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT, by formpdf's own checks.</p>
@@ -545,6 +564,7 @@ registerTool({
       else if (t.dataset.s === 'pdfx') void convertPdfx();
       else if (t.dataset.s === 'xcheck') void checkPdfx();
       else if (t.dataset.s === 'pdf20') void savePdf20();
+      else if (t.dataset.s === 'vera') void veraPdfa();
       else if (t.dataset.s === 'pdfvt') void makeVt().catch((err: Error) => toast(err.message, 'error'));
     });
     root.addEventListener('input', () => syncStd());
@@ -557,6 +577,7 @@ registerTool({
     { id: 'tool-pdfa', label: 'Convert to PDF/A', words: ['archive', 'pdf/a'], enabled: () => !!host.doc(), run: () => { host.setTab('print'); void convertPdfa(); } },
     { id: 'tool-pdfx-check', label: 'Check PDF/X…', words: ['pdf/x', 'pdf/x-4', 'pdf/x-6', 'pdf/vt', 'press check', 'conformance'], group: 'Print', when: 'Use before sending a file to a press, to see whether it meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT and what is missing.', params: { level: { type: 'string', enum: ['X-1a', 'X-3', 'X-4', 'X-6', 'VT'], description: 'the standard to check against; the one the file claims when left out' } }, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: (p) => { host.setTab('print'); return checkPdfx(typeof p?.level === 'string' ? p.level : ''); } },
     { id: 'tool-pdfvt', label: 'Make PDF/VT…', words: ['pdf/vt', 'variable data', 'records', 'mail merge', 'personalised print'], group: 'Print', when: 'Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark; divide each record into sections (a letter, then its invoice) with section_pages or sections: bookmarks.', params: { pages_per_record: { type: 'integer', min: 1, description: 'pages in every record' }, by: { type: 'string', enum: ['pages', 'bookmarks'], description: 'bookmarks: one record per top-level bookmark' }, section_pages: { type: 'array', description: 'pages in each section of every record, in order, such as [1, 2]; they add up to the record length' }, sections: { type: 'string', enum: ['bookmarks'], description: 'bookmarks: one section per bookmark directly under the record\'s bookmark' } }, mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: (p) => { host.setTab('print'); return makeVt(p); } },
+    { id: 'tool-verapdf', label: 'Validate with veraPDF…', words: ['verapdf', 'validate', 'pdf/a', 'pdf/ua', 'outside validator', 'conformance'], group: 'Print', when: 'Use to get the reference validator\'s verdict on PDF/A or PDF/UA after formpdf\'s own check or conversion; it needs veraPDF installed on the computer, and lists each failed rule with its clause.', params: { flavour: { type: 'string', enum: ['1a', '1b', '2a', '2b', '2u', '3a', '3b', '3u', 'ua1', 'ua2'], description: 'the standard to check against; the one the file claims when left out' } }, enabled: () => !!host.doc() && veraKnown() !== false, why: () => (host.doc() ? 'veraPDF is not installed' : 'Open a PDF first'), run: async (p) => { host.setTab('print'); const got = await runVera(host, typeof p?.flavour === 'string' ? p.flavour : ''); if (got) { vera = got.report; veraFor = got.id; syncStd(); } return got?.report.text ?? ''; } },
     { id: 'tool-pdf20', label: 'Save as PDF 2.0', words: ['pdf 2.0', 'iso 32000-2', 'newest pdf'], group: 'Print', mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: () => savePdf20() },
   ],
 });

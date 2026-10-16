@@ -6,6 +6,7 @@ import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 import { t } from '../ui/i18n';
 import { PageLayers, place } from './overlay';
+import { runVera, showVera, veraInstalled, veraKnown, type VeraReport } from './verapdf';
 
 type Status = 'passed' | 'failed' | 'manual' | 'skipped';
 interface Finding { page?: number | null; text: string; id?: string; box?: { x: number; y: number; w: number; h: number } | null }
@@ -530,6 +531,72 @@ registerTool({
   commands: (host) => [
     { id: 'tool-access-check', label: 'Check accessibility', words: ['accessibility checker', 'a11y'], enabled: () => !!host.doc(), run: () => { host.setTab('access'); void runCheck(); } },
     { id: 'tool-access-report', label: 'Save accessibility report', words: ['accessibility report'], enabled: () => !!host.doc(), run: () => void saveReport() },
+  ],
+});
+
+let uaRoot: HTMLElement | null = null;
+let uaVera: VeraReport | null = null;
+let uaVeraFor = '';
+
+function syncUa(): void {
+  const root = uaRoot, d = hostRef?.doc();
+  if (!root) return;
+  setDisabled(q<HTMLButtonElement>(root, '[data-u="claim"]'), !d);
+  showVera(root, 'data-u', uaVera, !!uaVera && uaVeraFor === d?.id);
+  if (d && veraKnown() === null) void veraInstalled(d.id, syncUa);
+  if (!d) setDisabled(q<HTMLButtonElement>(root, '[data-u="vera"]'), true);
+}
+
+async function claimUa(): Promise<string> {
+  const host = hostRef, d = host?.doc();
+  if (!host || !d) return '';
+  let said = '';
+  await host.ctx.run('Claiming PDF/UA-1', async () => {
+    try {
+      const id = await host.ctx.flush() ?? d.id;
+      const res = await pdfApi.act<Derived>(id, 'claim_ua', {});
+      await host.ctx.commit(res, 'Claim PDF/UA-1');
+      said = 'The file now says it meets PDF/UA-1.';
+      toast(said);
+    } catch (err) { said = (err as Error).message; toast(said, 'error'); }
+  });
+  syncUa();
+  return said;
+}
+
+async function veraUa(): Promise<string> {
+  const host = hostRef;
+  if (!host) return '';
+  const got = await runVera(host, 'ua1');
+  if (got) { uaVera = got.report; uaVeraFor = got.id; }
+  syncUa();
+  return got?.report.text ?? '';
+}
+
+registerTool({
+  id: 'access-ua',
+  tab: 'access',
+  title: 'PDF/UA',
+  words: ['pdf/ua', 'iso 14289', 'claim pdf/ua', 'verapdf', 'universal accessibility'],
+  section: () => `<p class="fs-note fs-tool-note">PDF/UA-1 (ISO 14289-1) is the accessibility standard. Claiming it marks the file as meeting it; formpdf only does so when its own check finds nothing failing.</p>
+<div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-u="claim" disabled>Claim PDF/UA-1</button><button class="fs-btn fs-btn-sm" type="button" data-u="vera" disabled>${icon('find', 14)}Check with veraPDF</button></div>
+<p class="fs-note fs-vera-note" data-u="vnote"></p>
+<div class="fs-tool-listbox fs-vera-listbox"><div class="fs-list fs-tool-list" data-u="vlist"></div><p class="fs-note fs-tool-empty" data-u="vempty"></p></div>`,
+  mount: (root, host) => {
+    hostRef = host;
+    uaRoot = root;
+    root.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-u]');
+      if (!b || b.disabled) return;
+      if (b.dataset.u === 'claim') void claimUa().then(() => runCheck());
+      else if (b.dataset.u === 'vera') void veraUa();
+    });
+    syncUa();
+  },
+  sync: (_root, host) => { hostRef = host; syncUa(); },
+  commands: (host) => [
+    { id: 'tool-access-claim-ua', label: 'Claim PDF/UA-1', words: ['pdf/ua', 'iso 14289', 'universal accessibility'], group: 'Accessibility', when: 'Use after the accessibility check passes, to mark the file as meeting PDF/UA-1; formpdf embeds the fonts and refuses while any rule of its own check still fails.', mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: async () => { host.setTab('access'); const said = await claimUa(); await runCheck(); return said; } },
+    { id: 'tool-access-verapdf', label: 'Check PDF/UA with veraPDF', words: ['verapdf', 'pdf/ua', 'outside validator'], group: 'Accessibility', when: 'Use to get the reference validator\'s PDF/UA-1 verdict; it needs veraPDF installed on the computer.', enabled: () => !!host.doc() && veraKnown() !== false, why: () => (host.doc() ? 'veraPDF is not installed' : 'Open a PDF first'), run: () => { host.setTab('access'); return veraUa(); } },
   ],
 });
 

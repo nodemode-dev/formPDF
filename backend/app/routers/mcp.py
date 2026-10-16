@@ -99,6 +99,9 @@ version: X-4 | X-6} converts for a press (X-6 is PDF 2.0); read pdfx_check {leve
 file claims} lists what stops the file meeting it, by formpdf's own checks; pdfvt {pages_per_record | by: bookmarks | starts: [first
 page of each record], names, section_pages: [pages in each section of a record] | sections: bookmarks, section_names} turns a
 PDF/X-4 file into PDF/VT-1 with one document part per record, divided into section parts when asked; pdf20 rewrites the file as PDF 2.0 with XMP metadata;
+read verapdf {flavour: 1a .. 3u | ua1 | ua2, default the one the file claims} runs veraPDF, the reference validator, when it is installed
+(read verapdf_status says whether it is) and lists each failed rule with its clause and pages; claim_ua marks a tagged file as PDF/UA-1,
+embedding its fonts, and is refused while read accessibility still finds a failed rule;
 read preflight {profile: print | office | screen, tac: ink limit in percent, default 300} checks fonts, picture resolution, colour, ink
 coverage, white set to overprint, artwork at the trim edge without bleed, transparency, hairlines, trim boxes and scripts, each with
 its pages and a fix where one exists; preflight_fix {fixes} applies them; read accessibility runs Acrobat's 32 rules plus a Tag correctness group (heading levels against their size, headings tagged as

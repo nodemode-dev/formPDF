@@ -136,6 +136,9 @@ body.fs-is-linking, body.fs-is-linking * { cursor: alias !important; }
 .fs-acc-count.is-ok b { color: var(--ok); }
 .fs-tool-listbox.fs-acc-listbox { height: 300px; }
 .fs-tool-listbox.fs-acc-orderbox { height: 220px; }
+/* veraPDF: the verdict sentence changes length, so its note keeps room for four lines and clips past them */
+.fs-vera-note { height: calc(4 * 1.45em); overflow: hidden; line-height: 1.45; }
+.fs-tool-listbox.fs-vera-listbox { height: 150px; }
 .fs-acc-ico.is-ok { color: var(--ok); }
 .fs-acc-ico.is-warn { color: var(--warn); }
 .fs-acc-ico.is-bad { color: var(--danger); }
