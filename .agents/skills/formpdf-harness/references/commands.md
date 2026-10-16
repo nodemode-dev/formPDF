@@ -1,17 +1,17 @@
 # formpdf window commands
 
-Generated from the window's command catalogue (136 commands) by `./formpdf agents sync`; do not edit by hand. The live list is the MCP tool `list_commands` (and `describe_command` for one); run one with `run_command`, or from a shell with `./formpdf cli run <id> key=value`. Changes (marked below) go through the person's consent like every other change.
+Generated from the window's command catalogue (139 commands) by `./formpdf agents sync`; do not edit by hand. The live list is the MCP tool `list_commands` (and `describe_command` for one); run one with `run_command`, or from a shell with `./formpdf cli run <id> key=value`. Changes (marked below) go through the person's consent like every other change.
 
 ## Contents
 
-- Accessibility: 1
+- Accessibility: 3
 - Comment: 3
 - Edit: 12
 - File: 8
 - Forms: 8
 - Help: 4
 - Home: 13
-- Print: 5
+- Print: 6
 - Tabs: 12
 - Tools: 36
 - View: 14
@@ -22,6 +22,8 @@ Generated from the window's command catalogue (136 commands) by `./formpdf agent
 | Id | Name | Does | Use when |
 | --- | --- | --- | --- |
 | `tool-access-alt-draft` | Draft alternate text with AI | Drafts alternate text for figures with the AI provider, for the person to review and save. | Use to get draft alternate text for figures from the person's AI provider; the drafts wait in Accessibility > Alternate text for the person to review and save. |
+| `tool-access-claim-ua` | Claim PDF/UA-1 | Marks the PDF as meeting PDF/UA-1 after embedding its fonts; refused while the accessibility check still fails. Changes the PDF. | Use after the accessibility check passes, to mark the file as meeting PDF/UA-1; formpdf embeds the fonts and refuses while any rule of its own check still fails. |
+| `tool-access-verapdf` | Check PDF/UA with veraPDF | Validates the PDF against PDF/UA-1 with veraPDF, when it is installed. | Use to get the reference validator's PDF/UA-1 verdict; it needs veraPDF installed on the computer. |
 
 ### tool-access-alt-draft parameters
 
@@ -134,6 +136,7 @@ Generated from the window's command catalogue (136 commands) by `./formpdf agent
 | `tool-pdf20` | Save as PDF 2.0 | Rewrites the PDF as PDF 2.0 with its information in XMP metadata. Changes the PDF. | Use when a workflow asks for PDF 2.0. |
 | `tool-pdfvt` | Make PDF/VT… | Turns a PDF/X-4 file into PDF/VT with one document part per record, optionally divided into sections. Changes the PDF. | Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark; divide each record into sections (a letter, then its invoice) with section_pages or sections: bookmarks. |
 | `tool-pdfx-check` | Check PDF/X… | Checks the PDF against PDF/X-1a, X-3, X-4, X-6 or PDF/VT by formpdf's own checks. | Use before sending a file to a press, to see whether it meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT and what is missing. |
+| `tool-verapdf` | Validate with veraPDF… | Validates the PDF against PDF/A or PDF/UA with veraPDF, the reference validator, when it is installed. | Use to get the reference validator's verdict on PDF/A or PDF/UA after formpdf's own check or conversion; it needs veraPDF installed on the computer, and lists each failed rule with its clause. |
 
 ### tool-add-bleed parameters
 
@@ -154,6 +157,10 @@ Generated from the window's command catalogue (136 commands) by `./formpdf agent
 ### tool-pdfx-check parameters
 
 - `level`: string (X-1a | X-3 | X-4 | X-6 | VT); the standard to check against; the one the file claims when left out
+
+### tool-verapdf parameters
+
+- `flavour`: string (1a | 1b | 2a | 2b | 2u | 3a | 3b | 3u | ua1 | ua2); the standard to check against; the one the file claims when left out
 
 ## Tabs
 
