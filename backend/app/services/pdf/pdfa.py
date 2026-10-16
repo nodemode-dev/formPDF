@@ -310,7 +310,226 @@ def _pdfd(dt: datetime.datetime) -> str:
     return dt.strftime("D:%Y%m%d%H%M%S") + f"{sign}{abs(mins) // 60:02d}'{abs(mins) % 60:02d}'"
 
 
-def _xmp(meta: dict, part: int | None, conf: str | None, pdfx: str | None = None) -> bytes:
+def _spaces(doc):
+    """(page, holder, key) for every colour space a file names in a resource dictionary, a shading, a shading pattern
+    or a picture, so that the space can be read or replaced where it is held."""
+    for kind, pi, obj in walk(doc):
+        if kind == "res":
+            table = _o(obj.get("/ColorSpace"))
+            if isinstance(table, DictionaryObject):
+                for name in list(table.keys()):
+                    yield pi, table, name
+            shades = [_o(sh) for _n, sh in (_o(obj.get("/Shading")) or {}).items()]
+            shades += [_o(_o(p).get("/Shading")) for _n, p in (_o(obj.get("/Pattern")) or {}).items() if isinstance(_o(p), DictionaryObject)]
+            for sh in shades:
+                if isinstance(sh, DictionaryObject) and sh.get("/ColorSpace") is not None:
+                    yield pi, sh, "/ColorSpace"
+        elif kind == "xobject" and obj.get("/ColorSpace") is not None:
+            yield pi, obj, "/ColorSpace"
+
+
+def _cmyk_alternate(cs) -> bool:
+    """A Separation or DeviceN space whose alternate, what a viewer draws it with, is DeviceCMYK."""
+    cs = _o(cs)
+    return (isinstance(cs, ArrayObject) and len(cs) >= 4 and str(_o(cs[0])) in ("/Separation", "/DeviceN")
+            and str(_o(cs[2])) == "/DeviceCMYK")
+
+
+_PS_CMYK_RGB = ("4 1 roll 1 exch sub 3 index 1 exch sub mul 3 1 roll 1 exch sub 3 index 1 exch sub mul 3 1 roll "
+                "1 exch sub 3 index 1 exch sub mul 4 -1 roll pop 3 1 roll")  # c m y k to (1-c)(1-k) (1-m)(1-k) (1-y)(1-k)
+
+
+def _rgb_fn(w: PdfWriter, fn):
+    """A tint transform with the same inputs that gives RGB where the original gave CMYK, by the same rule fills are
+    converted with; None for a kind it cannot rewrite."""
+    f = _o(fn)
+    if not isinstance(f, DictionaryObject):
+        return None
+    kind = int(_o(f.get("/FunctionType", -1)))
+    rng3 = ArrayObject(FloatObject(v) for v in [0, 1] * 3)
+    if kind == 2:
+        c0 = [float(_o(v)) for v in _o(f.get("/C0")) or [0, 0, 0, 0]]
+        c1 = [float(_o(v)) for v in _o(f.get("/C1")) or [1, 1, 1, 1]]
+        if len(c0) != 4 or len(c1) != 4:
+            return None
+        new = DictionaryObject({k: v for k, v in f.items()})
+        new[NameObject("/C0")] = ArrayObject(FloatObject(round(x, 4)) for x in colour.to_rgb("cmyk", c0))
+        new[NameObject("/C1")] = ArrayObject(FloatObject(round(x, 4)) for x in colour.to_rgb("cmyk", c1))
+        if "/Range" in new:
+            new[NameObject("/Range")] = rng3
+        return new
+    if kind == 3:
+        parts = [_rgb_fn(w, g) for g in _o(f.get("/Functions")) or []]
+        if not parts or any(p is None for p in parts):
+            return None
+        new = DictionaryObject({k: v for k, v in f.items()})
+        new[NameObject("/Functions")] = ArrayObject(parts)
+        if "/Range" in new:
+            new[NameObject("/Range")] = rng3
+        return new
+    if kind == 4 and isinstance(f, StreamObject):
+        code = f.get_data().decode("latin-1").strip()
+        if not (code.startswith("{") and code.endswith("}")):
+            return None
+        new = DecodedStreamObject()
+        for k, v in f.items():
+            if k not in ("/Filter", "/DecodeParms", "/Length"):
+                new[NameObject(k)] = v
+        new[NameObject("/Range")] = rng3
+        new.set_data((code[:-1] + " " + _PS_CMYK_RGB + " }").encode("latin-1"))
+        return w._add_object(new)
+    if kind == 0 and isinstance(f, StreamObject):
+        bps = int(_o(f.get("/BitsPerSample", 8)))
+        if bps not in (8, 16):
+            return None
+        size = [int(_o(v)) for v in _o(f.get("/Size")) or []]
+        count = 1
+        for s in size:
+            count *= s
+        rng = [float(_o(v)) for v in _o(f.get("/Range")) or [0, 1] * 4]
+        dec = [float(_o(v)) for v in _o(f.get("/Decode")) or rng]
+        data = f.get_data()
+        step, top = bps // 8, (1 << bps) - 1
+        if len(data) < count * 4 * step or len(dec) != 8:
+            return None
+        out = bytearray()
+        for i in range(count):
+            vals = []
+            for j in range(4):
+                o = (i * 4 + j) * step
+                raw = data[o] if step == 1 else (data[o] << 8 | data[o + 1])
+                vals.append(dec[2 * j] + raw * (dec[2 * j + 1] - dec[2 * j]) / top)
+            for v in colour.to_rgb("cmyk", vals):
+                q = max(0, min(top, round(v * top)))
+                out += bytes([q]) if step == 1 else bytes([q >> 8, q & 255])
+        new = DecodedStreamObject()
+        for k, v in f.items():
+            if k not in ("/Filter", "/DecodeParms", "/Length", "/Decode"):
+                new[NameObject(k)] = v
+        new[NameObject("/Range")] = rng3
+        new.set_data(bytes(out))
+        return w._add_object(new)
+    return None
+
+
+PROCESS_NAMES = ("/Cyan", "/Magenta", "/Yellow", "/Black", "/None", "/All")
+
+
+def _missing_colorants(cs) -> list[int]:
+    """The spot inks of a DeviceN space that its attributes do not describe (PDF/A-2 6.2.4.4 needs a Colorants entry)."""
+    cs = _o(cs)
+    if not (isinstance(cs, ArrayObject) and len(cs) >= 4 and str(_o(cs[0])) == "/DeviceN"):
+        return []
+    attrs = _o(cs[4]) if len(cs) > 4 else None
+    have = _o(attrs.get("/Colorants")) if isinstance(attrs, DictionaryObject) else None
+    names = [str(_o(n)) for n in _o(cs[1]) or []]
+    return [i for i, n in enumerate(names) if n not in PROCESS_NAMES and not (isinstance(have, DictionaryObject) and n in have)]
+
+
+def _one_input(w: PdfWriter, fn, n: int, i: int):
+    """The DeviceN tint transform as a function of input i alone, the others at 0, as a Separation needs; None when it
+    cannot be built."""
+    f = _o(fn)
+    kind = int(_o(f.get("/FunctionType", -1))) if isinstance(f, DictionaryObject) else -1
+    if kind == 4 and isinstance(f, StreamObject):
+        code = f.get_data().decode("latin-1").strip()
+        if not (code.startswith("{") and code.endswith("}")):
+            return None
+        pre = " ".join(["0"] * i) + (f" {i + 1} -1 roll" if i else "") + " " + " ".join(["0"] * (n - 1 - i))
+        new = DecodedStreamObject()
+        for k, v in f.items():
+            if k not in ("/Filter", "/DecodeParms", "/Length", "/Domain"):
+                new[NameObject(k)] = v
+        new[NameObject("/Domain")] = ArrayObject([FloatObject(0), FloatObject(1)])
+        new.set_data(("{ " + pre.strip() + " " + code[1:]).encode("latin-1"))
+        return w._add_object(new)
+    if kind == 0 and isinstance(f, StreamObject):
+        bps = int(_o(f.get("/BitsPerSample", 8)))
+        size = [int(_o(v)) for v in _o(f.get("/Size")) or []]
+        outs = len(_o(f.get("/Range")) or []) // 2
+        if bps not in (8, 16) or len(size) != n or not outs:
+            return None
+        step = bps // 8
+        data = f.get_data()
+        stride = 1
+        for s in size[:i]:
+            stride *= s
+        out = bytearray()
+        for j in range(size[i]):
+            o = j * stride * outs * step
+            out += data[o:o + outs * step]
+        new = DecodedStreamObject()
+        for k, v in f.items():
+            if k not in ("/Filter", "/DecodeParms", "/Length", "/Domain", "/Size", "/Encode"):
+                new[NameObject(k)] = v
+        new[NameObject("/Domain")] = ArrayObject([FloatObject(0), FloatObject(1)])
+        new[NameObject("/Size")] = ArrayObject([NumberObject(size[i])])
+        new.set_data(bytes(out))
+        return w._add_object(new)
+    return None
+
+
+def add_colorants(w: PdfWriter) -> int:
+    """A Colorants entry for each spot ink of a DeviceN space that lacks one: a Separation of that ink alone."""
+    n = 0
+    seen: set[int] = set()
+    places = list(_spaces(w))
+    # one Separation per ink name for the whole file (PDF/A-2 6.2.4.4): the file's own first, else the first one built
+    by_name: dict[str, ArrayObject] = {}
+    for _pi, holder, key in places:
+        cs = _o(holder[key])
+        if isinstance(cs, ArrayObject) and len(cs) >= 4 and str(_o(cs[0])) == "/Separation":
+            by_name.setdefault(str(_o(cs[1])), cs)
+    for _pi, holder, key in places:
+        cs = _o(holder[key])
+        missing = _missing_colorants(cs)
+        if not missing or id(cs) in seen:
+            continue
+        seen.add(id(cs))
+        names = list(_o(cs[1]))
+        attrs = _o(cs[4]) if len(cs) > 4 and isinstance(_o(cs[4]), DictionaryObject) else DictionaryObject()
+        cols = _o(attrs.get("/Colorants")) if isinstance(_o(attrs.get("/Colorants")), DictionaryObject) else DictionaryObject()
+        for i in missing:
+            name = str(_o(names[i]))
+            if name not in by_name:
+                fn = _one_input(w, cs[3], len(names), i)
+                if fn is None:
+                    break
+                by_name[name] = ArrayObject([NameObject("/Separation"), names[i], cs[2], fn])
+            cols[NameObject(name)] = by_name[name]
+        else:
+            attrs[NameObject("/Colorants")] = cols
+            new = ArrayObject(list(cs[:4]) + [attrs])
+            holder[NameObject(key)] = new
+            n += 1
+    return n
+
+
+def alternates_to_rgb(w: PdfWriter) -> int:
+    """Spot colours that fall back to CMYK fall back to RGB instead, for a file whose output intent is RGB."""
+    made: dict[int, object] = {}
+    n = 0
+    places = list(_spaces(w))
+    for _pi, holder, key in list(places):  # the Separations a DeviceN space describes its inks with fall back too
+        cs = _o(holder[key])
+        attrs = _o(cs[4]) if isinstance(cs, ArrayObject) and len(cs) > 4 else None
+        cols = _o(attrs.get("/Colorants")) if isinstance(attrs, DictionaryObject) else None
+        if isinstance(cols, DictionaryObject):
+            places += [(_pi, cols, name) for name in list(cols.keys())]
+    for _pi, holder, key in places:
+        cs = _o(holder[key])
+        if not _cmyk_alternate(cs):
+            continue
+        if id(cs) not in made:
+            fn = _rgb_fn(w, cs[3])
+            made[id(cs)] = None if fn is None else ArrayObject([cs[0], cs[1], NameObject("/DeviceRGB"), fn] + list(cs[4:]))
+        if made[id(cs)] is not None:
+            holder[NameObject(key)] = made[id(cs)]
+            n += 1
+    return n
+
+
+def _xmp(meta: dict, part: int | None, conf: str | None, pdfx: str | None = None, ua: int | None = None) -> bytes:
     e = html.escape
     rows = []
     if meta.get("title"):
@@ -330,6 +549,8 @@ def _xmp(meta: dict, part: int | None, conf: str | None, pdfx: str | None = None
         rows.append(f"<pdfaid:part>{part}</pdfaid:part><pdfaid:conformance>{conf}</pdfaid:conformance>")
     if pdfx:
         rows.append(f"<pdfxid:GTS_PDFXVersion>{pdfx}</pdfxid:GTS_PDFXVersion>")
+    if ua:
+        rows.append(f'<pdfuaid:part xmlns:pdfuaid="http://www.aiim.org/pdfua/ns/id/">{ua}</pdfuaid:part>')
     rows.append(f"<xmpMM:DocumentID>uuid:{meta['doc']}</xmpMM:DocumentID><xmpMM:InstanceID>uuid:{uuid.uuid4()}</xmpMM:InstanceID>")
     body = ("<?xpacket begin=\"﻿\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n"
             "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n<rdf:Description rdf:about=\"\" "
@@ -337,6 +558,37 @@ def _xmp(meta: dict, part: int | None, conf: str | None, pdfx: str | None = None
             "xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\" xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\" xmlns:pdfxid=\"http://www.npes.org/pdfx/ns/id/\">\n"
             + "\n".join(rows) + "\n</rdf:Description>\n</rdf:RDF>\n</x:xmpmeta>\n" + (" " * 100 + "\n") * 20 + "<?xpacket end=\"w\"?>")
     return body.encode("utf-8")
+
+
+# PDF/A allows only the XMP schemas it lists, plus ones the file describes (ISO 19005-2 6.6.2.3). pdfuaid is not listed,
+# so a file that claims both PDF/A and PDF/UA carries this description of it, as ISO 14289-1 and the PDF Association advise.
+UA_EXTENSION = (
+    '<rdf:Description rdf:about="" xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/" '
+    'xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#" xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">'
+    "<pdfaExtension:schemas><rdf:Bag>" + "{li}" + "</rdf:Bag></pdfaExtension:schemas></rdf:Description>")
+UA_SCHEMA = (
+    '<rdf:li rdf:parseType="Resource"><pdfaSchema:schema>PDF/UA Universal Accessibility Schema</pdfaSchema:schema>'
+    "<pdfaSchema:namespaceURI>http://www.aiim.org/pdfua/ns/id/</pdfaSchema:namespaceURI><pdfaSchema:prefix>pdfuaid</pdfaSchema:prefix>"
+    '<pdfaSchema:property><rdf:Seq><rdf:li rdf:parseType="Resource"><pdfaProperty:name>part</pdfaProperty:name>'
+    "<pdfaProperty:valueType>Integer</pdfaProperty:valueType><pdfaProperty:category>internal</pdfaProperty:category>"
+    "<pdfaProperty:description>Indicates, which part of ISO 14289 standard is followed</pdfaProperty:description>"
+    "</rdf:li></rdf:Seq></pdfaSchema:property></rdf:li>")
+
+
+def claims_ua(text: str) -> bool:
+    return bool(re.search(r"pdfuaid:part(?:[^>]*>|=\")\s*1", text or ""))
+
+
+def ua_extension(text: str) -> str:
+    """Adds the pdfuaid schema description to XMP that claims PDF/A and PDF/UA, when it is not described yet."""
+    if not claims_ua(text) or not re.search(r"pdfaid:part", text) or re.search(r"<pdfaSchema:prefix>\s*pdfuaid\s*<", text):
+        return text
+    bag = re.search(r"<pdfaExtension:schemas>\s*<rdf:Bag>", text)
+    if bag:
+        return text[:bag.end()] + UA_SCHEMA + text[bag.end():]
+    if "</rdf:RDF>" not in text:
+        return text
+    return text.replace("</rdf:RDF>", UA_EXTENSION.replace("{li}", UA_SCHEMA) + "\n</rdf:RDF>", 1)
 
 
 def _xmp_part(root) -> tuple[str, str, str]:
@@ -413,6 +665,14 @@ def check_doc(doc, level: str, raw: bytes | None = None, encrypted: bool = False
     if intent_n == 3 and "cmyk" in used:
         for p in where.get("cmyk", []):
             iss.add("cmyk", "6.2.4.3", "CMYK colour is used with an RGB output intent", p - 1)
+    if intent_n == 3:
+        for pi, holder, key in _spaces(doc):
+            if _cmyk_alternate(holder[key]):
+                iss.add("cmyk_alternate", "6.2.4.3", "A spot colour falls back to CMYK with an RGB output intent", pi)
+    if part >= 2:
+        for pi, holder, key in _spaces(doc):
+            if _missing_colorants(holder[key]):
+                iss.add("colorants", "6.2.4.4", "A set of spot colours (DeviceN) does not describe each of its inks", pi)
     if intent_n == 4 and "rgb" in used:
         for p in where.get("rgb", []):
             iss.add("rgb", "6.2.4.3", "RGB colour is used with a CMYK output intent", p - 1)
@@ -593,10 +853,15 @@ def _meta(w: PdfWriter, src_info) -> dict:
 
 def _set_meta(w: PdfWriter, meta: dict, part, conf, pdfx: str | None = None, extra: dict | None = None) -> None:
     root = w._root_object
+    old = _o(root.get("/Metadata"))
+    try:
+        ua = 1 if isinstance(old, StreamObject) and claims_ua(old.get_data().decode("utf-8", "replace")) else None
+    except Exception:
+        ua = None  # a claim of PDF/UA survives conversion; the new metadata says it again
     xmp = DecodedStreamObject()
     xmp[NameObject("/Type")] = NameObject("/Metadata")
     xmp[NameObject("/Subtype")] = NameObject("/XML")
-    xmp.set_data(_xmp(meta, part, conf, pdfx))
+    xmp.set_data(ua_extension(_xmp(meta, part, conf, pdfx, ua).decode("utf-8")).encode("utf-8"))
     root[NameObject("/Metadata")] = w._add_object(xmp)
     new = DictionaryObject()
     for key, k in (("/Title", "title"), ("/Author", "author"), ("/Subject", "subject"), ("/Keywords", "keywords"), ("/Creator", "creator"),
@@ -752,6 +1017,12 @@ def convert(src, out, *, args: dict | None = None, pages=None, passwords: list[s
     if "cmyk" in used:
         got = colour.convert(w, "rgb")
         done["colours converted to RGB"] = got["colours"] + got["images"]
+    cols = add_colorants(w)  # before the RGB rewrite, which the new Separations then take part in
+    if cols:
+        done["spot colour sets described"] = cols
+    alts = alternates_to_rgb(w)  # the output intent is sRGB, so no colour may fall back to device CMYK either
+    if alts:
+        done["spot colours given an RGB alternate"] = alts
     fix_common(w, part, conf, done, keep_files=part == 3)
     if part == 3:
         names = _o(w._root_object.get("/Names"))
