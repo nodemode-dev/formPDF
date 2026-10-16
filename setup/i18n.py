@@ -6,6 +6,7 @@
 English is the key; each language's table is frontend/src/ui/i18n/<code>.ts. es-MX and fr-CA hold only what
 differs from es and fr, so they are checked for broken placeholders but not for missing keys.
 """
+import ast
 import glob
 import html
 import json
@@ -71,6 +72,7 @@ def keys() -> list[str]:
             for m in RULE.finditer(f.read_text(encoding="utf-8")):
                 found.add(m.group(1) or m.group(2))
     found |= set(patterns())
+    found |= set(engine())
     return sorted(found)
 
 
@@ -150,7 +152,7 @@ def patterns(hints: dict | None = None) -> list[str]:
                         out += ch
                 s = out.strip()
                 words = re.sub(r"\{\d+\}", " ", s)
-                if (len(re.findall(r"[A-Za-z]{2,}", words)) < 2 or re.search(r"[\n;=]|=>|\bfs-|\$|\\|[{}](?!\d)|(?<!\d)}", re.sub(r"\{\d+\}", "", s))
+                if (len(re.findall(r"[A-Za-z]{2,}", words)) < 2 or re.search(r"[\n=]|^;|;\s*$|=>|\bfs-|\$|\\|[{}](?!\d)|(?<!\d)}", re.sub(r"\{\d+\}", "", s))
                         or not re.match(r"[A-Z\"(]|\{\d+\}\s?[A-Za-z]", s) or len(s) > 400 or re.fullmatch(r"[\w./:-]*\{\d+\}[\w./:-]*", s)):
                     continue
                 found.add(s)
@@ -166,6 +168,54 @@ def table(code: str) -> dict[str, str]:
     body = f.read_text(encoding="utf-8")
     start, end = body.find("{"), body.rfind("}")
     return json.loads(body[start:end + 1])
+
+
+EXC = {"ValueError", "PermissionError", "FileNotFoundError", "RuntimeError", "LookupError", "HTTPException", "KeyError", "TypeError"}
+
+
+def _py_texts(node):
+    """The strings an expression can produce, with each formatted value as {0}, {1}... (and the code that fills it)."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        yield node.value, []
+    elif isinstance(node, ast.JoinedStr):
+        out, code = "", []
+        for v in node.values:
+            if isinstance(v, ast.Constant):
+                out += str(v.value)
+            else:
+                out += "{%d}" % len(code)
+                code.append(ast.unparse(v.value))
+        yield out, code
+    elif isinstance(node, ast.IfExp):
+        yield from _py_texts(node.body)
+        yield from _py_texts(node.orelse)
+    elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left, right = list(_py_texts(node.left)), list(_py_texts(node.right))
+        if len(left) == 1 and len(right) == 1:
+            (a, ca), (b, cb) = left[0], right[0]
+            yield a + re.sub(r"\{(\d+)\}", lambda m: "{%d}" % (int(m.group(1)) + len(ca)), b), ca + cb
+
+
+def engine(hints: dict | None = None) -> list[str]:
+    """Messages the engine sends the window: errors it raises and the sentences preflight reports, as keys or patterns."""
+    found: set[str] = set()
+    for f in sorted(glob.glob(str(ROOT / "backend" / "app" / "**" / "*.py"), recursive=True)):
+        for n in ast.walk(ast.parse(Path(f).read_text(encoding="utf-8"))):
+            args = []
+            if isinstance(n, ast.Raise) and isinstance(n.exc, ast.Call) and getattr(n.exc.func, "id", getattr(n.exc.func, "attr", "")) in EXC:
+                args = n.exc.args[:1] + [k.value for k in n.exc.keywords if k.arg == "detail"]
+            elif isinstance(n, ast.Call) and getattr(n.func, "id", "") == "_check" and len(n.args) >= 4:
+                args = [n.args[3]]
+            for a in args:
+                for s, code in _py_texts(a):
+                    s = s.strip()
+                    bare = re.sub(r"\{\d+\}", "", s)
+                    if len(re.findall(r"[A-Za-z]{2,}", bare)) < 2 or not re.match(r"[A-Z{(\"]", s) or re.search(r"[{}=\[\]]|\b[a-z]+_[a-z_]+\b|\\n|\n", bare):
+                        continue
+                    found.add(s)
+                    if hints is not None:
+                        hints[s] = code
+    return sorted(found)
 
 
 def holes(s: str) -> list[str]:
