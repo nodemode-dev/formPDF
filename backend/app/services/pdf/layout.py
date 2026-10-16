@@ -5,6 +5,17 @@ from statistics import median
 BULLET = re.compile(r"^([•●▪◦–\N{EM DASH}\-\*·]|\(cid:\d+\)|\(?\d{1,3}[.)]|\(?[a-zA-Z][.)])\s")
 MAX_DEPTH = 24
 CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\ud800-\udfff￾￿]")
+RTL = "֐-ࣿיִ-﷿ﹰ-﻿"  # Hebrew, Arabic, Syriac, Thaana, NKo and their presentation forms
+RTL_RE = re.compile(f"[{RTL}]")
+_RTL_RUNS = re.compile(f"[{RTL}]+|[^{RTL}]+")
+
+
+def logical(text: str) -> str:
+    """A word read off the page in visual order (left to right, as pdfplumber gives it) put back in logical order: its
+    right-to-left runs come first and read backwards, while digits and Latin inside it keep their own direction."""
+    if not RTL_RE.search(text):
+        return text
+    return "".join(r[::-1] if RTL_RE.match(r) else r for r in reversed(_RTL_RUNS.findall(text)))
 
 
 def _clean_font(name: str) -> str:
@@ -103,7 +114,7 @@ def _bands(items: list[dict]) -> list[list[dict]]:
     return [b for b in bands if b]
 
 
-def _split_cols(items: list[dict], cuts: list[tuple[float, float]]) -> list[list[dict]]:
+def _split_cols(items: list[dict], cuts: list[tuple[float, float]], rtl: bool = False) -> list[list[dict]]:
     edges = [float("-inf")] + [(a + b) / 2 for a, b in cuts] + [float("inf")]
     cols = [[] for _ in range(len(edges) - 1)]
     for w in items:
@@ -112,7 +123,8 @@ def _split_cols(items: list[dict], cuts: list[tuple[float, float]]) -> list[list
             if edges[k] <= mid < edges[k + 1]:
                 cols[k].append(w)
                 break
-    return [c for c in cols if c]
+    cols = [c for c in cols if c]
+    return cols[::-1] if rtl else cols  # a right-to-left page reads its rightmost column first
 
 
 def _overlaps(a: list[tuple[float, float]], b: list[tuple[float, float]]) -> list[tuple[float, float]]:
@@ -125,14 +137,14 @@ def _overlaps(a: list[tuple[float, float]], b: list[tuple[float, float]]) -> lis
     return out
 
 
-def xycut(items: list[dict], depth: int = 0) -> list[list[dict]]:
+def xycut(items: list[dict], depth: int = 0, rtl: bool = False) -> list[list[dict]]:
     if len(items) <= 1 or depth > MAX_DEPTH:
         return [items]
     cuts = _vcuts(items)
     if cuts:
         out = []
-        for col in _split_cols(items, cuts):
-            out += xycut(col, depth + 1)
+        for col in _split_cols(items, cuts, rtl):
+            out += xycut(col, depth + 1, rtl)
         return out
     bands = _bands(items)
     if len(bands) == 1:
@@ -148,18 +160,18 @@ def xycut(items: list[dict], depth: int = 0) -> list[list[dict]]:
         groups.append((band, g))
     if len(groups) == 1:
         band, g = groups[0]
-        return [part for col in _split_cols(band, g) for part in xycut(col, depth + 1)] if g else [band]
+        return [part for col in _split_cols(band, g, rtl) for part in xycut(col, depth + 1, rtl)] if g else [band]
     out = []
     for band, g in groups:
         if g:
-            for col in _split_cols(band, g):
-                out += xycut(col, depth + 1)
+            for col in _split_cols(band, g, rtl):
+                out += xycut(col, depth + 1, rtl)
         else:
-            out += xycut(band, depth + 1)
+            out += xycut(band, depth + 1, rtl)
     return out
 
 
-def _lines(words: list[dict]) -> list[list[dict]]:
+def _lines(words: list[dict], rtl: bool = False) -> list[list[dict]]:
     lines: list[list[dict]] = []
     for w in sorted(words, key=lambda w: (w["top"], w["x0"])):
         h = max(1.0, w["bottom"] - w["top"])
@@ -173,7 +185,7 @@ def _lines(words: list[dict]) -> list[list[dict]]:
         else:
             lines.append([w])
     for line in lines:
-        line.sort(key=lambda w: w["x0"])
+        line.sort(key=lambda w: w["x0"], reverse=rtl)  # words of a right-to-left line read from the right
     lines.sort(key=lambda ln: (min(w["top"] for w in ln), min(w["x0"] for w in ln)))
     return lines
 
@@ -227,7 +239,7 @@ def _runs(lines: list[dict]) -> list[dict]:
                 prev = runs[-1]["text"]
                 if wi == 0 and prev.endswith("-") and len(prev) > 1 and prev[-2].isalpha() and text[:1].islower():
                     runs[-1]["text"] = prev[:-1]
-                elif last is None or w["x0"] - last["x1"] > float(w["size"]) * 0.08:
+                elif last is None or max(w["x0"] - last["x1"], last["x0"] - w["x1"]) > float(w["size"]) * 0.08:  # either direction
                     sep = " "
             last = w
             st = _style(w)
@@ -275,7 +287,9 @@ def page_blocks(page, *, body: float | None = None, tables: bool = True, images:
         words = []
     words = [dict(w, text=CONTROL.sub("", str(w["text"])), x0=w["x0"] - ox, x1=w["x1"] - ox, top=w["top"] - oy, bottom=w["bottom"] - oy)
              for w in words if CONTROL.sub("", str(w.get("text", ""))).strip()]
-    words = [w for w in words if w.get("upright", True) and -2 <= w["x0"] <= W + 2 and -2 <= w["top"] <= H + 2]
+    words = [dict(w, text=logical(w["text"])) for w in words if w.get("upright", True) and -2 <= w["x0"] <= W + 2 and -2 <= w["top"] <= H + 2]
+    letters = sum(1 for w in words for ch in w["text"] if ch.isalpha())
+    rtl = letters > 0 and sum(len(RTL_RE.findall(w["text"])) for w in words) > letters * 0.5
     found = []
     if tables:
         try:
@@ -301,9 +315,9 @@ def page_blocks(page, *, body: float | None = None, tables: bool = True, images:
     if items:
         left = min(w["x0"] for w in text_words) if text_words else 0
         right = max(w["x1"] for w in text_words) if text_words else W
-        for leaf in xycut(items):
+        for leaf in xycut(items, rtl=rtl):
             local: list[dict] = [w["block"] for w in leaf if "block" in w]
-            infos = [_line_info(ln) for ln in _lines([w for w in leaf if "block" not in w])]
+            infos = [_line_info(ln) for ln in _lines([w for w in leaf if "block" not in w], rtl)]
             for para in _paragraphs(infos):
                 runs = _runs(para)
                 text = "".join(r["text"] for r in runs).strip()
@@ -327,7 +341,7 @@ def page_blocks(page, *, body: float | None = None, tables: bool = True, images:
     if boxes:
         margins = {"left": min(b[0] for b in boxes), "top": min(b[1] for b in boxes), "right": W - max(b[2] for b in boxes),
                    "bottom": H - max(b[3] for b in boxes)}
-    return {"width": W, "height": H, "body": base, "blocks": order, "margins": margins}
+    return {"width": W, "height": H, "body": base, "blocks": order, "margins": margins, "rtl": rtl}
 
 
 def reflow(path, pages=None, passwords: list[str] | None = None) -> dict:

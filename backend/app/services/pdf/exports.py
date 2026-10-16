@@ -98,11 +98,11 @@ def to_html(src, out, *, args: dict | None = None, pages=None, passwords: list[s
                 counts["lists"] += 1
             elif b["kind"] == "heading":
                 lv = min(6, max(1, int(b.get("level") or 2)))
-                sec.append(f"<h{lv}>{_html_runs(b['runs'])}</h{lv}>")
+                sec.append(f"<h{lv} dir=\"auto\">{_html_runs(b['runs'])}</h{lv}>")  # auto: right-to-left text sets its own direction
                 counts["headings"] += 1
             elif b["kind"] == "para":
                 align = b.get("align") if b.get("align") in ("center", "right") else ""
-                sec.append(f"<p{f' style=\"text-align:{align}\"' if align else ''}>{_html_runs(b['runs'])}</p>")
+                sec.append(f"<p dir=\"auto\"{f' style=\"text-align:{align}\"' if align else ''}>{_html_runs(b['runs'])}</p>")
                 counts["paragraphs"] += 1
             elif b["kind"] == "table":
                 sec.append(_html_table(b["rows"]))

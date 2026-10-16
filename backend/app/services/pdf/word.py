@@ -82,6 +82,18 @@ def _para(doc, b: dict, body: float, style: str | None = None):
     else:
         p = doc.add_paragraph()
     p.alignment = {"center": WD_ALIGN_PARAGRAPH.CENTER, "right": WD_ALIGN_PARAGRAPH.RIGHT}.get(b.get("align"), WD_ALIGN_PARAGRAPH.LEFT)
+    letters = sum(ch.isalpha() for ch in b["text"])
+    rtl = letters > 0 and len(layout.RTL_RE.findall(b["text"])) > letters * 0.5
+    if rtl:
+        from docx.oxml.ns import qn
+
+        # a right-to-left paragraph: in it Word's "left" means its start, the right edge; centred text stays centred and
+        # everything else starts there, since a ragged right-to-left line reads as left-set to the alignment guess
+        ppr = p._p.get_or_add_pPr()
+        ppr.insert_element_before(ppr.makeelement(qn("w:bidi"), {}), "w:adjustRightInd", "w:snapToGrid", "w:spacing", "w:ind",
+                                  "w:contextualSpacing", "w:mirrorIndents", "w:suppressOverlap", "w:jc", "w:textDirection",
+                                  "w:textAlignment", "w:textboxTightWrap", "w:outlineLvl", "w:divId", "w:cnfStyle", "w:rPr", "w:sectPr", "w:pPrChange")
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER if b.get("align") == "center" else WD_ALIGN_PARAGRAPH.LEFT
     fmt = p.paragraph_format
     fmt.space_before = Pt(0 if b["kind"] != "heading" else max(4.0, b["size"] * 0.4))
     fmt.space_after = Pt(max(2.0, min(12.0, body * 0.5)))
@@ -94,6 +106,8 @@ def _para(doc, b: dict, body: float, style: str | None = None):
             run.font.name = r["font"]
         c = _color(r.get("color"))
         run.font.color.rgb = c if c is not None else _color("#000000") if b["kind"] == "heading" else None
+        if rtl and layout.RTL_RE.search(r["text"]):
+            run.font.rtl = True
     return p
 
 

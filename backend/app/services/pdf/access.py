@@ -1018,6 +1018,9 @@ def _make(w: PdfWriter, el: dict, parent_ref, page_ref, page_box, refs: dict):
         d[NameObject("/A")] = DictionaryObject({NameObject("/O"): NameObject("/Table"), NameObject("/Scope"): NameObject("/Column")})
     if el.get("lang"):
         d[NameObject("/Lang")] = TextStringObject(el["lang"])
+    if el["mc"] and el.get("text") and layout.RTL_RE.search(el["text"]):
+        # the page draws right-to-left text in visual order; the element says what it reads in logical order
+        d[NameObject("/ActualText")] = TextStringObject(el["text"][:4000])
     return ref
 
 
@@ -1515,6 +1518,9 @@ def structure(path, *, args: dict | None = None, pages=None, passwords: list[str
             if isinstance(bb, ArrayObject) and len(bb) == 4:
                 ub = tuple(float(v) for v in bb)
         text = " ".join(m.texts.get(mc, "") for y in x.walk() for pg, mc in y.mcids if pg == p).strip()
+        actual = x.obj.get("/ActualText") if x.obj is not None else None
+        if actual is not None and str(actual).strip():
+            text = str(actual)  # what the element says it reads, such as right-to-left text drawn in visual order
         page = r.pages[p]
         vb = core.view_box(page)
         item = {"id": x.path, "page": p + 1, "order": order[p], "type": x.type.lstrip("/"), "tag": x.raw.lstrip("/"), "text": re.sub(r"\s+", " ", text)[:160],
