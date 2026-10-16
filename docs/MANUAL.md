@@ -182,6 +182,14 @@ Edit > Undo agent turn (Alt+Mod+Z), or **Undo turn** next to the agent's last ch
 
 Help > Preferences (Mod+,): Appearance (theme and accent colour, the same fourteen themes as the form family, light and dark), Comments and stamps (the author name written on comments you apply, units), Spelling (the dictionary language and Your words, one per line, which Check spelling accepts; more languages are Hunspell .dic and .aff pairs placed in `~/Formpdf/dictionaries/<code>/`), Signing (a timestamp server address, used only when you tick Add a timestamp while signing), Forms (run standard form calculations, formats and checks), Plug-ins (each plug-in in the plugins folder with its state and any error, and a switch to turn it on or off), AI (the provider for the Assistant tab: Off, Your agent, Anthropic or OpenAI with your API key, or a model on this computer through Ollama, LM Studio or another OpenAI-compatible server; the model, the server address, the key, which is kept in the data folder and never shown again, a picture server for local pictures, and Test the connection), Agents (let Claude Code, Codex and Cursor read and edit PDFs), and Network (every connection formpdf could make and whether it does: today the engine and the window talk only on this computer, and the desktop update check is off).
 
+## Languages
+
+The window speaks 26 languages; English is the default. Change it in Help > Preferences > Language > Interface; the choice is kept in the data folder, so every window and the desktop app start in it. The languages are English, Español, Español (México), Português (Brasil), Français, Français (Canada), Deutsch, Italiano, Nederlands, Dansk, Suomi, Norsk bokmål, Svenska, Русский, Polski, Čeština, Magyar, Українська, Türkçe, 简体中文, 繁體中文, 日本語, 한국어, Bahasa Indonesia, ไทย and Tiếng Việt. Español (México) and Français (Canada) hold only the words that differ and fall back to Español and Français for the rest.
+
+What is translated: every label, menu, tooltip and dialog, and the messages the engine sends the window (errors, preflight, PDF/X and accessibility findings, with their counts and page lists). What stays English: the PDF's own text, what agents and the command line read, and HTML reports.
+
+Each language is one table in `frontend/src/ui/i18n/<code>.ts`, keyed by the English text. A key with `{0}`, `{1}` holes is a pattern: the window matches a message against it and translates each hole's value on its own. A translation can choose a word by a count with `{0|one:Seite|other:Seiten}`, using the language's plural rules (the categories are zero, one, two, few, many and other; other is required). To correct a translation, edit its line and run `python3 setup/i18n.py parity`, which lists for each table the keys that are missing, no longer used, or whose holes or count-aware words do not fit the key.
+
 ## The data folder
 
 Everything lives in `~/Formpdf` (or `FORMPDF_DATA_DIR`):
