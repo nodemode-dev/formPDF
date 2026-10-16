@@ -259,14 +259,16 @@ def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = No
             if not 0.01 <= scale <= 100:
                 raise ValueError("scale is between 0.01 and 100")
             to = e.get("to")
-            if isinstance(to, dict) and f["box"]["w"] > 0.01 and f["box"]["h"] > 0.01:
+            if isinstance(to, dict) and (f["box"]["w"] > 0.01 or f["box"]["h"] > 0.01):
                 bx = f["box"]
                 vx0, vy0, vx1, vy1 = core.view_box(p.page)
-                sx, sy = float(to["w"]) / bx["w"], float(to["h"]) / bx["h"]
+                # A straight line has no extent across itself: that axis keeps its scale and only moves.
+                sx = float(to["w"]) / bx["w"] if bx["w"] > 0.01 else 1.0
+                sy = float(to["h"]) / bx["h"] if bx["h"] > 0.01 else 1.0
                 if not (0.01 <= sx <= 100 and 0.01 <= sy <= 100):
                     raise ValueError("a shape can be resized to between 1 percent and 100 times its size")
                 ox, oy = vx0 + bx["x"], vy1 - bx["y"] - bx["h"]
-                nx, ny = vx0 + float(to["x"]), vy1 - float(to["y"]) - float(to["h"])
+                nx, ny = vx0 + float(to["x"]), vy1 - float(to["y"]) - bx["h"] * sy
                 t = (sx, 0, 0, sy, nx - sx * ox, ny - sy * oy)
                 ctm = tuple(float(v) for v in f["ctm"])
                 head.append(([FloatObject(round(v, 6)) for v in _mul(_mul(ctm, t), _inv(ctm))], b"cm"))

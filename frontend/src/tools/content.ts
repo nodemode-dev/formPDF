@@ -20,7 +20,7 @@ interface Shape { page: number; op: number; paint: string; box: { x: number; y: 
 type Kind = 'text' | 'picture' | 'pic' | 'ptext' | 'comment' | 'shape';
 interface Obj { key: string; kind: Kind; page: number; g: Geo; item?: Item; pic?: Pic; txt?: Txt; annot?: Annot; shape?: Shape }
 type Pt = { x: number; y: number };
-interface Drag { kind: 'move' | 'resize' | 'rotate' | 'crop' | 'width'; page: number; p0: Pt; handle: string; base: Map<string, Geo>; crop0: Crop; moved: boolean }
+interface Drag { kind: 'move' | 'resize' | 'rotate' | 'crop' | 'width'; page: number; p0: Pt; handle: string; base: Map<string, Geo>; crop0: Crop; moved: boolean; group?: string }
 type Mode = 'idle' | 'select' | 'text' | 'picture';
 
 const NO_CROP: Crop = { l: 0, t: 0, r: 0, b: 0 };
@@ -132,9 +132,11 @@ function paintBox(n: HTMLElement, o: Obj, single: boolean): void {
   const g = geo(o);
   const style = `left:${calc(g.x)};top:${calc(g.y)};width:${calc(g.w)};height:${calc(g.h)};transform:rotate(${Math.round(g.rot * 100) / 100}deg)`;
   if (n.getAttribute('style') !== style) n.setAttribute('style', style);
-  setClass(n, 'is-selected', sel.includes(o.key));
-  setClass(n, 'is-faint', !sel.includes(o.key));
-  let html = sel.includes(o.key) ? handlesFor(o, single) : '';
+  const framed = o.key.startsWith('grp:');
+  setClass(n, 'is-selected', sel.includes(o.key) || framed);
+  setClass(n, 'is-faint', !sel.includes(o.key) && !framed);
+  setClass(n, 'is-group', framed);
+  let html = framed ? handlesFor(o, true) : sel.includes(o.key) ? handlesFor(o, single) : '';
   const it = o.kind === 'text' ? o.item : undefined;
   if (it && mode === 'select' && !cropping) {
     const inTitle = it.thread && it.seq ? 'Continues the story from the frame before' : 'Start of the story';
@@ -149,11 +151,25 @@ function paintBox(n: HTMLElement, o: Obj, single: boolean): void {
   if (n.dataset.h !== html) { n.innerHTML = html; n.dataset.h = html; }
 }
 
+/** When the selection is exactly one shape group, the frame around it as an object of its own (key grp:<id>) that carries the resize handles. */
+function groupFrame(host: ToolHost, page: number): Obj | null {
+  const objs = allSelected(host);
+  const g = objs[0]?.shape?.group;
+  if (!g || objs.length < 2 || objs.some((o) => o.page !== page || o.shape?.group !== g)) return null;
+  if (shapes.filter((s) => s.page === page && s.group === g).length !== objs.length) return null;
+  const gs = objs.map(geo);
+  const x0 = Math.min(...gs.map((v) => v.x)), y0 = Math.min(...gs.map((v) => v.y));
+  const x1 = Math.max(...gs.map((v) => v.x + v.w)), y1 = Math.max(...gs.map((v) => v.y + v.h));
+  const key = `grp:${g}`;
+  return { key, kind: 'shape', page, g: preview.get(key) ?? { x: x0, y: y0, w: x1 - x0, h: y1 - y0, rot: 0 } };
+}
+
 const layers = new PageLayers('content', (index, layer) => {
   const host = hostRef;
   const page = index + 1;
   if (host && mode !== 'idle' && !loaded.has(page)) want(page);
-  const list = !host || mode === 'idle' ? [] : objects(page, host).filter((o) => sel.includes(o.key) || o.kind === 'text' || o.kind === 'picture' || o.kind === 'pic');
+  const frame = host && mode !== 'idle' ? groupFrame(host, page) : null;
+  const list = !host || mode === 'idle' ? [] : [...objects(page, host).filter((o) => sel.includes(o.key) || o.kind === 'text' || o.kind === 'picture' || o.kind === 'pic'), ...(frame ? [frame] : [])];
   const single = sel.length === 1;
   patchList(layer, list, {
     key: (o) => o.key,
@@ -424,6 +440,13 @@ function selectTool(host: ToolHost): PageTool {
         if (from?.startsWith('i:')) { linking = { from: from.slice(2), moved: false, x: e.clientX, y: e.clientY }; document.body.classList.add('fs-is-linking'); return; }
       }
       const handle = t.closest<HTMLElement>('[data-h]')?.dataset.h;
+      const frame = handle ? groupFrame(host, page) : null;
+      if (frame && t.closest<HTMLElement>('.fs-cx-box')?.dataset.key === frame.key) {
+        const base = new Map<string, Geo>([[frame.key, { ...frame.g }]]);
+        for (const s of allSelected(host)) base.set(s.key, { ...geo(s) });
+        drag = { kind: 'resize', page, p0: p, handle: handle ?? '', base, crop0: { ...NO_CROP }, moved: false, group: frame.key };
+        return;
+      }
       const now = performance.now();
       const o = handle ? allSelected(host).find((x) => x.page === page) ?? null : hit(page, p, host);
       const dbl = !!o && o.key === lastDown.key && now - lastDown.t < 450 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 6;
@@ -465,6 +488,13 @@ function selectTool(host: ToolHost): PageTool {
         if (e.shiftKey) ang = Math.round(ang / 15) * 15;
         ang = ((ang + 180) % 360 + 360) % 360 - 180;
         preview.set(key, { ...g, rot: ang });
+      } else if (d.kind === 'resize' && d.group) {
+        const g0 = d.base.get(d.group);
+        if (!g0) return;
+        const g1 = resized(g0, d.handle, { x: dx, y: dy }, /^(nw|ne|se|sw)$/.test(d.handle) && !e.shiftKey);
+        preview.set(d.group, g1);
+        const sx = g1.w / Math.max(0.01, g0.w), sy = g1.h / Math.max(0.01, g0.h);
+        for (const [k, m] of d.base) if (k !== d.group) preview.set(k, { ...m, x: g1.x + (m.x - g0.x) * sx, y: g1.y + (m.y - g0.y) * sy, w: m.w * sx, h: m.h * sy });
       } else if (d.kind === 'resize' || d.kind === 'width') {
         const g = d.base.get(key);
         if (!g) return;
