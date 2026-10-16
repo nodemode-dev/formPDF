@@ -113,7 +113,7 @@ def _nums(operands) -> list[float]:
 
 
 def _press(doc, limit: float = TAC_LIMIT) -> dict:
-    found = {"tac": {}, "overprint": set(), "edge": {}, "boxes": {"tac": {}, "overprint": {}}}
+    found = {"tac": {}, "overprint": set(), "edge": {}, "boxes": {"tac": {}, "overprint": {}, "rgb": {}}}
     for pi, page in enumerate(doc.pages):
         n = pi + 1
         try:
@@ -157,8 +157,13 @@ def _press(doc, limit: float = TAC_LIMIT) -> dict:
                                 if total > found["tac"].get(n, 0.0) and boxes.get((st.where, i)):
                                     found["boxes"]["tac"][n] = _view(page, boxes[(st.where, i)])
                                 found["tac"][n] = max(found["tac"].get(n, 0.0), total)
+                    if op != b"Do" and n not in found["boxes"]["rgb"] and boxes.get((st.where, i)):
+                        fills = op in PAINT_FILL or op in (b"Tj", b"TJ", b"'", b"\"", b"B", b"B*", b"b", b"b*")
+                        strokes = op in (b"S", b"s", b"B", b"B*", b"b", b"b*")
+                        if (fills and state["fcs"] == "rgb") or (strokes and state["scs"] == "rgb"):
+                            found["boxes"]["rgb"][n] = _view(page, boxes[(st.where, i)])
                     cs, vals = state["fcs"], state["fill"]
-                    white = (cs == "cmyk" and len(vals) == 4 and sum(vals) < 0.001) or (cs == "gray" and vals and vals[0] > 0.999) or (cs == "rgb" and len(vals) == 3 and min(vals) > 0.999)
+                    white =(cs == "cmyk" and len(vals) == 4 and sum(vals) < 0.001) or (cs == "gray" and vals and vals[0] > 0.999) or (cs == "rgb" and len(vals) == 3 and min(vals) > 0.999)
                     if state["op"] and white and op in PAINT_FILL | {b"Tj", b"TJ", b"'", b"\""}:
                         found["overprint"].add(n)
                         if boxes.get((st.where, i)):
@@ -182,7 +187,10 @@ def _press(doc, limit: float = TAC_LIMIT) -> dict:
         try:
             st, name = im["ref"]
             obj = _o(_o(_o(st.resources).get("/XObject")).raw_get(name))
-            if colour.space_kind(obj.get("/ColorSpace"), _o(st.resources)) != "cmyk":
+            kind = colour.space_kind(obj.get("/ColorSpace"), _o(st.resources))
+            if kind == "rgb":
+                found["boxes"]["rgb"].setdefault(im["page"], im["box"])
+            if kind != "cmyk":
                 continue
             pil = obj.decode_as_image()
             if pil.mode != "CMYK":
@@ -255,11 +263,13 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
                           [{"page": i["page"], "text": f"{i['ppi']} ppi ({i['px'][0]} x {i['px'][1]} px at {i['pt'][0]} x {i['pt'][1]} pt)", "box": i["box"]} for i in low]))
     sc = colour.scan(r)
     kinds = set(sc.used)
-    if profile == "print":
+    press = _press(r, float((args or {}).get("tac") or TAC_LIMIT)) if profile == "print" else None
+    if press is not None:
         rgb = sorted(sc.where.get("rgb", set()))
         out.append(_check("colour", "Colour spaces", "warn" if rgb else "pass",
                           f"RGB colour is used{_pages(set(rgb))}; a press converts it to CMYK with its own settings, so colours can shift." if rgb else
-                          "Colour is CMYK or gray, ready for a press.", [{"page": p, "text": "RGB colour"} for p in rgb[:200]], "gray" if rgb else None))
+                          "Colour is CMYK or gray, ready for a press.", [{"page": p, "text": "RGB colour", "box": press["boxes"]["rgb"].get(p)} for p in rgb[:200]],
+                          "gray" if rgb else None))
         spots = sorted({k for k in kinds if k in ("separation", "devicen")})
         out.append(_check("spots", "Spot colours", "info" if spots else "pass", f"Spot colours are used ({', '.join(spots)}); check they match the press inks." if spots else "There are no spot colours."))
     elif profile == "office":
@@ -272,9 +282,8 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
         hl = _hairlines(r)
         out.append(_check("hairlines", "Hairlines", "warn" if hl else "pass", f"Lines thinner than {HAIRLINE} pt{_pages(hl)} may not print or may vanish." if hl else "No line is thinner than a press can print.",
                           [{"page": p, "text": "Hairline", "box": hl[p]} for p in sorted(hl)], "hairlines" if hl else None))
-    if profile == "print":
+    if press is not None:
         limit = float((args or {}).get("tac") or TAC_LIMIT)
-        press = _press(r, limit)
         tac = press["tac"]
         out.append(_check("ink", "Total ink coverage", "warn" if tac else "pass",
                           f"Ink coverage goes above {limit:.0f} percent{_pages(set(tac))}, up to {max(tac.values()):.0f} percent; heavy ink smears and dries slowly." if tac
