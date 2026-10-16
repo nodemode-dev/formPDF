@@ -95,7 +95,7 @@ export const META: Record<string, Meta> = {
   'tool-fonts': { d: 'Lists the fonts in the PDF, whether they are embedded and installed, and which family edits them.' },
   'tool-access-alt-draft': { d: 'Drafts alternate text for figures with the AI provider, for the person to review and save.' },
   'tool-pdfx-check': { d: "Checks the PDF against PDF/X-1a, X-3, X-4, X-6 or PDF/VT by formpdf's own checks." },
-  'tool-pdfvt': { d: 'Turns a PDF/X-4 file into PDF/VT with one document part per record.' },
+  'tool-pdfvt': { d: 'Turns a PDF/X-4 file into PDF/VT with one document part per record, optionally divided into sections.' },
   'tool-add-bleed': { d: 'Adds bleed around the trim box, growing the page without moving anything on it.' },
   'tool-output-preview': { d: 'Shows the page with chosen inks (process or spot) turned off.' },
   'tool-xfdf-import': { d: "Brings a reviewer's comments and their status from XFDF into this PDF, without duplicates." },

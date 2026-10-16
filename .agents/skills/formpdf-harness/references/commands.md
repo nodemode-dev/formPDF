@@ -127,7 +127,7 @@ Generated from the window's command catalogue (135 commands) by `./formpdf agent
 | `tool-add-bleed` | Add bleed… | Adds bleed around the trim box, growing the page without moving anything on it. Changes the PDF. | Use when artwork must run past the trimmed edge of the printed page; give the bleed in millimetres. |
 | `tool-output-preview` | Preview separations… | Shows the page with chosen inks (process or spot) turned off. | Use to see a page without some inks, for example only the spot colour plate or without black; give the inks to hide, or none to show all. |
 | `tool-pdf20` | Save as PDF 2.0 | Rewrites the PDF as PDF 2.0 with its information in XMP metadata. Changes the PDF. | Use when a workflow asks for PDF 2.0. |
-| `tool-pdfvt` | Make PDF/VT… | Turns a PDF/X-4 file into PDF/VT with one document part per record. Changes the PDF. | Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark. |
+| `tool-pdfvt` | Make PDF/VT… | Turns a PDF/X-4 file into PDF/VT with one document part per record, optionally divided into sections. Changes the PDF. | Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark; divide each record into sections (a letter, then its invoice) with section_pages or sections: bookmarks. |
 | `tool-pdfx-check` | Check PDF/X… | Checks the PDF against PDF/X-1a, X-3, X-4, X-6 or PDF/VT by formpdf's own checks. | Use before sending a file to a press, to see whether it meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT and what is missing. |
 
 ### tool-add-bleed parameters
@@ -143,6 +143,8 @@ Generated from the window's command catalogue (135 commands) by `./formpdf agent
 
 - `pages_per_record`: integer from 1; pages in every record
 - `by`: string (pages | bookmarks); bookmarks: one record per top-level bookmark
+- `section_pages`: array; pages in each section of every record, in order, such as [1, 2]; they add up to the record length
+- `sections`: string (bookmarks); bookmarks: one section per bookmark directly under the record's bookmark
 
 ### tool-pdfx-check parameters
 

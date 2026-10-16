@@ -284,16 +284,25 @@ async function makeVt(params?: Record<string, unknown>): Promise<unknown> {
   if (!host || !d) throw new Error('Open a PDF first');
   const by = String(params?.by ?? (params?.pages_per_record !== undefined ? 'pages' : r ? val(r, 'vtby', 's') : 'pages'));
   const per = Number(params?.pages_per_record ?? (r ? val(r, 'vtper', 's') : '1'));
-  const args = by === 'bookmarks' ? { by: 'bookmarks' } : { pages_per_record: per };
+  const args: Record<string, unknown> = by === 'bookmarks' ? { by: 'bookmarks' } : { pages_per_record: per };
+  // sections within each record: page counts that repeat in every record, or the bookmarks under each record's bookmark
+  const sec = String(params?.sections ?? (params?.section_pages !== undefined ? 'pages' : params ? '' : r ? val(r, 'vtsec', 's') : ''));
+  const sizes = Array.isArray(params?.section_pages) ? (params.section_pages as unknown[]).map(Number)
+    : (r ? val(r, 'vtsecp', 's') : '').split(/[\s,;]+/).filter(Boolean).map(Number);
+  if (sec === 'bookmarks') args.sections = 'bookmarks';
+  else if (sec === 'pages') {
+    if (!sizes.length || sizes.some((n) => !Number.isInteger(n) || n < 1)) throw new Error('Give the pages in each section as whole numbers, such as 1, 2');
+    args.section_pages = sizes;
+  }
   let out: unknown = null;
   let failed: Error | null = null;
   await host.ctx.run('Making PDF/VT', async () => {
     try {
       const id = await host.ctx.flush() ?? d.id;
-      const res = await pdfApi.act<Derived & { records: number }>(id, 'pdfvt', args);
+      const res = await pdfApi.act<Derived & { records: number; sections?: number }>(id, 'pdfvt', args);
       await host.ctx.commit(res, 'Make PDF/VT');
-      toast(`PDF/VT with ${res.records} records.`);
-      out = { records: res.records };
+      toast(res.sections ? `PDF/VT with ${res.records} records and ${res.sections} sections.` : `PDF/VT with ${res.records} records.`);
+      out = { records: res.records, sections: res.sections ?? 0 };
     } catch (err) { failed = err as Error; throw err; }
   });
   if (failed) throw failed;
@@ -522,6 +531,8 @@ registerTool({
 <p class="fs-note">For variable-data printing: marks where each record (one letter, one card) starts, so the press can handle them one by one. Convert to PDF/X-4 first.</p>
 <div class="fs-prop-row"><span class="fs-prop-label">Records</span><div class="fs-prop-ctl"><select data-s="vtby" aria-label="How records are found"><option value="pages" selected>Same number of pages each</option><option value="bookmarks">One per top-level bookmark</option></select></div></div>
 <div class="fs-prop-row"><span class="fs-prop-label">Pages each</span><div class="fs-prop-ctl"><input class="fs-input" type="number" data-s="vtper" min="1" step="1" value="1" aria-label="Pages per record"></div></div>
+<div class="fs-prop-row"><span class="fs-prop-label">Sections</span><div class="fs-prop-ctl"><select data-s="vtsec" aria-label="Sections within a record"><option value="" selected>None</option><option value="pages">Pages in each section</option><option value="bookmarks">One per bookmark under the record's</option></select></div></div>
+<div class="fs-prop-row"><span class="fs-prop-label">Section pages</span><div class="fs-prop-ctl"><input class="fs-input" type="text" data-s="vtsecp" placeholder="Such as 1, 2" spellcheck="false" aria-label="Pages in each section, in order" disabled></div></div>
 <div class="fs-pdfwb-btns"><button class="fs-btn fs-btn-sm" type="button" data-s="pdfvt">Make PDF/VT</button></div>`,
   mount: (root, host) => {
     hostRef = host;
@@ -537,13 +548,15 @@ registerTool({
       else if (t.dataset.s === 'pdfvt') void makeVt().catch((err: Error) => toast(err.message, 'error'));
     });
     root.addEventListener('input', () => syncStd());
+    const vtsec = q<HTMLSelectElement>(root, '[data-s="vtsec"]');
+    vtsec.addEventListener('change', () => { q<HTMLInputElement>(root, '[data-s="vtsecp"]').disabled = vtsec.value !== 'pages'; });  // disabled, not hidden, so the panel keeps its height
     syncStd();
   },
   sync: (_root, host) => { hostRef = host; syncStd(); },
   commands: (host): Command[] => [
     { id: 'tool-pdfa', label: 'Convert to PDF/A', words: ['archive', 'pdf/a'], enabled: () => !!host.doc(), run: () => { host.setTab('print'); void convertPdfa(); } },
     { id: 'tool-pdfx-check', label: 'Check PDF/X…', words: ['pdf/x', 'pdf/x-4', 'pdf/x-6', 'pdf/vt', 'press check', 'conformance'], group: 'Print', when: 'Use before sending a file to a press, to see whether it meets PDF/X-1a, X-3, X-4, X-6 or PDF/VT and what is missing.', params: { level: { type: 'string', enum: ['X-1a', 'X-3', 'X-4', 'X-6', 'VT'], description: 'the standard to check against; the one the file claims when left out' } }, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: (p) => { host.setTab('print'); return checkPdfx(typeof p?.level === 'string' ? p.level : ''); } },
-    { id: 'tool-pdfvt', label: 'Make PDF/VT…', words: ['pdf/vt', 'variable data', 'records', 'mail merge', 'personalised print'], group: 'Print', when: 'Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark.', params: { pages_per_record: { type: 'integer', min: 1, description: 'pages in every record' }, by: { type: 'string', enum: ['pages', 'bookmarks'], description: 'bookmarks: one record per top-level bookmark' } }, mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: (p) => { host.setTab('print'); return makeVt(p); } },
+    { id: 'tool-pdfvt', label: 'Make PDF/VT…', words: ['pdf/vt', 'variable data', 'records', 'mail merge', 'personalised print'], group: 'Print', when: 'Use on a PDF/X-4 file of many personalised records (letters, cards) so a press can treat each record separately; give pages_per_record, or by: bookmarks for one record per top-level bookmark; divide each record into sections (a letter, then its invoice) with section_pages or sections: bookmarks.', params: { pages_per_record: { type: 'integer', min: 1, description: 'pages in every record' }, by: { type: 'string', enum: ['pages', 'bookmarks'], description: 'bookmarks: one record per top-level bookmark' }, section_pages: { type: 'array', description: 'pages in each section of every record, in order, such as [1, 2]; they add up to the record length' }, sections: { type: 'string', enum: ['bookmarks'], description: 'bookmarks: one section per bookmark directly under the record\'s bookmark' } }, mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: (p) => { host.setTab('print'); return makeVt(p); } },
     { id: 'tool-pdf20', label: 'Save as PDF 2.0', words: ['pdf 2.0', 'iso 32000-2', 'newest pdf'], group: 'Print', mutates: true, enabled: () => !!host.doc(), why: () => 'Open a PDF first', run: () => savePdf20() },
   ],
 });

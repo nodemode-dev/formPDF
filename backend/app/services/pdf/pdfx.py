@@ -49,6 +49,49 @@ def _box(page, kind: str):
     return float(r.left), float(r.bottom), float(r.right), float(r.top)
 
 
+def _vt_tree(dpr, r, fail) -> None:
+    """The document part hierarchy's shape: leaves name pages and nodes have kids (never both), every page points at a
+    leaf as deep as the NodeNameList has levels, and the record level is one of those levels."""
+    names = _o(dpr.get("/NodeNameList"))
+    depth_want = len(names) - 1 if isinstance(names, list) and names else None
+    try:
+        rec = int(dpr.get("/RecordLevel", -1))
+    except (TypeError, ValueError):
+        rec = -1
+    if depth_want is not None and not 0 <= rec <= depth_want:
+        fail("dpart", f"RecordLevel {rec} is not one of the {depth_want + 1} levels the NodeNameList names")
+    root = _o(dpr.get("/DPartRootNode"))
+    both, seen, stack = 0, 0, [root] if isinstance(root, DictionaryObject) else []
+    while stack and seen < 200000:
+        node = stack.pop()
+        seen += 1
+        kids = _o(node.get("/Kids"))
+        if kids is not None and ("/Start" in node or "/End" in node):
+            both += 1
+        for k in kids or []:
+            k = _o(k)
+            if isinstance(k, DictionaryObject):
+                stack.append(k)
+    if both:
+        fail("dpart", f"{both} document part has both kids and pages; a part has one or the other" if both == 1 else
+             f"{both} document parts have both kids and pages; a part has one or the other")
+    wrong = set()
+    for n, page in enumerate(r.pages, 1):
+        part = _o(page.get("/DPart"))
+        if not isinstance(part, DictionaryObject):
+            continue
+        if part.get("/Kids") is not None:
+            wrong.add(n)
+            continue
+        d, p = 0, part
+        while isinstance(p, DictionaryObject) and p.get("/Parent") is not None and d < 64:
+            p, d = _o(p["/Parent"]), d + 1
+        if depth_want is not None and d != depth_want:
+            wrong.add(n)
+    if wrong:
+        fail("dpart", "Pages whose document part is not a leaf at the deepest level the NodeNameList names", wrong)
+
+
 def verify(path, *, args: dict | None = None, pages=None, passwords: list[str] | None = None):
     raw = Path(path).read_bytes()
     r = core.reader(path, passwords)
@@ -131,6 +174,7 @@ def verify(path, *, args: dict | None = None, pages=None, passwords: list[str] |
         unmarked = {n for n, page in enumerate(r.pages, 1) if page.get("/DPart") is None}
         if unmarked:
             fail("dpart", "Pages that belong to no record (no DPart)", unmarked)
+        _vt_tree(dpr, r, fail)
         xmp = ""
         if meta is not None:
             try:
