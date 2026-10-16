@@ -1960,7 +1960,7 @@ export const hu: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "A(z) {0} nem olyan kép, amelyet a formpdf el tud olvasni (PNG, JPEG, GIF, WebP, BMP vagy TIFF)",
 "{0} is not a web address, an email address or a page number": "A(z) {0} nem webcím, e-mail-cím vagy oldalszám",
 "{0} is not an Office file formpdf can convert": "A(z) {0} nem olyan Office-fájl, amelyet a formpdf át tud alakítani",
-"{0} is not sans, serif or mono": "A(z) {0} nem sans, serif vagy mono",
+"On this computer": "Ezen a számítógépen",
 "{0} is password protected; unlock it first": "A(z) {0} jelszóval védett; előbb oldja fel",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "{0} féle probléma a PDF/A-{2} szempontjából; ebből {3} javítható átalakítással.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "További {0} eltérés van kiemelve az oldalakon; a nyilakkal léphet közöttük.",

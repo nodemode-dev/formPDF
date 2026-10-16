@@ -1960,7 +1960,7 @@ export const vi: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} không phải hình ảnh mà formpdf đọc được (PNG, JPEG, GIF, WebP, BMP hoặc TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} không phải địa chỉ web, địa chỉ email hay số trang",
 "{0} is not an Office file formpdf can convert": "{0} không phải tệp Office mà formpdf chuyển đổi được",
-"{0} is not sans, serif or mono": "{0} không phải sans, serif hay mono",
+"On this computer": "Trên máy tính này",
 "{0} is password protected; unlock it first": "{0} được bảo vệ bằng mật khẩu; hãy mở khóa trước",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "Có {0} loại vấn đề đối với PDF/A-{2}; {3} loại có thể được sửa bằng cách chuyển đổi.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "Còn {0} điểm khác biệt được đánh dấu trên các trang; hãy dùng các mũi tên để duyệt qua.",

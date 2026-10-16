@@ -1960,7 +1960,7 @@ export const de: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} ist kein Bild, das formpdf lesen kann (PNG, JPEG, GIF, WebP, BMP oder TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} ist weder eine Webadresse noch eine E-Mail-Adresse noch eine Seitenzahl",
 "{0} is not an Office file formpdf can convert": "{0} ist keine Office-Datei, die formpdf konvertieren kann",
-"{0} is not sans, serif or mono": "{0} ist weder sans noch serif noch mono",
+"On this computer": "Auf diesem Computer",
 "{0} is password protected; unlock it first": "{0} ist kennwortgeschützt; entsperren Sie es zuerst",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "{0} Problemarten für PDF/A-{2}; {3} lassen sich durch Konvertieren beheben.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "{0} weitere Unterschiede sind auf den Seiten hervorgehoben; gehen Sie mit den Pfeilen durch sie hindurch.",

@@ -1960,7 +1960,7 @@ export const tr: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} formpdf'nin okuyabileceği bir resim değil (PNG, JPEG, GIF, WebP, BMP veya TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} bir web adresi, e-posta adresi veya sayfa numarası değil",
 "{0} is not an Office file formpdf can convert": "{0} formpdf'nin dönüştürebileceği bir Office dosyası değil",
-"{0} is not sans, serif or mono": "{0} sans, serif veya mono değil",
+"On this computer": "Bu bilgisayarda",
 "{0} is password protected; unlock it first": "{0} parola korumalı; önce kilidini açın",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "PDF/A-{2} için {0} tür sorun var; {3} tanesi dönüştürerek düzeltilebilir.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "Sayfalarda {0} fark daha vurgulandı; aralarında gezinmek için okları kullanın.",

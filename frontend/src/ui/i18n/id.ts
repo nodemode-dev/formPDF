@@ -1960,7 +1960,7 @@ export const id: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} bukan gambar yang dapat dibaca formpdf (PNG, JPEG, GIF, WebP, BMP, atau TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} bukan alamat web, alamat email, atau nomor halaman",
 "{0} is not an Office file formpdf can convert": "{0} bukan berkas Office yang dapat dikonversi formpdf",
-"{0} is not sans, serif or mono": "{0} bukan sans, serif, atau mono",
+"On this computer": "Di komputer ini",
 "{0} is password protected; unlock it first": "{0} dilindungi kata sandi; buka kuncinya terlebih dahulu",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "{0} jenis masalah untuk PDF/A-{2}; {3} di antaranya dapat diperbaiki dengan konversi.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "{0} perbedaan lagi disorot pada halaman; gunakan tanda panah untuk menelusurinya.",

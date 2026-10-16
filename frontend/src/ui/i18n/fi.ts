@@ -1960,7 +1960,7 @@ export const fi: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} ei ole kuva, jonka formpdf osaa lukea (PNG, JPEG, GIF, WebP, BMP tai TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} ei ole verkko-osoite, sähköpostiosoite eikä sivunumero",
 "{0} is not an Office file formpdf can convert": "{0} ei ole Office-tiedosto, jonka formpdf voi muuntaa",
-"{0} is not sans, serif or mono": "{0} ei ole sans, serif eikä mono",
+"On this computer": "Tällä tietokoneella",
 "{0} is password protected; unlock it first": "{0} on salasanasuojattu; avaa lukitus ensin",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "{0} ongelmatyyppiä PDF/A-{2}:ssa; {3} voidaan korjata muuntamalla.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "Vielä {0} eroa on korostettu sivuilla; selaa ne läpi nuolilla.",

@@ -1960,7 +1960,7 @@ export const ptBR: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} não é uma imagem que o formpdf consiga ler (PNG, JPEG, GIF, WebP, BMP ou TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} não é um endereço da web, um endereço de e-mail nem um número de página",
 "{0} is not an Office file formpdf can convert": "{0} não é um arquivo do Office que o formpdf consiga converter",
-"{0} is not sans, serif or mono": "{0} não é sans, serif nem mono",
+"On this computer": "Neste computador",
 "{0} is password protected; unlock it first": "{0} está protegido por senha; desbloqueie-o primeiro",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "{0} tipos de problemas para PDF/A-{2}; {3} podem ser corrigidos na conversão.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "Mais {0} diferenças estão destacadas nas páginas; use as setas para percorrê-las.",

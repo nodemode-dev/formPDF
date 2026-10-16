@@ -1960,7 +1960,7 @@ export const ja: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} は formpdf で読み取れる画像ではありません (PNG、JPEG、GIF、WebP、BMP、TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} は Web アドレス、メールアドレス、ページ番号のいずれでもありません",
 "{0} is not an Office file formpdf can convert": "{0} は formpdf で変換できる Office ファイルではありません",
-"{0} is not sans, serif or mono": "{0} は sans、serif、mono のいずれでもありません",
+"On this computer": "このコンピュータ",
 "{0} is password protected; unlock it first": "{0} はパスワードで保護されています。先にロックを解除してください",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "PDF/A-{2} に関する問題が {0} 種類あります。そのうち {3} 種類は変換で修正できます。",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "ページ上にさらに {0} 件の相違点がハイライトされています。矢印で順に確認できます。",

@@ -1960,7 +1960,7 @@ export const uk: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} не є зображенням, яке formpdf може прочитати (PNG, JPEG, GIF, WebP, BMP або TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} не є вебадресою, адресою електронної пошти або номером сторінки",
 "{0} is not an Office file formpdf can convert": "{0} не є файлом Office, який formpdf може конвертувати",
-"{0} is not sans, serif or mono": "{0} не є значенням sans, serif або mono",
+"On this computer": "На цьому комп’ютері",
 "{0} is password protected; unlock it first": "{0} захищено паролем; спершу розблокуйте його",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "Видів проблем для PDF/A-{2}: {0}; конвертацією можна виправити: {3}.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "Ще відмінностей виділено на сторінках: {0}; переходьте між ними стрілками.",

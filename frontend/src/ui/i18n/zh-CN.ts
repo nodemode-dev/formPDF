@@ -1960,7 +1960,7 @@ export const zhCN: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} 不是 formpdf 可读取的图片（PNG、JPEG、GIF、WebP、BMP 或 TIFF）",
 "{0} is not a web address, an email address or a page number": "{0} 不是网址、电子邮件地址或页码",
 "{0} is not an Office file formpdf can convert": "{0} 不是 formpdf 可转换的 Office 文件",
-"{0} is not sans, serif or mono": "{0} 不是 sans、serif 或 mono",
+"On this computer": "本机字体",
 "{0} is password protected; unlock it first": "{0} 受密码保护；请先解锁",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "PDF/A-{2} 存在 {0} 类问题；其中 {3} 类可通过转换修复。",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "页面上还高亮显示了 {0} 处差异；可使用箭头逐一查看。",

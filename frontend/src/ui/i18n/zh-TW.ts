@@ -1960,7 +1960,7 @@ export const zhTW: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} 不是 formpdf 可讀取的圖片（PNG、JPEG、GIF、WebP、BMP 或 TIFF）",
 "{0} is not a web address, an email address or a page number": "{0} 不是網址、電子郵件地址或頁碼",
 "{0} is not an Office file formpdf can convert": "{0} 不是 formpdf 可轉換的 Office 檔案",
-"{0} is not sans, serif or mono": "{0} 不是 sans、serif 或 mono",
+"On this computer": "本機字型",
 "{0} is password protected; unlock it first": "{0} 受密碼保護；請先解鎖",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "PDF/A-{2} 存在 {0} 類問題；其中 {3} 類可透過轉換修復。",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "頁面上還醒目提示了 {0} 處差異；可使用箭頭逐一查看。",

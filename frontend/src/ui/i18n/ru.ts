@@ -1960,7 +1960,7 @@ export const ru: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} не является изображением, которое formpdf может прочитать (PNG, JPEG, GIF, WebP, BMP или TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} не является веб-адресом, адресом электронной почты или номером страницы",
 "{0} is not an Office file formpdf can convert": "{0} не является файлом Office, который formpdf может конвертировать",
-"{0} is not sans, serif or mono": "{0} не является значением sans, serif или mono",
+"On this computer": "На этом компьютере",
 "{0} is password protected; unlock it first": "{0} защищён паролем; сначала разблокируйте его",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "Видов проблем для PDF/A-{2}: {0}; исправить конвертацией можно: {3}.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "Ещё различий выделено на страницах: {0}; переходите между ними стрелками.",

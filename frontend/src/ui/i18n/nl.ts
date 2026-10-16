@@ -1960,7 +1960,7 @@ export const nl: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} is geen afbeelding die formpdf kan lezen (PNG, JPEG, GIF, WebP, BMP of TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} is geen webadres, e-mailadres of paginanummer",
 "{0} is not an Office file formpdf can convert": "{0} is geen Office-bestand dat formpdf kan converteren",
-"{0} is not sans, serif or mono": "{0} is niet sans, serif of mono",
+"On this computer": "Op deze computer",
 "{0} is password protected; unlock it first": "{0} is met een wachtwoord beveiligd; ontgrendel het eerst",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "{0} soorten problemen voor PDF/A-{2}; {3} kunnen worden opgelost door te converteren.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "Nog {0} verschillen zijn gemarkeerd op de pagina's; gebruik de pijlen om ze door te lopen.",

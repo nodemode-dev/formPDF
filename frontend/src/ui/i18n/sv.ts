@@ -1960,7 +1960,7 @@ export const sv: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} är inte en bild som formpdf kan läsa (PNG, JPEG, GIF, WebP, BMP eller TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} är inte en webbadress, en e-postadress eller ett sidnummer",
 "{0} is not an Office file formpdf can convert": "{0} är inte en Office-fil som formpdf kan konvertera",
-"{0} is not sans, serif or mono": "{0} är inte sans, serif eller mono",
+"On this computer": "På den här datorn",
 "{0} is password protected; unlock it first": "{0} är lösenordsskyddad; lås upp den först",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "{0} typer av problem för PDF/A-{2}; {3} kan åtgärdas genom konvertering.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "{0} fler skillnader är markerade på sidorna; använd pilarna för att gå igenom dem.",

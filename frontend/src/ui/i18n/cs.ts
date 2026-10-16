@@ -1960,7 +1960,7 @@ export const cs: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} není obrázek, který formpdf umí přečíst (PNG, JPEG, GIF, WebP, BMP nebo TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} není webová adresa, e-mailová adresa ani číslo stránky",
 "{0} is not an Office file formpdf can convert": "{0} není soubor Office, který formpdf umí převést",
-"{0} is not sans, serif or mono": "{0} není hodnota sans, serif ani mono",
+"On this computer": "V tomto počítači",
 "{0} is password protected; unlock it first": "{0} je chráněn heslem; nejprve ho odemkněte",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "Počet druhů problémů pro PDF/A-{2}: {0}; převodem lze opravit: {3}.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "Počet dalších rozdílů zvýrazněných na stránkách: {0}; procházejte je šipkami.",

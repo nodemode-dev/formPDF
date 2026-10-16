@@ -1960,7 +1960,7 @@ export const th: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0} ไม่ใช่รูปภาพที่ formpdf อ่านได้ (PNG, JPEG, GIF, WebP, BMP หรือ TIFF)",
 "{0} is not a web address, an email address or a page number": "{0} ไม่ใช่ที่อยู่เว็บ ที่อยู่อีเมล หรือหมายเลขหน้า",
 "{0} is not an Office file formpdf can convert": "{0} ไม่ใช่ไฟล์ Office ที่ formpdf แปลงได้",
-"{0} is not sans, serif or mono": "{0} ไม่ใช่ sans, serif หรือ mono",
+"On this computer": "ในคอมพิวเตอร์เครื่องนี้",
 "{0} is password protected; unlock it first": "{0} ป้องกันด้วยรหัสผ่าน ปลดล็อกก่อน",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "มีปัญหา {0} ประเภทสำหรับ PDF/A-{2} โดย {3} ประเภทแก้ไขได้ด้วยการแปลง",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "มีความแตกต่างอีก {0} จุดที่ไฮไลต์ไว้บนหน้า ใช้ลูกศรเพื่อไล่ดูทีละจุด",

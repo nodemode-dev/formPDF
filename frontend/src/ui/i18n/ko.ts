@@ -1960,7 +1960,7 @@ export const ko: Record<string, string> = {
 "{0} is not a picture formpdf can read (PNG, JPEG, GIF, WebP, BMP or TIFF)": "{0}은(는) formpdf에서 읽을 수 있는 사진이 아닙니다(PNG, JPEG, GIF, WebP, BMP, TIFF)",
 "{0} is not a web address, an email address or a page number": "{0}은(는) 웹 주소, 이메일 주소, 페이지 번호가 아닙니다",
 "{0} is not an Office file formpdf can convert": "{0}은(는) formpdf에서 변환할 수 있는 Office 파일이 아닙니다",
-"{0} is not sans, serif or mono": "{0}은(는) sans, serif, mono 중 어느 것도 아닙니다",
+"On this computer": "이 컴퓨터",
 "{0} is password protected; unlock it first": "{0}은(는) 암호로 보호되어 있습니다. 먼저 잠금을 해제하세요",
 "{0} kind{1} of problem for PDF/A-{2}; {3} can be fixed by converting.": "PDF/A-{2}와 관련된 문제가 {0}가지 있습니다. 그중 {3}가지는 변환으로 수정할 수 있습니다.",
 "{0} more difference{1} are highlighted on the pages; use the arrows to step through them.": "페이지에 차이점이 {0}개 더 강조 표시되어 있습니다. 화살표로 차례로 이동하세요.",
