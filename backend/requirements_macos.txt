@@ -10,5 +10,6 @@ pypdf
 pypdfium2
 pdfplumber
 reportlab
+fonttools
 pyhanko
 ptyprocess

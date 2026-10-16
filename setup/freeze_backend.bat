@@ -16,7 +16,7 @@ python -c "import rapidocr, onnxruntime" >nul 2>nul && set FONTS=%FONTS% --colle
 cd backend
 if exist build\pyinstaller rmdir /s /q build\pyinstaller
 if exist dist-engine rmdir /s /q dist-engine
-pyinstaller --noconfirm --clean --onefile --name formpdf-engine --distpath dist-engine --workpath build\pyinstaller --specpath build\pyinstaller --add-data "%ROOT%\frontend\dist;frontend_dist" --collect-submodules app --collect-submodules uvicorn --collect-all pptx --collect-all pdfplumber --hidden-import pypdfium2 --collect-all pyhanko --collect-all pyhanko_certvalidator %FONTS% "%ROOT%\backend\formpdf_engine.py" || exit /b 1
+pyinstaller --noconfirm --clean --onefile --name formpdf-engine --distpath dist-engine --workpath build\pyinstaller --specpath build\pyinstaller --add-data "%ROOT%\frontend\dist;frontend_dist" --collect-submodules app --collect-submodules uvicorn --collect-submodules fontTools --collect-all pptx --collect-all pdfplumber --hidden-import pypdfium2 --collect-all pyhanko --collect-all pyhanko_certvalidator %FONTS% "%ROOT%\backend\formpdf_engine.py" || exit /b 1
 if not exist "%ROOT%\src-tauri\binaries" mkdir "%ROOT%\src-tauri\binaries"
 copy /y dist-engine\formpdf-engine.exe "%ROOT%\src-tauri\binaries\formpdf-engine-%TRIPLE%.exe" >nul || exit /b 1
 "%ROOT%\src-tauri\binaries\formpdf-engine-%TRIPLE%.exe" --selfcheck || exit /b 1

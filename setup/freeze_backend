@@ -17,7 +17,7 @@ rm -rf build/pyinstaller dist-engine
 pyinstaller --noconfirm --clean --onefile --name formpdf-engine \
   --distpath dist-engine --workpath build/pyinstaller --specpath build/pyinstaller \
   --add-data "$FORMPDF_ROOT/frontend/dist${sep}frontend_dist" \
-  --collect-submodules app --collect-submodules uvicorn \
+  --collect-submodules app --collect-submodules uvicorn --collect-submodules fontTools \
   --collect-all pptx --collect-all pdfplumber --hidden-import pypdfium2 --collect-all pyhanko --collect-all pyhanko_certvalidator \
   "${extra[@]}" \
   "$FORMPDF_ROOT/backend/formpdf_engine.py"
