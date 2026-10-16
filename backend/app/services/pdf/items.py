@@ -564,7 +564,7 @@ def _norm_font(v, base: dict | None = None) -> dict:
     v = v if isinstance(v, dict) else {}
     base = base or {"family": "sans", "size": 12.0, "color": "#111111", "lineHeight": 1.25}
     fam = v.get("family", base["family"])
-    out = {"family": fam if fam in fontkit.FAMILIES else "sans", "size": _f(v.get("size"), base["size"], 4, 288),
+    out = {"family": fam if fontkit.known(fam) else "sans", "size": _f(v.get("size"), base["size"], 4, 288),
            "color": _color(v.get("color"), base["color"]), "lineHeight": _f(v.get("lineHeight"), base["lineHeight"], 0.8, 4)}
     op = _f(v.get("opacity", base.get("opacity", 1.0)), 1.0, 0.02, 1.0)
     if op < 0.999:

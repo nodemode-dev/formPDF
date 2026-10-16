@@ -11,7 +11,7 @@ import json
 from pypdf import PdfWriter
 from pypdf.generic import NameObject, TextStringObject
 
-from . import actions, core, pdfa
+from . import actions, core, fontkit, pdfa
 
 FONT_EXT = (".ttf", ".otf", ".ttc", ".otc", ".pfb", ".dfont")
 MAP_KEY = NameObject("/FormpdfFontMap")
@@ -24,7 +24,7 @@ def font_map(doc) -> dict[str, str]:
         raw = json.loads(str(root.get(MAP_KEY, "{}")))
     except ValueError:
         return {}
-    return {str(k)[:120]: v for k, v in raw.items() if v in FAMILIES} if isinstance(raw, dict) else {}
+    return {str(k)[:120]: v for k, v in raw.items() if fontkit.known(v)} if isinstance(raw, dict) else {}
 
 
 def change_map(src, out, *, args: dict | None = None, pages=None, passwords: list[str] | None = None) -> dict:
@@ -32,15 +32,15 @@ def change_map(src, out, *, args: dict | None = None, pages=None, passwords: lis
     current = font_map(w)
     asked = (args or {}).get("map") or {}
     if not isinstance(asked, dict) or not asked:
-        raise ValueError("map is {font name: sans | serif | mono | null}; null goes back to the font itself")
+        raise ValueError("map is {font name: sans | serif | mono | sys:<installed family> | null}; null goes back to the font itself")
     for name, fam in asked.items():
         name = re.sub(r"^[A-Z]{6}\+", "", str(name))[:120]
-        if fam in FAMILIES:
+        if fontkit.known(fam):
             current[name] = fam
         elif fam in (None, "", "keep"):
             current.pop(name, None)
         else:
-            raise ValueError(f"{fam} is not sans, serif or mono")
+            raise ValueError(f"{fam} is not sans, serif, mono or an installed font family (see font_families)")
     w.root_object[MAP_KEY] = TextStringObject(json.dumps(current, ensure_ascii=False, separators=(",", ":")))
     with open(out, "wb") as fh:
         w.write(fh)
@@ -125,3 +125,5 @@ actions.register(actions.Action("fonts", "read", "Fonts used: embedded, subset a
                                 run=report))
 actions.register(actions.Action("font_map", "change", "Edit a font as another family", "fontmap", ("font map", "swap font", "replace font", "substitute font", "missing font"),
                                 run=change_map))
+actions.register(actions.Action("font_families", "read", "Font families for editing text: formpdf's and those installed on this computer",
+                                words=("font families", "installed fonts", "system fonts", "choose font"), run=fontkit.families))

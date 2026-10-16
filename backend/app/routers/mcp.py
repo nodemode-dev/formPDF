@@ -77,7 +77,7 @@ name, description, page, x, y}] (a page pins the file there), remove: [names], u
 distance | perimeter | area, points: [[x, y], ...], unit, factor (units per point), label, color}], remove: [{page, index}]};
 spell_fix {fixes: [{where: comment, page, index, nm, offset, word, to} | {where: field, name, offset, word, to}]};
 edit_items {add: [{kind: text, page, x, y, w, text | paras: [{align: left | center | right | justify, list: none | bullet | number, level,
-runs: [{t, b, i, u, s, sup, sub, color}]}], font: {family: sans | serif | mono, size, color, lineHeight}, rot} | {kind: picture, page, x, y,
+runs: [{t, b, i, u, s, sup, sub, color}]}], font: {family: sans | serif | mono | sys:<installed family from read font_families>, size, color, lineHeight}, rot} | {kind: picture, page, x, y,
 w, h, path | data, rot, flipH, flipV, crop: {l, t, r, b}}], update: [{id | page and picture (op from items) | page and paragraph (key
 from items), x, y, w, h, rot, flipH, flipV, crop, path | data (replace a picture), text, paras, font}], arrange: [{id | page and picture |
 page and paragraph, to: front | back | forward | backward}], comments: [{page, index, to}], remove: [id | {id} | {page, picture} |
@@ -87,7 +87,7 @@ is appended); add with after: id adds a frame that continues that one; the story
 order, on any pages; update text, paras or font on any frame of a thread edits the story; grow: true adds pages with a copy of the last
 frame until the story fits (overflow: true on the last frame otherwise) and removes those added pages again, while still blank, once the story no longer needs them; unthread: [id] detaches a frame; update {id, to_page, x, y} moves
 any item to another page; read fonts lists every font with embedded, subset, standard and installed state and its editWith family;
-font_map {map: {font name: sans | serif | mono | null}} saves in the PDF which family page text in that font is edited in (null: its own font);
+font_map {map: {font name: sans | serif | mono | sys:<family> | null}} saves in the PDF which family page text in that font is edited in (null: its own font);
 read paths {pages} lists the shapes and lines already on a page with op, paint, box and group; edit_paths {edits: [{page, op, dx, dy (points, down
 is positive), scale (about the shape's centre), to {x, y, w, h} (resize to that box), remove: true, group (an id shared by shapes that
 select as one, such as the parts of a logo; null takes a shape out), fill, stroke (#rrggbb | {cmyk: [c, m, y, k]} | {gray} | {spot: {name, cmyk, tint}} for a

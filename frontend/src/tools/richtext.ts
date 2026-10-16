@@ -5,15 +5,23 @@ export type Align = 'left' | 'center' | 'right' | 'justify';
 export type ListKind = 'none' | 'bullet' | 'number';
 export interface Run { t: string; b?: boolean; i?: boolean; u?: boolean; s?: boolean; sup?: boolean; sub?: boolean; color?: string }
 export interface Para { align: Align; list: ListKind; level: number; runs: Run[] }
-export interface Font { family: 'sans' | 'serif' | 'mono'; size: number; color: string; lineHeight: number }
+/** sans, serif and mono are formpdf's font kit; sys:<family name> is a family installed on this computer. */
+export interface Font { family: string; size: number; color: string; lineHeight: number }
 export interface Geo { x: number; y: number; w: number; h: number; rot: number }
 
-export const FAMILY_CSS: Record<Font['family'], string> = { sans: 'FkSans', serif: 'FkSerif', mono: 'FkMono' };
+export const FAMILY_CSS: Record<string, string> = { sans: 'FkSans', serif: 'FkSerif', mono: 'FkMono' };
+export const SYS = 'sys:';
 const FLAGS = ['b', 'i', 'u', 's', 'sup', 'sub'] as const;
 type Flag = typeof FLAGS[number];
 
-export async function loadFonts(family: Font['family']): Promise<void> {
-  const name = FAMILY_CSS[family];
+/** The CSS font-family for a family: the kit's web fonts, or the installed font by name (the window runs on the same computer). */
+export function familyCss(family: string): string {
+  if (family.startsWith(SYS)) return `"${family.slice(SYS.length).replace(/["\\]/g, '')}"`;
+  return FAMILY_CSS[family] ?? FAMILY_CSS.sans;
+}
+
+export async function loadFonts(family: string): Promise<void> {
+  const name = familyCss(family);
   await Promise.all(['400 16px', '700 16px', 'italic 400 16px', 'italic 700 16px'].map((w) => document.fonts.load(`${w} ${name}`).catch(() => [])));
 }
 
@@ -180,7 +188,7 @@ export class TextEditor {
 
   style(): void {
     const f = this.font;
-    const style = `font-family:${FAMILY_CSS[f.family]},sans-serif;font-size:${calc(f.size)};line-height:${f.lineHeight};color:${f.color}`;
+    const style = `font-family:${familyCss(f.family)},sans-serif;font-size:${calc(f.size)};line-height:${f.lineHeight};color:${f.color}`;
     if (this.area.getAttribute('style') !== style) this.area.setAttribute('style', style);
   }
 

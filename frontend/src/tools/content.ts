@@ -5,11 +5,12 @@ import { registerTool, type ToolHost } from '../pdf/tools';
 import type { PageView } from '../pdf/viewer';
 import type { Command } from '../ui/commands';
 import { Dialog, promptName } from '../ui/dialogs';
-import { el, patchList, q, setClass, setDisabled, setText } from '../ui/dom';
+import { el, escapeHtml, patchList, q, setClass, setDisabled, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
+import { t } from '../ui/i18n';
 import { toast } from '../ui/toast';
 import { calc, PageLayers } from './overlay';
-import { plain, TextEditor, type Font, type Geo, type Para } from './richtext';
+import { plain, SYS, TextEditor, type Font, type Geo, type Para } from './richtext';
 
 type Crop = { l: number; t: number; r: number; b: number };
 interface Item { id: string; kind: 'text' | 'picture'; thread?: string; seq?: number; overflow?: boolean; page: number; x: number; y: number; w: number; h: number; rot?: number; flipH?: boolean; flipV?: boolean; z: number; font?: Font; paras?: Para[]; crop?: Crop; iw?: number; ih?: number; merged?: boolean }
@@ -700,6 +701,37 @@ interface FontRow { name: string; type: string; state: string; installed: boolea
 
 const EDIT_WITH: Array<[string, string]> = [['', 'Its own font'], ['sans', 'Inter (sans)'], ['serif', 'Noto Serif'], ['mono', 'JetBrains Mono']];
 
+/** Font families installed on this computer, from the engine's font_families; read once per session. */
+let sysFams: Array<{ id: string; label: string }> = [];
+const SYS_GROUP = 'On this computer';
+let sysAsked = false;
+
+async function loadFamilies(host: ToolHost): Promise<void> {
+  const d = host.doc();
+  if (sysAsked || !d) return;
+  sysAsked = true;
+  try {
+    const got = await pdfApi.act<{ families: Array<{ id: string; label: string; system?: boolean }> }>(d.id, 'font_families', {});
+    sysFams = got.families.filter((f) => f.system).map((f) => ({ id: f.id, label: f.label }));
+  } catch { sysAsked = false; return; }
+  if (rootEl) fillFamilies(rootEl);
+}
+
+const familyLabel = (family: string): string => ({ sans: 'Inter', serif: 'Noto Serif', mono: 'JetBrains Mono' } as Record<string, string>)[family]
+  ?? (family.startsWith(SYS) ? family.slice(SYS.length) : 'Inter');
+
+/** Adds the installed families to the Font select once they are known, in their own group after formpdf's three. */
+function fillFamilies(root: HTMLElement): void {
+  const sel = root.querySelector<HTMLSelectElement>('[data-f="family"]');
+  if (!sel || !sysFams.length || sel.querySelector('optgroup[data-sys]')) return;
+  const g = el(`<optgroup label="${escapeHtml(t(SYS_GROUP))}" data-sys data-no-i18n></optgroup>`);
+  g.innerHTML = sysFams.map((f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.label)}</option>`).join('');
+  sel.appendChild(g);
+}
+
+const sysOptions = (): string => (sysFams.length
+  ? `<optgroup label="${escapeHtml(t(SYS_GROUP))}" data-no-i18n>${sysFams.map((f) => `<option value="${escapeHtml(f.id)}">${escapeHtml(f.label)}</option>`).join('')}</optgroup>` : '');
+
 class FontsDialog extends Dialog {
   private readonly lead = el('<p class="fs-note"></p>');
   private readonly list = el('<div class="fs-fonts-list" role="list"></div>');
@@ -725,7 +757,7 @@ class FontsDialog extends Dialog {
       if (s.value !== r.editWith) s.value = r.editWith;
       return n;
     };
-    const options = EDIT_WITH.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    const options = EDIT_WITH.map(([v, l]) => `<option value="${v}">${l}</option>`).join('') + sysOptions();
     patchList(this.list, rows, {
       key: (r) => r.name,
       create: (r) => fill(el(`<div class="fs-fonts-row" role="listitem"><span class="fs-fonts-name" data-no-i18n></span><span class="fs-fonts-state"></span><span class="fs-fonts-pages"></span><select class="fs-tool-unit fs-fonts-with" aria-label="Edit with">${options}</select></div>`), r),
@@ -966,7 +998,8 @@ function sync(): void {
   const first = texts[0] ? textOf(texts[0]) : null;
   const f = editing ? editor.font : first?.font ?? font;
   const orig = (f as Font & { orig?: { name: string } }).orig?.name;
-  const label = { sans: 'Inter', serif: 'Noto Serif', mono: 'JetBrains Mono' }[f.family] ?? 'Inter';
+  const label = familyLabel(f.family);
+  fillFamilies(root);
   const fontNote = orig ? ` Font: ${orig} from the document (missing letters use ${label}).`
     : texts.some((o) => o.kind === 'ptext') ? ` Font: ${label}, as the document's font cannot be reused.` : '';
   const fam = q<HTMLSelectElement>(root, '[data-f="family"]');
@@ -1069,6 +1102,7 @@ registerTool({
     const d = host.doc();
     if (!d) { if (mode !== 'idle') mode = 'idle'; items = []; pics = []; txts = []; sel = []; loaded.clear(); loadedFor = ''; return; }
     if (d.id !== loadedFor && mode !== 'idle') reload(host);
+    void loadFamilies(host);
     if (mode !== 'idle' && host.activeTool() === null && !editing) { mode = 'idle'; sel = []; cropping = null; layers.repaint(); }
     sync();
   },
