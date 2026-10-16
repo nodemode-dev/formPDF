@@ -5,7 +5,7 @@ from collections import Counter
 
 from pypdf import PdfWriter
 from pypdf.generic import (ArrayObject, BooleanObject, ContentStream, DecodedStreamObject, DictionaryObject, FloatObject, IndirectObject,
-                           NameObject, NullObject, NumberObject, TextStringObject)
+                           NameObject, NullObject, NumberObject, StreamObject, TextStringObject)
 
 from app.core import config
 
@@ -1033,10 +1033,25 @@ def _mark_scripts(el: dict, doc_lang: str) -> None:
         _mark_scripts(k, doc_lang)
 
 
-def _annot_elements(page, elements: list[dict], leaves: list[dict], mx0: float, my1: float) -> list:
+def _link_text(a, glyphs) -> str:
+    """What a link says: the text drawn inside its box, else where it goes. PDF/UA wants it in the link's Contents."""
+    r = [float(v) for v in a.get("/Rect", [0, 0, 0, 0])]
+    x0, y0, x1, y1 = min(r[0], r[2]), min(r[1], r[3]), max(r[0], r[2]), max(r[1], r[3])
+    text = "".join(g.text for g in glyphs or [] if g.box and x0 - 1 <= (g.box[0] + g.box[2]) / 2 <= x1 + 1 and y0 - 1 <= (g.box[1] + g.box[3]) / 2 <= y1 + 1)
+    text = re.sub(r"\s+", " ", text).strip()
+    if text:
+        return text[:300]
+    act = _o(a.get("/A"))
+    uri = str(_o(act.get("/URI")) or "") if isinstance(act, DictionaryObject) else ""
+    return f"Link to {uri[:280]}" if uri else "Link to another place in this document"
+
+
+def _annot_elements(page, elements: list[dict], leaves: list[dict], mx0: float, my1: float, glyphs=None) -> list:
     pending = []
     for ref, a in _annots(page):
         sub = a.get("/Subtype")
+        if sub == "/Link" and not str(a.get("/Contents") or "").strip():
+            a[NameObject("/Contents")] = TextStringObject(_link_text(a, glyphs))
         rect = [float(v) for v in a.get("/Rect", [0, 0, 0, 0])]
         top = (min(rect[0], rect[2]) - mx0, my1 - max(rect[1], rect[3]), max(rect[0], rect[2]) - mx0, my1 - min(rect[1], rect[3]))
         el = _el("/Link" if sub == "/Link" else "/Form" if sub == "/Widget" else "/Annot", top, objr=[ref])
@@ -1067,6 +1082,38 @@ def _title_from(elements: list[dict]) -> str:
     return ""
 
 
+def _xmp_title(w: PdfWriter, title: str) -> None:
+    """The title in XMP metadata too, as PDF/UA asks (ISO 14289-1 7.1): a new packet when the file has none, else a
+    dc:title added to (or replaced in) the one it has, leaving everything else in it as written."""
+    import html
+
+    from . import pdfa
+
+    root = w._root_object
+    meta = _o(root.get("/Metadata"))
+    if not isinstance(meta, StreamObject):
+        m = pdfa._meta(w, w.metadata)
+        m["title"] = title
+        pdfa._set_meta(w, m, None, None)
+        return
+    try:
+        text = meta.get_data().decode("utf-8")
+    except Exception:
+        return
+    row = f'<dc:title xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Alt><rdf:li xml:lang="x-default">{html.escape(title)}</rdf:li></rdf:Alt></dc:title>'
+    if re.search(r"<dc:title[\s>]", text):
+        text = re.sub(r"<dc:title[\s>].*?</dc:title>", lambda _m: row, text, count=1, flags=re.S)
+    elif "</rdf:Description>" in text:
+        text = text.replace("</rdf:Description>", row + "</rdf:Description>", 1)
+    else:
+        return
+    xmp = DecodedStreamObject()
+    xmp[NameObject("/Type")] = NameObject("/Metadata")
+    xmp[NameObject("/Subtype")] = NameObject("/XML")
+    xmp.set_data(text.encode("utf-8"))
+    root[NameObject("/Metadata")] = w._add_object(xmp)
+
+
 def _finish(w: PdfWriter, args: dict, guess: str = "") -> None:
     root = w._root_object
     root[NameObject("/MarkInfo")] = DictionaryObject({NameObject("/Marked"): BooleanObject(True)})
@@ -1074,6 +1121,7 @@ def _finish(w: PdfWriter, args: dict, guess: str = "") -> None:
     root[NameObject("/Lang")] = TextStringObject(lang)
     title = str(args.get("title") or real_title((w.metadata or {}).get("/Title")) or guess or "Untitled").strip()[:300]
     w.add_metadata({"/Title": title})
+    _xmp_title(w, title)
     prefs = _o(root.get("/ViewerPreferences"))
     if not isinstance(prefs, DictionaryObject):
         prefs = DictionaryObject()
@@ -1154,7 +1202,7 @@ def _tag(w: PdfWriter, src, passwords, args: dict) -> dict:
             owners, used = _emit(w, page, parts, target)
             mb = page.mediabox
             mx0, my1 = float(min(mb.left, mb.right)), float(max(mb.top, mb.bottom))
-            pending = _annot_elements(page, elements, leaves, mx0, my1)
+            pending = _annot_elements(page, elements, leaves, mx0, my1, c.glyphs)
             if not guess:
                 guess = _title_from(elements)
             refs: dict[int, object] = {}
@@ -1387,7 +1435,16 @@ def fix(src, out, *, args: dict | None = None, pages=None, passwords: list[str] 
         holder, holder_ref = _doc_elem(w, tree)
         added = 0
         for page in w.pages:
+            glyphs = None
             for ref, a in _annots(page):
+                if a.get("/Subtype") == "/Link" and not str(a.get("/Contents") or "").strip():
+                    if glyphs is None:
+                        try:
+                            glyphs = interp.walk(page, w).glyphs
+                        except Exception:
+                            glyphs = []
+                    a[NameObject("/Contents")] = TextStringObject(_link_text(a, glyphs))  # PDF/UA 7.18.5: a link says what it is
+                    added += 1
                 sp = a.get("/StructParent")
                 if sp is not None and _num(_o(sp)) and isinstance(_o(ptree.get(int(_o(sp)))), DictionaryObject):
                     continue
@@ -1693,6 +1750,49 @@ tr.manual td:nth-child(2){{color:#8a5a00}}tr.passed td:nth-child(2){{color:#1b6e
     return {"pages": data["pages"], "filename": f"{re.sub(r'[^A-Za-z0-9 _.-]+', '', name)[:80] or 'PDF'} accessibility report.html"}
 
 
+UA_NS = "http://www.aiim.org/pdfua/ns/id/"
+
+
+def claim_ua(src, out, *, args: dict | None = None, pages=None, passwords: list[str] | None = None) -> dict:
+    """Says in the XMP metadata that the file is PDF/UA-1 (ISO 14289-1 5), but only when that is true as far as formpdf
+    can tell: the file is tagged, every font is embedded (formpdf embeds the ones it has a match for) and the
+    accessibility check finds nothing failed. Figures without alternate text fail that check, so they come first."""
+    from . import pdfa
+
+    w = core.writer(src, passwords)
+    root = w._root_object
+    if "/StructTreeRoot" not in root:
+        raise ValueError("PDF/UA needs tags: tag the PDF first (Accessibility > Tag the PDF)")
+    done: dict = {}
+    pdfa.fix_fonts(w, True, done)
+    loose = sorted({pdfa._base(f) or "unnamed" for _pi, _ref, f in pdfa.fonts(w) if not pdfa.embedded(f)})
+    if loose:
+        raise ValueError(f"PDF/UA needs every font embedded, and formpdf has no matching font for {', '.join(loose[:4])}")
+    title = real_title((w.metadata or {}).get("/Title")) or ""
+    _xmp_title(w, title or "Untitled")
+    meta = _o(root["/Metadata"])
+    text = meta.get_data().decode("utf-8", "replace")
+    row = f'<pdfuaid:part xmlns:pdfuaid="{UA_NS}">1</pdfuaid:part>'
+    text = re.sub(r"<pdfuaid:part[^>]*>[^<]*</pdfuaid:part>", "", text)
+    if "</rdf:Description>" not in text:
+        raise ValueError("The XMP metadata has no description to add the PDF/UA claim to")
+    text = pdfa.ua_extension(text.replace("</rdf:Description>", row + "</rdf:Description>", 1))
+    xmp = DecodedStreamObject()
+    xmp[NameObject("/Type")] = NameObject("/Metadata")
+    xmp[NameObject("/Subtype")] = NameObject("/XML")
+    xmp.set_data(text.encode("utf-8"))
+    root[NameObject("/Metadata")] = w._add_object(xmp)
+    with open(out, "wb") as fh:
+        w.write(fh)
+    _t, rep = check(out)
+    failed = [r["name"] for g in rep.get("groups", []) for r in g.get("rules", []) if r.get("status") == "failed"]
+    if failed:
+        raise ValueError(f"PDF/UA is claimed only when the accessibility check has nothing failed; failing now: {', '.join(failed[:5])}")
+    return {"pages": len(w.pages), "fonts_embedded": done.get("fonts embedded", 0)}
+
+
+actions.register(actions.Action("claim_ua", "change", "Claim PDF/UA-1", "claimed", ("pdf/ua", "pdf/ua-1", "iso 14289", "claim pdf/ua", "accessible pdf"),
+                                run=claim_ua))
 actions.register(actions.Action("accessibility", "read", "Check accessibility", words=("accessibility checker", "a11y", "screen reader", "pdf/ua", "section 508", "wcag"),
                                 run=check))
 actions.register(actions.Action("structure", "read", "Read tags and reading order", words=("tags", "reading order", "alt text", "structure tree"), run=structure))
