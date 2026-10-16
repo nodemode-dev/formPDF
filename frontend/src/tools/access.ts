@@ -8,7 +8,7 @@ import { t } from '../ui/i18n';
 import { PageLayers, place } from './overlay';
 
 type Status = 'passed' | 'failed' | 'manual' | 'skipped';
-interface Finding { page?: number | null; text: string; id?: string }
+interface Finding { page?: number | null; text: string; id?: string; box?: { x: number; y: number; w: number; h: number } | null }
 interface Rule { id: string; group: string; name: string; status: Status; say: string; findings: Finding[]; more: number; fix: string | null }
 interface Report { text: string; summary: Record<Status, number>; groups: Array<{ name: string; rules: Rule[] }>; tagged: boolean; pages: number; title: string; lang: string; fixes: string[] }
 interface Box { x: number; y: number; w: number; h: number }
@@ -508,9 +508,15 @@ registerTool({
         case 'report': void saveReport(); break;
         case 'fix': { const f = t.dataset.fix; if (f === 'tag') void runTag(); else if (f) void applyFix([f], FIX_LABEL[f] ?? 'Fix accessibility'); break; }
         case 'pick': {
-          const r = report?.groups.flatMap((g) => g.rules).find((x) => x.id === t.closest<HTMLElement>('[data-key]')?.dataset.key);
-          const f = r?.findings.find((x) => x.page);
-          if (f?.page) hostRef?.ctx.viewer.goTo(f.page, true);
+          const row = t.closest<HTMLElement>('[data-key]');
+          const r = report?.groups.flatMap((g) => g.rules).find((x) => x.id === row?.dataset.key);
+          const placed = r?.findings.filter((x) => x.page) ?? [];
+          // Each click on a rule goes to its next finding; one with a box is outlined on the page.
+          const at = row && placed.length ? (row.dataset.at === undefined ? 0 : (Number(row.dataset.at) + 1) % placed.length) : 0;
+          if (row && placed.length) row.dataset.at = String(at);
+          const f = placed[at];
+          if (f?.page && f.box && hostRef) { hostRef.ctx.viewer.scrollToPoint(f.page - 1, f.box.x + f.box.w / 2, f.box.y); hostRef.ctx.annot.pulse(f.page, [f.box]); }
+          else if (f?.page) hostRef?.ctx.viewer.goTo(f.page, true);
           if (f?.id && f.page) { orderPage = f.page; selected = f.id; syncOrder(); layers.repaint(); }
           break;
         }

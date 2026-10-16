@@ -9,7 +9,7 @@ from pypdf.generic import (ArrayObject, BooleanObject, ContentStream, DecodedStr
 
 from app.core import config
 
-from . import actions, core, frame, layout, sanitize
+from . import actions, contrast, core, frame, layout, sanitize
 from .content import interp
 
 STANDARD = {"/Document", "/DocumentFragment", "/Part", "/Art", "/Sect", "/Div", "/BlockQuote", "/Caption", "/TOC", "/TOCI", "/Index", "/NonStruct",
@@ -498,7 +498,19 @@ def check(path, *, args: dict | None = None, pages=None, passwords: list[str] | 
     else:
         rules.append(_rule("bookmarks", D, "Bookmarks", "failed", f"{n} pages and no bookmarks." + (" They can be made from the headings." if heads else ""),
                            fix="bookmarks" if heads else None))
-    rules.append(_rule("contrast", D, "Colour contrast", "manual", "Check that text stands out from its background (4.5 to 1 for body text)."))
+    try:
+        low, measured = contrast.low_contrast(path, passwords)
+    except Exception:
+        low, measured = [], 0
+    if not measured:
+        rules.append(_rule("contrast", D, "Colour contrast", "manual", "Check that text stands out from its background (4.5 to 1 for body text)."))
+    else:
+        pages_low = sorted({f["page"] for f in low})
+        rules.append(_rule("contrast", D, "Colour contrast", "failed" if low else "passed",
+                           f"{len(low)} of {measured} text runs measured on the rendered pages are below 4.5 to 1 (3 to 1 for large text) ({_on(pages_low)}). "
+                           "Text over pictures is not measured; check it by eye." if low else
+                           f"All {measured} text runs measured on the rendered pages reach 4.5 to 1 (3 to 1 for large text). Text over pictures is not measured; check it by eye.",
+                           [{k: f[k] for k in ("page", "text", "box")} for f in low]))
 
     untagged = [(i + 1, m.untagged) for i, m in enumerate(marks) if sum(m.untagged.values())]
     rules.append(_rule("tagged_content", P, "Tagged content", "failed" if untagged else "passed",
