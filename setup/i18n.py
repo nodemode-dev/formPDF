@@ -192,6 +192,7 @@ def table(code: str) -> dict[str, str]:
     return json.loads(body[start:end + 1])
 
 
+PIECES = {"_pages", "_on", "_pages_text"}
 EXC = {"ValueError", "PermissionError", "FileNotFoundError", "RuntimeError", "LookupError", "HTTPException", "KeyError", "TypeError"}
 
 
@@ -223,12 +224,24 @@ def engine(hints: dict | None = None) -> list[str]:
     """Messages the engine sends the window: errors it raises and the sentences preflight reports, as keys or patterns."""
     found: set[str] = set()
     for f in sorted(glob.glob(str(ROOT / "backend" / "app" / "**" / "*.py"), recursive=True)):
-        for n in ast.walk(ast.parse(Path(f).read_text(encoding="utf-8"))):
+        tree = ast.parse(Path(f).read_text(encoding="utf-8"))
+        # Page-list helpers build the pieces messages are made of ("on pages 2, 5", " (page 3)"); the window translates them as values.
+        for fn in (x for x in ast.walk(tree) if isinstance(x, ast.FunctionDef) and x.name in PIECES):
+            for ret in (x for x in ast.walk(fn) if isinstance(x, ast.Return) and x.value is not None):
+                for s, code in _py_texts(ret.value):
+                    s = s.strip()
+                    if re.search(r"[A-Za-z]{2}", re.sub(r"\{\d+\}", "", s)):
+                        found.add(s)
+                        if hints is not None:
+                            hints[s] = code
+        for n in ast.walk(tree):
             args = []
             if isinstance(n, ast.Raise) and isinstance(n.exc, ast.Call) and getattr(n.exc.func, "id", getattr(n.exc.func, "attr", "")) in EXC:
                 args = n.exc.args[:1] + [k.value for k in n.exc.keywords if k.arg == "detail"]
             elif isinstance(n, ast.Call) and getattr(n.func, "id", "") == "_check" and len(n.args) >= 4:
                 args = [n.args[3]]
+            elif isinstance(n, ast.Call) and getattr(n.func, "id", "") == "_rule" and len(n.args) >= 5:
+                args = [n.args[4]]  # what an accessibility rule says about the file
             for a in args:
                 for s, code in _py_texts(a):
                     s = s.strip()

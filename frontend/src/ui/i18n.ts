@@ -88,7 +88,12 @@ function fromPattern(text: string, depth = 0): string | undefined {
     p.order.forEach((n, i) => vals.set(n, m[i + 1]));
     const out = look(p.key);
     if (out === undefined) continue;
-    return out.replace(HOLE, (_s, n: string) => { const v = vals.get(Number(n)) ?? ''; return plain(v) ?? fromPattern(v, depth + 1) ?? v; });
+    return out.replace(HOLE, (_s, n: string) => {
+      const v = vals.get(Number(n)) ?? '';
+      const core = v.trim();  // a value often carries its own leading space (" (pages 2, 5)"); keep it around the translation
+      const tr = core ? plain(core) ?? fromPattern(core, depth + 1) : undefined;
+      return tr === undefined ? v : v.replace(core, tr);
+    });
   }
   return undefined;
 }
