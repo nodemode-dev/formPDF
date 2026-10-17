@@ -76,7 +76,7 @@ mailto: | page number}], remove: [{page, index}], auto: true (link every web and
 name, description, page, x, y}] (a page pins the file there), remove: [names], unpin: [{page, index}]}; measure {add: [{page, kind:
 distance | perimeter | area, points: [[x, y], ...], unit, factor (units per point), label, color}], remove: [{page, index}]};
 spell_fix {fixes: [{where: comment, page, index, nm, offset, word, to} | {where: field, name, offset, word, to}]};
-edit_items {add: [{kind: text, page, x, y, w, text | paras: [{align: left | center | right | justify, list: none | bullet | number, level,
+edit_items {add: [{kind: text, page, x, y, w, text | paras: [{align: left | center | right | justify, list: none | bullet | number, level, start (continue a number list in a new box),
 runs: [{t, b, i, u, s, sup, sub, color}]}], font: {family: sans | serif | mono | sys:<installed family from read font_families>, size, color, lineHeight}, rot} | {kind: picture, page, x, y,
 w, h, path | data, rot, flipH, flipV, crop: {l, t, r, b}}], update: [{id | page and picture (op from items) | page and paragraph (key
 from items), x, y, w, h, rot, flipH, flipV, crop, path | data (replace a picture), text, paras, font}], arrange: [{id | page and picture |
@@ -199,7 +199,11 @@ TOOLS = [
            "delete": {"description": "organize: pages to delete; form: field names to delete", "type": "array"}, "rotate": {"type": "integer"},
            "blank": {"type": "array", "items": {"type": "integer"}}, "password": _S, "owner": _S, "permissions": {"type": "object"},
            "title": _S, "author": _S, "subject": _S, "keywords": _S, "strip": {"type": "boolean"}, "quality": {"type": "integer"},
-           "remove": {"type": "array", "items": _S}, "values": {"type": "object"}, "flatten": {"type": "boolean"},
+           "remove": {"type": "array", "description": "sanitize: names; edit_items: ids, {page, picture} or {page, paragraph}"},
+           "add": {"type": "array", "items": {"type": "object"}, "description": "edit_items: text or picture items to add"},
+           "update": {"type": "array", "items": {"type": "object"}, "description": "edit_items: changes to items, pictures or paragraphs"},
+           "arrange": {"type": "array", "items": {"type": "object"}}, "edits": {"type": "array", "items": {"type": "object"}, "description": "edit_paths: changes per path"},
+           "values": {"type": "object"}, "flatten": {"type": "boolean"},
            "annotations": {"type": "array", "items": {"type": "object"}}, "highlight": _S, "create": {"type": "array", "items": {"type": "object"}},
            "rename": {"type": "object"}, "other": _S, "otherIsNewer": {"type": "boolean"}, "pictures": {"type": "boolean"},
            "question": _S, "prompt": _S, "brief": _S, "slides": {"type": "integer"}, "outline": {"type": "object"}},
@@ -925,7 +929,20 @@ async def t_run_commands(a: Agent, args: dict) -> dict:
 HANDLERS = {name[2:]: fn for name, fn in globals().items() if name.startswith("t_") and callable(fn)}
 
 
+def _unstring(args: dict) -> dict:
+    out = {}
+    for k, v in args.items():
+        if isinstance(v, str) and v.lstrip()[:1] in ("[", "{"):
+            try:
+                v = json.loads(v)
+            except ValueError:
+                pass
+        out[k] = v
+    return out
+
+
 async def call_tool(a: Agent, name: str, args: dict) -> dict:
+    args = _unstring(args)
     _note(a)
     if access() == "blocked":
         return _fail(BLOCKED)

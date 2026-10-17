@@ -239,7 +239,7 @@ def layout(it: dict) -> tuple[list[dict], float]:
             counters = {k: v for k, v in counters.items() if k < level} if kind == "bullet" else {}
         elif not cont:
             counters = {k: v for k, v in counters.items() if k <= level}
-            counters[level] = counters.get(level, 0) + 1
+            counters[level] = int(para["start"]) if para.get("start") else counters.get(level, 0) + 1
         indent = level * size * 1.5
         marker = None
         if kind == "bullet":
@@ -556,7 +556,8 @@ def _norm_paras(v, font: dict) -> list[dict]:
             runs.append(run)
         out.append({"align": p.get("align") if p.get("align") in ALIGNS else "left", "list": p.get("list") if p.get("list") in LISTS else "none",
                     "level": int(_f(p.get("level"), 0, 0, 6)), "runs": runs or [{"t": ""}],
-                    **({"hang": round(_f(p.get("hang"), 1.6, 0.3, 4), 3)} if p.get("hang") is not None else {})})
+                    **({"hang": round(_f(p.get("hang"), 1.6, 0.3, 4), 3)} if p.get("hang") is not None else {}),
+                    **({"start": int(_f(p.get("start"), 1, 1, 9999))} if p.get("start") is not None and p.get("list") == "number" else {})})
     return out or [{"align": "left", "list": "none", "level": 0, "runs": [{"t": ""}]}]
 
 
@@ -964,6 +965,11 @@ def _unmerge(p: Page, item_id: str) -> dict | None:
 
 def change(src, out, *, args: dict, pages=None, passwords: list[str] | None = None) -> dict:
     args = args or {}
+    for key in ("add", "update", "arrange", "remove", "comments", "thread"):
+        if args.get(key) is not None and not isinstance(args[key], list):
+            raise ValueError(f"{key} must be a list, not {type(args[key]).__name__}; nothing was changed")
+    if "create" in args and "add" not in args:
+        raise ValueError("Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove")
     w = PdfWriter(clone_from=core.reader(src, passwords))
     n_pages = len(w.pages)
     cache: dict[int, Page] = {}
