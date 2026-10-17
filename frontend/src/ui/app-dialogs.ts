@@ -24,7 +24,12 @@ export function applyLang(code: string): void {
   const tag = (code || 'en_US').replace('_', '-');
   if (document.documentElement.dataset.spellLang !== tag) document.documentElement.dataset.spellLang = tag;
 }
-interface AgentHooks { agentsAllowed: () => boolean; setAgents: (on: boolean) => void }
+interface AgentHooks { agentAccess: () => string; setAccess: (mode: string) => void }
+interface SeenAgent { name: string; channel: string; calls: number; last: number }
+
+const ACCESS_OPTIONS = '<option value="ask">Ask each time</option><option value="allowed">Allowed</option><option value="blocked">Blocked</option>';
+const ACCESS_LABEL: Record<string, string> = { ask: 'Ask', allowed: 'Allowed', blocked: 'Blocked' };
+const CHANNEL_LABEL: Record<string, string> = { inapp: 'Built in', stdio: 'Command line', http: 'HTTP' };
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const setAttr = (node: Element, name: string, value: string): void => { if (node.getAttribute(name) !== value) node.setAttribute(name, value); };
@@ -90,7 +95,7 @@ class PreferencesDialog extends Dialog {
   private readonly color: HTMLInputElement;
   private readonly author: HTMLInputElement;
   private readonly units: HTMLElement;
-  private readonly agents: HTMLInputElement;
+  private readonly access: HTMLSelectElement;
   private readonly lang: HTMLSelectElement;
   private readonly words: HTMLTextAreaElement;
   private readonly tsa: HTMLInputElement;
@@ -135,7 +140,12 @@ class PreferencesDialog extends Dialog {
 <div class="fs-field"><span></span><div class="fs-dlg-ai-test"><button class="fs-btn fs-btn-sm" type="button" data-f="aitest">Test the connection</button><span class="fs-note fs-dlg-ai-say" aria-live="polite"></span></div></div>
 </section>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Agents</div>
-<div class="fs-field"><span>Access</span><label class="fs-check"><input type="checkbox" data-f="agents"><span>Let Claude Code, Codex and Cursor read and edit PDFs</span></label></div>
+<label class="fs-field"><span>Agent access</span><select class="fs-input fs-dlg-pref-access">${ACCESS_OPTIONS}</select></label>
+<div class="fs-field is-top"><span>Agents seen</span><div><p class="fs-note fs-dlg-seen-none">No agent has called since formpdf started.</p><div class="fs-dlg-seen"></div></div></div>
+<label class="fs-field"><span>Claude Code program</span><input class="fs-input fs-dlg-pref-claudebin" type="text" spellcheck="false" placeholder="Leave empty to find it automatically"></label>
+<label class="fs-field"><span>Claude Code folder</span><input class="fs-input fs-dlg-pref-claudefolder" type="text" spellcheck="false" placeholder="Leave empty to use the Agent folder in Formpdf"></label>
+<label class="fs-field"><span>First message</span><input class="fs-input fs-dlg-pref-claudefirst" type="text" spellcheck="false" placeholder="Optional; sent when Claude Code starts"></label>
+<div class="fs-field"><span></span><span class="fs-note fs-dlg-claude-say" aria-live="polite"></span></div>
 </section>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Network</div>
 <p class="fs-note">Everything formpdf could connect to, and whether it does. No account, no telemetry.</p>
@@ -149,7 +159,7 @@ class PreferencesDialog extends Dialog {
     this.color = q<HTMLInputElement>(box, 'input[type="color"]');
     this.author = q<HTMLInputElement>(box, '.fs-dlg-pref-author');
     this.units = q(box, '[data-seg="units"]');
-    this.agents = q<HTMLInputElement>(box, '[data-f="agents"]');
+    this.access = q<HTMLSelectElement>(box, '.fs-dlg-pref-access');
     this.lang = q<HTMLSelectElement>(box, '.fs-dlg-pref-lang');
     this.words = q<HTMLTextAreaElement>(box, '.fs-dlg-pref-words');
     this.tsa = q<HTMLInputElement>(box, '.fs-dlg-pref-tsa');
@@ -178,7 +188,11 @@ class PreferencesDialog extends Dialog {
     setValue(ui, language());
     ui.addEventListener('change', () => { if (isLang(ui.value)) { this.persist({ language: ui.value }); void setLanguage(ui.value); } });
     this.words.addEventListener('change', () => this.persist({ dictionary: this.words.value.split(/\s*\n\s*/).filter(Boolean) }));
-    this.agents.addEventListener('change', () => this.h?.setAgents(this.agents.checked));
+    this.access.addEventListener('change', () => this.h?.setAccess(this.access.value));
+    for (const [k, key] of [['claudebin', 'claudeBin'], ['claudefolder', 'claudeFolder'], ['claudefirst', 'claudeFirstMessage']] as const) {
+      const f = q<HTMLInputElement>(box, `.fs-dlg-pref-${k}`);
+      f.addEventListener('change', () => { this.persist({ [key]: f.value.trim() }); window.setTimeout(() => void this.loadClaude(), 300); });
+    }
     this.tsa.addEventListener('change', () => this.persist({ timestampUrl: this.tsa.value.trim() }));
     const ai = (k: string): HTMLInputElement => q<HTMLInputElement>(box, `.fs-dlg-ai-${k}`);
     ai('provider').addEventListener('change', () => void this.saveAi({ provider: ai('provider').value }));
@@ -263,6 +277,31 @@ class PreferencesDialog extends Dialog {
     setText(q(this.body, '.fs-dlg-plug-note'), `Plug-ins are folders in ${got.folder}. A plug-in runs code on this computer with formpdf's access to your files, so it stays off until you allow it, and asks again if it changes.${got.plugins.length ? '' : ' There are none yet.'}`);
   }
 
+  private fillSeen(rows: SeenAgent[]): void {
+    const fill = (n: HTMLElement, r: SeenAgent): void => {
+      setText(q(n, '.fs-dlg-net-name'), r.name);
+      setText(q(n, '.fs-dlg-net-state'), CHANNEL_LABEL[r.channel] ?? r.channel);
+      setText(q(n, '.fs-dlg-net-note'), `${r.calls} call${r.calls === 1 ? '' : 's'} · last ${new Date(r.last * 1000).toLocaleTimeString()}`);
+    };
+    setHidden(q(this.body, '.fs-dlg-seen-none'), rows.length > 0);
+    patchList(q(this.body, '.fs-dlg-seen'), rows, {
+      key: (r) => r.name,
+      create: (r) => { const n = el('<div class="fs-dlg-net-row"><span class="fs-dlg-net-name"></span><span class="fs-badge fs-dlg-net-state"></span><span class="fs-note fs-dlg-net-note"></span></div>'); fill(n, r); return n; },
+      update: fill,
+    });
+  }
+
+  private async loadClaude(): Promise<void> {
+    try {
+      const s = await api.get<{ installed: boolean; path: string | null; version: string | null; folder: string; binNote: string }>('/api/claude/status');
+      const bin = q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudebin');
+      const folder = q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudefolder');
+      if (s.path && bin.placeholder !== s.path) bin.placeholder = s.path;
+      if (folder.placeholder !== s.folder) folder.placeholder = s.folder;
+      setText(q(this.body, '.fs-dlg-claude-say'), s.binNote || (s.installed ? `Claude Code${s.version ? ` ${s.version}` : ''} found at ${s.path}` : 'Claude Code was not found on this computer.'));
+    } catch { return; }
+  }
+
   private persist(patch: Settings): void {
     void api.setSettings(patch).catch((e) => toast(`Could not save the preference: ${e instanceof Error ? e.message : String(e)}`, 'error'));
   }
@@ -285,11 +324,16 @@ class PreferencesDialog extends Dialog {
   show(h: AgentHooks): void {
     this.h = h;
     this.syncLook();
-    setChecked(this.agents, h.agentsAllowed());
+    setValue(this.access, h.agentAccess());
     this.open(this.themes.querySelector<HTMLElement>('.is-active'));
     void this.loadPlugs();
+    void this.loadClaude();
+    void api.get<{ clients: SeenAgent[] }>('/api/mcp/status').then((s) => this.fillSeen(s.clients)).catch(() => undefined);
     void api.settings().catch((): Settings => ({})).then((s) => {
       setValue(this.author, str(s.author));
+      setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudebin'), str(s.claudeBin));
+      setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudefolder'), str(s.claudeFolder));
+      setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudefirst'), str(s.claudeFirstMessage));
       setValue(this.tsa, str(s.timestampUrl));
       setChecked(this.formScripts, s.formScripts !== false);
       segSet(this.units, str(s.units) || 'pt');
@@ -332,7 +376,7 @@ class AgentsDialog extends Dialog {
   private h: AgentHooks | null = null;
   private port = location.port && location.port !== '5198' ? location.port : '8198';
   private tab = 'install';
-  private readonly allow: HTMLInputElement;
+  private readonly allow: HTMLSelectElement;
   private readonly badge: HTMLElement;
   private readonly url: HTMLElement;
   private readonly engine: HTMLElement;
@@ -342,7 +386,7 @@ class AgentsDialog extends Dialog {
   constructor() {
     super('Agents', 640);
     const card = el(`<div class="fs-dlg-card">
-<div class="fs-dlg-card-row"><label class="fs-check"><input type="checkbox" data-f="allow"><span>Let agents read and edit PDFs</span></label><span class="fs-badge fs-dlg-agent-badge"></span></div>
+<div class="fs-dlg-card-row"><label class="fs-check"><span>Agent access</span><select class="fs-input" data-f="allow">${ACCESS_OPTIONS}</select></label><span class="fs-badge fs-dlg-agent-badge"></span></div>
 <dl class="fs-kv"><dt>MCP server</dt><dd class="fs-dlg-mcp-url"></dd><dt>Engine</dt><dd class="fs-dlg-engine"></dd></dl>
 </div>`);
     this.tabs = el(`<div class="fs-seg is-quiet fs-dlg-tabs" role="group" aria-label="Set up">${SETUP.map((s) => `<button type="button" data-v="${s.id}">${s.tab}</button>`).join('')}</div>`);
@@ -362,7 +406,7 @@ class AgentsDialog extends Dialog {
 <li>The MCP server listens on 127.0.0.1 only. Nothing leaves this computer unless your agent sends it.</li>
 </ul></div>`);
     this.body.append(card, this.tabs, ...blocks, promptBtn, how);
-    this.allow = q<HTMLInputElement>(card, '[data-f="allow"]');
+    this.allow = q<HTMLSelectElement>(card, '[data-f="allow"]');
     this.badge = q(card, '.fs-dlg-agent-badge');
     this.url = q(card, '.fs-dlg-mcp-url');
     this.engine = q(card, '.fs-dlg-engine');
@@ -373,7 +417,7 @@ class AgentsDialog extends Dialog {
       if (b && pre) void copyText(pre.textContent ?? '').then((ok) => flashCopied(b, ok));
     });
     segOn(this.tabs, (v) => { this.tab = v; this.syncTabs(); });
-    this.allow.addEventListener('change', () => { this.h?.setAgents(this.allow.checked); this.syncAllow(); });
+    this.allow.addEventListener('change', () => { this.h?.setAccess(this.allow.value); this.syncAllow(); });
     promptBtn.addEventListener('click', () => {
       const text = ['Use the formpdf MCP server for this PDF work.', 'Call get_context first, open the PDF with open_pdf if it is not open, do the job with the pdf tool, then render_pages on the pages you changed and check them before you tell me it is done.', 'My request: '].join('\n');
       void copyText(text).then((ok) => toast(ok ? 'Prompt copied' : 'Could not copy the prompt', ok ? 'info' : 'error'));
@@ -382,7 +426,7 @@ class AgentsDialog extends Dialog {
 
   show(h: AgentHooks): void {
     this.h = h;
-    setChecked(this.allow, h.agentsAllowed());
+    setValue(this.allow, h.agentAccess());
     this.syncAllow();
     this.syncPort();
     this.syncTabs();
@@ -396,10 +440,10 @@ class AgentsDialog extends Dialog {
   }
 
   private syncAllow(): void {
-    const on = this.allow.checked;
-    setText(this.badge, on ? 'Allowed' : 'Off');
-    setClass(this.badge, 'is-approved', on);
-    setClass(this.badge, 'is-draft', !on);
+    const mode = this.allow.value;
+    setText(this.badge, ACCESS_LABEL[mode] ?? mode);
+    setClass(this.badge, 'is-approved', mode === 'allowed');
+    setClass(this.badge, 'is-draft', mode !== 'allowed');
   }
 
   private syncPort(): void {

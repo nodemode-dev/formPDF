@@ -142,12 +142,34 @@ class Agent:
         self.turn: str | None = None
         self.last = 0.0
         self.inapp = False
+        self.channel = "http"
 
 
 SESSIONS: dict[str, Agent] = {}
 OPEN: dict[str, dict] = {}
+SEEN: dict[str, dict] = {}
+MODES = ("ask", "allowed", "blocked")
+MAX_SEEN = 40
+INAPP_CLIENT = "Claude Code in formpdf"
+BLOCKED = "Outside agents are blocked in formpdf's Preferences, Agents, so this call was refused. Tell the person where to change it and stop; do not retry."
 _declined = [0.0]
 _consent_lock: list = []
+
+
+def access() -> str:
+    s = config.read_settings()
+    if s.get("outsideAgents") in MODES:
+        return s["outsideAgents"]
+    return "allowed" if s.get("agentsAllowed") else "ask"
+
+
+def _note(a: "Agent") -> None:
+    now = time.time()
+    if a.name not in SEEN and len(SEEN) >= MAX_SEEN:
+        SEEN.pop(min(SEEN, key=lambda k: SEEN[k]["last"]))
+    row = SEEN.setdefault(a.name, {"name": a.name, "channel": a.channel, "first": now, "calls": 0})
+    row["last"], row["channel"] = now, a.channel
+    row["calls"] += 1
 
 
 def _tool(name: str, description: str, props: dict, required: list[str] | None = None, read: bool = False, destructive: bool = False) -> dict:
@@ -161,6 +183,8 @@ _DOC = {"type": "string", "description": "An open PDF's id or key from get_conte
 _PATH = {"type": "string", "description": "Absolute path of a PDF file to work on instead of the open PDF"}
 TOOLS = [
     _tool("get_context", "What formpdf has open: the window's PDF (id, key, name, pages, current page, unsaved changes), PDFs agents opened, recent PDFs and whether agents may edit.", {}, read=True),
+    _tool("get_agent_access", "Whether outside agents such as Claude may use formpdf (outsideAgents: ask, allowed or blocked) and which agents have called since formpdf started. "
+          "Like every tool it is refused while the setting is blocked.", {}, read=True),
     _tool("open_pdf", "Opens a PDF file (absolute path) in the formpdf window, or in the engine when no window is open, and makes it the open PDF.", {"path": _S}, ["path"]),
     _tool("pdf", "PDF actions. Read: " + ", ".join(READ_ACTIONS) + ". Change: " + ", ".join(CHANGE_ACTIONS) + " (on the open PDF: live in the window as your "
           "undoable turn; with path: a new file beside it). Export: " + ", ".join(EXPORT_ACTIONS) + ". Arguments per action: resource formpdf://guide.",
@@ -233,11 +257,18 @@ def _mutating(name: str, args: dict) -> bool:
 def _agent(request: Request, params: dict) -> Agent:
     sid = request.headers.get("mcp-session-id")
     info = (params.get("_meta") or {}).get("io.modelcontextprotocol/clientInfo") or {}
-    key = sid or f"anon-{info.get('name') or 'agent'}"
+    header = request.headers.get("x-formpdf-agent", "").strip()[:80]
+    named = header or str(info.get("title") or info.get("name") or "").strip()[:80]
+    key = sid or f"anon-{named or 'agent'}"
     a = SESSIONS.get(key)
     if a is None:
-        a = SESSIONS[key] = Agent(key, info.get("name") or "agent")
+        a = SESSIONS[key] = Agent(key, named or "agent")
+    elif named:
+        a.name = named
     a.inapp = request.headers.get("x-formpdf-inapp") == claude_code.INAPP_TOKEN
+    a.channel = "inapp" if a.inapp else "stdio" if header else "http"
+    if a.inapp:
+        a.name = INAPP_CLIENT
     return a
 
 
@@ -250,9 +281,7 @@ def _turn(a: Agent) -> str:
 
 
 async def _consent(a: Agent) -> str | None:
-    if a.inapp:
-        return None
-    if config.read_settings().get("agentsAllowed") or any(c.agents for c in bridge.windows()):
+    if a.inapp or access() == "allowed" or any(c.agents for c in bridge.windows()):
         return None
     if not bridge.window_connected():
         return None
@@ -261,13 +290,16 @@ async def _consent(a: Agent) -> str | None:
     if not _consent_lock:
         _consent_lock.append(asyncio.Lock())
     async with _consent_lock[0]:
-        if config.read_settings().get("agentsAllowed"):
+        state = access()
+        if state == "allowed":
             return None
+        if state == "blocked":
+            return BLOCKED
         res = await bridge.window_call("consent", {"agent": a.name}, 120)
         if res is None:
             return None
         if (res.get("structuredContent") or {}).get("allowed"):
-            config.write_settings({"agentsAllowed": True})
+            config.write_settings({"outsideAgents": "allowed"})
             return None
         _declined[0] = time.monotonic() + 120
         return "The person did not allow agents to edit PDFs in formpdf. Ask them to allow it in the formpdf window, then retry."
@@ -664,7 +696,7 @@ async def _read(src: Source, action: str, args: dict, pages) -> dict:
 
 async def t_get_context(a: Agent, args: dict) -> dict:
     win = bridge.window_doc()
-    allowed = bool(config.read_settings().get("agentsAllowed")) or any(c.agents for c in bridge.windows())
+    allowed = access() == "allowed" or any(c.agents for c in bridge.windows())
     lines = [f"formpdf {config.VERSION} · engine 127.0.0.1:{config.port()} · data {config.data_dir()}"]
     if bridge.window_connected():
         lines.append(f"Window: open · agents {'allowed' if allowed else 'not allowed yet (your first change asks the person)'}")
@@ -693,8 +725,19 @@ async def t_get_context(a: Agent, args: dict) -> dict:
     office_st = office.status()
     lines.append("Office files: LibreOffice found (open_pdf and merge accept .docx, .pptx, .xlsx and similar)" if office_st["available"]
                  else "Office files: LibreOffice not installed (ask the person to install it to convert .docx, .pptx and .xlsx)")
-    return _ok("\n".join(lines), {"window": bridge.window_connected(), "agentsAllowed": allowed, "doc": win, "open": list(OPEN.values())[:10], "recent": recent,
+    return _ok("\n".join(lines), {"window": bridge.window_connected(), "agentsAllowed": allowed, "outsideAgents": access(), "doc": win, "open": list(OPEN.values())[:10], "recent": recent,
                                   "ocr": ocr_st["available"], "office": office_st["available"]})
+
+
+def _seen() -> list[dict]:
+    return sorted((dict(v) for v in SEEN.values()), key=lambda c: -c["last"])
+
+
+async def t_get_agent_access(a: Agent, args: dict) -> dict:
+    mode, seen = access(), _seen()
+    return _ok(f"Outside agents are {mode} (ask: the person is asked before an agent's first change; allowed; blocked: every call is refused). "
+               f"{len(seen)} agent{'s' if len(seen) != 1 else ''} seen since formpdf started" + (": " + ", ".join(c["name"] for c in seen) if seen else "") + ".",
+               {"outsideAgents": mode, "clients": seen})
 
 
 async def t_open_pdf(a: Agent, args: dict) -> dict:
@@ -883,6 +926,9 @@ HANDLERS = {name[2:]: fn for name, fn in globals().items() if name.startswith("t
 
 
 async def call_tool(a: Agent, name: str, args: dict) -> dict:
+    _note(a)
+    if access() == "blocked":
+        return _fail(BLOCKED)
     if _mutating(name, args):
         refused = await _consent(a)
         if refused:
@@ -937,7 +983,8 @@ async def mcp(request: Request) -> Response:
         sid = uuid.uuid4().hex
         while len(SESSIONS) > 500:
             SESSIONS.pop(next(iter(SESSIONS)))
-        SESSIONS[sid] = Agent(sid, (params.get("clientInfo") or {}).get("name") or "agent")
+        who = params.get("clientInfo") or {}
+        SESSIONS[sid] = Agent(sid, request.headers.get("x-formpdf-agent", "").strip()[:80] or str(who.get("title") or who.get("name") or "").strip()[:80] or "agent")
         headers["Mcp-Session-Id"] = sid
         out = _res(req_id, {"protocolVersion": asked if asked in VERSIONS + LEGACY else VERSIONS[1], "capabilities": CAPS, "serverInfo": SERVER, "instructions": INSTRUCTIONS}, False)
     elif version not in VERSIONS + LEGACY:
@@ -974,6 +1021,11 @@ async def mcp(request: Request) -> Response:
     else:
         out = _err(req_id, -32601, f"Method not found: {method}")
     return Response(content=json.dumps(out, ensure_ascii=False), media_type="application/json", headers=headers)
+
+
+@router.get("/api/mcp/status")
+def mcp_status() -> dict:
+    return {"endpoint": config.engine_url() + "/mcp", "tools": len(TOOLS), "versions": VERSIONS, "outsideAgents": access(), "clients": _seen()}
 
 
 @router.get("/mcp")

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import secrets
 import shlex
 import shutil
@@ -42,17 +43,39 @@ def child_env() -> dict:
 def _from_login_shell() -> str | None:
     if os.name == "nt":
         return None
-    try:
-        out = subprocess.run(terminal.login_shell() + ["-c", "command -v claude"], capture_output=True, text=True, timeout=10, env=child_env())
-    except (OSError, subprocess.SubprocessError):
-        return None
-    found = out.stdout.strip().splitlines()[-1:] if out.returncode == 0 else []
-    return found[0] if found and os.path.isabs(found[0]) else None
+    for flags in (["-c"], ["-i", "-c"]):
+        try:
+            out = subprocess.run(terminal.login_shell() + flags + ["command -v claude"], capture_output=True, text=True, timeout=10, env=child_env(), stdin=subprocess.DEVNULL)
+        except (OSError, subprocess.SubprocessError):
+            continue
+        found = out.stdout.strip().splitlines()[-1:] if out.returncode == 0 else []
+        if found and os.path.isabs(found[0]):
+            return found[0]
+    return None
 
 
 def _runnable(path: str) -> bool:
     p = Path(path).expanduser()
     return p.is_file() and os.access(p, os.X_OK)
+
+
+def _version_key(p: Path) -> tuple:
+    parts = re.findall(r"\d+", p.name)
+    return tuple(int(x) for x in parts) or (0,)
+
+
+def _managed() -> list[Path]:
+    home = Path.home()
+    found: list[Path] = []
+    for base, tail in ((home / ".nvm" / "versions" / "node", "bin"), (home / ".local" / "share" / "fnm" / "node-versions", "installation/bin"),
+                       (home / "Library" / "Application Support" / "fnm" / "node-versions", "installation/bin"),
+                       (home / ".asdf" / "installs" / "nodejs", "bin"), (home / ".local" / "share" / "mise" / "installs" / "node", "bin")):
+        try:
+            versions = sorted((d for d in base.iterdir() if d.is_dir()), key=_version_key, reverse=True)
+        except OSError:
+            continue
+        found += [d / tail / "claude" for d in versions]
+    return found + [home / ".claude" / "bin" / "claude"]
 
 
 def cli() -> str | None:
@@ -63,7 +86,7 @@ def cli() -> str | None:
     if found:
         return found
     home = Path.home()
-    for p in [home / c for c in CANDIDATES] + [Path(s) for s in SYSTEM_PATHS]:
+    for p in [home / c for c in CANDIDATES] + [Path(s) for s in SYSTEM_PATHS] + _managed():
         if p.is_file() and os.access(p, os.X_OK):
             return str(p)
     return _from_login_shell()

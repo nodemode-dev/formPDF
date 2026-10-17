@@ -29,13 +29,13 @@ export async function startApp(): Promise<void> {
   startPageTranslator();
   document.title = `formpdf ${VERSION}`;
   const live = new LiveClient(navigator.platform || 'window');
-  let agentsAllowed = false;
-  const setAgents = (on: boolean): void => {
-    agentsAllowed = on;
-    live.setAgents(on);
-    void api.setSettings({ agentsAllowed: on }).catch(() => undefined);
+  let agentAccess = 'ask';
+  const setAccess = (mode: string): void => {
+    agentAccess = mode;
+    live.setAgents(mode === 'allowed');
+    void api.setSettings({ outsideAgents: mode }).catch(() => undefined);
   };
-  const agentHooks = { agentsAllowed: () => agentsAllowed, setAgents };
+  const agentHooks = { agentAccess: () => agentAccess, setAccess };
   events.start();
   let docNow: DocState | null = null;
   const dock = new TerminalDock();
@@ -113,7 +113,7 @@ export async function startApp(): Promise<void> {
   bench.commands.onChange = () => catalogue.mirror();
   catalogue.mirror();
   (window as unknown as { formpdf?: { catalogue: Catalogue } }).formpdf = { catalogue };
-  const bridge = new AgentBridge({ bench: () => bench, allow: () => setAgents(true), catalogue: () => catalogue });
+  const bridge = new AgentBridge({ bench: () => bench, allow: () => setAccess('allowed'), catalogue: () => catalogue });
   live.onTool = (name, args) => bridge.run(name, args);
   live.connect();
 
@@ -133,8 +133,8 @@ export async function startApp(): Promise<void> {
   enhanceAllSelects(document);
   try {
     const settings = await api.settings();
-    agentsAllowed = !!settings.agentsAllowed;
-    live.setAgents(agentsAllowed);
+    agentAccess = settings.outsideAgents === 'ask' || settings.outsideAgents === 'allowed' || settings.outsideAgents === 'blocked' ? settings.outsideAgents : settings.agentsAllowed ? 'allowed' : 'ask';
+    live.setAgents(agentAccess === 'allowed');
     applyLang(typeof settings.spellLang === 'string' ? settings.spellLang : '');
     if (isLang(settings.language) && settings.language !== language()) void setLanguage(settings.language);
   } catch { toast('The formpdf engine is not answering yet; retrying.', 'error'); }

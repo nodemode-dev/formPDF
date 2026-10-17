@@ -20,6 +20,7 @@ interface Tab {
 }
 
 const HEIGHT_KEY = 'fs-dock-h';
+const LAST_KEY = 'fs-dock-last';
 const MIN_H = 160;
 const mod = isMac ? 'Cmd' : 'Ctrl';
 
@@ -40,6 +41,21 @@ function storedHeight(): number {
   }
 }
 
+type DockKind = 'claude' | 'shell' | 'chat';
+
+function lastKind(): DockKind | null {
+  try {
+    const v = localStorage.getItem(LAST_KEY);
+    return v === 'claude' || v === 'shell' || v === 'chat' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberKind(kind: DockKind): void {
+  try { localStorage.setItem(LAST_KEY, kind); } catch { return; }
+}
+
 export class TerminalDock {
   readonly root: HTMLElement;
   onFail: (err: unknown) => void = () => undefined;
@@ -52,7 +68,7 @@ export class TerminalDock {
   private readonly ask: HTMLInputElement;
   private readonly tabs = new Map<string, Tab>();
   private active: string | null = null;
-  private chat: ChatPane | null = null;
+  private chatPane: ChatPane | null = null;
   private chatTab: HTMLElement | null = null;
   private height = storedHeight();
   private ensured = false;
@@ -152,10 +168,30 @@ export class TerminalDock {
       const listed = await api.get<{ terminals: TermInfo[] }>('/api/terminals').catch(() => ({ terminals: [] as TermInfo[] }));
       for (const t of listed.terminals) if (!this.tabs.has(t.id)) this.mount(t, false);
     }
-    if (!this.tabs.size && !this.chatTab) await this.showChat();
+    if (!this.tabs.size && !this.chatTab) await this.openFresh();
     else if (!this.active) this.select([...this.tabs.keys()][0] ?? 'chat');
     else this.fitActive();
     this.focus();
+  }
+
+  private async openFresh(): Promise<void> {
+    const last = lastKind();
+    if (last === 'chat') { await this.showChat(); return; }
+    const installed = last === 'shell' ? false : await api.get<{ installed?: boolean }>('/api/claude/status').then((s) => !!s.installed, () => false);
+    if (installed) await this.claude();
+    else await this.terminal();
+  }
+
+  async terminal(): Promise<void> {
+    const shell = [...this.tabs.values()].find((t) => t.kind !== 'claude');
+    if (!shell) { await this.open(); return; }
+    this.setOpenQuiet();
+    this.select(shell.id);
+    rememberKind('shell');
+  }
+
+  async chat(): Promise<void> {
+    await this.showChat();
   }
 
   focus(): void {
@@ -165,12 +201,12 @@ export class TerminalDock {
 
   async showChat(): Promise<void> {
     this.setOpenQuiet();
-    if (!this.chat) {
+    if (!this.chatPane) {
       const chat = new ChatPane();
       chat.onFail = (err) => this.onFail(err);
       chat.onHandoff = (session) => void this.claude(undefined, session);
       chat.onPage = (p) => this.onPage(p);
-      this.chat = chat;
+      this.chatPane = chat;
       this.stage.appendChild(chat.root);
     }
     if (!this.chatTab) {
@@ -184,7 +220,8 @@ export class TerminalDock {
     }
     setHidden(this.empty, true);
     this.select('chat');
-    await this.chat.load();
+    rememberKind('chat');
+    await this.chatPane.load();
   }
 
   private setOpenQuiet(): void {
@@ -197,7 +234,7 @@ export class TerminalDock {
   private closeChat(): void {
     this.chatTab?.remove();
     this.chatTab = null;
-    if (this.chat) setHidden(this.chat.root, true);
+    if (this.chatPane) setHidden(this.chatPane.root, true);
     if (this.active === 'chat') {
       this.active = null;
       const next = [...this.tabs.keys()].pop();
@@ -217,6 +254,7 @@ export class TerminalDock {
       const info = await api.post<TermInfo>('/api/terminals', { cols: 100, rows: 20 });
       if (!this.tabs.has(info.id)) this.mount(info, true);
       else this.select(info.id);
+      rememberKind('shell');
     } catch (err) { this.onFail(err); }
   }
 
@@ -227,6 +265,7 @@ export class TerminalDock {
       const info = await api.post<TermInfo>('/api/claude/open', { prompt: prompt || undefined, cols: size.cols, rows: size.rows, resume: resume || undefined });
       if (this.tabs.has(info.id)) this.select(info.id);
       else this.mount(info, true);
+      rememberKind('claude');
     } catch (err) { this.onFail(err); }
   }
 
@@ -234,9 +273,9 @@ export class TerminalDock {
     const text = this.ask.value.trim();
     if (!text) return;
     const extra = this.context();
-    if (this.active === 'chat' && this.chat?.isBusy()) return;
+    if (this.active === 'chat' && this.chatPane?.isBusy()) return;
     this.ask.value = '';
-    if (this.active === 'chat' && this.chat) await this.chat.send(text, extra, this.note());
+    if (this.active === 'chat' && this.chatPane) await this.chatPane.send(text, extra, this.note());
     else await this.claude(extra ? `${text} (${extra})` : text);
   }
 
@@ -319,7 +358,7 @@ export class TerminalDock {
       t.tab.classList.toggle('is-on', on);
       t.tab.setAttribute('aria-selected', String(on));
     }
-    if (this.chat) setHidden(this.chat.root, id !== 'chat');
+    if (this.chatPane) setHidden(this.chatPane.root, id !== 'chat');
     if (this.chatTab) { this.chatTab.classList.toggle('is-on', id === 'chat'); this.chatTab.setAttribute('aria-selected', String(id === 'chat')); }
     this.syncAsk();
     setDisabled(q<HTMLButtonElement>(this.root, '.fs-dock-restart'), id === 'chat');

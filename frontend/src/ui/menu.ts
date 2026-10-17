@@ -29,7 +29,7 @@ export class PopupMenu {
   contains(t: Node): boolean { return this.panel.contains(t) || !!this.openSub?.contains(t); }
 
   setItems(items: MenuItem[]): void {
-    const key = JSON.stringify(items);
+    const key = `${JSON.stringify(items)}|${items.filter((i) => typeof i === 'string' && !!this.commands.get(i)).length}`;
     if (key === this.key) return;
     this.key = key;
     this.closeSub();

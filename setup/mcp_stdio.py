@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PORT = 8198
-STATE = {"session": None, "version": None, "started": False}
+STATE = {"session": None, "version": None, "started": False, "agent": None}
 
 
 def say(text: str) -> None:
@@ -86,9 +86,14 @@ def post(line: str, msg: dict) -> tuple[str, dict]:
     headers = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream", "MCP-Protocol-Version": version}
     if STATE["session"] and msg.get("method") != "initialize":
         headers["Mcp-Session-Id"] = STATE["session"]
+    info = (msg.get("params") or {}).get("clientInfo") if msg.get("method") == "initialize" else None
+    if isinstance(info, dict) and (info.get("title") or info.get("name")):
+        STATE["agent"] = str(info.get("title") or info.get("name")).encode("ascii", "ignore").decode().strip()[:80]
+    if STATE["agent"]:
+        headers["x-formpdf-agent"] = STATE["agent"]
     req = urllib.request.Request(base() + "/mcp", data=line.encode("utf-8"), method="POST", headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=900) as r:
+        with urllib.request.urlopen(req, timeout=7200) as r:
             return r.read().decode("utf-8"), dict(r.headers)
     except urllib.error.HTTPError as exc:
         return exc.read().decode("utf-8", "replace"), dict(exc.headers or {})

@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -11,6 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ["formpdf-harness", "formpdf-skillset"]
 PORT = int(os.environ.get("FORMPDF_PORT") or 8198)
 PY = "python" if os.name == "nt" else "python3"
+LAUNCH = str(ROOT / ("formpdf.bat" if os.name == "nt" else "formpdf"))
 USAGE = """usage: ./formpdf agents install [--dry-run]   set up Claude Code, Codex and Cursor here and in the folder you ran it from
        ./formpdf agents sync [--check]       write the window commands reference from the catalogue, then copy the formpdf skills again
                                              (and mirror .claude/skills to .agents/skills)"""
@@ -34,7 +36,7 @@ def entries(portable: bool) -> dict:
         codex = f"command = {json.dumps(PY)}\nargs = [{json.dumps(str(ROOT / 'setup' / 'mcp_stdio.py'))}]\n"
     return {
         "claude": {"formpdf": {"type": "http", "url": f"http://127.0.0.1:{PORT}/mcp"}, "formpdf-stdio": {"type": "stdio", "command": PY, "args": [script]}},
-        "codex": "[mcp_servers.formpdf]\n" + codex + "startup_timeout_sec = 30\ntool_timeout_sec = 300\n",
+        "codex": "[mcp_servers.formpdf]\n" + codex + "startup_timeout_sec = 90\ntool_timeout_sec = 3600\n",
         "cursor": {"formpdf": {"command": PY, "args": [cursor]}},
     }
 
@@ -91,6 +93,26 @@ def configure(folder: Path, portable: bool, dry: bool, said: list) -> None:
     merge_json(folder / ".cursor" / "mcp.json", e["cursor"], dry, said)
 
 
+def install_claude_user(dry: bool, said: list) -> None:
+    said.append("Claude Code (all projects):")
+    claude = shutil.which("claude")
+    if not claude:
+        said.append(f"  the claude command is not installed here; once it is, run: claude mcp add --scope user formpdf -- {LAUNCH} mcp")
+        return
+    have = subprocess.run([claude, "mcp", "get", "formpdf"], capture_output=True, text=True)
+    if have.returncode == 0 and LAUNCH in have.stdout:
+        said.append("  MCP server formpdf already set (user scope)")
+        return
+    said.append(f"  claude mcp add --scope user formpdf -- {LAUNCH} mcp")
+    if dry:
+        return
+    if have.returncode == 0:
+        subprocess.run([claude, "mcp", "remove", "formpdf", "--scope", "user"], capture_output=True)
+    done = subprocess.run([claude, "mcp", "add", "--scope", "user", "formpdf", "--", LAUNCH, "mcp"], capture_output=True, text=True)
+    if done.returncode != 0:
+        said.append(f"  claude mcp add failed: {(done.stderr or done.stdout).strip()[:200]}")
+
+
 def _files(folder: Path) -> dict:
     return {str(p.relative_to(folder)): p.read_bytes() for p in sorted(folder.rglob("*")) if p.is_file()} if folder.is_dir() else {}
 
@@ -130,6 +152,7 @@ def install(dry: bool) -> int:
     configure(ROOT, True, dry, said)
     if caller() != ROOT:
         configure(caller(), False, dry, said)
+    install_claude_user(dry, said)
     skills(dry, said)
     print(("Would do (dry run):\n" if dry else "") + "\n".join(said))
     if not dry:
