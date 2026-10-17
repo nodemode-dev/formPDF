@@ -48,6 +48,8 @@ let linking: { from: string; moved: boolean; x: number; y: number } | null = nul
 let font: Font = { family: 'sans', size: 12, color: '#111111', lineHeight: 1.25 };
 let picture: { data: string; w: number; h: number; name: string } | null = null;
 let lastDown = { t: 0, x: 0, y: 0, key: '' };
+let hover = '';
+let clickText: { o: Obj; x: number; y: number } | null = null;
 let rootEl: HTMLElement | null = null;
 let hostRef: ToolHost | null = null;
 const editor = new TextEditor();
@@ -135,6 +137,7 @@ function paintBox(n: HTMLElement, o: Obj, single: boolean): void {
   const framed = o.key.startsWith('grp:');
   setClass(n, 'is-selected', sel.includes(o.key) || framed);
   setClass(n, 'is-faint', !sel.includes(o.key) && !framed);
+  setClass(n, 'is-hover', o.key === hover && !sel.includes(o.key));
   setClass(n, 'is-group', framed);
   let html = framed ? handlesFor(o, true) : sel.includes(o.key) ? handlesFor(o, single) : '';
   const it = o.kind === 'text' ? o.item : undefined;
@@ -169,7 +172,7 @@ const layers = new PageLayers('content', (index, layer) => {
   const page = index + 1;
   if (host && mode !== 'idle' && !loaded.has(page)) want(page);
   const frame = host && mode !== 'idle' ? groupFrame(host, page) : null;
-  const list = !host || mode === 'idle' ? [] : [...objects(page, host).filter((o) => sel.includes(o.key) || o.kind === 'text' || o.kind === 'picture' || o.kind === 'pic'), ...(frame ? [frame] : [])];
+  const list = !host || mode === 'idle' ? [] : [...objects(page, host).filter((o) => sel.includes(o.key) || o.key === hover || o.kind === 'text' || o.kind === 'ptext' || o.kind === 'picture' || o.kind === 'pic'), ...(frame ? [frame] : [])];
   const single = sel.length === 1;
   patchList(layer, list, {
     key: (o) => o.key,
@@ -382,7 +385,15 @@ function hit(page: number, p: Pt, host: ToolHost): Obj | null {
   return sorted.find((o) => inside(geo(o), p)) ?? null;
 }
 
-async function editText(host: ToolHost, o: Obj | null, page: number, g: Geo): Promise<void> {
+function caretAt(x: number, y: number): void {
+  const doc = document as Document & { caretRangeFromPoint?: (x: number, y: number) => Range | null };
+  const r = doc.caretRangeFromPoint?.(x, y);
+  if (!r || !editor.area.contains(r.startContainer)) return;
+  const s = getSelection();
+  if (s) { s.removeAllRanges(); s.addRange(r); }
+}
+
+async function editText(host: ToolHost, o: Obj | null, page: number, g: Geo, at?: { x: number; y: number }): Promise<void> {
   const d = host.doc();
   if (!d || editing) return;
   const pv = host.ctx.viewer.pages[page - 1];
@@ -396,13 +407,17 @@ async function editText(host: ToolHost, o: Obj | null, page: number, g: Geo): Pr
   const size = host.ctx.viewer.sizes[page - 1] ?? { w: 612, h: 792 };
   const base = `/api/pdf/${encodeURIComponent(d.id)}/items/under?page=${page}&scale=2`;
   const under = it ? `${base}&id=${encodeURIComponent(it.id)}` : t ? `${base}&paragraph=${encodeURIComponent(t.key)}` : null;
-  await editor.show({ page: pv.space, geo: g, font: f, paras: src?.paras ?? [{ align: 'left', list: 'none', level: 0, runs: [{ t: '' }] }], under, pageW: size.w, pageH: size.h });
-  sync();
+  const open = (): Promise<void> => editor.show({ page: pv.space, geo: g, font: f, paras: src?.paras ?? [{ align: 'left', list: 'none', level: 0, runs: [{ t: '' }] }], under, pageW: size.w, pageH: size.h });
+  if (under) await host.ctx.run('Opening the text', open); else await open();
+  if (!editor.open) { editing = null; repaint(); return; }
+  if (at) caretAt(at.x, at.y);
+  hover = '';
+  repaint();
 }
 
 async function finishEdit(host: ToolHost): Promise<void> {
   const e = editing;
-  if (!e || e.busy) return;
+  if (!e || e.busy || !editor.open) return;
   e.busy = true;
   const paras = editor.value();
   const f = { ...editor.font };
@@ -428,9 +443,49 @@ async function finishEdit(host: ToolHost): Promise<void> {
   repaint();
 }
 
+let hoverPage = 0;
+let hoverFrame = 0;
+let hoverNext: { host: ToolHost; pv: PageView; p: Pt } | null = null;
+
+function hoverAt(host: ToolHost, pv: PageView, p: Pt): void {
+  hoverNext = { host, pv, p };
+  if (hoverFrame) return;
+  hoverFrame = requestAnimationFrame(() => {
+    hoverFrame = 0;
+    const n = hoverNext;
+    hoverNext = null;
+    if (!n || editing || mode !== 'select') return;
+    const page = n.pv.index + 1;
+    const o = hit(page, n.p, n.host);
+    const cur = !o ? 'default' : isText(o) ? 'text' : 'move';
+    if (n.pv.space.style.cursor !== cur) n.pv.space.style.cursor = cur;
+    const k = o?.key ?? '';
+    if (k === hover) return;
+    const was = hoverPage;
+    hover = k;
+    hoverPage = o ? page : 0;
+    layers.repaint([...new Set([was, hoverPage].filter((x) => x > 0).map((x) => x - 1))]);
+  });
+}
+
+function clearHover(host: ToolHost): void {
+  for (const pv of host.ctx.viewer.pages) if (pv.space.style.cursor) pv.space.style.cursor = '';
+  hover = '';
+  hoverPage = 0;
+}
+
+function cancelEdit(): void {
+  const e = editing;
+  if (!e || e.busy || !editor.open) return;
+  editor.close();
+  editing = null;
+  sel = e.key ? [e.key] : [];
+  repaint();
+}
+
 function selectTool(host: ToolHost): PageTool {
   return {
-    hint: 'Click to select text and pictures, Shift-click to add more, drag to move. Double-click text to edit it. Esc ends.',
+    hint: 'Click any text to edit it. Drag a box to move it, Shift-click to select more. Esc cancels typing.',
     down: (pv, p, e) => {
       const page = pv.index + 1;
       if (editing) { void finishEdit(host); return; }
@@ -451,6 +506,7 @@ function selectTool(host: ToolHost): PageTool {
       const o = handle ? allSelected(host).find((x) => x.page === page) ?? null : hit(page, p, host);
       const dbl = !!o && o.key === lastDown.key && now - lastDown.t < 450 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 6;
       lastDown = { t: now, x: e.clientX, y: e.clientY, key: o?.key ?? '' };
+      clickText = !handle && !e.shiftKey && o && isText(o) && !(o.item?.thread && o.item.seq) ? { o, x: e.clientX, y: e.clientY } : null;
       if (dbl && o?.item?.thread && o.item.seq) {
         const head = items.find((x) => x.thread === o.item?.thread && !x.seq);
         const ho = head ? objects(head.page, host).find((x) => x.key === `i:${head.id}`) : undefined;
@@ -471,6 +527,7 @@ function selectTool(host: ToolHost): PageTool {
     },
     move: (pv, p, e) => {
       if (linking && !linking.moved && Math.hypot(e.clientX - linking.x, e.clientY - linking.y) > 4) linking.moved = true;
+      if (!drag && !linking) { hoverAt(host, pv, p); return; }
       const d = drag;
       if (!d || pv.index + 1 !== d.page) return;
       const dx = p.x - d.p0.x, dy = p.y - d.p0.y;
@@ -523,6 +580,9 @@ function selectTool(host: ToolHost): PageTool {
       }
       const d = drag;
       drag = null;
+      const c = clickText;
+      clickText = null;
+      if (c && d && !d.moved && d.kind === 'move' && !editing && sel.length === 1 && sel[0] === c.o.key) { void editText(host, c.o, c.o.page, geo(c.o), { x: c.x, y: c.y }); return; }
       if (!d || !d.moved) return;
       if (d.kind === 'crop') { repaint(); return; }
       const to = d.kind === 'move' ? dropPage(d.page, e) : 0;
@@ -539,7 +599,7 @@ function selectTool(host: ToolHost): PageTool {
       void applyGeo(host, changes, d.kind === 'move' ? 'Move' : d.kind === 'rotate' ? 'Rotate' : 'Resize');
     },
     key: (e) => key(host, e),
-    cancel: () => { drag = null; dropMark(0, null); linking = null; document.body.classList.remove('fs-is-linking'); preview.clear(); if (editing) void finishEdit(host); cropping = null; cropDraft = null; mode = 'idle'; sel = []; repaint(); },
+    cancel: () => { drag = null; dropMark(0, null); linking = null; document.body.classList.remove('fs-is-linking'); preview.clear(); if (editing) void finishEdit(host); cropping = null; cropDraft = null; clearHover(host); mode = 'idle'; sel = []; repaint(); },
   };
 }
 
@@ -927,11 +987,12 @@ async function convertComment(host: ToolHost): Promise<void> {
 function setMode(host: ToolHost, next: Mode): void {
   if (editing) void finishEdit(host);
   if (cropping) void finishCrop(host, true);
-  mode = next;
+  clearHover(host);
   if (next === 'idle') { host.useTool(null); sel = []; }
   else if (next === 'select') host.useTool(selectTool(host));
   else if (next === 'text') host.useTool(textTool(host));
   else if (next === 'picture') host.useTool(pictureTool(host));
+  mode = next;
   reload(host);
   repaint();
 }
@@ -1061,11 +1122,11 @@ function sync(): void {
   }
   const n = objs.length;
   setText(q(root, '[data-t="note"]'),
-    editing ? `Type, then click outside or press Esc.${fontNote}`
+    editing ? `Type, then click outside the box to keep it. Esc cancels.${fontNote}`
       : cropping ? 'Drag the handles to crop. Enter keeps the crop, Esc cancels.'
         : mode === 'text' ? 'Click on the page where the text goes.'
           : mode === 'picture' ? 'Click on the page where the picture goes.'
-            : mode === 'select' ? (n ? `${n} selected${!samePage ? ' on more than one page' : ''}. Drag to move; double-click text to edit.${fontNote}` : 'Click any text, a picture or a comment to select it; Shift-click selects more.')
+            : mode === 'select' ? (n ? `${n} selected${!samePage ? ' on more than one page' : ''}. Drag to move; click text to edit it.${fontNote}` : 'Click any text to edit it, or a picture or comment to select it; Shift-click selects more.')
               : 'Add text and pictures that stay editable, or select what is on the page to move, resize, rotate, crop, arrange and align it.');
 }
 
@@ -1075,6 +1136,8 @@ registerTool({
   id: 'content',
   tab: 'edit',
   title: 'Text and pictures',
+  first: true,
+  enter: (host) => { if (host.doc() && mode === 'idle') setMode(host, 'select'); },
   words: ['add text', 'edit text', 'add picture', 'image', 'crop picture', 'rotate picture', 'flip', 'arrange', 'bring to front', 'send to back', 'align objects', 'distribute', 'page text', 'list', 'justify'],
   section: () => `<div class="fs-seg is-quiet fs-tool-seg" role="group" aria-label="Text and pictures"><button type="button" data-m="select">${icon('cursor', 14)}Select</button><button type="button" data-m="text">${icon('textBox', 14)}Add text</button><button type="button" data-m="picture">${icon('image', 14)}Add picture</button></div>
 <p class="fs-note fs-tool-note fs-cx-note" data-t="note"></p>
@@ -1121,11 +1184,18 @@ registerTool({
     q<HTMLInputElement>(root, '[data-f="size"]').addEventListener('change', (e) => void textFormat(host, 'size', (e.target as HTMLInputElement).value));
     q<HTMLInputElement>(root, '[data-f="color"]').addEventListener('change', (e) => void textFormat(host, 'color', (e.target as HTMLInputElement).value.toUpperCase()));
     editor.area.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) { e.preventDefault(); e.stopPropagation(); void finishEdit(host); return; }
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelEdit(); return; }
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); e.stopPropagation(); void finishEdit(host); return; }
       if (e.key === 'Tab') { e.preventDefault(); if (!editor.indent(e.shiftKey ? -1 : 1)) document.execCommand('insertText', false, '    '); return; }
       e.stopPropagation();
     });
     for (const ev of ['keyup', 'mouseup'] as const) editor.area.addEventListener(ev, () => sync());
+    document.addEventListener('pointerdown', (e) => {
+      if (!editing || !editor.open) return;
+      const t = e.target as HTMLElement;
+      if (editor.frame.contains(t) || root.contains(t) || t.closest('.fs-pdf-space')) return;
+      void finishEdit(host);
+    }, true);
     sync();
   },
   sync: (_root, host) => {
@@ -1142,7 +1212,7 @@ registerTool({
     if (list?.length) { waiters.delete(pv.index); for (const fn of list) fn(); }
   },
   commands: (host): Command[] => [
-    { id: 'tool-content-select', label: 'Select text and pictures', words: ['select objects', 'move picture'], enabled: () => !!host.doc(), run: () => { host.setTab('edit'); setMode(host, 'select'); } },
+    { id: 'tool-content-select', label: 'Edit text and pictures', words: ['select objects', 'move picture', 'edit pdf', 'edit text'], enabled: () => !!host.doc(), run: () => { host.setTab('edit'); if (mode !== 'select') setMode(host, 'select'); } },
     { id: 'tool-add-text', label: 'Add page text', words: ['type on the page', 'text box on the page'], enabled: () => !!host.doc(), run: () => { host.setTab('edit'); setMode(host, 'text'); } },
     { id: 'tool-add-picture', label: 'Add a picture to the page…', words: ['insert image', 'place picture'], enabled: () => !!host.doc(), run: () => { host.setTab('edit'); choosePicture(host); } },
     { id: 'tool-front', label: 'Bring to front', keys: ['Shift+Mod+]'], enabled: () => sel.length > 0, run: () => void arrange(host, 'front') },

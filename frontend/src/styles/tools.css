@@ -43,6 +43,8 @@
 @font-face { font-family: FkMono; src: url('/api/fonts/JetBrainsMono-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; font-display: block; }
 @font-face { font-family: FkMono; src: url('/api/fonts/JetBrainsMono-BoldItalic.ttf') format('truetype'); font-weight: 700; font-style: italic; font-display: block; }
 .fs-cx-box { position: absolute; box-sizing: border-box; transform-origin: 50% 50%; outline: 1px dashed color-mix(in srgb, var(--accent-color) 55%, transparent); outline-offset: 0; }
+.fs-cx-box.is-faint { outline: 1px solid color-mix(in srgb, var(--accent-color) 30%, transparent); }
+.fs-cx-box.is-hover { outline: 1px solid var(--accent-color); }
 .fs-cx-box.is-selected { outline: 1.5px solid var(--accent-color); }
 .fs-cx-box.is-group { outline: 1px dashed var(--accent-color); outline-offset: 3px; pointer-events: none; }
 .fs-cx-box.is-group .fs-cx-h { pointer-events: auto; }

@@ -19,7 +19,7 @@ import { Organizer, type OrgItem } from './organize';
 import { LAYOUTS, Panes, type Ctx, type Doc, type Tab } from './panels';
 import { recall, REFLOW_SIZES, Reflow, remember, Speaker } from './reading';
 import { loadPlugins } from './plugins';
-import { lateTools, mountTools, pageTools, renderedTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
+import { enterTab, lateTools, mountTools, pageTools, renderedTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
 import { Thumbs, Viewer, type Layout } from './viewer';
 import { Workspaces } from './workspace';
 
@@ -67,7 +67,8 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF
 <span class="fs-sep"></span>
 <button class="fs-tt-btn fs-pdfwb-openbtn" type="button" data-a="open-menu" title="Open or create a PDF" aria-label="Open or create a PDF" aria-haspopup="menu">${icon('folderOpen', 16)}${icon('chevronDown', 10)}</button>
 <button class="fs-tt-btn" type="button" data-a="print" title="Print" aria-label="Print">${svg(LOCAL.print)}</button>
-<button class="fs-tt-btn fs-agent-btn" type="button" data-a="agents" title="Agents" aria-label="Agents">${icon('agent', 16)}</button>
+<button class="fs-tt-btn fs-agent-btn" type="button" data-a="claude" title="Claude Code" aria-label="Claude Code">${icon('agent', 16)}</button>
+<button class="fs-tt-btn" type="button" data-a="terminal" title="Terminal" aria-label="Terminal">${icon('terminal', 16)}</button>
 <button class="fs-share-btn" type="button" data-a="save">${icon('save', 14)}<span>Save</span></button>
 <button class="fs-icon-btn fs-pdfwb-close" type="button" data-a="close" title="Close" aria-label="Close">${icon('close', 16)}</button>
 </div>
@@ -79,7 +80,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF
 <div class="fs-tb fs-pdfwb-set" data-for="comment" hidden>${toolBtn('select', 'Select', icon('cursor', 16))}<span class="fs-sep"></span>${toolBtn('highlight', 'Highlight text', icon('highlighter', 16))}${toolBtn('underline', 'Underline text', svg(LOCAL.underline))}${toolBtn('strikeout', 'Strike through text', icon('strike', 16))}<span class="fs-sep"></span>${toolBtn('note', 'Sticky note', icon('sticky', 16))}${toolBtn('freetext', 'Text box', icon('textBox', 16))}${toolBtn('ink', 'Draw', icon('pen', 16))}${toolBtn('rect', 'Rectangle', svg(LOCAL.rect))}${toolBtn('ellipse', 'Ellipse', svg(LOCAL.ellipse))}${toolBtn('line', 'Line', icon('line', 16))}${toolBtn('arrow', 'Arrow', icon('arrow', 16))}<button class="fs-tb-btn" type="button" data-a="stamps" title="Stamps" aria-label="Stamps">${icon('stamp', 16)}</button><span class="fs-sep"></span><div class="fs-tb-group fs-pdfwb-palette">${PALETTE.map((c) => `<button class="fs-swatch" type="button" data-color="${c}" title="${c}" style="background:${c}"></button>`).join('')}<label class="fs-swatch fs-pdfwb-custom" title="Custom colour"><input type="color" data-a="custom-color" value="#E11D48"></label></div><span class="fs-sep"></span><select class="fs-pdfwb-width" aria-label="Line width" title="Line width"><option value="1">1 pt</option><option value="2" selected>2 pt</option><option value="3">3 pt</option><option value="5">5 pt</option><option value="8">8 pt</option></select><select class="fs-pdfwb-size" aria-label="Text size" title="Text size"><option value="9">9 pt</option><option value="10">10 pt</option><option value="12" selected>12 pt</option><option value="14">14 pt</option><option value="18">18 pt</option><option value="24">24 pt</option><option value="36">36 pt</option></select></div>
 <div class="fs-tb fs-pdfwb-set" data-for="fill" hidden>${toolBtn('select', 'Fill fields', icon('cursor', 16))}${toolBtn('freetext', 'Add text', icon('textBox', 16))}<button class="fs-tb-btn has-label" type="button" data-a="sign" title="Place your signature">${icon('signature', 16)}<span>Sign</span></button><button class="fs-tb-btn has-label" type="button" data-a="date" title="Place today's date">${icon('stamp', 16)}<span>Date</span></button></div>
 <div class="fs-tb fs-pdfwb-set" data-for="form" hidden><button class="fs-tb-btn" type="button" data-ftool="select" title="Select fields" aria-label="Select fields">${icon('cursor', 16)}</button><span class="fs-sep"></span>${FIELD_TYPES.map((t) => `<button class="fs-tb-btn" type="button" data-ftool="${t}" title="${FIELD_LABEL[t]}" aria-label="${FIELD_LABEL[t]}">${icon(FIELD_ICON[t], 16)}</button>`).join('')}<span class="fs-sep"></span><span class="fs-pdfwb-settext">Draw form fields, then apply them to the PDF.</span></div>
-<div class="fs-tb fs-pdfwb-set" data-for="edit" hidden>${toolBtn('select', 'Select', icon('cursor', 16))}${toolBtn('crop', 'Draw a crop box', icon('crop', 16))}<span class="fs-sep"></span><span class="fs-pdfwb-settext">Headers and footers, Bates numbers, page numbers, watermarks and cropping.</span></div>
+<div class="fs-tb fs-pdfwb-set" data-for="edit" hidden><button class="fs-tb-btn has-label" type="button" data-tool="select" title="Edit text and pictures">${icon('cursor', 16)}<span>Edit</span></button><button class="fs-tb-btn has-label" type="button" data-cmd="tool-add-text" title="Add text">${icon('textBox', 16)}<span>Add text</span></button><button class="fs-tb-btn has-label" type="button" data-cmd="tool-add-picture" title="Add a picture">${icon('image', 16)}<span>Add picture</span></button><span class="fs-sep"></span>${toolBtn('crop', 'Draw a crop box', icon('crop', 16))}<span class="fs-sep"></span><span class="fs-pdfwb-settext">Click any text to edit it, drag a box to move it. Esc cancels typing.</span></div>
 <div class="fs-tb fs-pdfwb-set" data-for="organize" hidden><button class="fs-tb-btn" type="button" data-a="org-left" title="Rotate left">${icon('undo', 16)}</button><button class="fs-tb-btn" type="button" data-a="org-right" title="Rotate right">${icon('redo', 16)}</button><button class="fs-tb-btn" type="button" data-a="org-delete" title="Delete pages">${icon('delete', 16)}</button><button class="fs-tb-btn" type="button" data-a="org-blank" title="Insert a blank page">${icon('pageInsert', 16)}</button><button class="fs-tb-btn" type="button" data-a="org-insert" title="Insert pages from a PDF">${icon('upload', 16)}</button><span class="fs-sep"></span><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="org-reset">Reset</button><button class="fs-btn fs-btn-sm fs-btn-primary" type="button" data-a="org-apply">Apply changes</button></div>
 <div class="fs-tb fs-pdfwb-set" data-for="extract" hidden><span class="fs-pdfwb-settext">Text, pictures and tables, from all pages or a range.</span></div>
 <div class="fs-tb fs-pdfwb-set" data-for="protect" hidden>${toolBtn('select', 'Select', icon('cursor', 16))}${toolBtn('redact', 'Mark areas to redact', icon('eraser', 16))}</div>
@@ -274,10 +275,10 @@ class Workbench {
     void loadPlugins();
     const menus: MenuDef[] = [
       { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', 'pdf-scan', '-', 'pdf-save', 'pdf-print', '-', 'pdf-close'] },
-      { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'pdf-find'] },
+      { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'tool-content-select', 'tool-add-text', 'tool-add-picture', '-', 'tool-fonts', 'tool-move-to-page', '-', 'pdf-find'] },
       { label: 'View', items: [...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare'] },
       { label: 'Tools', items: [...TABS.map(([t]) => `pdf-tab-${t}`), '-', 'tool-lists', 'tool-lists-record'] },
-      { label: 'Window', items: () => this.ws.menuItems() },
+      { label: 'Window', items: () => [...this.ws.menuItems(), '-', 'view-agent-dock', 'view-new-terminal', 'agent-claude-code', 'agent-chat'] },
       { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
     ];
     this.menubar = new MenuBar(q(this.root, '.fs-pdfwb-menubar'), this.cmds, menus);
@@ -612,7 +613,9 @@ class Workbench {
     const tabBtn = t.closest('.fs-pdfwb-tab') as HTMLElement | null;
     if (tabBtn?.dataset.tab) { this.setTab(tabBtn.dataset.tab as Tab); return; }
     const toolBtn = t.closest('.fs-tb-btn[data-tool]') as HTMLElement | null;
-    if (toolBtn) { this.setTool(toolBtn.dataset.tool as Tool); return; }
+    if (toolBtn) { this.setTool(toolBtn.dataset.tool as Tool); if (toolBtn.dataset.tool === 'select') enterTab(this.tab, this.host); return; }
+    const cmdBtn = t.closest<HTMLElement>('.fs-tb-btn[data-cmd]');
+    if (cmdBtn?.dataset.cmd) { this.cmds.run(cmdBtn.dataset.cmd); return; }
     const fBtn = t.closest('[data-ftool]') as HTMLElement | null;
     if (fBtn?.dataset.ftool) { const ft = fBtn.dataset.ftool; this.setFormTool(ft === 'select' || this.forms.tool === ft ? null : ft as NewFieldType); return; }
     const sw = t.closest('[data-color]') as HTMLElement | null;
@@ -633,6 +636,8 @@ class Workbench {
     switch (b.dataset.a) {
       case 'home': this.close(); break;
       case 'agents': this.opts.app.agents(); break;
+      case 'claude': this.cmds.run('agent-claude-code'); break;
+      case 'terminal': this.cmds.run('view-agent-dock'); break;
       case 'undo-agent': void this.undoAgent(); break;
       case 'undo': this.undo(); break;
       case 'redo': this.redo(); break;
@@ -755,6 +760,7 @@ class Workbench {
     this.annot.flattenComments = tab === 'fill' ? true : q<HTMLInputElement>(this.panes.root, '[data-a="flatten-comments"]').checked;
     this.panes.show(tab);
     this.setTool('select');
+    enterTab(tab, this.host);
     if (tab === 'form') { this.setFormTool(null); this.formPanel.syncSelection(); }
     this.panes.syncDoc();
     this.panes.syncAnnots();
@@ -769,7 +775,7 @@ class Workbench {
     this.root.dataset.tool = tool;
     this.viewer.setClass('is-drawing', DRAW_TOOLS.includes(tool));
     this.viewer.setClass('is-marking', MARKUP_TOOLS.includes(tool));
-    for (const b of Array.from(this.root.querySelectorAll<HTMLElement>('.fs-tb-btn[data-tool]'))) setClass(b, 'is-on', b.dataset.tool === tool);
+    for (const b of Array.from(this.root.querySelectorAll<HTMLElement>('.fs-tb-btn[data-tool]'))) setClass(b, 'is-on', b.dataset.tool === tool || (tool === 'custom' && this.tab === 'edit' && b.dataset.tool === 'select'));
     if (TOOL_COLOR[tool]) this.annot.style.color = TOOL_COLOR[tool];
     this.syncPalette();
     const pl = this.annot.placement;

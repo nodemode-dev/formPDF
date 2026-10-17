@@ -24,6 +24,8 @@ export interface Tool {
   title?: string;
   words?: string[];
   section?: (host: ToolHost) => string;
+  first?: boolean;
+  enter?: (host: ToolHost) => void;
   mount?: (root: HTMLElement, host: ToolHost) => void;
   sync?: (root: HTMLElement, host: ToolHost) => void;
   commands?: (host: ToolHost) => Command[];
@@ -72,7 +74,7 @@ export function mountTools(panes: HTMLElement, host: ToolHost): Command[] {
         const root = el(`<section class="fs-pdfwb-sec" data-section="${t.id}">${t.title ? `<h3 class="fs-pdfwb-sec-title"></h3>` : ''}${t.section(host)}</section>`);
         const head = root.querySelector('.fs-pdfwb-sec-title');
         if (head && t.title) head.textContent = t.title;
-        pane.appendChild(root);
+        if (t.first) pane.prepend(root); else pane.appendChild(root);
         mounted.set(t.id, root);
         t.mount?.(root, host);
       }
@@ -80,6 +82,10 @@ export function mountTools(panes: HTMLElement, host: ToolHost): Command[] {
     for (const c of t.commands?.(host) ?? []) cmds.push({ ...c, words: [...(c.words ?? []), ...(t.words ?? [])] });
   }
   return cmds;
+}
+
+export function enterTab(tab: Tab, host: ToolHost): void {
+  for (const t of TOOLS) if (t.tab === tab) t.enter?.(host);
 }
 
 export function pageTools(pv: PageView, host: ToolHost): void {
