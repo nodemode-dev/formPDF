@@ -2311,5 +2311,11 @@ export const ko: Record<string, string> = {
 "Select text to squiggle-underline it.": "물결 밑줄을 넣을 텍스트를 선택하세요.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "각 꼭짓점을 클릭하세요. 첫 번째 점을 클릭하거나 더블클릭 또는 Enter로 닫습니다.",
 "Click each point. Double-click or press Enter to finish.": "각 점을 클릭하세요. 더블클릭 또는 Enter로 완료합니다.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "구름의 각 꼭짓점을 클릭하세요. 첫 번째 점을 클릭하거나 더블클릭 또는 Enter로 닫습니다."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "구름의 각 꼭짓점을 클릭하세요. 첫 번째 점을 클릭하거나 더블클릭 또는 Enter로 닫습니다.",
+"Callout": "설명선",
+"Add callout": "설명선 추가",
+"Delete callout": "설명선 삭제",
+"Move callout arrow": "설명선 화살표 이동",
+"Press where the arrow points and drag to where the text goes, or just click.": "화살표가 가리킬 위치를 누른 채 텍스트를 놓을 위치까지 드래그하거나, 그냥 클릭하세요.",
+"A callout needs an anchor point it points at": "설명선에는 가리킬 기준점이 필요합니다"
 };

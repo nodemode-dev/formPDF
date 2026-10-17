@@ -2311,5 +2311,11 @@ export const fi: Record<string, string> = {
 "Select text to squiggle-underline it.": "Valitse teksti alleviivataksesi sen aaltoviivalla.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Napsauta jokaista kulmaa. Sulje napsauttamalla ensimmäistä pistettä, kaksoisnapsauttamalla tai painamalla Enter.",
 "Click each point. Double-click or press Enter to finish.": "Napsauta jokaista pistettä. Lopeta kaksoisnapsauttamalla tai painamalla Enter.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Napsauta pilven jokaista kulmaa. Sulje napsauttamalla ensimmäistä pistettä, kaksoisnapsauttamalla tai painamalla Enter."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Napsauta pilven jokaista kulmaa. Sulje napsauttamalla ensimmäistä pistettä, kaksoisnapsauttamalla tai painamalla Enter.",
+"Callout": "Selite",
+"Add callout": "Lisää selite",
+"Delete callout": "Poista selite",
+"Move callout arrow": "Siirrä selitteen nuolta",
+"Press where the arrow points and drag to where the text goes, or just click.": "Paina kohtaa, johon nuoli osoittaa, ja vedä paikkaan, johon teksti tulee, tai napsauta vain.",
+"A callout needs an anchor point it points at": "Selite tarvitsee ankkuripisteen, johon se osoittaa"
 };

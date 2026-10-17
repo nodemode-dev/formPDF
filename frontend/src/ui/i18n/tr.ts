@@ -2311,5 +2311,11 @@ export const tr: Record<string, string> = {
 "Select text to squiggle-underline it.": "Altını dalgalı çizgiyle çizmek için metni seçin.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Her köşeye tıklayın. Kapatmak için ilk noktaya tıklayın, çift tıklayın veya Enter tuşuna basın.",
 "Click each point. Double-click or press Enter to finish.": "Her noktaya tıklayın. Bitirmek için çift tıklayın veya Enter tuşuna basın.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Bulutun her köşesine tıklayın. Kapatmak için ilk noktaya tıklayın, çift tıklayın veya Enter tuşuna basın."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Bulutun her köşesine tıklayın. Kapatmak için ilk noktaya tıklayın, çift tıklayın veya Enter tuşuna basın.",
+"Callout": "Belirtme çizgisi",
+"Add callout": "Belirtme çizgisi ekle",
+"Delete callout": "Belirtme çizgisini sil",
+"Move callout arrow": "Belirtme çizgisi okunu taşı",
+"Press where the arrow points and drag to where the text goes, or just click.": "Okun işaret edeceği yere basın ve metnin geleceği yere sürükleyin ya da yalnızca tıklayın.",
+"A callout needs an anchor point it points at": "Belirtme çizgisinin işaret edeceği bir bağlantı noktası olmalıdır"
 };

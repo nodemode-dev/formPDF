@@ -2311,5 +2311,11 @@ export const ja: Record<string, string> = {
 "Select text to squiggle-underline it.": "波線の下線を引くテキストを選択してください。",
 "Click each corner. Click the first point, double-click or press Enter to close.": "各頂点をクリックします。最初の点をクリックするか、ダブルクリックまたは Enter で閉じます。",
 "Click each point. Double-click or press Enter to finish.": "各点をクリックします。ダブルクリックまたは Enter で完了します。",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "雲形の各頂点をクリックします。最初の点をクリックするか、ダブルクリックまたは Enter で閉じます。"
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "雲形の各頂点をクリックします。最初の点をクリックするか、ダブルクリックまたは Enter で閉じます。",
+"Callout": "吹き出し",
+"Add callout": "吹き出しを追加",
+"Delete callout": "吹き出しを削除",
+"Move callout arrow": "吹き出しの矢印を移動",
+"Press where the arrow points and drag to where the text goes, or just click.": "矢印が指す位置を押し、テキストを置く位置までドラッグします。クリックだけでも配置できます。",
+"A callout needs an anchor point it points at": "吹き出しには、指し示す基点が必要です"
 };

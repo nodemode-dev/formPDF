@@ -2311,5 +2311,11 @@ export const th: Record<string, string> = {
 "Select text to squiggle-underline it.": "เลือกข้อความเพื่อขีดเส้นใต้แบบหยัก",
 "Click each corner. Click the first point, double-click or press Enter to close.": "คลิกที่แต่ละมุม คลิกที่จุดแรก ดับเบิลคลิก หรือกด Enter เพื่อปิด",
 "Click each point. Double-click or press Enter to finish.": "คลิกที่แต่ละจุด ดับเบิลคลิกหรือกด Enter เพื่อเสร็จสิ้น",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "คลิกที่แต่ละมุมของเมฆ คลิกที่จุดแรก ดับเบิลคลิก หรือกด Enter เพื่อปิด"
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "คลิกที่แต่ละมุมของเมฆ คลิกที่จุดแรก ดับเบิลคลิก หรือกด Enter เพื่อปิด",
+"Callout": "คำบรรยายชี้",
+"Add callout": "เพิ่มคำบรรยายชี้",
+"Delete callout": "ลบคำบรรยายชี้",
+"Move callout arrow": "ย้ายลูกศรของคำบรรยายชี้",
+"Press where the arrow points and drag to where the text goes, or just click.": "กดที่ตำแหน่งที่ลูกศรชี้ แล้วลากไปยังตำแหน่งที่จะวางข้อความ หรือคลิกเพียงครั้งเดียว",
+"A callout needs an anchor point it points at": "คำบรรยายชี้ต้องมีจุดยึดที่ชี้ไปหา"
 };

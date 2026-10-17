@@ -2311,5 +2311,11 @@ export const es: Record<string, string> = {
 "Select text to squiggle-underline it.": "Selecciona texto para subrayarlo con una línea ondulada.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Haz clic en cada esquina. Haz clic en el primer punto, haz doble clic o pulsa Enter para cerrar.",
 "Click each point. Double-click or press Enter to finish.": "Haz clic en cada punto. Haz doble clic o pulsa Enter para terminar.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Haz clic en cada esquina de la nube. Haz clic en el primer punto, haz doble clic o pulsa Enter para cerrar."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Haz clic en cada esquina de la nube. Haz clic en el primer punto, haz doble clic o pulsa Enter para cerrar.",
+"Callout": "Llamada",
+"Add callout": "Añadir llamada",
+"Delete callout": "Eliminar llamada",
+"Move callout arrow": "Mover la flecha de la llamada",
+"Press where the arrow points and drag to where the text goes, or just click.": "Pulsa donde debe apuntar la flecha y arrastra hasta donde irá el texto, o simplemente haz clic.",
+"A callout needs an anchor point it points at": "Una llamada necesita un punto de anclaje al que apuntar"
 };

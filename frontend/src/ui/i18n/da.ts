@@ -2311,5 +2311,11 @@ export const da: Record<string, string> = {
 "Select text to squiggle-underline it.": "Markér tekst for at give den bølgeunderstregning.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Klik på hvert hjørne. Klik på det første punkt, dobbeltklik eller tryk på Enter for at lukke.",
 "Click each point. Double-click or press Enter to finish.": "Klik på hvert punkt. Dobbeltklik eller tryk på Enter for at afslutte.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik på hvert hjørne af skyen. Klik på det første punkt, dobbeltklik eller tryk på Enter for at lukke."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik på hvert hjørne af skyen. Klik på det første punkt, dobbeltklik eller tryk på Enter for at lukke.",
+"Callout": "Tekstboble",
+"Add callout": "Tilføj tekstboble",
+"Delete callout": "Slet tekstboble",
+"Move callout arrow": "Flyt tekstboblens pil",
+"Press where the arrow points and drag to where the text goes, or just click.": "Tryk dér, hvor pilen skal pege, og træk derhen, hvor teksten skal være, eller klik blot.",
+"A callout needs an anchor point it points at": "En tekstboble skal have et ankerpunkt, som den peger på"
 };

@@ -2311,5 +2311,11 @@ export const zhCN: Record<string, string> = {
 "Select text to squiggle-underline it.": "选择文本以添加波浪下划线。",
 "Click each corner. Click the first point, double-click or press Enter to close.": "依次单击每个角点。单击第一个点、双击或按 Enter 即可闭合。",
 "Click each point. Double-click or press Enter to finish.": "依次单击每个点。双击或按 Enter 完成。",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "依次单击云朵的每个角点。单击第一个点、双击或按 Enter 即可闭合。"
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "依次单击云朵的每个角点。单击第一个点、双击或按 Enter 即可闭合。",
+"Callout": "标注",
+"Add callout": "添加标注",
+"Delete callout": "删除标注",
+"Move callout arrow": "移动标注箭头",
+"Press where the arrow points and drag to where the text goes, or just click.": "在箭头所指位置按下，并拖到文本放置的位置，也可以直接单击。",
+"A callout needs an anchor point it points at": "标注需要一个所指向的锚点"
 };

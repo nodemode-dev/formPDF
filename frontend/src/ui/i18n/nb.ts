@@ -2311,5 +2311,11 @@ export const nb: Record<string, string> = {
 "Select text to squiggle-underline it.": "Velg tekst for å gi den bølgete understreking.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Klikk på hvert hjørne. Klikk på det første punktet, dobbeltklikk eller trykk Enter for å lukke.",
 "Click each point. Double-click or press Enter to finish.": "Klikk på hvert punkt. Dobbeltklikk eller trykk Enter for å fullføre.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikk på hvert hjørne av skyen. Klikk på det første punktet, dobbeltklikk eller trykk Enter for å lukke."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikk på hvert hjørne av skyen. Klikk på det første punktet, dobbeltklikk eller trykk Enter for å lukke.",
+"Callout": "Tekstboble",
+"Add callout": "Legg til tekstboble",
+"Delete callout": "Slett tekstboble",
+"Move callout arrow": "Flytt pilen på tekstboblen",
+"Press where the arrow points and drag to where the text goes, or just click.": "Trykk der pilen skal peke, og dra til der teksten skal være, eller bare klikk.",
+"A callout needs an anchor point it points at": "En tekstboble trenger et ankerpunkt som den peker på"
 };

@@ -2311,5 +2311,11 @@ export const sv: Record<string, string> = {
 "Select text to squiggle-underline it.": "Markera text för att ge den vågig understrykning.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Klicka på varje hörn. Klicka på den första punkten, dubbelklicka eller tryck på Enter för att stänga.",
 "Click each point. Double-click or press Enter to finish.": "Klicka på varje punkt. Dubbelklicka eller tryck på Enter för att avsluta.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klicka på varje hörn av molnet. Klicka på den första punkten, dubbelklicka eller tryck på Enter för att stänga."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klicka på varje hörn av molnet. Klicka på den första punkten, dubbelklicka eller tryck på Enter för att stänga.",
+"Callout": "Pratbubbla",
+"Add callout": "Lägg till pratbubbla",
+"Delete callout": "Ta bort pratbubbla",
+"Move callout arrow": "Flytta pratbubblans pil",
+"Press where the arrow points and drag to where the text goes, or just click.": "Tryck där pilen ska peka och dra till där texten ska vara, eller klicka bara.",
+"A callout needs an anchor point it points at": "En pratbubbla behöver en ankarpunkt som den pekar på"
 };

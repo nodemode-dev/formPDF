@@ -2311,5 +2311,11 @@ export const hu: Record<string, string> = {
 "Select text to squiggle-underline it.": "Jelölje ki a szöveget a hullámos aláhúzáshoz.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Kattintson minden sarokra. A lezáráshoz kattintson az első pontra, kattintson duplán, vagy nyomja meg az Entert.",
 "Click each point. Double-click or press Enter to finish.": "Kattintson minden pontra. A befejezéshez kattintson duplán, vagy nyomja meg az Entert.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Kattintson a felhő minden sarkára. A lezáráshoz kattintson az első pontra, kattintson duplán, vagy nyomja meg az Entert."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Kattintson a felhő minden sarkára. A lezáráshoz kattintson az első pontra, kattintson duplán, vagy nyomja meg az Entert.",
+"Callout": "Magyarázat",
+"Add callout": "Magyarázat hozzáadása",
+"Delete callout": "Magyarázat törlése",
+"Move callout arrow": "Magyarázat nyilának áthelyezése",
+"Press where the arrow points and drag to where the text goes, or just click.": "Nyomja meg ott, ahová a nyíl mutat, és húzza oda, ahová a szöveg kerül, vagy egyszerűen kattintson.",
+"A callout needs an anchor point it points at": "A magyarázathoz szükség van egy horgonypontra, amelyre mutat"
 };

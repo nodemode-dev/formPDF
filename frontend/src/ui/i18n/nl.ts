@@ -2311,5 +2311,11 @@ export const nl: Record<string, string> = {
 "Select text to squiggle-underline it.": "Selecteer tekst om deze met een golvende lijn te onderstrepen.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Klik op elke hoek. Klik op het eerste punt, dubbelklik of druk op Enter om te sluiten.",
 "Click each point. Double-click or press Enter to finish.": "Klik op elk punt. Dubbelklik of druk op Enter om te voltooien.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik op elke hoek van de wolk. Klik op het eerste punt, dubbelklik of druk op Enter om te sluiten."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik op elke hoek van de wolk. Klik op het eerste punt, dubbelklik of druk op Enter om te sluiten.",
+"Callout": "Tekstballon",
+"Add callout": "Tekstballon toevoegen",
+"Delete callout": "Tekstballon verwijderen",
+"Move callout arrow": "Pijl van tekstballon verplaatsen",
+"Press where the arrow points and drag to where the text goes, or just click.": "Druk op de plek waar de pijl naartoe wijst en sleep naar de plek van de tekst, of klik gewoon.",
+"A callout needs an anchor point it points at": "Een tekstballon heeft een verankeringspunt nodig waarnaar hij wijst"
 };

@@ -2311,5 +2311,11 @@ export const vi: Record<string, string> = {
 "Select text to squiggle-underline it.": "Chọn văn bản để gạch chân lượn sóng.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Nhấp vào từng góc. Nhấp vào điểm đầu tiên, nhấp đúp hoặc nhấn Enter để đóng.",
 "Click each point. Double-click or press Enter to finish.": "Nhấp vào từng điểm. Nhấp đúp hoặc nhấn Enter để hoàn tất.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Nhấp vào từng góc của đám mây. Nhấp vào điểm đầu tiên, nhấp đúp hoặc nhấn Enter để đóng."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Nhấp vào từng góc của đám mây. Nhấp vào điểm đầu tiên, nhấp đúp hoặc nhấn Enter để đóng.",
+"Callout": "Chú thích",
+"Add callout": "Thêm chú thích",
+"Delete callout": "Xóa chú thích",
+"Move callout arrow": "Di chuyển mũi tên chú thích",
+"Press where the arrow points and drag to where the text goes, or just click.": "Nhấn vào nơi mũi tên chỉ tới rồi kéo đến vị trí đặt văn bản, hoặc chỉ cần nhấp.",
+"A callout needs an anchor point it points at": "Chú thích cần có một điểm neo để chỉ tới"
 };

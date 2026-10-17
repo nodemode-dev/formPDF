@@ -2311,5 +2311,11 @@ export const ru: Record<string, string> = {
 "Select text to squiggle-underline it.": "Выделите текст, чтобы подчеркнуть его волнистой линией.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Щёлкайте каждый угол. Чтобы замкнуть, щёлкните первую точку, дважды щёлкните или нажмите Enter.",
 "Click each point. Double-click or press Enter to finish.": "Щёлкайте каждую точку. Чтобы закончить, дважды щёлкните или нажмите Enter.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Щёлкайте каждый угол облака. Чтобы замкнуть, щёлкните первую точку, дважды щёлкните или нажмите Enter."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Щёлкайте каждый угол облака. Чтобы замкнуть, щёлкните первую точку, дважды щёлкните или нажмите Enter.",
+"Callout": "Выноска",
+"Add callout": "Добавить выноску",
+"Delete callout": "Удалить выноску",
+"Move callout arrow": "Переместить стрелку выноски",
+"Press where the arrow points and drag to where the text goes, or just click.": "Нажмите там, куда должна указывать стрелка, и перетащите к месту текста или просто щёлкните.",
+"A callout needs an anchor point it points at": "Для выноски нужна точка привязки, на которую она указывает"
 };

@@ -2311,5 +2311,11 @@ export const ptBR: Record<string, string> = {
 "Select text to squiggle-underline it.": "Selecione o texto para aplicar sublinhado ondulado.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Clique em cada canto. Clique no primeiro ponto, clique duas vezes ou pressione Enter para fechar.",
 "Click each point. Double-click or press Enter to finish.": "Clique em cada ponto. Clique duas vezes ou pressione Enter para concluir.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Clique em cada canto da nuvem. Clique no primeiro ponto, clique duas vezes ou pressione Enter para fechar."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Clique em cada canto da nuvem. Clique no primeiro ponto, clique duas vezes ou pressione Enter para fechar.",
+"Callout": "Texto explicativo",
+"Add callout": "Adicionar texto explicativo",
+"Delete callout": "Excluir texto explicativo",
+"Move callout arrow": "Mover a seta do texto explicativo",
+"Press where the arrow points and drag to where the text goes, or just click.": "Pressione onde a seta deve apontar e arraste até onde o texto ficará, ou simplesmente clique.",
+"A callout needs an anchor point it points at": "Um texto explicativo precisa de um ponto de ancoragem para o qual aponte"
 };

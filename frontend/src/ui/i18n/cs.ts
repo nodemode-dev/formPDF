@@ -2311,5 +2311,11 @@ export const cs: Record<string, string> = {
 "Select text to squiggle-underline it.": "Vyberte text, který chcete podtrhnout vlnovkou.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Klikejte na jednotlivé rohy. Uzavřete klepnutím na první bod, dvojklikem nebo klávesou Enter.",
 "Click each point. Double-click or press Enter to finish.": "Klikejte na jednotlivé body. Dokončete dvojklikem nebo klávesou Enter.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikejte na jednotlivé rohy oblaku. Uzavřete klepnutím na první bod, dvojklikem nebo klávesou Enter."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikejte na jednotlivé rohy oblaku. Uzavřete klepnutím na první bod, dvojklikem nebo klávesou Enter.",
+"Callout": "Popisek",
+"Add callout": "Přidat popisek",
+"Delete callout": "Odstranit popisek",
+"Move callout arrow": "Přesunout šipku popisku",
+"Press where the arrow points and drag to where the text goes, or just click.": "Stiskněte tam, kam má šipka mířit, a přetáhněte na místo textu, nebo jen klikněte.",
+"A callout needs an anchor point it points at": "Popisek potřebuje kotvicí bod, na který míří"
 };

@@ -2311,5 +2311,11 @@ export const fr: Record<string, string> = {
 "Select text to squiggle-underline it.": "Sélectionnez du texte pour le souligner d'une ondulation.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Cliquez sur chaque coin. Cliquez sur le premier point, double-cliquez ou appuyez sur Entrée pour fermer.",
 "Click each point. Double-click or press Enter to finish.": "Cliquez sur chaque point. Double-cliquez ou appuyez sur Entrée pour terminer.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Cliquez sur chaque coin du nuage. Cliquez sur le premier point, double-cliquez ou appuyez sur Entrée pour fermer."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Cliquez sur chaque coin du nuage. Cliquez sur le premier point, double-cliquez ou appuyez sur Entrée pour fermer.",
+"Callout": "Légende",
+"Add callout": "Ajouter une légende",
+"Delete callout": "Supprimer la légende",
+"Move callout arrow": "Déplacer la flèche de la légende",
+"Press where the arrow points and drag to where the text goes, or just click.": "Appuyez à l'endroit où la flèche doit pointer et faites glisser jusqu'à l'emplacement du texte, ou cliquez simplement.",
+"A callout needs an anchor point it points at": "Une légende a besoin d'un point d'ancrage sur lequel pointer"
 };

@@ -2311,5 +2311,11 @@ export const de: Record<string, string> = {
 "Select text to squiggle-underline it.": "Wählen Sie Text aus, um ihn wellenförmig zu unterstreichen.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Klicken Sie auf jede Ecke. Klicken Sie zum Schließen auf den ersten Punkt, doppelklicken Sie oder drücken Sie die Eingabetaste.",
 "Click each point. Double-click or press Enter to finish.": "Klicken Sie auf jeden Punkt. Doppelklicken Sie oder drücken Sie zum Beenden die Eingabetaste.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klicken Sie auf jede Ecke der Wolke. Klicken Sie zum Schließen auf den ersten Punkt, doppelklicken Sie oder drücken Sie die Eingabetaste."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klicken Sie auf jede Ecke der Wolke. Klicken Sie zum Schließen auf den ersten Punkt, doppelklicken Sie oder drücken Sie die Eingabetaste.",
+"Callout": "Legende",
+"Add callout": "Legende hinzufügen",
+"Delete callout": "Legende löschen",
+"Move callout arrow": "Legendenpfeil verschieben",
+"Press where the arrow points and drag to where the text goes, or just click.": "Drücken Sie dort, wohin der Pfeil zeigen soll, und ziehen Sie zur Position des Texts, oder klicken Sie einfach.",
+"A callout needs an anchor point it points at": "Eine Legende benötigt einen Ankerpunkt, auf den sie zeigt"
 };

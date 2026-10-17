@@ -2311,5 +2311,11 @@ export const uk: Record<string, string> = {
 "Select text to squiggle-underline it.": "Виділіть текст, щоб підкреслити його хвилястою лінією.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Клацайте кожен кут. Щоб замкнути, клацніть першу точку, двічі клацніть або натисніть Enter.",
 "Click each point. Double-click or press Enter to finish.": "Клацайте кожну точку. Щоб завершити, двічі клацніть або натисніть Enter.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Клацайте кожен кут хмарки. Щоб замкнути, клацніть першу точку, двічі клацніть або натисніть Enter."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Клацайте кожен кут хмарки. Щоб замкнути, клацніть першу точку, двічі клацніть або натисніть Enter.",
+"Callout": "Виноска",
+"Add callout": "Додати виноску",
+"Delete callout": "Видалити виноску",
+"Move callout arrow": "Перемістити стрілку виноски",
+"Press where the arrow points and drag to where the text goes, or just click.": "Натисніть там, куди має вказувати стрілка, і перетягніть до місця тексту або просто клацніть.",
+"A callout needs an anchor point it points at": "Для виноски потрібна точка прив'язки, на яку вона вказує"
 };

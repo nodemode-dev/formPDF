@@ -2311,5 +2311,11 @@ export const it: Record<string, string> = {
 "Select text to squiggle-underline it.": "Seleziona il testo per sottolinearlo con una linea ondulata.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Fai clic su ogni angolo. Fai clic sul primo punto, fai doppio clic o premi Invio per chiudere.",
 "Click each point. Double-click or press Enter to finish.": "Fai clic su ogni punto. Fai doppio clic o premi Invio per terminare.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Fai clic su ogni angolo della nuvola. Fai clic sul primo punto, fai doppio clic o premi Invio per chiudere."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Fai clic su ogni angolo della nuvola. Fai clic sul primo punto, fai doppio clic o premi Invio per chiudere.",
+"Callout": "Callout",
+"Add callout": "Aggiungi callout",
+"Delete callout": "Elimina callout",
+"Move callout arrow": "Sposta la freccia del callout",
+"Press where the arrow points and drag to where the text goes, or just click.": "Premi dove deve puntare la freccia e trascina fino a dove andrà il testo, oppure fai semplicemente clic.",
+"A callout needs an anchor point it points at": "Un callout richiede un punto di ancoraggio a cui puntare"
 };

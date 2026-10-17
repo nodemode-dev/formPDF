@@ -2311,5 +2311,11 @@ export const id: Record<string, string> = {
 "Select text to squiggle-underline it.": "Pilih teks untuk memberinya garis bawah bergelombang.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Klik setiap sudut. Klik titik pertama, klik ganda, atau tekan Enter untuk menutup.",
 "Click each point. Double-click or press Enter to finish.": "Klik setiap titik. Klik ganda atau tekan Enter untuk selesai.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik setiap sudut awan. Klik titik pertama, klik ganda, atau tekan Enter untuk menutup."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik setiap sudut awan. Klik titik pertama, klik ganda, atau tekan Enter untuk menutup.",
+"Callout": "Callout",
+"Add callout": "Tambah callout",
+"Delete callout": "Hapus callout",
+"Move callout arrow": "Pindahkan panah callout",
+"Press where the arrow points and drag to where the text goes, or just click.": "Tekan di tempat panah menunjuk lalu seret ke tempat teks berada, atau cukup klik.",
+"A callout needs an anchor point it points at": "Callout memerlukan titik jangkar yang ditunjuknya"
 };

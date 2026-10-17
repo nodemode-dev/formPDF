@@ -2311,5 +2311,11 @@ export const pl: Record<string, string> = {
 "Select text to squiggle-underline it.": "Zaznacz tekst, aby podkreślić go linią falistą.",
 "Click each corner. Click the first point, double-click or press Enter to close.": "Klikaj kolejne narożniki. Aby zamknąć, kliknij pierwszy punkt, kliknij dwukrotnie lub naciśnij Enter.",
 "Click each point. Double-click or press Enter to finish.": "Klikaj kolejne punkty. Aby zakończyć, kliknij dwukrotnie lub naciśnij Enter.",
-"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikaj kolejne narożniki chmurki. Aby zamknąć, kliknij pierwszy punkt, kliknij dwukrotnie lub naciśnij Enter."
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikaj kolejne narożniki chmurki. Aby zamknąć, kliknij pierwszy punkt, kliknij dwukrotnie lub naciśnij Enter.",
+"Callout": "Objaśnienie",
+"Add callout": "Dodaj objaśnienie",
+"Delete callout": "Usuń objaśnienie",
+"Move callout arrow": "Przesuń strzałkę objaśnienia",
+"Press where the arrow points and drag to where the text goes, or just click.": "Naciśnij miejsce, na które ma wskazywać strzałka, i przeciągnij tam, gdzie ma być tekst, albo po prostu kliknij.",
+"A callout needs an anchor point it points at": "Objaśnienie wymaga punktu zakotwiczenia, na który wskazuje"
 };
