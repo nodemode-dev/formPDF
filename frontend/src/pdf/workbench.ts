@@ -93,7 +93,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF
 <div class="fs-pdfwb-main">
 <aside class="fs-pdfwb-side">
 <div class="fs-pdfwb-sidehead"><div class="fs-seg is-quiet"><button type="button" data-side="pages" class="is-on">Pages</button><button type="button" data-side="outline">Bookmarks</button></div><span class="fs-strip-count fs-pdfwb-count"></span></div>
-<div class="fs-pdfwb-sidebody"><div class="fs-pdfwb-outline" hidden></div></div>
+<div class="fs-pdfwb-sidebody"><div class="fs-pdfwb-outline" hidden><div class="fs-pdfwb-oltools" role="toolbar" aria-label="Bookmarks">${[['add', 'plus', 'Add a bookmark for this page'], ['rename', 'textBox', 'Rename the bookmark'], ['dest', 'pageInsert', 'Point the bookmark at this page'], ['up', 'chevronUp', 'Move up'], ['down', 'chevronDown', 'Move down'], ['outdent', 'outdent', 'Move out a level'], ['indent', 'indent', 'Move in a level'], ['delete', 'delete', 'Delete the bookmark']].map(([a, ic, l]) => `<button class="fs-icon-btn is-sm" type="button" data-ol="${a}" title="${l}" aria-label="${l}">${icon(ic, 14)}</button>`).join('')}</div><div class="fs-pdfwb-ollist"></div></div></div>
 </aside>
 <main class="fs-pdfwb-center">
 <div class="fs-pdfwb-empty">
@@ -624,7 +624,10 @@ class Workbench {
     if (sw?.dataset.color) { this.pickColor(sw.dataset.color); return; }
     const side = t.closest('[data-side]') as HTMLElement | null;
     if (side) { this.setSide(side.dataset.side as 'pages' | 'outline'); return; }
+    const olBtn = t.closest<HTMLElement>('[data-ol]');
+    if (olBtn?.dataset.ol) { void this.outlineOp(olBtn.dataset.ol); return; }
     const ol = t.closest('.fs-pdfwb-ol') as HTMLElement | null;
+    if (ol) { this.olSel = Number(ol.dataset.i ?? -1); this.olTitle = ol.title; this.markOutline(); }
     if (ol?.dataset.page) { this.viewer.goTo(Number(ol.dataset.page)); return; }
     const rec = t.closest('.fs-pdfwb-recent') as HTMLElement | null;
     if (rec?.dataset.id) {
@@ -906,6 +909,7 @@ class Workbench {
     const seq = ++this.loadSeq;
     const sizes = (s: PdfInfo | undefined): string => (s ? s.sizes.map((z) => `${Math.round(z.w)}x${Math.round(z.h)}r${z.rotate}`).join(',') : '');
     const before = sizes(this.doc?.info);
+    if (this.doc?.key !== (info.key ?? id)) { this.olSel = -1; this.olTitle = ''; }
     this.doc = { id, name, info, key: info.key ?? id };
     setText(q(this.root, '.fs-pdfwb-name'), name);
     setHidden(q(this.root, '.fs-pdfwb-empty'), true);
@@ -939,15 +943,60 @@ class Workbench {
   }
 
   private renderOutline(info: PdfInfo): void {
-    const host = q(this.root, '.fs-pdfwb-outline');
+    const host = q(this.root, '.fs-pdfwb-ollist');
     const items = info.outline.map((o, i) => ({ ...o, i }));
     patchList(host, items, {
-      key: (o) => `${o.i}|${o.title}|${o.page}`,
-      create: (o) => el(`<button class="fs-pdfwb-ol" type="button" ${o.page ? `data-page="${o.page}"` : 'disabled'} style="padding-left:${10 + Math.min(o.level, 6) * 14}px" title="${escapeHtml(o.title)}"><span>${escapeHtml(o.title)}</span>${o.page ? `<span class="fs-pdfwb-olpage">${o.page}</span>` : ''}</button>`),
+      key: (o) => `${o.i}|${o.title}|${o.page}|${o.level}`,
+      create: (o) => el(`<button class="fs-pdfwb-ol" type="button" data-i="${o.i}" ${o.page ? `data-page="${o.page}"` : ''} style="padding-left:${10 + Math.min(o.level, 6) * 14}px" title="${escapeHtml(o.title)}"><span>${escapeHtml(o.title)}</span>${o.page ? `<span class="fs-pdfwb-olpage">${o.page}</span>` : ''}</button>`),
       update: () => undefined,
     });
-    if (!items.length && !host.querySelector('.fs-empty')) host.appendChild(el(`<div class="fs-empty"><span class="fs-empty-title">No bookmarks</span><span class="fs-empty-note">This PDF has no outline.</span></div>`));
+    if (!items.length && !host.querySelector('.fs-empty')) host.appendChild(el(`<div class="fs-empty"><span class="fs-empty-title">No bookmarks</span><span class="fs-empty-note">Go to a page and press + to add one.</span></div>`));
     else if (items.length) host.querySelector('.fs-empty')?.remove();
+    if (this.olSel >= 0 && items[this.olSel]?.title !== this.olTitle) {
+      const near = items.filter((o) => o.title === this.olTitle).sort((a, b) => Math.abs(a.i - this.olSel) - Math.abs(b.i - this.olSel))[0];
+      this.olSel = near ? near.i : Math.min(this.olSel, items.length - 1);
+      this.olTitle = items[this.olSel]?.title ?? '';
+    }
+    this.markOutline();
+  }
+
+  private olSel = -1;
+  private olTitle = '';
+
+  private markOutline(): void {
+    for (const n of Array.from(this.root.querySelectorAll<HTMLElement>('.fs-pdfwb-ol'))) setClass(n, 'is-sel', Number(n.dataset.i) === this.olSel);
+    const none = this.olSel < 0 || !this.doc;
+    for (const b of Array.from(this.root.querySelectorAll<HTMLButtonElement>('[data-ol]'))) setDisabled(b, !this.doc || (b.dataset.ol !== 'add' && none));
+  }
+
+  private async outlineOp(op: string): Promise<void> {
+    const d = this.doc;
+    if (!d) return;
+    const items = d.info.outline, i = this.olSel, page = this.viewer.currentPage();
+    if (op !== 'add' && !items[i]) { toast('Select a bookmark first'); return; }
+    const send = async (o: Record<string, unknown>, label: string, title: string): Promise<void> => {
+      const res = await this.run(label, () => pdfApi.act<Derived>(d.id, 'edit_outline', { ops: [o] }));
+      if (!res) return;
+      this.olTitle = title;
+      await this.commit(res, label);
+    };
+    if (op === 'add' || op === 'rename') {
+      this.bar({ text: op === 'add' ? tf('New bookmark for page {0}', String(page)) : 'Rename the bookmark', tone: 'info', input: { type: 'text', value: op === 'rename' ? items[i].title : '' }, actions: [
+        { label: op === 'add' ? 'Add bookmark' : 'Rename', kind: 'primary', run: (v) => {
+          const title = v.trim();
+          if (!title) return;
+          this.hideBar();
+          if (op === 'add') { this.olSel = items[i] ? i + 1 : items.length; void send({ op: 'add', ...(items[i] ? { index: i } : {}), title, page }, 'Add bookmark', title); }
+          else void send({ op: 'rename', index: i, title }, 'Rename bookmark', title);
+        } },
+        { label: 'Cancel', kind: 'ghost', run: () => this.hideBar() },
+      ] });
+      return;
+    }
+    const labels: Record<string, string> = { dest: 'Point bookmark at this page', up: 'Move bookmark up', down: 'Move bookmark down', indent: 'Move bookmark in', outdent: 'Move bookmark out', delete: 'Delete bookmark' };
+    if (!labels[op]) return;
+    const keep = op === 'delete' ? (items[i + 1]?.title ?? items[i - 1]?.title ?? '') : items[i].title;
+    await send({ op, index: i, ...(op === 'dest' ? { page } : {}) }, labels[op], keep);
   }
 
   private async loadRecents(): Promise<void> {
