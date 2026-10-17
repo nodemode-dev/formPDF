@@ -10,6 +10,7 @@ import { icon } from '../ui/icons';
 import { t } from '../ui/i18n';
 import { toast } from '../ui/toast';
 import { calc, PageLayers } from './overlay';
+import { reveal } from '../pdf/sections';
 import { docFace, plain, SYS, TextEditor, type Font, type Geo, type OrigFont, type Para } from './richtext';
 
 type Crop = { l: number; t: number; r: number; b: number };
@@ -1077,6 +1078,7 @@ function readPicture(done: (pic: { data: string; w: number; h: number; name: str
 function sync(): void {
   const root = rootEl, host = hostRef;
   if (!root || !host) return;
+  if ((editing || sel.length || mode === 'text') && root.classList.contains('is-sec-off')) reveal(root);
   const objs = allSelected(host);
   const texts = objs.filter(isText);
   const picsSel = objs.filter((o) => o.kind === 'picture' || o.kind === 'pic');

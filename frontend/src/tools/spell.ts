@@ -2,6 +2,7 @@ import { api } from '../io/api';
 import { pdfApi, type Derived, type Rect } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
 import { el, patchList, q, setClass, setHidden, setText } from '../ui/dom';
+import { reveal } from '../pdf/sections';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 
@@ -233,7 +234,7 @@ registerTool({
       run: () => {
         host.setTab('comment');
         const root = document.querySelector<HTMLElement>('[data-section="spell"]');
-        if (root) { root.scrollIntoView({ block: 'nearest' }); void check(root, host); }
+        if (root) { reveal(root); root.scrollIntoView({ block: 'nearest' }); void check(root, host); }
       },
     },
   ],

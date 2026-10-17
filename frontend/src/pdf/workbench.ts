@@ -16,6 +16,7 @@ import { Finder } from './find';
 import { FIELD_ICON, FIELD_LABEL, FIELD_TYPES, FormBuilder, FormPanel } from './form';
 import type { CreateKind } from './intent';
 import { Organizer, type OrgItem } from './organize';
+import { reveal } from './sections';
 import { LAYOUTS, Panes, type Ctx, type Doc, type Tab } from './panels';
 import { recall, REFLOW_SIZES, Reflow, remember, Speaker } from './reading';
 import { loadPlugins } from './plugins';
@@ -489,6 +490,7 @@ class Workbench {
       if (!cur) return;
       const res = await pdfApi.compare(cur.id, other.id, { otherIsNewer: this.cmpPanel.otherIsNewer, pictures: this.cmpPanel.pictures });
       this.comparer.set(res, cur.id, f.name);
+      reveal(q(this.panes.root, '[data-part="compare"]'));
       q(this.panes.root, '[data-part="compare"]').scrollIntoView({ block: 'start' });
       if (res.changes.length) this.comparer.go(res.changes[0].id);
       else toast('No differences found');
@@ -656,7 +658,7 @@ class Workbench {
         menu.openAt(b.dataset.a === 'open-menu' ? rc.left : rc.right - 240, b.dataset.a === 'open-menu' ? rc.bottom + 6 : rc.top - 6);
         break;
       }
-      case 'stamps': this.setTab('fill'); q(this.panes.root, '[data-part="stamps"]').scrollIntoView({ block: 'start' }); break;
+      case 'stamps': this.setTab('fill'); reveal(q(this.panes.root, '[data-part="stamps"]')); q(this.panes.root, '[data-part="stamps"]').scrollIntoView({ block: 'start' }); break;
       case 'create-pictures': void this.startCreate('pictures'); break;
       case 'create-files': void this.startCreate('files'); break;
       case 'scan': void this.startScan(); break;

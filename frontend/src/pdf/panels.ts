@@ -7,6 +7,7 @@ import { pdfApi, type Annot, type Area, type Derived, type HeaderFooter, type Hi
 import { SignaturePad, typedSignature, type Fields } from './fill';
 import type { Organizer } from './organize';
 import { recall, remember } from './reading';
+import { SectionChips } from './sections';
 import { dynamicLine, paletteHtml, STAMPS, stampSize } from './stamps';
 import type { Viewer } from './viewer';
 
@@ -120,6 +121,7 @@ export class Panes {
   private hidden: HiddenItem[] = [];
   private hiddenFor = '';
   private hidTicked = new Set<string>();
+  private chips: SectionChips | null = null;
 
   constructor(private readonly ctx: Ctx) {
     this.root = el(`<div class="fs-pdfwb-panes">
@@ -257,6 +259,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
   show(tab: Tab): void {
     this.tab = tab;
     for (const p of Array.from(this.root.querySelectorAll<HTMLElement>('.fs-pdfwb-pane'))) setHidden(p, p.dataset.for !== tab);
+    (this.chips ??= new SectionChips(this.root)).sync();
     if (tab === 'fill') requestAnimationFrame(() => this.pad.paint());
   }
 
