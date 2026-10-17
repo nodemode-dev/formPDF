@@ -12,7 +12,7 @@
   --border-light: #34333a;
   --text-primary: #f7f7f7;
   --text-secondary: #a4a4a4;
-  --text-muted: #717072;
+  --text-muted: #8a8a8b;
   --canvas-bg: #1c1b1d;
   --grid-color: #5e5e60;
   --node-shadow: 0 6px 18px rgba(0,0,0,0.45);
@@ -186,7 +186,8 @@ body.nm-home .nm-canvas-surface { display: none !important; }
 
 :root {
   --fs-titlebar-h: 44px;
-  --fs-options-h: 44px;
+  --fs-tabs-h: 32px;
+  --fs-options-h: calc(var(--fs-tabs-h) + 44px);
   --fs-status-h: 28px;
   --fs-pasteboard: var(--canvas-bg);
   --z-toast: 3000;

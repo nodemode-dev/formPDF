@@ -1077,7 +1077,6 @@ function readPicture(done: (pic: { data: string; w: number; h: number; name: str
 function sync(): void {
   const root = rootEl, host = hostRef;
   if (!root || !host) return;
-  for (const b of Array.from(root.querySelectorAll<HTMLElement>('[data-m]'))) setClass(b, 'is-active', b.dataset.m === mode);
   const objs = allSelected(host);
   const texts = objs.filter(isText);
   const picsSel = objs.filter((o) => o.kind === 'picture' || o.kind === 'pic');
@@ -1146,8 +1145,7 @@ registerTool({
   first: true,
   enter: (host) => { if (host.doc() && mode === 'idle') setMode(host, 'select'); },
   words: ['add text', 'edit text', 'add picture', 'image', 'crop picture', 'rotate picture', 'flip', 'arrange', 'bring to front', 'send to back', 'align objects', 'distribute', 'page text', 'list', 'justify'],
-  section: () => `<div class="fs-seg is-quiet fs-tool-seg" role="group" aria-label="Text and pictures"><button type="button" data-m="select">${icon('cursor', 14)}Select</button><button type="button" data-m="text">${icon('textBox', 14)}Add text</button><button type="button" data-m="picture">${icon('image', 14)}Add picture</button></div>
-<p class="fs-note fs-tool-note fs-cx-note" data-t="note"></p>
+  section: () => `<p class="fs-note fs-tool-note fs-cx-note" data-t="note"></p>
 <div class="fs-cx-group" data-g="text">
 <div class="fs-cx-row"><select class="fs-tool-unit" data-f="family" aria-label="Font"><option value="sans">Inter</option><option value="serif">Noto Serif</option><option value="mono">JetBrains Mono</option></select><input class="fs-input fs-cx-num" type="number" min="4" max="288" step="0.5" data-f="size" aria-label="Font size"><input class="fs-cx-color" type="color" data-f="color" aria-label="Text colour" title="Text colour"></div>
 <div class="fs-cx-btns">${btn('data-f="run" data-v="b"', 'bold', 'Bold')}${btn('data-f="run" data-v="i"', 'italic', 'Italic')}${btn('data-f="run" data-v="u"', 'underline', 'Underline')}${btn('data-f="run" data-v="s"', 'strike', 'Strike through')}${btn('data-f="run" data-v="sup"', 'superscript', 'Superscript')}${btn('data-f="run" data-v="sub"', 'subscript', 'Subscript')}</div>
@@ -1173,12 +1171,6 @@ registerTool({
     root.addEventListener('click', (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>('button');
       if (!b || (b as HTMLButtonElement).disabled) return;
-      if (b.dataset.m) {
-        const m = b.dataset.m as Mode;
-        if (m === 'picture') { choosePicture(host); return; }
-        setMode(host, mode === m && m === 'select' ? 'idle' : m);
-        return;
-      }
       if (b.dataset.f === 'run' || b.dataset.f === 'align' || b.dataset.f === 'list') { void textFormat(host, b.dataset.f === 'run' ? b.dataset.v ?? '' : b.dataset.f, b.dataset.v); return; }
       if (b.dataset.p) { void pictureEdit(host, b.dataset.p); return; }
       if (b.dataset.z) { void arrange(host, b.dataset.z as 'front'); return; }
