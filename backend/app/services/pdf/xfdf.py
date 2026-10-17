@@ -117,6 +117,14 @@ def export(src, out, *, args: dict | None = None, pages=None, passwords: list[st
                 attrs["head"], attrs["tail"] = str(le[0])[1:], str(le[1])[1:]
         if sub == "/FreeText" and a.get("/DA") is not None:
             attrs["defaultappearance"] = _str(a["/DA"])
+        if a.get("/IT") is not None:
+            attrs["intent"] = str(a["/IT"])[1:]
+        if sub == "/FreeText" and a.get("/CL"):
+            attrs["callout"] = _nums(a["/CL"])
+        if a.get("/RD"):
+            attrs["fringe"] = _nums(a["/RD"])
+        if sub == "/Polygon" and str((a.get("/BE") or {}).get("/S") or "") == "/C":
+            attrs["style"] = "cloudy"
         if "/Open" in a:
             attrs["open"] = "yes" if getattr(a["/Open"], "value", a["/Open"]) is True else "no"
         inner = []
@@ -204,13 +212,18 @@ def _window(el: ET.Element, kind: str, page: int, geo, rect, width: float) -> di
     a: dict = {"kind": kind, "page": page, "color": el.get("color") or None, "width": width, "text": (el.findtext("contents") or "")}
     if el.get("opacity"):
         a["opacity"] = float(el.get("opacity"))
-    if kind in ("rect", "ellipse", "freetext", "note", "stamp"):
+    if kind in ("rect", "ellipse", "freetext", "callout", "note", "stamp"):
         x0, y0, x1, y1 = rect
+        if kind == "callout":
+            fr = (_floats(el.get("fringe")) + [0.0] * 4)[:4]
+            x0, y1, x1, y0 = x0 + fr[0], y1 - fr[1], x1 - fr[2], y0 + fr[3]
+            leg = _floats(el.get("callout"), 2)
+            a["points"] = [P(leg[0], leg[1])]
         pad = width / 2 if kind in ("rect", "ellipse") else 0
         a.update(x=x0 + pad - llx, y=lly + H - y1 + pad, w=max(1.0, x1 - x0 - 2 * pad), h=max(1.0, y1 - y0 - 2 * pad))
-        if kind in ("rect", "ellipse") and _rgb(el.get("interior-color")):
+        if kind in ("rect", "ellipse", "callout") and _rgb(el.get("interior-color")):
             a["fill"] = el.get("interior-color")
-        if kind == "freetext":
+        if kind in ("freetext", "callout"):
             m = re.search(r"([\d.]+)\s+Tf", el.get("defaultappearance") or "")
             a["size"] = float(m.group(1)) if m else 12
             col = re.search(r"([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+rg", el.get("defaultappearance") or "")
@@ -257,7 +270,9 @@ def _kind(el: ET.Element) -> str | None:
         return "arrow" if "Arrow" in (el.get("tail") or "") or "Arrow" in (el.get("head") or "") else "line"
     if tag == "polygon":
         return "cloud" if el.get("style") == "cloudy" else "polygon"
-    return {"squiggly": "squiggly", "polyline": "polyline","text": "note", "freetext": "freetext", "square": "rect", "circle": "ellipse", "highlight": "highlight", "underline": "underline",
+    if tag == "freetext" and (el.get("intent") == "FreeTextCallout" or el.get("callout")):
+        return "callout"
+    return {"squiggly": "squiggly", "polyline": "polyline", "text": "note", "freetext": "freetext", "square": "rect", "circle": "ellipse", "highlight": "highlight", "underline": "underline",
             "strikeout": "strikeout", "ink": "ink", "stamp": "stamp"}.get(tag)
 
 
@@ -296,6 +311,14 @@ def _base(el: ET.Element, rect: list[float]) -> DictionaryObject:
         d[NameObject("/LE")] = ArrayObject([NameObject("/" + e) for e in le])
     if el.tag == "freetext" and el.get("defaultappearance"):
         d[NameObject("/DA")] = TextStringObject(el.get("defaultappearance")[:400])
+    if re.fullmatch(r"[A-Za-z]{1,40}", el.get("intent") or ""):
+        d[NameObject("/IT")] = NameObject("/" + el.get("intent"))
+    if el.tag == "freetext" and el.get("callout"):
+        d[NameObject("/CL")] = annot._arr(_floats(el.get("callout"), 4)[:6])
+    if el.get("fringe"):
+        d[NameObject("/RD")] = annot._arr(_floats(el.get("fringe"), 4)[:4])
+    if el.tag == "polygon" and el.get("style") == "cloudy":
+        d[NameObject("/BE")] = DictionaryObject({NameObject("/S"): NameObject("/C"), NameObject("/I"): NumberObject(1)})
     if el.get("open"):
         d[NameObject("/Open")] = BooleanObject(el.get("open") == "yes")
     vt = el.findtext("vertices")

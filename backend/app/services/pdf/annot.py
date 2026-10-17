@@ -19,15 +19,15 @@ from app.core import config
 
 from . import core
 
-KINDS = ("highlight", "underline", "strikeout", "squiggly", "note", "freetext", "ink", "rect", "ellipse", "line", "arrow", "polygon", "polyline", "cloud",
-         "image", "stamp")
+KINDS = ("highlight", "underline", "strikeout", "squiggly", "note", "freetext", "callout", "ink", "rect", "ellipse", "line", "arrow", "polygon", "polyline",
+         "cloud", "image", "stamp")
 MARKUP = ("highlight", "underline", "strikeout", "squiggly")
 POLY = ("polygon", "polyline", "cloud")
 BOXED = ("note", "freetext", "image", "rect", "ellipse", "stamp")
-SUBTYPE = {"highlight": "/Highlight", "underline": "/Underline", "strikeout": "/StrikeOut", "squiggly": "/Squiggly", "note": "/Text", "freetext": "/FreeText",
+SUBTYPE = {"highlight": "/Highlight", "underline": "/Underline", "strikeout": "/StrikeOut", "squiggly": "/Squiggly", "note": "/Text", "freetext": "/FreeText", "callout": "/FreeText",
            "ink": "/Ink", "rect": "/Square", "ellipse": "/Circle", "line": "/Line", "arrow": "/Line", "polygon": "/Polygon", "polyline": "/PolyLine",
            "cloud": "/Polygon", "image": "/Stamp", "stamp": "/Stamp"}
-DEFAULT_COLOR = {"highlight": "#FFD400", "note": "#FFD400", "freetext": "#111111", "image": "#111111", "stamp": "#15803D"}
+DEFAULT_COLOR = {"highlight": "#FFD400", "note": "#FFD400", "freetext": "#111111", "callout": "#E11D48", "image": "#111111", "stamp": "#15803D"}
 SHAPES = ("box", "tag", "mark")
 NOTE = 20.0
 MAX_ANNOTS = 2000
@@ -207,6 +207,12 @@ def normalize(a: dict, sizes: list[tuple[float, float]]) -> dict:
             out["box"] = _rect((x, y, max(w, 1), max(h, 1)))
             if kind == "image":
                 out["image"] = _image(a.get("image"))
+            elif kind == "callout":
+                tip = a.get("anchor") or (a.get("points") or [None])[0]
+                if tip is None:
+                    raise ValueError("A callout needs an anchor point it points at")
+                out["points"] = [_pt(tip)]
+                out["width"] = _clamp(a.get("width"), 0.25, 48, 1)
             elif kind == "stamp":
                 out["stamp"] = _stamp_spec(a.get("stamp"))
                 if not out["text"]:
@@ -254,8 +260,28 @@ def squiggle(x: float, y: float, w: float, h: float, rot: int) -> tuple[list[tup
     return [(base + (amp if i % 2 else -amp) * 0.5, y + h * i / n) for i in range(n + 1)], amp
 
 
+def callout_leg(a: dict) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+    x, y, w, h = a["box"]
+    ax, ay = a["points"][0]
+    cx, cy = x + w / 2, y + h / 2
+    if abs(ax - cx) - w / 2 >= abs(ay - cy) - h / 2:
+        side = 1 if ax > cx else -1
+        end = (cx + side * w / 2, cy)
+        knee = (end[0] + side * min(18.0, abs(ax - end[0]) / 2), cy)
+    else:
+        side = 1 if ay > cy else -1
+        end = (cx, cy + side * h / 2)
+        knee = (cx, end[1] + side * min(18.0, abs(ay - end[1]) / 2))
+    return (ax, ay), knee, end
+
+
 def bbox(a: dict) -> tuple[float, float, float, float]:
     pad = a["width"] / 2 + 1
+    if a["kind"] == "callout":
+        x, y, w, h = a["box"]
+        ax, ay = a["points"][0]
+        e = pad + max(8.0, a["width"] * 4)
+        return min(x - pad, ax - e), min(y - pad, ay - e), max(x + w + pad, ax + e), max(y + h + pad, ay + e)
     if a["kind"] in MARKUP:
         xs = [r[0] for r in a["rects"]] + [r[0] + r[2] for r in a["rects"]]
         ys = [r[1] for r in a["rects"]] + [r[1] + r[3] for r in a["rects"]]
@@ -517,6 +543,26 @@ def draw(c, a: dict, H: float, flat: bool) -> None:
             for line in lines:
                 c.drawString(cw / 2 + 8, yy, line)
                 yy -= 10.8
+    elif kind == "callout":
+        tip, knee, end = callout_leg(a)
+        c.setStrokeColorRGB(*color)
+        c.setLineWidth(a["width"])
+        _alpha(c, fill=a["opacity"], stroke=a["opacity"])
+        p = c.beginPath()
+        p.moveTo(tip[0], H - tip[1])
+        p.lineTo(knee[0], H - knee[1])
+        p.lineTo(end[0], H - end[1])
+        c.drawPath(p, stroke=1, fill=0)
+        ang = math.atan2(-(tip[1] - knee[1]), tip[0] - knee[0])
+        size = max(8.0, a["width"] * 4)
+        for side in (-1, 1):
+            t = ang + math.pi - side * math.radians(28)
+            c.line(tip[0], H - tip[1], tip[0] + size * math.cos(t), H - tip[1] + size * math.sin(t))
+        cw, ch = _upright(c, a, H)
+        if a["fill"]:
+            c.setFillColorRGB(*a["fill"])
+        c.rect(-cw / 2, -ch / 2, cw, ch, stroke=1, fill=1 if a["fill"] else 0)
+        _text_block(c, a["text"], a["size"], color, cw, ch, pad=max(2.0, a["width"] + 1.5))
     elif kind == "freetext":
         cw, ch = _upright(c, a, H)
         if a["fill"]:
@@ -612,6 +658,18 @@ def _annot(a: dict, rect: list[float], ap, llx: float, lly: float, H: float, aut
         r, g, b = a["color"]
         d[NameObject("/DA")] = TextStringObject(f"/Helv {a['size']:g} Tf {r:.3f} {g:.3f} {b:.3f} rg")
         d[NameObject("/Border")] = _arr([0, 0, 0])
+    elif kind == "callout":
+        r, g, b = a["color"]
+        d[NameObject("/DA")] = TextStringObject(f"/Helv {a['size']:g} Tf {r:.3f} {g:.3f} {b:.3f} rg")
+        d[NameObject("/IT")] = NameObject("/FreeTextCallout")
+        d[NameObject("/CL")] = _arr([v for p in callout_leg(a) for v in U(*p)])
+        d[NameObject("/LE")] = NameObject("/OpenArrow")
+        d[NameObject("/BS")] = bs
+        if a["fill"]:
+            d[NameObject("/IC")] = _arr(a["fill"])
+        x, y, w, h = a["box"]
+        (ix0, iy0), (ix1, iy1) = U(x, y + h), U(x + w, y)
+        d[NameObject("/RD")] = _arr([ix0 - rect[0], rect[3] - iy1, rect[2] - ix1, iy0 - rect[1]])
     elif kind == "image":
         d[NameObject("/Name")] = NameObject("/Image")
     elif kind == "stamp":
@@ -716,7 +774,7 @@ def comments(path, passwords: list[str] | None = None, limit: int = 2000) -> lis
             ry0, ry1 = sorted((ry0, ry1))
             color = a.get("/C") or a.get("/IC") or []
             hexc = "#" + "".join(f"{max(0, min(255, round(float(c) * 255))):02X}" for c in list(color)[:3]) if len(color) >= 3 else ""
-            tops[k] = {"page": pi + 1, "index": k, "nm": _text(a.get("/NM")), "kind": "cloud" if a["/Subtype"] == "/Polygon" and (str(a.get("/IT") or "") == "/PolygonCloud" or str((a.get("/BE") or {}).get("/S") or "") == "/C") else LISTED[a["/Subtype"]], "label": str(a["/Subtype"])[1:],
+            tops[k] = {"page": pi + 1, "index": k, "nm": _text(a.get("/NM")), "kind": "cloud" if a["/Subtype"] == "/Polygon" and (str(a.get("/IT") or "") == "/PolygonCloud" or str((a.get("/BE") or {}).get("/S") or "") == "/C") else "callout" if a["/Subtype"] == "/FreeText" and (str(a.get("/IT") or "") == "/FreeTextCallout" or "/CL" in a) else LISTED[a["/Subtype"]], "label": str(a["/Subtype"])[1:],
                        "text": _text(a.get("/Contents")), "author": _text(a.get("/T")), "date": _when(a.get("/M") or a.get("/CreationDate")),
                        "color": hexc, "rect": {"x": round(rx0 - x0, 2), "y": round(y1 - ry1, 2), "w": round(rx1 - rx0, 2), "h": round(ry1 - ry0, 2)},
                        "replies": [], "status": "none", "statusBy": ""}
