@@ -3,9 +3,10 @@ import type { Annot, Area, Pt, Rect, StampSpec } from './api';
 import { stampSvg } from './stamps';
 import type { PageView, Viewer } from './viewer';
 
-export type Tool = 'select' | 'hand' | 'highlight' | 'underline' | 'strikeout' | 'note' | 'freetext' | 'ink' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'redact' | 'crop' | 'place' | 'form' | 'custom';
-export const MARKUP_TOOLS: readonly Tool[] = ['highlight', 'underline', 'strikeout'];
-export const DRAW_TOOLS: readonly Tool[] = ['note', 'freetext', 'ink', 'rect', 'ellipse', 'line', 'arrow', 'redact', 'crop', 'place', 'form', 'custom'];
+export type Tool = 'select' | 'hand' | 'highlight' | 'underline' | 'strikeout' | 'squiggly' | 'note' | 'freetext' | 'ink' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'polygon' | 'polyline' | 'cloud' | 'redact' | 'crop' | 'place' | 'form' | 'custom';
+export const MARKUP_TOOLS: readonly Tool[] = ['highlight', 'underline', 'strikeout', 'squiggly'];
+export const POLY_TOOLS: readonly Tool[] = ['polygon', 'polyline', 'cloud'];
+export const DRAW_TOOLS: readonly Tool[] = ['note', 'freetext', 'ink', 'rect', 'ellipse', 'line', 'arrow', 'polygon', 'polyline', 'cloud', 'redact', 'crop', 'place', 'form', 'custom'];
 export interface PageTool {
   hint: string;
   down(pv: PageView, p: { x: number; y: number }, e: PointerEvent): void;
@@ -22,10 +23,42 @@ export interface Style { color: string; width: number; opacity: number; size: nu
 export const KIND_LABEL: Record<string, string> = {
   highlight: 'Highlight', underline: 'Underline', strikeout: 'Strikethrough', note: 'Note', freetext: 'Text', ink: 'Drawing', rect: 'Rectangle',
   ellipse: 'Ellipse', line: 'Line', arrow: 'Arrow', image: 'Image', reply: 'Reply', squiggly: 'Squiggly', stamp: 'Stamp', polygon: 'Polygon',
-  polyline: 'Polyline', caret: 'Insert text', attachment: 'Attachment', sound: 'Sound', redact: 'Redaction mark',
+  polyline: 'Polyline', cloud: 'Cloud', caret: 'Insert text', attachment: 'Attachment', sound: 'Sound', redact: 'Redaction mark',
 };
 const NOTE = 20;
-const SVG_KINDS = new Set(['highlight', 'underline', 'strikeout', 'ink', 'rect', 'ellipse', 'line', 'arrow']);
+const SVG_KINDS = new Set(['highlight', 'underline', 'strikeout', 'squiggly', 'ink', 'rect', 'ellipse', 'line', 'arrow', 'polygon', 'polyline', 'cloud']);
+const cloudR = (a: Annot): number => Math.max(4, (a.width ?? 2) * 3);
+
+export function cloudPath(pts: Pt[], r: number): string {
+  const n = pts.length;
+  let area = 0;
+  for (let i = 0; i < n; i++) area += pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1];
+  const sign = area >= 0 ? 1 : -1;
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % n], len = Math.hypot(x1 - x0, y1 - y0);
+    if (len < 1e-6) continue;
+    const k = Math.max(1, Math.round(len / (2 * r))), ux = (x1 - x0) / len, uy = (y1 - y0) / len, nx = uy * sign, ny = -ux * sign, h = (len / k) * 0.66;
+    for (let j = 0; j < k; j++) {
+      const ax = x0 + (ux * len * j) / k, ay = y0 + (uy * len * j) / k, bx = x0 + (ux * len * (j + 1)) / k, by = y0 + (uy * len * (j + 1)) / k;
+      if (!d) d = `M${n2(ax)} ${n2(ay)}`;
+      d += `C${n2(ax + nx * h)} ${n2(ay + ny * h)} ${n2(bx + nx * h)} ${n2(by + ny * h)} ${n2(bx)} ${n2(by)}`;
+    }
+  }
+  return d + 'Z';
+}
+
+function squigglePts(r: Rect, rot: number): string {
+  const across = rot % 180 === 0 ? r.h : r.w, amp = Math.max(0.6, Math.min(across * 0.06, 2.4)), step = amp * 2, out: string[] = [];
+  if (rot % 180 === 0) {
+    const base = rot === 0 ? r.y + r.h - amp : r.y + amp, n = Math.max(2, Math.floor(r.w / step)), s = rot === 0 ? 1 : -1;
+    for (let i = 0; i <= n; i++) out.push(`${n2(r.x + (r.w * i) / n)},${n2(base + (i % 2 ? amp : -amp) * 0.5 * s)}`);
+  } else {
+    const base = rot === 90 ? r.x + r.w - amp : r.x + amp, n = Math.max(2, Math.floor(r.h / step));
+    for (let i = 0; i <= n; i++) out.push(`${n2(base + (i % 2 ? amp : -amp) * 0.5)},${n2(r.y + (r.h * i) / n)}`);
+  }
+  return `<polyline points="${out.join(' ')}" fill="none" stroke-width="${n2(Math.max(0.5, amp * 0.6))}"`;
+}
 const BOXED = new Set(['freetext', 'image', 'rect', 'ellipse', 'stamp']);
 
 let seq = 0;
@@ -46,6 +79,7 @@ export function bounds(a: Annot): Rect {
   }
   if (a.kind === 'ink' && a.paths?.length) return pts(a.paths.flat());
   if ((a.kind === 'line' || a.kind === 'arrow') && a.points?.length) return pts(a.points, a.kind === 'arrow' ? Math.max(8, (a.width ?? 2) * 4) : 0);
+  if ((a.kind === 'polygon' || a.kind === 'polyline' || a.kind === 'cloud') && a.points?.length) return pts(a.points, a.kind === 'cloud' ? cloudR(a) : 0);
   if (a.kind === 'note') return { x: a.x ?? 0, y: a.y ?? 0, w: NOTE, h: NOTE };
   const p = a.kind === 'rect' || a.kind === 'ellipse' ? pad : 0;
   return { x: (a.x ?? 0) - p, y: (a.y ?? 0) - p, w: (a.w ?? 0) + 2 * p, h: (a.h ?? 0) + 2 * p };
@@ -64,6 +98,7 @@ export function shifted(a: Annot, dx: number, dy: number): Annot {
 function svgBody(a: Annot): string {
   const c = escapeHtml(a.color), w = a.width ?? 2, op = a.opacity ?? 1, rot = a.rot ?? 0;
   if (a.kind === 'highlight') return (a.rects ?? []).map((r) => `<rect x="${n2(r.x)}" y="${n2(r.y)}" width="${n2(r.w)}" height="${n2(r.h)}" fill="${c}" fill-opacity="${a.opacity ?? 0.4}"/>`).join('');
+  if (a.kind === 'squiggly') return (a.rects ?? []).map((r) => `${squigglePts(r, rot)} stroke="${c}" stroke-opacity="${op}" stroke-linejoin="round"/>`).join('');
   if (a.kind === 'underline' || a.kind === 'strikeout') {
     return (a.rects ?? []).map((r) => {
       const across = rot % 180 === 0 ? r.h : r.w, lw = Math.max(0.75, Math.min(across * 0.08, 3)), under = a.kind === 'underline';
@@ -83,6 +118,11 @@ function svgBody(a: Annot): string {
   const fill = a.fill ? `fill="${escapeHtml(a.fill)}" fill-opacity="${op}"` : 'fill="none"';
   if (a.kind === 'rect') return `<rect x="${n2(a.x ?? 0)}" y="${n2(a.y ?? 0)}" width="${n2(a.w ?? 0)}" height="${n2(a.h ?? 0)}" ${fill} ${stroke}/>`;
   if (a.kind === 'ellipse') return `<ellipse cx="${n2((a.x ?? 0) + (a.w ?? 0) / 2)}" cy="${n2((a.y ?? 0) + (a.h ?? 0) / 2)}" rx="${n2((a.w ?? 0) / 2)}" ry="${n2((a.h ?? 0) / 2)}" ${fill} ${stroke}/>`;
+  if (a.kind === 'cloud') return `<path d="${cloudPath(a.points ?? [], cloudR(a))}" ${fill} ${stroke}/>`;
+  if (a.kind === 'polygon' || a.kind === 'polyline') {
+    const list = (a.points ?? []).map((p) => `${n2(p[0])},${n2(p[1])}`).join(' ');
+    return a.kind === 'polygon' ? `<polygon points="${list}" ${fill} ${stroke}/>` : `<polyline points="${list}" fill="none" ${stroke}/>`;
+  }
   const [[x1, y1], [x2, y2]] = a.points ?? [[0, 0], [0, 0]];
   let body = `<line x1="${n2(x1)}" y1="${n2(y1)}" x2="${n2(x2)}" y2="${n2(y2)}" ${stroke}/>`;
   if (a.kind === 'arrow') {
@@ -146,6 +186,7 @@ export class Annotator {
     host.addEventListener('pointerup', (e) => this.up(e));
     host.addEventListener('pointercancel', () => this.cancel());
     host.addEventListener('dblclick', (e) => {
+      if (this.session && POLY_TOOLS.includes(this.session.tool)) { e.preventDefault(); this.polyKey('Enter'); return; }
       const node = (e.target as HTMLElement).closest('.fs-pdf-annot') as HTMLElement | null;
       const a = node ? this.items.find((x) => x.id === node.dataset.key) : undefined;
       if (a && (a.kind === 'freetext' || a.kind === 'note')) { e.preventDefault(); this.edit(a.id); }
@@ -347,12 +388,34 @@ export class Annotator {
     e.preventDefault();
     const p0 = this.viewer.toPage(pv, e.clientX, e.clientY);
     if (this.tool === 'note' || this.tool === 'place') { this.createAt(pv, p0); return; }
+    const s = this.session;
+    if (s && POLY_TOOLS.includes(s.tool)) {
+      if (s.pv !== pv) return;
+      const [fx, fy] = s.pts[0], min = s.tool === 'polyline' ? 2 : 3;
+      if (Math.hypot(p0.x - fx, p0.y - fy) < 8 / this.viewer.zoom && s.pts.length >= min) { this.finish(s); return; }
+      const [lx, ly] = s.pts[s.pts.length - 1];
+      if (Math.hypot(p0.x - lx, p0.y - ly) > 0.5) s.pts.push([p0.x, p0.y]);
+      return;
+    }
     const layer = this.layers.get(pv.index);
     if (!layer) return;
     const draft = el('<div class="fs-pdf-draft"></div>');
     layer.appendChild(draft);
     this.session = { pv, tool: this.tool, p0, pts: [[p0.x, p0.y]], draft, last: p0 };
-    this.viewer.host.setPointerCapture(e.pointerId);
+    if (!POLY_TOOLS.includes(this.tool)) this.viewer.host.setPointerCapture(e.pointerId);
+  }
+
+  polyKey(key: string): boolean {
+    const s = this.session;
+    if (!s || !POLY_TOOLS.includes(s.tool)) return false;
+    if (key === 'Escape') this.cancel();
+    else if (key === 'Enter') {
+      if (s.pts.length >= (s.tool === 'polyline' ? 2 : 3)) this.finish(s);
+    } else if (s.pts.length > 1) {
+      s.pts.pop();
+      this.drawDraft(s);
+    } else this.cancel();
+    return true;
   }
 
   private moveTo(e: PointerEvent): void {
@@ -391,6 +454,10 @@ export class Annotator {
       const prev = s.pts[s.pts.length - 1];
       if (Math.hypot(p.x - prev[0], p.y - prev[1]) >= 0.8) s.pts.push([p.x, p.y]);
     }
+    this.drawDraft(s);
+  }
+
+  private drawDraft(s: Session): void {
     const a = this.draftAnnot(s);
     if (!a) return;
     const boxed = s.tool === 'redact' || s.tool === 'freetext' || s.tool === 'crop';
@@ -409,6 +476,10 @@ export class Annotator {
       case 'ink': return { ...base, kind: 'ink', paths: [s.pts.slice()] };
       case 'rect': case 'ellipse': case 'redact': case 'freetext': case 'crop': return { ...base, kind: s.tool === 'ellipse' ? 'ellipse' : 'rect', ...box };
       case 'line': case 'arrow': return { ...base, kind: s.tool, points: [[p0.x, p0.y], [last.x, last.y]] };
+      case 'polygon': case 'polyline': case 'cloud': {
+        const live = this.session === s && s.pts.length < 2000 ? [...s.pts, [last.x, last.y] as Pt] : s.pts.slice();
+        return { ...base, kind: live.length < 3 && s.tool !== 'polyline' ? 'polyline' : s.tool, points: live };
+      }
       default: return null;
     }
   }
@@ -442,7 +513,7 @@ export class Annotator {
       } else this.update(a.id, shifted(a, dx, dy), `Move ${KIND_LABEL[a.kind].toLowerCase()}`);
       return;
     }
-    if (this.session) { this.finish(this.session); return; }
+    if (this.session) { if (!POLY_TOOLS.includes(this.session.tool)) this.finish(this.session); return; }
     if (MARKUP_TOOLS.includes(this.tool)) window.setTimeout(() => this.fromSelection(), 0);
   }
 
@@ -483,6 +554,7 @@ export class Annotator {
     if (s.tool === 'ink' && (a.paths?.[0]?.length ?? 0) < 2 && Math.hypot(s.last.x - s.p0.x, s.last.y - s.p0.y) < 0.5) return;
     if ((s.tool === 'rect' || s.tool === 'ellipse') && ((a.w ?? 0) < 3 || (a.h ?? 0) < 3)) return;
     if ((s.tool === 'line' || s.tool === 'arrow') && Math.hypot(s.last.x - s.p0.x, s.last.y - s.p0.y) < 3) return;
+    if (POLY_TOOLS.includes(s.tool) && a.kind !== s.tool) return;
     this.add({ ...a, id, flatten: this.flattenComments ? true : undefined }, `Add ${KIND_LABEL[a.kind].toLowerCase()}`);
   }
 
@@ -539,7 +611,7 @@ export class Annotator {
     }
     const quote = sel.toString().replace(/\s+/g, ' ').trim().slice(0, 240);
     sel.removeAllRanges();
-    const kind = this.tool as 'highlight' | 'underline' | 'strikeout';
+    const kind = this.tool as 'highlight' | 'underline' | 'strikeout' | 'squiggly';
     let last = '';
     for (const [page, rects] of by) {
       const merged = merge(rects, rot);

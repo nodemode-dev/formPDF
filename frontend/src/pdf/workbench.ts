@@ -36,6 +36,10 @@ const LOCAL = {
   ellipse: '<ellipse cx="12" cy="12" rx="8.5" ry="6.5"/>',
   fitWidth: '<path d="M3.5 4.5v15M20.5 4.5v15M7 12h10M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5"/>',
   underline: '<path d="M7 4.5v6a5 5 0 0 0 10 0v-6M5.5 20h13"/>',
+  squiggly: '<path d="M7 4.5v6a5 5 0 0 0 10 0v-6M4.5 20l2-1.5 2 1.5 2-1.5 2 1.5 2-1.5 2 1.5 2-1.5 2 1.5"/>',
+  polygon: '<path d="M12 3.5l8.5 6.5-3.5 10h-10L3.5 10z"/>',
+  polyline: '<path d="M3.5 18.5l5-9 5 6 7-11"/><circle cx="3.5" cy="18.5" r="1"/><circle cx="20.5" cy="4.5" r="1"/>',
+  cloud: '<path d="M5 8.5a2.2 2.2 0 0 1 3.5-2.4a2.2 2.2 0 0 1 3.5 0a2.2 2.2 0 0 1 3.5 0a2.2 2.2 0 0 1 3.5 2.4a2.2 2.2 0 0 1 0 3.5a2.2 2.2 0 0 1 0 3.5a2.2 2.2 0 0 1-3.5 2.4a2.2 2.2 0 0 1-3.5 0a2.2 2.2 0 0 1-3.5 0a2.2 2.2 0 0 1-3.5-2.4a2.2 2.2 0 0 1 0-3.5a2.2 2.2 0 0 1 0-3.5z"/>',
 };
 const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print'], ['assistant', 'Assistant']];
 const LAYOUT_KEY = 'fs-pdf-layout';
@@ -44,13 +48,15 @@ const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
 const OFFICE_FILE = /\.(docx?|docm|odt|rtf|pptx?|ppsx?|odp|key|xlsx?|xlsm|ods|csv|pages|numbers)$/i;
 const layoutBtns = LAYOUTS.map(([v, l, ic]) => `<button class="fs-tb-btn" type="button" data-a="layout" data-v="${v}" title="${l}" aria-label="${l}">${icon(ic, 16)}</button>`).join('');
 const PALETTE = ['#FFD400', '#22C55E', '#38BDF8', '#F472B6', '#E11D48', '#2563EB', '#111111'];
-const TOOL_COLOR: Record<string, string> = { highlight: '#FFD400', underline: '#2563EB', strikeout: '#E11D48', note: '#FFD400', freetext: '#111111', ink: '#E11D48', rect: '#E11D48', ellipse: '#E11D48', line: '#111111', arrow: '#E11D48' };
+const TOOL_COLOR: Record<string, string> = { highlight: '#FFD400', underline: '#2563EB', strikeout: '#E11D48', note: '#FFD400', freetext: '#111111', ink: '#E11D48', rect: '#E11D48', ellipse: '#E11D48', line: '#111111', arrow: '#E11D48', squiggly: '#16A34A', polygon: '#E11D48', polyline: '#E11D48', cloud: '#E11D48' };
 const HINTS: Partial<Record<Tool, string>> = {
   select: 'Select text, or click a comment to move it. Double-click a text box to edit.', hand: 'Drag to move around the page.',
   highlight: 'Select text to highlight it.', underline: 'Select text to underline it.', strikeout: 'Select text to strike it through.',
   note: 'Click where the note goes.', freetext: 'Click or drag to add a text box.', ink: 'Drag to draw.', rect: 'Drag to draw a rectangle.',
   ellipse: 'Drag to draw an ellipse.', line: 'Drag to draw a line.', arrow: 'Drag to draw an arrow.', redact: 'Drag over everything that must disappear.',
-  crop: 'Drag a box around what to keep. Esc ends.',
+  crop: 'Drag a box around what to keep. Esc ends.', squiggly: 'Select text to squiggle-underline it.',
+  polygon: 'Click each corner. Click the first point, double-click or press Enter to close.', polyline: 'Click each point. Double-click or press Enter to finish.',
+  cloud: 'Click each corner of the cloud. Click the first point, double-click or press Enter to close.',
 };
 const toolBtn = (t: Tool, label: string, ic: string): string => `<button class="fs-tb-btn" type="button" data-tool="${t}" title="${label}" aria-label="${label}">${ic}</button>`;
 
@@ -78,7 +84,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF
 <div class="fs-pdfwb-tabs" role="tablist">${TABS.map(([t, l]) => `<button class="fs-pdfwb-tab" type="button" role="tab" data-tab="${t}">${l}</button>`).join('')}</div>
 <span class="fs-sep"></span>
 <div class="fs-tb fs-pdfwb-set" data-for="view">${toolBtn('select', 'Select', icon('cursor', 16))}${toolBtn('hand', 'Hand', icon('hand', 16))}<span class="fs-sep"></span><button class="fs-tb-btn" type="button" data-a="find" title="Find" aria-label="Find">${icon('search', 16)}</button><span class="fs-sep"></span>${layoutBtns}<button class="fs-tb-btn" type="button" data-a="cover-toggle" title="Show cover page in two-page view" aria-label="Show cover page in two-page view">${icon('bookCover', 16)}</button><span class="fs-sep"></span><button class="fs-tb-btn has-label" type="button" data-a="reading" title="Reading mode" aria-pressed="false">${icon('readMode', 16)}<span>Reading</span></button><button class="fs-tb-btn" type="button" data-a="rf-smaller" title="Smaller text" aria-label="Smaller text">${icon('textSmaller', 16)}</button><button class="fs-tb-btn" type="button" data-a="rf-larger" title="Larger text" aria-label="Larger text">${icon('textLarger', 16)}</button><span class="fs-sep"></span><button class="fs-tb-btn" type="button" data-a="say-page" title="Read this page aloud" aria-label="Read this page aloud">${icon('speaker', 16)}</button><button class="fs-tb-btn" type="button" data-a="say-end" title="Read from here to the end" aria-label="Read from here to the end">${icon('readAloud', 16)}</button><button class="fs-tb-btn" type="button" data-a="say-pause" title="Pause reading" aria-label="Pause reading">${icon('pause', 16)}</button><button class="fs-tb-btn" type="button" data-a="say-stop" title="Stop reading" aria-label="Stop reading">${icon('stop', 16)}</button><span class="fs-sep"></span><button class="fs-tb-btn has-label" type="button" data-a="compare" title="Compare with another PDF">${icon('compare', 16)}<span>Compare</span></button></div>
-<div class="fs-tb fs-pdfwb-set" data-for="comment" hidden>${toolBtn('select', 'Select', icon('cursor', 16))}<span class="fs-sep"></span>${toolBtn('highlight', 'Highlight text', icon('highlighter', 16))}${toolBtn('underline', 'Underline text', svg(LOCAL.underline))}${toolBtn('strikeout', 'Strike through text', icon('strike', 16))}<span class="fs-sep"></span>${toolBtn('note', 'Sticky note', icon('sticky', 16))}${toolBtn('freetext', 'Text box', icon('textBox', 16))}${toolBtn('ink', 'Draw', icon('pen', 16))}${toolBtn('rect', 'Rectangle', svg(LOCAL.rect))}${toolBtn('ellipse', 'Ellipse', svg(LOCAL.ellipse))}${toolBtn('line', 'Line', icon('line', 16))}${toolBtn('arrow', 'Arrow', icon('arrow', 16))}<button class="fs-tb-btn" type="button" data-a="stamps" title="Stamps" aria-label="Stamps">${icon('stamp', 16)}</button><span class="fs-sep"></span><div class="fs-tb-group fs-pdfwb-palette">${PALETTE.map((c) => `<button class="fs-swatch" type="button" data-color="${c}" title="${c}" style="background:${c}"></button>`).join('')}<label class="fs-swatch fs-pdfwb-custom" title="Custom colour"><input type="color" data-a="custom-color" value="#E11D48"></label></div><span class="fs-sep"></span><select class="fs-pdfwb-width" aria-label="Line width" title="Line width"><option value="1">1 pt</option><option value="2" selected>2 pt</option><option value="3">3 pt</option><option value="5">5 pt</option><option value="8">8 pt</option></select><select class="fs-pdfwb-size" aria-label="Text size" title="Text size"><option value="9">9 pt</option><option value="10">10 pt</option><option value="12" selected>12 pt</option><option value="14">14 pt</option><option value="18">18 pt</option><option value="24">24 pt</option><option value="36">36 pt</option></select></div>
+<div class="fs-tb fs-pdfwb-set" data-for="comment" hidden>${toolBtn('select', 'Select', icon('cursor', 16))}<span class="fs-sep"></span>${toolBtn('highlight', 'Highlight text', icon('highlighter', 16))}${toolBtn('underline', 'Underline text', svg(LOCAL.underline))}${toolBtn('strikeout', 'Strike through text', icon('strike', 16))}${toolBtn('squiggly', 'Squiggly underline', svg(LOCAL.squiggly))}<span class="fs-sep"></span>${toolBtn('note', 'Sticky note', icon('sticky', 16))}${toolBtn('freetext', 'Text box', icon('textBox', 16))}${toolBtn('ink', 'Draw', icon('pen', 16))}${toolBtn('rect', 'Rectangle', svg(LOCAL.rect))}${toolBtn('ellipse', 'Ellipse', svg(LOCAL.ellipse))}${toolBtn('line', 'Line', icon('line', 16))}${toolBtn('arrow', 'Arrow', icon('arrow', 16))}${toolBtn('polygon', 'Polygon', svg(LOCAL.polygon))}${toolBtn('polyline', 'Connected lines', svg(LOCAL.polyline))}${toolBtn('cloud', 'Cloud', svg(LOCAL.cloud))}<button class="fs-tb-btn" type="button" data-a="stamps" title="Stamps" aria-label="Stamps">${icon('stamp', 16)}</button><span class="fs-sep"></span><div class="fs-tb-group fs-pdfwb-palette">${PALETTE.map((c) => `<button class="fs-swatch" type="button" data-color="${c}" title="${c}" style="background:${c}"></button>`).join('')}<label class="fs-swatch fs-pdfwb-custom" title="Custom colour"><input type="color" data-a="custom-color" value="#E11D48"></label></div><span class="fs-sep"></span><select class="fs-pdfwb-width" aria-label="Line width" title="Line width"><option value="1">1 pt</option><option value="2" selected>2 pt</option><option value="3">3 pt</option><option value="5">5 pt</option><option value="8">8 pt</option></select><select class="fs-pdfwb-size" aria-label="Text size" title="Text size"><option value="9">9 pt</option><option value="10">10 pt</option><option value="12" selected>12 pt</option><option value="14">14 pt</option><option value="18">18 pt</option><option value="24">24 pt</option><option value="36">36 pt</option></select></div>
 <div class="fs-tb fs-pdfwb-set" data-for="fill" hidden>${toolBtn('select', 'Fill fields', icon('cursor', 16))}${toolBtn('freetext', 'Add text', icon('textBox', 16))}<button class="fs-tb-btn has-label" type="button" data-a="sign" title="Place your signature">${icon('signature', 16)}<span>Sign</span></button><button class="fs-tb-btn has-label" type="button" data-a="date" title="Place today's date">${icon('stamp', 16)}<span>Date</span></button></div>
 <div class="fs-tb fs-pdfwb-set" data-for="form" hidden><button class="fs-tb-btn" type="button" data-ftool="select" title="Select fields" aria-label="Select fields">${icon('cursor', 16)}</button><span class="fs-sep"></span>${FIELD_TYPES.map((t) => `<button class="fs-tb-btn" type="button" data-ftool="${t}" title="${FIELD_LABEL[t]}" aria-label="${FIELD_LABEL[t]}">${icon(FIELD_ICON[t], 16)}</button>`).join('')}<span class="fs-sep"></span><span class="fs-pdfwb-settext">Draw form fields, then apply them to the PDF.</span></div>
 <div class="fs-tb fs-pdfwb-set" data-for="edit" hidden><button class="fs-tb-btn has-label" type="button" data-tool="select" title="Edit text and pictures">${icon('cursor', 16)}<span>Edit</span></button><button class="fs-tb-btn has-label" type="button" data-cmd="tool-add-text" title="Add text">${icon('textBox', 16)}<span>Add text</span></button><button class="fs-tb-btn has-label" type="button" data-cmd="tool-add-picture" title="Add a picture">${icon('image', 16)}<span>Add picture</span></button><span class="fs-sep"></span>${toolBtn('crop', 'Draw a crop box', icon('crop', 16))}<span class="fs-sep"></span><span class="fs-pdfwb-settext">Click any text to edit it, drag a box to move it. Esc cancels typing.</span></div>
@@ -715,6 +721,7 @@ class Workbench {
     }
     if (typing) return;
     if (this.annot.tool === 'custom' && this.annot.custom?.key?.(e)) { e.preventDefault(); return; }
+    if ((combo === 'Escape' || combo === 'Enter' || combo === 'Backspace') && this.annot.polyKey(combo)) { e.preventDefault(); return; }
     switch (combo) {
       case 'Mod+Z': return run(() => this.undo());
       case 'Shift+Mod+Z': case 'Mod+Y': return run(() => this.redo());
@@ -739,7 +746,7 @@ class Workbench {
         return;
     }
     if (this.tab === 'comment' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      const keys: Record<string, Tool> = { v: 'select', h: 'highlight', u: 'underline', k: 'strikeout', n: 'note', t: 'freetext', p: 'ink', r: 'rect', e: 'ellipse', l: 'line', a: 'arrow' };
+      const keys: Record<string, Tool> = { v: 'select', h: 'highlight', u: 'underline', k: 'strikeout', n: 'note', t: 'freetext', p: 'ink', r: 'rect', e: 'ellipse', l: 'line', a: 'arrow', g: 'polygon', y: 'polyline', c: 'cloud', w: 'squiggly' };
       const tool = keys[e.key.toLowerCase()];
       if (tool) run(() => this.setTool(tool));
     }
@@ -802,7 +809,7 @@ class Workbench {
     if (!a) return;
     const p: Partial<Annot> = {};
     if (patch.color) p.color = patch.color;
-    if (patch.width && ['ink', 'rect', 'ellipse', 'line', 'arrow'].includes(a.kind)) p.width = patch.width;
+    if (patch.width && ['ink', 'rect', 'ellipse', 'line', 'arrow', 'polygon', 'polyline', 'cloud'].includes(a.kind)) p.width = patch.width;
     if (patch.size && a.kind === 'freetext') p.size = patch.size;
     if (Object.keys(p).length) this.annot.update(a.id, p, 'Change style');
   }
