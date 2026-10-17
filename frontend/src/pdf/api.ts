@@ -46,7 +46,7 @@ export interface ImageItem { page: number; id: string; w: number; h: number; mim
 export interface TableItem { page: number; header: string[]; rows: string[][] }
 export interface Rect { x: number; y: number; w: number; h: number }
 export type Pt = [number, number];
-export type AnnotKind = 'highlight' | 'underline' | 'strikeout' | 'squiggly' | 'note' | 'freetext' | 'ink' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'polygon' | 'polyline' | 'cloud' | 'image' | 'reply' | 'stamp';
+export type AnnotKind = 'highlight' | 'underline' | 'strikeout' | 'squiggly' | 'note' | 'freetext' | 'callout' | 'ink' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'polygon' | 'polyline' | 'cloud' | 'image' | 'reply' | 'stamp';
 export type Status = 'none' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
 export interface Reply { id: string; text: string }
 export interface Target { index: number; nm?: string }

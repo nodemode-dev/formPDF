@@ -3,10 +3,10 @@ import type { Annot, Area, Pt, Rect, StampSpec } from './api';
 import { stampSvg } from './stamps';
 import type { PageView, Viewer } from './viewer';
 
-export type Tool = 'select' | 'hand' | 'highlight' | 'underline' | 'strikeout' | 'squiggly' | 'note' | 'freetext' | 'ink' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'polygon' | 'polyline' | 'cloud' | 'redact' | 'crop' | 'place' | 'form' | 'custom';
+export type Tool = 'select' | 'hand' | 'highlight' | 'underline' | 'strikeout' | 'squiggly' | 'note' | 'freetext' | 'callout' | 'ink' | 'rect' | 'ellipse' | 'line' | 'arrow' | 'polygon' | 'polyline' | 'cloud' | 'redact' | 'crop' | 'place' | 'form' | 'custom';
 export const MARKUP_TOOLS: readonly Tool[] = ['highlight', 'underline', 'strikeout', 'squiggly'];
 export const POLY_TOOLS: readonly Tool[] = ['polygon', 'polyline', 'cloud'];
-export const DRAW_TOOLS: readonly Tool[] = ['note', 'freetext', 'ink', 'rect', 'ellipse', 'line', 'arrow', 'polygon', 'polyline', 'cloud', 'redact', 'crop', 'place', 'form', 'custom'];
+export const DRAW_TOOLS: readonly Tool[] = ['note', 'freetext', 'callout', 'ink', 'rect', 'ellipse', 'line', 'arrow', 'polygon', 'polyline', 'cloud', 'redact', 'crop', 'place', 'form', 'custom'];
 export interface PageTool {
   hint: string;
   down(pv: PageView, p: { x: number; y: number }, e: PointerEvent): void;
@@ -21,7 +21,7 @@ export interface AnnotHooks { changed(label: string): void; select(id: string | 
 export interface Style { color: string; width: number; opacity: number; size: number }
 
 export const KIND_LABEL: Record<string, string> = {
-  highlight: 'Highlight', underline: 'Underline', strikeout: 'Strikethrough', note: 'Note', freetext: 'Text', ink: 'Drawing', rect: 'Rectangle',
+  highlight: 'Highlight', underline: 'Underline', strikeout: 'Strikethrough', note: 'Note', freetext: 'Text', callout: 'Callout', ink: 'Drawing', rect: 'Rectangle',
   ellipse: 'Ellipse', line: 'Line', arrow: 'Arrow', image: 'Image', reply: 'Reply', squiggly: 'Squiggly', stamp: 'Stamp', polygon: 'Polygon',
   polyline: 'Polyline', cloud: 'Cloud', caret: 'Insert text', attachment: 'Attachment', sound: 'Sound', redact: 'Redaction mark',
 };
@@ -61,6 +61,25 @@ function squigglePts(r: Rect, rot: number): string {
 }
 const BOXED = new Set(['freetext', 'image', 'rect', 'ellipse', 'stamp']);
 
+export function calloutLeg(a: Annot): [Pt, Pt, Pt] {
+  const x = a.x ?? 0, y = a.y ?? 0, w = a.w ?? 0, h = a.h ?? 0, [ax, ay] = a.points?.[0] ?? [x, y], cx = x + w / 2, cy = y + h / 2;
+  if (Math.abs(ax - cx) - w / 2 >= Math.abs(ay - cy) - h / 2) {
+    const side = ax > cx ? 1 : -1, end: Pt = [cx + (side * w) / 2, cy];
+    return [[ax, ay], [end[0] + side * Math.min(18, Math.abs(ax - end[0]) / 2), cy], end];
+  }
+  const side = ay > cy ? 1 : -1, end: Pt = [cx, cy + (side * h) / 2];
+  return [[ax, ay], [cx, end[1] + side * Math.min(18, Math.abs(ay - end[1]) / 2)], end];
+}
+
+function calloutSvg(a: Annot, f: Rect): string {
+  const c = escapeHtml(a.color), w = a.width ?? 1, op = a.opacity ?? 1, [tip, knee, end] = calloutLeg(a);
+  const ang = Math.atan2(tip[1] - knee[1], tip[0] - knee[0]), size = Math.max(8, w * 4);
+  const p = (s: number): string => `${n2(tip[0] - size * Math.cos(ang + s * 0.4887))} ${n2(tip[1] - size * Math.sin(ang + s * 0.4887))}`;
+  const stroke = `stroke="${c}" stroke-width="${n2(w)}" stroke-opacity="${op}" stroke-linecap="round" stroke-linejoin="round"`;
+  const fill = a.fill ? `fill="${escapeHtml(a.fill)}" fill-opacity="${op}"` : 'fill="none"';
+  return `<svg viewBox="${n2(f.x)} ${n2(f.y)} ${n2(f.w)} ${n2(f.h)}" preserveAspectRatio="none"><path d="M${n2(tip[0])} ${n2(tip[1])}L${n2(knee[0])} ${n2(knee[1])}L${n2(end[0])} ${n2(end[1])}M${p(-1)}L${n2(tip[0])} ${n2(tip[1])}L${p(1)}" fill="none" ${stroke}/><rect x="${n2(a.x ?? 0)}" y="${n2(a.y ?? 0)}" width="${n2(a.w ?? 0)}" height="${n2(a.h ?? 0)}" ${fill} ${stroke}/></svg>`;
+}
+
 let seq = 0;
 export const uid = (p: string): string => `${p}${Date.now().toString(36)}${(seq++).toString(36)}`;
 const n2 = (v: number): string => (Math.round(v * 100) / 100).toString();
@@ -81,6 +100,11 @@ export function bounds(a: Annot): Rect {
   if ((a.kind === 'line' || a.kind === 'arrow') && a.points?.length) return pts(a.points, a.kind === 'arrow' ? Math.max(8, (a.width ?? 2) * 4) : 0);
   if ((a.kind === 'polygon' || a.kind === 'polyline' || a.kind === 'cloud') && a.points?.length) return pts(a.points, a.kind === 'cloud' ? cloudR(a) : 0);
   if (a.kind === 'note') return { x: a.x ?? 0, y: a.y ?? 0, w: NOTE, h: NOTE };
+  if (a.kind === 'callout' && a.points?.length) {
+    const [ax, ay] = a.points[0], e = pad + Math.max(8, (a.width ?? 1) * 4), x = a.x ?? 0, y = a.y ?? 0, w = a.w ?? 0, h = a.h ?? 0;
+    const x0 = Math.min(x - pad, ax - e), y0 = Math.min(y - pad, ay - e);
+    return { x: x0, y: y0, w: Math.max(x + w + pad, ax + e) - x0, h: Math.max(y + h + pad, ay + e) - y0 };
+  }
   const p = a.kind === 'rect' || a.kind === 'ellipse' ? pad : 0;
   return { x: (a.x ?? 0) - p, y: (a.y ?? 0) - p, w: (a.w ?? 0) + 2 * p, h: (a.h ?? 0) + 2 * p };
 }
@@ -135,9 +159,9 @@ function svgBody(a: Annot): string {
 
 const NOTE_ICON = (color: string): string => `<svg viewBox="0 0 20 20"><path d="M1.5 1.5h17v12.5h-11l-4 4v-4h-2z" fill="${escapeHtml(color)}" stroke="rgba(0,0,0,0.45)" stroke-width="0.8" stroke-linejoin="round"/><path d="M5 5.5h10M5 8.5h10M5 11.5h6" stroke="rgba(0,0,0,0.5)" stroke-width="1" stroke-linecap="round"/></svg>`;
 
-function upright(a: Annot, inner: string): string {
+function upright(a: Annot, inner: string, at?: Pt): string {
   const rot = a.rot ?? 0, w = a.w ?? 0, h = a.h ?? 0, [cw, ch] = rot % 180 ? [h, w] : [w, h];
-  return `<div class="fs-pdf-upright" style="width:${calc(cw)};height:${calc(ch)};transform:translate(-50%,-50%) rotate(${-rot}deg)">${inner}</div>`;
+  return `<div class="fs-pdf-upright" style="${at ? `left:${calc(at[0])};top:${calc(at[1])};` : ''}width:${calc(cw)};height:${calc(ch)};transform:translate(-50%,-50%) rotate(${-rot}deg)">${inner}</div>`;
 }
 
 function contentOf(a: Annot, f: Rect): { html: string; key: string } {
@@ -152,6 +176,11 @@ function contentOf(a: Annot, f: Rect): { html: string; key: string } {
     const html = upright(a, stampSvg(a.stamp, a.color, cw, ch, a.opacity ?? 1));
     return { html, key: html };
   }
+  if (a.kind === 'callout') {
+    const at: Pt = [(a.x ?? 0) + (a.w ?? 0) / 2 - f.x, (a.y ?? 0) + (a.h ?? 0) / 2 - f.y], pad = Math.max(2, (a.width ?? 1) + 1.5);
+    const html = calloutSvg(a, f) + upright(a, `<div class="fs-pdf-ft" style="font-size:${calc(a.size ?? 12)};color:${escapeHtml(a.color)};padding:${calc(pad)}">${escapeHtml(a.text ?? '')}</div>`, at);
+    return { html, key: html };
+  }
   const style = `font-size:${calc(a.size ?? 12)};color:${escapeHtml(a.color)};${a.fill ? `background:${escapeHtml(a.fill)};` : ''}`;
   const html = upright(a, `<div class="fs-pdf-ft" style="${style}">${escapeHtml(a.text ?? '')}</div>`);
   return { html, key: html };
@@ -159,7 +188,7 @@ function contentOf(a: Annot, f: Rect): { html: string; key: string } {
 
 type Item = { key: string; annot?: Annot; area?: Area; crop?: Area };
 interface Session { pv: PageView; tool: Tool; p0: { x: number; y: number }; pts: Pt[]; draft: HTMLElement; last: { x: number; y: number } }
-interface Move { id: string; pv: PageView; x0: number; y0: number; node: HTMLElement; resize: boolean; base: Rect; area: boolean; moved: boolean }
+interface Move { id: string; pv: PageView; x0: number; y0: number; node: HTMLElement; resize: boolean; base: Rect; area: boolean; moved: boolean; tip?: Annot }
 
 export class Annotator {
   items: Annot[] = [];
@@ -189,7 +218,7 @@ export class Annotator {
       if (this.session && POLY_TOOLS.includes(this.session.tool)) { e.preventDefault(); this.polyKey('Enter'); return; }
       const node = (e.target as HTMLElement).closest('.fs-pdf-annot') as HTMLElement | null;
       const a = node ? this.items.find((x) => x.id === node.dataset.key) : undefined;
-      if (a && (a.kind === 'freetext' || a.kind === 'note')) { e.preventDefault(); this.edit(a.id); }
+      if (a && (a.kind === 'freetext' || a.kind === 'callout' || a.kind === 'note')) { e.preventDefault(); this.edit(a.id); }
     });
   }
 
@@ -375,7 +404,8 @@ export class Annotator {
         const a = this.items.find((x) => x.id === id);
         const area = this.areas.find((x) => x.id === id);
         const p = this.viewer.toPage(pv, e.clientX, e.clientY);
-        this.move = { id, pv, x0: p.x, y0: p.y, node, resize: !!t.closest('.fs-pdf-handle'), base: a ? bounds(a) : (area as Area), area: !!area, moved: false };
+        const tip = a?.kind === 'callout' && a.points?.length && Math.hypot(p.x - a.points[0][0], p.y - a.points[0][1]) < 10 / this.viewer.zoom ? a : undefined;
+        this.move = { id, pv, x0: p.x, y0: p.y, node, resize: !!t.closest('.fs-pdf-handle'), base: a ? bounds(a) : (area as Area), area: !!area, moved: false, tip };
         this.viewer.host.setPointerCapture(e.pointerId);
         return;
       }
@@ -434,6 +464,11 @@ export class Annotator {
       const dx = p.x - m.x0, dy = p.y - m.y0;
       if (!m.moved && Math.hypot(dx, dy) < 1.5) return;
       m.moved = true;
+      if (m.tip) {
+        const [ax, ay] = m.tip.points?.[0] ?? [0, 0];
+        this.paint(m.node, { key: m.id, annot: { ...m.tip, points: [[ax + dx, ay + dy]] } });
+        return;
+      }
       if (m.resize) {
         m.node.style.width = calc(Math.max(6, m.base.w + dx));
         m.node.style.height = calc(Math.max(6, m.base.h + dy));
@@ -464,7 +499,7 @@ export class Annotator {
     const f = boxed ? { x: a.x ?? 0, y: a.y ?? 0, w: a.w ?? 0, h: a.h ?? 0 } : bounds(a);
     s.draft.setAttribute('style', `left:${calc(f.x)};top:${calc(f.y)};width:${calc(f.w)};height:${calc(f.h)}`);
     s.draft.dataset.kind = s.tool;
-    const inner = SVG_KINDS.has(a.kind) && !boxed ? contentOf(a, f).html : '';
+    const inner = (SVG_KINDS.has(a.kind) || a.kind === 'callout') && !boxed ? contentOf(a, f).html : '';
     if (inner || s.draft.firstChild) s.draft.innerHTML = inner;
   }
 
@@ -476,6 +511,15 @@ export class Annotator {
       case 'ink': return { ...base, kind: 'ink', paths: [s.pts.slice()] };
       case 'rect': case 'ellipse': case 'redact': case 'freetext': case 'crop': return { ...base, kind: s.tool === 'ellipse' ? 'ellipse' : 'rect', ...box };
       case 'line': case 'arrow': return { ...base, kind: s.tool, points: [[p0.x, p0.y], [last.x, last.y]] };
+      case 'callout': {
+        const size = this.style.size, rot = base.rot, [w, h] = rot % 180 ? [size * 1.3 + 10, 180] : [180, size * 1.3 + 10], W = s.pv.size.w, H = s.pv.size.h;
+        const far = Math.hypot(last.x - p0.x, last.y - p0.y) >= 12;
+        let x = far ? (last.x >= p0.x ? last.x : last.x - w) : p0.x + 36, y = far ? last.y - h / 2 : p0.y - 36 - h;
+        if (!far && y < 0) y = p0.y + 36;
+        x = Math.max(0, Math.min(W - w, x));
+        y = Math.max(0, Math.min(H - h, y));
+        return { ...base, kind: 'callout', width: 1, size, x, y, w, h, text: '', points: [[p0.x, p0.y]] };
+      }
       case 'polygon': case 'polyline': case 'cloud': {
         const live = this.session === s && s.pts.length < 2000 ? [...s.pts, [last.x, last.y] as Pt] : s.pts.slice();
         return { ...base, kind: live.length < 3 && s.tool !== 'polyline' ? 'polyline' : s.tool, points: live };
@@ -505,6 +549,11 @@ export class Annotator {
       }
       const a = this.items.find((x) => x.id === m.id);
       if (!a) return;
+      if (m.tip) {
+        const [ax, ay] = a.points?.[0] ?? [0, 0];
+        this.update(a.id, { points: [[Math.max(0, Math.min(m.pv.size.w, ax + dx)), Math.max(0, Math.min(m.pv.size.h, ay + dy))]] }, 'Move callout arrow');
+        return;
+      }
       if (m.resize) {
         let w = Math.max(6, (a.w ?? 0) + dx), h = Math.max(6, (a.h ?? 0) + dy);
         if ((a.kind === 'image' || a.kind === 'stamp') && !e.shiftKey && (a.w ?? 0) > 0) h = w * ((a.h ?? 1) / (a.w ?? 1));
@@ -546,6 +595,13 @@ export class Annotator {
       const box = small ? orient(s.p0, 180, size * 1.3 + 8, rot, s.pv.size.w, s.pv.size.h) : { x: a.x ?? 0, y: a.y ?? 0, w: a.w ?? 180, h: a.h ?? 24 };
       const text: Annot = { id, page: a.page, kind: 'freetext', color: this.style.color, opacity: 1, rot, size, ...box, text: '', flatten: this.flattenComments ? true : undefined };
       this.add(text, 'Add text');
+      this.hooks.toolDone();
+      this.select(id);
+      this.edit(id);
+      return;
+    }
+    if (s.tool === 'callout') {
+      this.add({ ...a, id, flatten: this.flattenComments ? true : undefined }, 'Add callout');
       this.hooks.toolDone();
       this.select(id);
       this.edit(id);
@@ -662,7 +718,7 @@ export class Annotator {
     if (a?.kind === 'note') ed.box.remove();
     else { ed.input.remove(); ed.box.closest('.fs-pdf-annot')?.classList.remove('is-editing'); }
     if (!a) return;
-    if (a.kind === 'freetext' && !text.trim()) { this.select(null); this.setItems(this.items.filter((x) => x.id !== a.id)); this.hooks.changed('Delete text'); return; }
+    if ((a.kind === 'freetext' || a.kind === 'callout') && !text.trim()) { this.select(null); this.setItems(this.items.filter((x) => x.id !== a.id)); this.hooks.changed(a.kind === 'callout' ? 'Delete callout' : 'Delete text'); return; }
     if (text !== (a.text ?? '')) this.update(a.id, { text }, a.kind === 'note' ? 'Edit note' : 'Edit text');
   }
 
