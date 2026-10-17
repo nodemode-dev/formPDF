@@ -63,6 +63,12 @@ export class ChatPane {
   private usage: Usage = { ...BLANK };
   private readonly chips = new Map<string, HTMLElement>();
   private busy = false;
+  private follow = true;
+
+  private track(): void {
+    const l = this.log;
+    this.follow = l.scrollHeight - l.scrollTop - l.clientHeight < 80;
+  }
   private loaded = false;
   private adoptDlg: AdoptDialog | null = null;
 
@@ -76,6 +82,11 @@ export class ChatPane {
 <div class="fs-chat-log" role="log" aria-live="polite"><p class="fs-chat-empty fs-note">Ask Claude about the open PDF in the line below: summarise it, find and redact, fill a form, fix headers, prepare it for print. It works through formpdf's tools, every change shows in the window, and each turn can be undone.</p></div>
 </div>`);
     this.log = q(this.root, '.fs-chat-log');
+    this.log.addEventListener('wheel', () => requestAnimationFrame(() => this.track()), { passive: true });
+    this.log.addEventListener('pointerdown', () => { const up = (): void => { this.track(); window.removeEventListener('pointerup', up); }; window.addEventListener('pointerup', up); });
+    this.log.addEventListener('keydown', () => requestAnimationFrame(() => this.track()));
+    new ResizeObserver(() => this.scroll()).observe(this.log);
+    this.log.addEventListener('load', () => this.scroll(), true);
     this.empty = q(this.root, '.fs-chat-empty');
     this.meter = q(this.root, '.fs-chat-usage');
     q(this.root, '.fs-chat-stop').addEventListener('click', () => void api.post('/api/chat/cancel').catch((e) => this.onFail(e)));
@@ -141,8 +152,7 @@ export class ChatPane {
   }
 
   private scroll(): void {
-    const l = this.log;
-    if (l.scrollHeight - l.scrollTop - l.clientHeight < 80) l.scrollTop = l.scrollHeight;
+    if (this.follow) this.log.scrollTop = this.log.scrollHeight;
   }
 
   private user(text: string, note = ''): void {
@@ -150,6 +160,7 @@ export class ChatPane {
     const n = el('<div class="fs-chat-msg is-user"><span class="fs-chat-said"></span></div>');
     setText(q(n, '.fs-chat-said'), text);
     if (note) { const m = el('<span class="fs-chat-note"></span>'); setText(m, note); n.appendChild(m); }
+    this.follow = true;
     this.log.appendChild(n);
     this.scroll();
   }

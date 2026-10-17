@@ -4,7 +4,7 @@ import { calc } from './overlay';
 export type Align = 'left' | 'center' | 'right' | 'justify';
 export type ListKind = 'none' | 'bullet' | 'number';
 export interface Run { t: string; b?: boolean; i?: boolean; u?: boolean; s?: boolean; sup?: boolean; sub?: boolean; color?: string }
-export interface Para { align: Align; list: ListKind; level: number; runs: Run[] }
+export interface Para { align: Align; list: ListKind; level: number; runs: Run[]; start?: number }
 /** sans, serif and mono are formpdf's font kit; sys:<family name> is a family installed on this computer. */
 export interface Font { family: string; size: number; color: string; lineHeight: number }
 export interface Geo { x: number; y: number; w: number; h: number; rot: number }
@@ -40,7 +40,8 @@ function runHtml(r: Run): string {
 export function parasHtml(paras: Para[]): string {
   return paras.map((p) => {
     const body = p.runs.map(runHtml).join('') || '<br>';
-    return `<div class="fs-rt-p" style="text-align:${p.align === 'justify' ? 'justify' : p.align}" data-list="${p.list}" data-level="${p.level}">${body}</div>`;
+    const start = p.list === 'number' && p.start ? `;counter-set:n${p.level} ${p.start}" data-start="${p.start}` : '';
+    return `<div class="fs-rt-p" style="text-align:${p.align === 'justify' ? 'justify' : p.align}${start}" data-list="${p.list}" data-level="${p.level}">${body}</div>`;
   }).join('');
 }
 
@@ -107,7 +108,8 @@ export function readParas(root: HTMLElement): Para[] {
         const a = (b.style.textAlign || ch.style.textAlign || 'left') as string;
         const align: Align = a === 'center' || a === 'right' || a === 'justify' ? a : a === 'end' ? 'right' : 'left';
         const list = (b.dataset.list ?? ch.dataset.list ?? 'none') as ListKind;
-        out.push({ align, list: list === 'bullet' || list === 'number' ? list : 'none', level: Math.max(0, Math.min(3, Number(b.dataset.level ?? ch.dataset.level ?? 0) || 0)), runs: runs.length ? runs : [{ t: '' }] });
+        const start = Number(b.dataset.start ?? 0);
+        out.push({ align, list: list === 'bullet' || list === 'number' ? list : 'none', level: Math.max(0, Math.min(3, Number(b.dataset.level ?? ch.dataset.level ?? 0) || 0)), runs: runs.length ? runs : [{ t: '' }], ...(list === 'number' && start > 0 ? { start } : {}) });
       }
     } else if (ch instanceof HTMLElement && ch.tagName === 'BR') {
       flush();
