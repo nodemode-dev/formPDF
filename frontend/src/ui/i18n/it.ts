@@ -2317,5 +2317,7 @@ export const it: Record<string, string> = {
 "Delete callout": "Elimina callout",
 "Move callout arrow": "Sposta la freccia del callout",
 "Press where the arrow points and drag to where the text goes, or just click.": "Premi dove deve puntare la freccia e trascina fino a dove andrà il testo, oppure fai semplicemente clic.",
-"A callout needs an anchor point it points at": "Un callout richiede un punto di ancoraggio a cui puntare"
+"A callout needs an anchor point it points at": "Un callout richiede un punto di ancoraggio a cui puntare",
+"{0} must be a list, not {1}; nothing was changed": "{0} deve essere un elenco, non {1}; non è stato modificato nulla",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Usa add (non create) per nuovo testo e nuove immagini; le chiavi sono add, update, arrange, comments e remove"
 };

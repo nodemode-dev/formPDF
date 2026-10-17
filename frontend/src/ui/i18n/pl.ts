@@ -2317,5 +2317,7 @@ export const pl: Record<string, string> = {
 "Delete callout": "Usuń objaśnienie",
 "Move callout arrow": "Przesuń strzałkę objaśnienia",
 "Press where the arrow points and drag to where the text goes, or just click.": "Naciśnij miejsce, na które ma wskazywać strzałka, i przeciągnij tam, gdzie ma być tekst, albo po prostu kliknij.",
-"A callout needs an anchor point it points at": "Objaśnienie wymaga punktu zakotwiczenia, na który wskazuje"
+"A callout needs an anchor point it points at": "Objaśnienie wymaga punktu zakotwiczenia, na który wskazuje",
+"{0} must be a list, not {1}; nothing was changed": "{0} musi być listą, a nie {1}; nic nie zostało zmienione",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Użyj add (nie create) dla nowego tekstu i obrazów; klucze to add, update, arrange, comments i remove"
 };

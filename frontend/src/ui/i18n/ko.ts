@@ -2317,5 +2317,7 @@ export const ko: Record<string, string> = {
 "Delete callout": "설명선 삭제",
 "Move callout arrow": "설명선 화살표 이동",
 "Press where the arrow points and drag to where the text goes, or just click.": "화살표가 가리킬 위치를 누른 채 텍스트를 놓을 위치까지 드래그하거나, 그냥 클릭하세요.",
-"A callout needs an anchor point it points at": "설명선에는 가리킬 기준점이 필요합니다"
+"A callout needs an anchor point it points at": "설명선에는 가리킬 기준점이 필요합니다",
+"{0} must be a list, not {1}; nothing was changed": "{0}은(는) {1}이(가) 아니라 목록이어야 합니다. 변경된 내용은 없습니다",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "새 텍스트와 이미지에는 create가 아니라 add를 사용하세요. 키는 add, update, arrange, comments, remove입니다"
 };

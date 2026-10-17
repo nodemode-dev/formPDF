@@ -2317,5 +2317,7 @@ export const cs: Record<string, string> = {
 "Delete callout": "Odstranit popisek",
 "Move callout arrow": "Přesunout šipku popisku",
 "Press where the arrow points and drag to where the text goes, or just click.": "Stiskněte tam, kam má šipka mířit, a přetáhněte na místo textu, nebo jen klikněte.",
-"A callout needs an anchor point it points at": "Popisek potřebuje kotvicí bod, na který míří"
+"A callout needs an anchor point it points at": "Popisek potřebuje kotvicí bod, na který míří",
+"{0} must be a list, not {1}; nothing was changed": "{0} musí být seznam, nikoli {1}; nic nebylo změněno",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Pro nový text a obrázky použijte add (ne create); klíče jsou add, update, arrange, comments a remove"
 };

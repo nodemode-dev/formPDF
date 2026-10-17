@@ -2317,5 +2317,7 @@ export const fi: Record<string, string> = {
 "Delete callout": "Poista selite",
 "Move callout arrow": "Siirrä selitteen nuolta",
 "Press where the arrow points and drag to where the text goes, or just click.": "Paina kohtaa, johon nuoli osoittaa, ja vedä paikkaan, johon teksti tulee, tai napsauta vain.",
-"A callout needs an anchor point it points at": "Selite tarvitsee ankkuripisteen, johon se osoittaa"
+"A callout needs an anchor point it points at": "Selite tarvitsee ankkuripisteen, johon se osoittaa",
+"{0} must be a list, not {1}; nothing was changed": "{0}:n on oltava luettelo, ei {1}; mitään ei muutettu",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Käytä uudelle tekstille ja kuville avainta add (ei create); avaimet ovat add, update, arrange, comments ja remove"
 };

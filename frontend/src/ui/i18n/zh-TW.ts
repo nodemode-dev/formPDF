@@ -2317,5 +2317,7 @@ export const zhTW: Record<string, string> = {
 "Delete callout": "刪除標註",
 "Move callout arrow": "移動標註箭頭",
 "Press where the arrow points and drag to where the text goes, or just click.": "在箭頭所指的位置按住，並拖曳到文字放置的位置，也可以直接按一下。",
-"A callout needs an anchor point it points at": "標註需要一個所指向的錨點"
+"A callout needs an anchor point it points at": "標註需要一個所指向的錨點",
+"{0} must be a list, not {1}; nothing was changed": "{0} 必須是清單，而不是 {1}；未做任何變更",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新增文字和圖片請使用 add（不要用 create）；可用的鍵為 add、update、arrange、comments 和 remove"
 };

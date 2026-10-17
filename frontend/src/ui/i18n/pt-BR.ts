@@ -2317,5 +2317,7 @@ export const ptBR: Record<string, string> = {
 "Delete callout": "Excluir texto explicativo",
 "Move callout arrow": "Mover a seta do texto explicativo",
 "Press where the arrow points and drag to where the text goes, or just click.": "Pressione onde a seta deve apontar e arraste até onde o texto ficará, ou simplesmente clique.",
-"A callout needs an anchor point it points at": "Um texto explicativo precisa de um ponto de ancoragem para o qual aponte"
+"A callout needs an anchor point it points at": "Um texto explicativo precisa de um ponto de ancoragem para o qual aponte",
+"{0} must be a list, not {1}; nothing was changed": "{0} deve ser uma lista, não {1}; nada foi alterado",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Use add (não create) para texto e imagens novos; as chaves são add, update, arrange, comments e remove"
 };

@@ -2317,5 +2317,7 @@ export const ja: Record<string, string> = {
 "Delete callout": "吹き出しを削除",
 "Move callout arrow": "吹き出しの矢印を移動",
 "Press where the arrow points and drag to where the text goes, or just click.": "矢印が指す位置を押し、テキストを置く位置までドラッグします。クリックだけでも配置できます。",
-"A callout needs an anchor point it points at": "吹き出しには、指し示す基点が必要です"
+"A callout needs an anchor point it points at": "吹き出しには、指し示す基点が必要です",
+"{0} must be a list, not {1}; nothing was changed": "{0}はリストにする必要があり、{1}は使えません。何も変更されていません",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新しいテキストや画像には create ではなく add を使います。キーは add、update、arrange、comments、remove です"
 };

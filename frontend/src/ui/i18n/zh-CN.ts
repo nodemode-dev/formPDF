@@ -2317,5 +2317,7 @@ export const zhCN: Record<string, string> = {
 "Delete callout": "删除标注",
 "Move callout arrow": "移动标注箭头",
 "Press where the arrow points and drag to where the text goes, or just click.": "在箭头所指位置按下，并拖到文本放置的位置，也可以直接单击。",
-"A callout needs an anchor point it points at": "标注需要一个所指向的锚点"
+"A callout needs an anchor point it points at": "标注需要一个所指向的锚点",
+"{0} must be a list, not {1}; nothing was changed": "{0} 必须是列表，而不是 {1}；未做任何更改",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新增文本和图片请使用 add（不要用 create）；可用的键为 add、update、arrange、comments 和 remove"
 };

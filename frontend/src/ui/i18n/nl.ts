@@ -2317,5 +2317,7 @@ export const nl: Record<string, string> = {
 "Delete callout": "Tekstballon verwijderen",
 "Move callout arrow": "Pijl van tekstballon verplaatsen",
 "Press where the arrow points and drag to where the text goes, or just click.": "Druk op de plek waar de pijl naartoe wijst en sleep naar de plek van de tekst, of klik gewoon.",
-"A callout needs an anchor point it points at": "Een tekstballon heeft een verankeringspunt nodig waarnaar hij wijst"
+"A callout needs an anchor point it points at": "Een tekstballon heeft een verankeringspunt nodig waarnaar hij wijst",
+"{0} must be a list, not {1}; nothing was changed": "{0} moet een lijst zijn, geen {1}; er is niets gewijzigd",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Gebruik add (niet create) voor nieuwe tekst en afbeeldingen; de sleutels zijn add, update, arrange, comments en remove"
 };

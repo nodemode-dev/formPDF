@@ -2317,5 +2317,7 @@ export const th: Record<string, string> = {
 "Delete callout": "ลบคำบรรยายชี้",
 "Move callout arrow": "ย้ายลูกศรของคำบรรยายชี้",
 "Press where the arrow points and drag to where the text goes, or just click.": "กดที่ตำแหน่งที่ลูกศรชี้ แล้วลากไปยังตำแหน่งที่จะวางข้อความ หรือคลิกเพียงครั้งเดียว",
-"A callout needs an anchor point it points at": "คำบรรยายชี้ต้องมีจุดยึดที่ชี้ไปหา"
+"A callout needs an anchor point it points at": "คำบรรยายชี้ต้องมีจุดยึดที่ชี้ไปหา",
+"{0} must be a list, not {1}; nothing was changed": "{0} ต้องเป็นรายการ ไม่ใช่ {1}; ไม่มีการเปลี่ยนแปลงใดๆ",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "ใช้ add (ไม่ใช่ create) สำหรับข้อความและรูปภาพใหม่ คีย์ที่ใช้ได้คือ add, update, arrange, comments และ remove"
 };

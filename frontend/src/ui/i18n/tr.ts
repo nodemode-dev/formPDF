@@ -2317,5 +2317,7 @@ export const tr: Record<string, string> = {
 "Delete callout": "Belirtme çizgisini sil",
 "Move callout arrow": "Belirtme çizgisi okunu taşı",
 "Press where the arrow points and drag to where the text goes, or just click.": "Okun işaret edeceği yere basın ve metnin geleceği yere sürükleyin ya da yalnızca tıklayın.",
-"A callout needs an anchor point it points at": "Belirtme çizgisinin işaret edeceği bir bağlantı noktası olmalıdır"
+"A callout needs an anchor point it points at": "Belirtme çizgisinin işaret edeceği bir bağlantı noktası olmalıdır",
+"{0} must be a list, not {1}; nothing was changed": "{0} bir liste olmalıdır, {1} olamaz; hiçbir şey değiştirilmedi",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Yeni metin ve resimler için add kullanın (create değil); anahtarlar şunlardır: add, update, arrange, comments ve remove"
 };

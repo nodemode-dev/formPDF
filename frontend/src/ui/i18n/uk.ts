@@ -2317,5 +2317,7 @@ export const uk: Record<string, string> = {
 "Delete callout": "Видалити виноску",
 "Move callout arrow": "Перемістити стрілку виноски",
 "Press where the arrow points and drag to where the text goes, or just click.": "Натисніть там, куди має вказувати стрілка, і перетягніть до місця тексту або просто клацніть.",
-"A callout needs an anchor point it points at": "Для виноски потрібна точка прив'язки, на яку вона вказує"
+"A callout needs an anchor point it points at": "Для виноски потрібна точка прив'язки, на яку вона вказує",
+"{0} must be a list, not {1}; nothing was changed": "{0} має бути списком, а не {1}; нічого не змінено",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Для нового тексту й зображень використовуйте add (не create); ключі: add, update, arrange, comments і remove"
 };

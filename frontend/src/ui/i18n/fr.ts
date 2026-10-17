@@ -2317,5 +2317,7 @@ export const fr: Record<string, string> = {
 "Delete callout": "Supprimer la légende",
 "Move callout arrow": "Déplacer la flèche de la légende",
 "Press where the arrow points and drag to where the text goes, or just click.": "Appuyez à l'endroit où la flèche doit pointer et faites glisser jusqu'à l'emplacement du texte, ou cliquez simplement.",
-"A callout needs an anchor point it points at": "Une légende a besoin d'un point d'ancrage sur lequel pointer"
+"A callout needs an anchor point it points at": "Une légende a besoin d'un point d'ancrage sur lequel pointer",
+"{0} must be a list, not {1}; nothing was changed": "{0} doit être une liste, et non {1} ; rien n'a été modifié",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Utilisez add (et non create) pour le nouveau texte et les nouvelles images ; les clés sont add, update, arrange, comments et remove"
 };

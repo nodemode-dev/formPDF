@@ -2317,5 +2317,7 @@ export const de: Record<string, string> = {
 "Delete callout": "Legende löschen",
 "Move callout arrow": "Legendenpfeil verschieben",
 "Press where the arrow points and drag to where the text goes, or just click.": "Drücken Sie dort, wohin der Pfeil zeigen soll, und ziehen Sie zur Position des Texts, oder klicken Sie einfach.",
-"A callout needs an anchor point it points at": "Eine Legende benötigt einen Ankerpunkt, auf den sie zeigt"
+"A callout needs an anchor point it points at": "Eine Legende benötigt einen Ankerpunkt, auf den sie zeigt",
+"{0} must be a list, not {1}; nothing was changed": "{0} muss eine Liste sein, nicht {1}; es wurde nichts geändert",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Verwenden Sie add (nicht create) für neuen Text und neue Bilder; die Schlüssel sind add, update, arrange, comments und remove"
 };

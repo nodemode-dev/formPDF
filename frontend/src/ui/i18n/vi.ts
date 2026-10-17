@@ -2317,5 +2317,7 @@ export const vi: Record<string, string> = {
 "Delete callout": "Xóa chú thích",
 "Move callout arrow": "Di chuyển mũi tên chú thích",
 "Press where the arrow points and drag to where the text goes, or just click.": "Nhấn vào nơi mũi tên chỉ tới rồi kéo đến vị trí đặt văn bản, hoặc chỉ cần nhấp.",
-"A callout needs an anchor point it points at": "Chú thích cần có một điểm neo để chỉ tới"
+"A callout needs an anchor point it points at": "Chú thích cần có một điểm neo để chỉ tới",
+"{0} must be a list, not {1}; nothing was changed": "{0} phải là một danh sách, không phải {1}; chưa có gì bị thay đổi",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Dùng add (không dùng create) cho văn bản và hình ảnh mới; các khóa là add, update, arrange, comments và remove"
 };

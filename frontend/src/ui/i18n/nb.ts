@@ -2317,5 +2317,7 @@ export const nb: Record<string, string> = {
 "Delete callout": "Slett tekstboble",
 "Move callout arrow": "Flytt pilen på tekstboblen",
 "Press where the arrow points and drag to where the text goes, or just click.": "Trykk der pilen skal peke, og dra til der teksten skal være, eller bare klikk.",
-"A callout needs an anchor point it points at": "En tekstboble trenger et ankerpunkt som den peker på"
+"A callout needs an anchor point it points at": "En tekstboble trenger et ankerpunkt som den peker på",
+"{0} must be a list, not {1}; nothing was changed": "{0} må være en liste, ikke {1}; ingenting ble endret",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Bruk add (ikke create) for ny tekst og nye bilder; nøklene er add, update, arrange, comments og remove"
 };

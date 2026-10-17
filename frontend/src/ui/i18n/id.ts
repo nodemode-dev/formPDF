@@ -2317,5 +2317,7 @@ export const id: Record<string, string> = {
 "Delete callout": "Hapus callout",
 "Move callout arrow": "Pindahkan panah callout",
 "Press where the arrow points and drag to where the text goes, or just click.": "Tekan di tempat panah menunjuk lalu seret ke tempat teks berada, atau cukup klik.",
-"A callout needs an anchor point it points at": "Callout memerlukan titik jangkar yang ditunjuknya"
+"A callout needs an anchor point it points at": "Callout memerlukan titik jangkar yang ditunjuknya",
+"{0} must be a list, not {1}; nothing was changed": "{0} harus berupa daftar, bukan {1}; tidak ada yang diubah",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Gunakan add (bukan create) untuk teks dan gambar baru; kuncinya adalah add, update, arrange, comments, dan remove"
 };

@@ -2317,5 +2317,7 @@ export const hu: Record<string, string> = {
 "Delete callout": "Magyarázat törlése",
 "Move callout arrow": "Magyarázat nyilának áthelyezése",
 "Press where the arrow points and drag to where the text goes, or just click.": "Nyomja meg ott, ahová a nyíl mutat, és húzza oda, ahová a szöveg kerül, vagy egyszerűen kattintson.",
-"A callout needs an anchor point it points at": "A magyarázathoz szükség van egy horgonypontra, amelyre mutat"
+"A callout needs an anchor point it points at": "A magyarázathoz szükség van egy horgonypontra, amelyre mutat",
+"{0} must be a list, not {1}; nothing was changed": "A(z) {0} értékének listának kell lennie, nem {1}; semmi sem változott",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Új szöveghez és képekhez az add kulcsot használja (ne a create-et); a kulcsok: add, update, arrange, comments és remove"
 };

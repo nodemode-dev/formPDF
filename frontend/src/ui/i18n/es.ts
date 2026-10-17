@@ -2317,5 +2317,7 @@ export const es: Record<string, string> = {
 "Delete callout": "Eliminar llamada",
 "Move callout arrow": "Mover la flecha de la llamada",
 "Press where the arrow points and drag to where the text goes, or just click.": "Pulsa donde debe apuntar la flecha y arrastra hasta donde irá el texto, o simplemente haz clic.",
-"A callout needs an anchor point it points at": "Una llamada necesita un punto de anclaje al que apuntar"
+"A callout needs an anchor point it points at": "Una llamada necesita un punto de anclaje al que apuntar",
+"{0} must be a list, not {1}; nothing was changed": "{0} debe ser una lista, no {1}; no se cambió nada",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Usa add (no create) para texto e imágenes nuevos; las claves son add, update, arrange, comments y remove"
 };

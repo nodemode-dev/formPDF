@@ -2317,5 +2317,7 @@ export const ru: Record<string, string> = {
 "Delete callout": "Удалить выноску",
 "Move callout arrow": "Переместить стрелку выноски",
 "Press where the arrow points and drag to where the text goes, or just click.": "Нажмите там, куда должна указывать стрелка, и перетащите к месту текста или просто щёлкните.",
-"A callout needs an anchor point it points at": "Для выноски нужна точка привязки, на которую она указывает"
+"A callout needs an anchor point it points at": "Для выноски нужна точка привязки, на которую она указывает",
+"{0} must be a list, not {1}; nothing was changed": "{0} должно быть списком, а не {1}; ничего не изменено",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Для нового текста и изображений используйте add (не create); ключи: add, update, arrange, comments и remove"
 };

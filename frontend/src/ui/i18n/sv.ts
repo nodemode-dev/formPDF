@@ -2317,5 +2317,7 @@ export const sv: Record<string, string> = {
 "Delete callout": "Ta bort pratbubbla",
 "Move callout arrow": "Flytta pratbubblans pil",
 "Press where the arrow points and drag to where the text goes, or just click.": "Tryck där pilen ska peka och dra till där texten ska vara, eller klicka bara.",
-"A callout needs an anchor point it points at": "En pratbubbla behöver en ankarpunkt som den pekar på"
+"A callout needs an anchor point it points at": "En pratbubbla behöver en ankarpunkt som den pekar på",
+"{0} must be a list, not {1}; nothing was changed": "{0} måste vara en lista, inte {1}; ingenting ändrades",
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Använd add (inte create) för ny text och nya bilder; nycklarna är add, update, arrange, comments och remove"
 };
