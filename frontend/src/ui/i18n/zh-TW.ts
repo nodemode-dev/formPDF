@@ -2283,5 +2283,7 @@ export const zhTW: Record<string, string> = {
 "Optional; sent when Claude Code starts": "選填;於 Claude Code 啟動時傳送",
 "Terminal": "終端機",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "輸入後點擊文字方塊外部即可保留。按 Esc 取消。{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "已選取 {0} 項{1}。拖曳可移動;點擊文字可編輯。{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "已選取 {0} 項{1}。拖曳可移動;點擊文字可編輯。{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

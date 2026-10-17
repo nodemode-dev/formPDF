@@ -2283,5 +2283,7 @@ export const ko: Record<string, string> = {
 "Optional; sent when Claude Code starts": "선택 사항, Claude Code가 시작될 때 전송됩니다",
 "Terminal": "터미널",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "입력한 뒤 상자 바깥을 클릭하면 유지됩니다. Esc를 누르면 취소됩니다.{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0}개 선택됨{1}. 끌어서 이동하고, 텍스트를 클릭해 편집합니다.{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0}개 선택됨{1}. 끌어서 이동하고, 텍스트를 클릭해 편집합니다.{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

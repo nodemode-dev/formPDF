@@ -2283,5 +2283,7 @@ export const th: Record<string, string> = {
 "Optional; sent when Claude Code starts": "ไม่บังคับ ส่งเมื่อ Claude Code เริ่มทำงาน",
 "Terminal": "เทอร์มินัล",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "พิมพ์ แล้วคลิกนอกกล่องเพื่อเก็บไว้ กด Esc เพื่อยกเลิก{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "เลือกแล้ว {0} รายการ{1} ลากเพื่อย้าย คลิกข้อความเพื่อแก้ไข{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "เลือกแล้ว {0} รายการ{1} ลากเพื่อย้าย คลิกข้อความเพื่อแก้ไข{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

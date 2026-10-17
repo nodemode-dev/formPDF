@@ -2283,5 +2283,7 @@ export const vi: Record<string, string> = {
 "Optional; sent when Claude Code starts": "Tùy chọn; được gửi khi Claude Code khởi động",
 "Terminal": "Terminal",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "Nhập, rồi nhấp ra ngoài khung để giữ lại. Nhấn Esc để hủy.{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "Đã chọn {0}{1}. Kéo để di chuyển; nhấp vào văn bản để chỉnh sửa.{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "Đã chọn {0}{1}. Kéo để di chuyển; nhấp vào văn bản để chỉnh sửa.{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

@@ -2283,5 +2283,7 @@ export const hu: Record<string, string> = {
 "Optional; sent when Claude Code starts": "Nem kötelező; a Claude Code indításakor kerül elküldésre",
 "Terminal": "Terminál",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "Gépeljen, majd kattintson a dobozon kívülre a megtartáshoz. Az Esc megszakítja.{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} kijelölve{1}. Húzással áthelyezheti, szövegre kattintva szerkesztheti.{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} kijelölve{1}. Húzással áthelyezheti, szövegre kattintva szerkesztheti.{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

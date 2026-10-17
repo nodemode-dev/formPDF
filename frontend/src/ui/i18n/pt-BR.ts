@@ -2283,5 +2283,7 @@ export const ptBR: Record<string, string> = {
 "Optional; sent when Claude Code starts": "Opcional; enviada quando o Claude Code inicia",
 "Terminal": "Terminal",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "Digite e clique fora da caixa para mantê-la. Esc cancela.{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} selecionados{1}. Arraste para mover; clique em um texto para editá-lo.{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} selecionados{1}. Arraste para mover; clique em um texto para editá-lo.{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

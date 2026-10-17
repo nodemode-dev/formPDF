@@ -2283,5 +2283,7 @@ export const fi: Record<string, string> = {
 "Optional; sent when Claude Code starts": "Valinnainen; lähetetään, kun Claude Code käynnistyy",
 "Terminal": "Pääte",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "Kirjoita ja napsauta sitten ruudun ulkopuolella säilyttääksesi sen. Esc peruu.{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} valittu{1}. Siirrä vetämällä; muokkaa tekstiä napsauttamalla sitä.{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} valittu{1}. Siirrä vetämällä; muokkaa tekstiä napsauttamalla sitä.{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

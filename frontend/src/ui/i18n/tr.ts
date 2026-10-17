@@ -2283,5 +2283,7 @@ export const tr: Record<string, string> = {
 "Optional; sent when Claude Code starts": "İsteğe bağlı; Claude Code başlarken gönderilir",
 "Terminal": "Terminal",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "Yazın, ardından korumak için kutunun dışına tıklayın. Esc iptal eder.{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} seçildi{1}. Taşımak için sürükleyin; düzenlemek için metne tıklayın.{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} seçildi{1}. Taşımak için sürükleyin; düzenlemek için metne tıklayın.{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

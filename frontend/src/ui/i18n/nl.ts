@@ -2283,5 +2283,7 @@ export const nl: Record<string, string> = {
 "Optional; sent when Claude Code starts": "Optioneel; wordt verzonden wanneer Claude Code start",
 "Terminal": "Terminal",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "Typ en klik buiten het vak om het te behouden. Esc annuleert.{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} geselecteerd{1}. Sleep om te verplaatsen; klik op tekst om die te bewerken.{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} geselecteerd{1}. Sleep om te verplaatsen; klik op tekst om die te bewerken.{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

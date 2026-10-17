@@ -2283,5 +2283,7 @@ export const ja: Record<string, string> = {
 "Optional; sent when Claude Code starts": "任意。Claude Code の起動時に送信されます",
 "Terminal": "ターミナル",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "入力後、ボックスの外をクリックして確定します。Esc で取り消します。{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} 件を選択中{1}。ドラッグで移動、テキストをクリックで編集できます。{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "{0} 件を選択中{1}。ドラッグで移動、テキストをクリックで編集できます。{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };

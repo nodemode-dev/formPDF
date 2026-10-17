@@ -2283,5 +2283,7 @@ export const zhCN: Record<string, string> = {
 "Optional; sent when Claude Code starts": "可选;在 Claude Code 启动时发送",
 "Terminal": "终端",
 "Type, then click outside the box to keep it. Esc cancels.{0}": "输入后点击文本框外部即可保留。按 Esc 取消。{0}",
-"{0} selected{1}. Drag to move; click text to edit it.{2}": "已选择 {0} 项{1}。拖动可移动;点击文字可编辑。{2}"
+"{0} selected{1}. Drag to move; click text to edit it.{2}": "已选择 {0} 项{1}。拖动可移动;点击文字可编辑。{2}",
+"Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"": "Helvetica, Arial, \"Liberation Sans\", \"Nimbus Sans\"",
+"Math.abs(p - at)": "Math.abs(p - at)"
 };
