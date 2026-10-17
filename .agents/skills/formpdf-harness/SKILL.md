@@ -4,7 +4,7 @@ description: "Does PDF work with formpdf through its MCP server. Use whenever th
 license: Apache-2.0
 metadata:
   author: formpdf
-  version: "0.48.0"
+  version: "0.48.1"
 ---
 
 # formpdf harness
