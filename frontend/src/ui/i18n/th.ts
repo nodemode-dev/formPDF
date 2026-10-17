@@ -2304,5 +2304,12 @@ export const th: Record<string, string> = {
 "Rename": "เปลี่ยนชื่อ",
 "Rename bookmark": "เปลี่ยนชื่อที่คั่นหนังสือ",
 "Rename the bookmark": "เปลี่ยนชื่อที่คั่นหนังสือนี้",
-"Select a bookmark first": "เลือกที่คั่นหนังสือก่อน"
+"Select a bookmark first": "เลือกที่คั่นหนังสือก่อน",
+"Cloud": "เมฆ",
+"Squiggly underline": "ขีดเส้นใต้แบบหยัก",
+"Connected lines": "เส้นต่อเนื่อง",
+"Select text to squiggle-underline it.": "เลือกข้อความเพื่อขีดเส้นใต้แบบหยัก",
+"Click each corner. Click the first point, double-click or press Enter to close.": "คลิกที่แต่ละมุม คลิกที่จุดแรก ดับเบิลคลิก หรือกด Enter เพื่อปิด",
+"Click each point. Double-click or press Enter to finish.": "คลิกที่แต่ละจุด ดับเบิลคลิกหรือกด Enter เพื่อเสร็จสิ้น",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "คลิกที่แต่ละมุมของเมฆ คลิกที่จุดแรก ดับเบิลคลิก หรือกด Enter เพื่อปิด"
 };

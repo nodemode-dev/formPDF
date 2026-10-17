@@ -2304,5 +2304,12 @@ export const ru: Record<string, string> = {
 "Rename": "Переименовать",
 "Rename bookmark": "Переименовать закладку",
 "Rename the bookmark": "Переименовать эту закладку",
-"Select a bookmark first": "Сначала выберите закладку"
+"Select a bookmark first": "Сначала выберите закладку",
+"Cloud": "Облако",
+"Squiggly underline": "Волнистое подчёркивание",
+"Connected lines": "Ломаная линия",
+"Select text to squiggle-underline it.": "Выделите текст, чтобы подчеркнуть его волнистой линией.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Щёлкайте каждый угол. Чтобы замкнуть, щёлкните первую точку, дважды щёлкните или нажмите Enter.",
+"Click each point. Double-click or press Enter to finish.": "Щёлкайте каждую точку. Чтобы закончить, дважды щёлкните или нажмите Enter.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Щёлкайте каждый угол облака. Чтобы замкнуть, щёлкните первую точку, дважды щёлкните или нажмите Enter."
 };

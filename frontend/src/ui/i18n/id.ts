@@ -2304,5 +2304,12 @@ export const id: Record<string, string> = {
 "Rename": "Ganti nama",
 "Rename bookmark": "Ganti nama penanda buku",
 "Rename the bookmark": "Ganti nama penanda buku ini",
-"Select a bookmark first": "Pilih penanda buku terlebih dahulu"
+"Select a bookmark first": "Pilih penanda buku terlebih dahulu",
+"Cloud": "Awan",
+"Squiggly underline": "Garis bawah bergelombang",
+"Connected lines": "Garis tersambung",
+"Select text to squiggle-underline it.": "Pilih teks untuk memberinya garis bawah bergelombang.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Klik setiap sudut. Klik titik pertama, klik ganda, atau tekan Enter untuk menutup.",
+"Click each point. Double-click or press Enter to finish.": "Klik setiap titik. Klik ganda atau tekan Enter untuk selesai.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik setiap sudut awan. Klik titik pertama, klik ganda, atau tekan Enter untuk menutup."
 };

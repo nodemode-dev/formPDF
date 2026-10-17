@@ -2304,5 +2304,12 @@ export const vi: Record<string, string> = {
 "Rename": "Đổi tên",
 "Rename bookmark": "Đổi tên dấu trang",
 "Rename the bookmark": "Đổi tên dấu trang này",
-"Select a bookmark first": "Chọn một dấu trang trước"
+"Select a bookmark first": "Chọn một dấu trang trước",
+"Cloud": "Đám mây",
+"Squiggly underline": "Gạch chân lượn sóng",
+"Connected lines": "Đường nối liền",
+"Select text to squiggle-underline it.": "Chọn văn bản để gạch chân lượn sóng.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Nhấp vào từng góc. Nhấp vào điểm đầu tiên, nhấp đúp hoặc nhấn Enter để đóng.",
+"Click each point. Double-click or press Enter to finish.": "Nhấp vào từng điểm. Nhấp đúp hoặc nhấn Enter để hoàn tất.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Nhấp vào từng góc của đám mây. Nhấp vào điểm đầu tiên, nhấp đúp hoặc nhấn Enter để đóng."
 };

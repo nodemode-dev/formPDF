@@ -2304,5 +2304,12 @@ export const uk: Record<string, string> = {
 "Rename": "Перейменувати",
 "Rename bookmark": "Перейменувати закладку",
 "Rename the bookmark": "Перейменувати цю закладку",
-"Select a bookmark first": "Спершу виберіть закладку"
+"Select a bookmark first": "Спершу виберіть закладку",
+"Cloud": "Хмарка",
+"Squiggly underline": "Хвилясте підкреслення",
+"Connected lines": "З'єднані лінії",
+"Select text to squiggle-underline it.": "Виділіть текст, щоб підкреслити його хвилястою лінією.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Клацайте кожен кут. Щоб замкнути, клацніть першу точку, двічі клацніть або натисніть Enter.",
+"Click each point. Double-click or press Enter to finish.": "Клацайте кожну точку. Щоб завершити, двічі клацніть або натисніть Enter.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Клацайте кожен кут хмарки. Щоб замкнути, клацніть першу точку, двічі клацніть або натисніть Enter."
 };

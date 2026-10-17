@@ -2304,5 +2304,12 @@ export const ptBR: Record<string, string> = {
 "Rename": "Renomear",
 "Rename bookmark": "Renomear marcador",
 "Rename the bookmark": "Renomear o marcador",
-"Select a bookmark first": "Selecione um marcador primeiro"
+"Select a bookmark first": "Selecione um marcador primeiro",
+"Cloud": "Nuvem",
+"Squiggly underline": "Sublinhado ondulado",
+"Connected lines": "Linhas conectadas",
+"Select text to squiggle-underline it.": "Selecione o texto para aplicar sublinhado ondulado.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Clique em cada canto. Clique no primeiro ponto, clique duas vezes ou pressione Enter para fechar.",
+"Click each point. Double-click or press Enter to finish.": "Clique em cada ponto. Clique duas vezes ou pressione Enter para concluir.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Clique em cada canto da nuvem. Clique no primeiro ponto, clique duas vezes ou pressione Enter para fechar."
 };

@@ -2304,5 +2304,12 @@ export const tr: Record<string, string> = {
 "Rename": "Yeniden adlandır",
 "Rename bookmark": "Yer imini yeniden adlandır",
 "Rename the bookmark": "Bu yer imini yeniden adlandır",
-"Select a bookmark first": "Önce bir yer imi seçin"
+"Select a bookmark first": "Önce bir yer imi seçin",
+"Cloud": "Bulut",
+"Squiggly underline": "Dalgalı altı çizili",
+"Connected lines": "Bağlı çizgiler",
+"Select text to squiggle-underline it.": "Altını dalgalı çizgiyle çizmek için metni seçin.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Her köşeye tıklayın. Kapatmak için ilk noktaya tıklayın, çift tıklayın veya Enter tuşuna basın.",
+"Click each point. Double-click or press Enter to finish.": "Her noktaya tıklayın. Bitirmek için çift tıklayın veya Enter tuşuna basın.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Bulutun her köşesine tıklayın. Kapatmak için ilk noktaya tıklayın, çift tıklayın veya Enter tuşuna basın."
 };

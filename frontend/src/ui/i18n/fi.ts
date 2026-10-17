@@ -2304,5 +2304,12 @@ export const fi: Record<string, string> = {
 "Rename": "Nimeä uudelleen",
 "Rename bookmark": "Nimeä kirjanmerkki uudelleen",
 "Rename the bookmark": "Nimeä tämä kirjanmerkki uudelleen",
-"Select a bookmark first": "Valitse ensin kirjanmerkki"
+"Select a bookmark first": "Valitse ensin kirjanmerkki",
+"Cloud": "Pilvi",
+"Squiggly underline": "Aaltoviiva-alleviivaus",
+"Connected lines": "Yhdistetyt viivat",
+"Select text to squiggle-underline it.": "Valitse teksti alleviivataksesi sen aaltoviivalla.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Napsauta jokaista kulmaa. Sulje napsauttamalla ensimmäistä pistettä, kaksoisnapsauttamalla tai painamalla Enter.",
+"Click each point. Double-click or press Enter to finish.": "Napsauta jokaista pistettä. Lopeta kaksoisnapsauttamalla tai painamalla Enter.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Napsauta pilven jokaista kulmaa. Sulje napsauttamalla ensimmäistä pistettä, kaksoisnapsauttamalla tai painamalla Enter."
 };

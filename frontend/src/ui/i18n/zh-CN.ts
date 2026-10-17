@@ -2304,5 +2304,12 @@ export const zhCN: Record<string, string> = {
 "Rename": "重命名",
 "Rename bookmark": "重命名书签",
 "Rename the bookmark": "重命名此书签",
-"Select a bookmark first": "请先选择一个书签"
+"Select a bookmark first": "请先选择一个书签",
+"Cloud": "云朵",
+"Squiggly underline": "波浪下划线",
+"Connected lines": "连续线条",
+"Select text to squiggle-underline it.": "选择文本以添加波浪下划线。",
+"Click each corner. Click the first point, double-click or press Enter to close.": "依次单击每个角点。单击第一个点、双击或按 Enter 即可闭合。",
+"Click each point. Double-click or press Enter to finish.": "依次单击每个点。双击或按 Enter 完成。",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "依次单击云朵的每个角点。单击第一个点、双击或按 Enter 即可闭合。"
 };

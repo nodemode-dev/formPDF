@@ -2304,5 +2304,12 @@ export const nb: Record<string, string> = {
 "Rename": "Gi nytt navn",
 "Rename bookmark": "Gi nytt navn til bokmerke",
 "Rename the bookmark": "Gi nytt navn til bokmerket",
-"Select a bookmark first": "Velg et bokmerke først"
+"Select a bookmark first": "Velg et bokmerke først",
+"Cloud": "Sky",
+"Squiggly underline": "Bølgete understreking",
+"Connected lines": "Sammenkoblede linjer",
+"Select text to squiggle-underline it.": "Velg tekst for å gi den bølgete understreking.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Klikk på hvert hjørne. Klikk på det første punktet, dobbeltklikk eller trykk Enter for å lukke.",
+"Click each point. Double-click or press Enter to finish.": "Klikk på hvert punkt. Dobbeltklikk eller trykk Enter for å fullføre.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikk på hvert hjørne av skyen. Klikk på det første punktet, dobbeltklikk eller trykk Enter for å lukke."
 };

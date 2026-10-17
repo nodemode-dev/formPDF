@@ -2304,5 +2304,12 @@ export const nl: Record<string, string> = {
 "Rename": "Hernoemen",
 "Rename bookmark": "Bladwijzer hernoemen",
 "Rename the bookmark": "De bladwijzer hernoemen",
-"Select a bookmark first": "Selecteer eerst een bladwijzer"
+"Select a bookmark first": "Selecteer eerst een bladwijzer",
+"Cloud": "Wolk",
+"Squiggly underline": "Golvende onderstreping",
+"Connected lines": "Verbonden lijnen",
+"Select text to squiggle-underline it.": "Selecteer tekst om deze met een golvende lijn te onderstrepen.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Klik op elke hoek. Klik op het eerste punt, dubbelklik of druk op Enter om te sluiten.",
+"Click each point. Double-click or press Enter to finish.": "Klik op elk punt. Dubbelklik of druk op Enter om te voltooien.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik op elke hoek van de wolk. Klik op het eerste punt, dubbelklik of druk op Enter om te sluiten."
 };

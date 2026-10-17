@@ -2304,5 +2304,12 @@ export const it: Record<string, string> = {
 "Rename": "Rinomina",
 "Rename bookmark": "Rinomina segnalibro",
 "Rename the bookmark": "Rinomina il segnalibro",
-"Select a bookmark first": "Seleziona prima un segnalibro"
+"Select a bookmark first": "Seleziona prima un segnalibro",
+"Cloud": "Nuvola",
+"Squiggly underline": "Sottolineatura ondulata",
+"Connected lines": "Linee connesse",
+"Select text to squiggle-underline it.": "Seleziona il testo per sottolinearlo con una linea ondulata.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Fai clic su ogni angolo. Fai clic sul primo punto, fai doppio clic o premi Invio per chiudere.",
+"Click each point. Double-click or press Enter to finish.": "Fai clic su ogni punto. Fai doppio clic o premi Invio per terminare.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Fai clic su ogni angolo della nuvola. Fai clic sul primo punto, fai doppio clic o premi Invio per chiudere."
 };

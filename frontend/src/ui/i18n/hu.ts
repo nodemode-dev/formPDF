@@ -2304,5 +2304,12 @@ export const hu: Record<string, string> = {
 "Rename": "Átnevezés",
 "Rename bookmark": "Könyvjelző átnevezése",
 "Rename the bookmark": "A könyvjelző átnevezése",
-"Select a bookmark first": "Előbb jelöljön ki egy könyvjelzőt"
+"Select a bookmark first": "Előbb jelöljön ki egy könyvjelzőt",
+"Cloud": "Felhő",
+"Squiggly underline": "Hullámos aláhúzás",
+"Connected lines": "Összekötött vonalak",
+"Select text to squiggle-underline it.": "Jelölje ki a szöveget a hullámos aláhúzáshoz.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Kattintson minden sarokra. A lezáráshoz kattintson az első pontra, kattintson duplán, vagy nyomja meg az Entert.",
+"Click each point. Double-click or press Enter to finish.": "Kattintson minden pontra. A befejezéshez kattintson duplán, vagy nyomja meg az Entert.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Kattintson a felhő minden sarkára. A lezáráshoz kattintson az első pontra, kattintson duplán, vagy nyomja meg az Entert."
 };

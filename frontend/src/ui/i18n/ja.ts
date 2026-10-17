@@ -2304,5 +2304,12 @@ export const ja: Record<string, string> = {
 "Rename": "名前を変更",
 "Rename bookmark": "しおりの名前を変更",
 "Rename the bookmark": "このしおりの名前を変更",
-"Select a bookmark first": "先にしおりを選択してください"
+"Select a bookmark first": "先にしおりを選択してください",
+"Cloud": "雲形",
+"Squiggly underline": "波線の下線",
+"Connected lines": "連続線",
+"Select text to squiggle-underline it.": "波線の下線を引くテキストを選択してください。",
+"Click each corner. Click the first point, double-click or press Enter to close.": "各頂点をクリックします。最初の点をクリックするか、ダブルクリックまたは Enter で閉じます。",
+"Click each point. Double-click or press Enter to finish.": "各点をクリックします。ダブルクリックまたは Enter で完了します。",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "雲形の各頂点をクリックします。最初の点をクリックするか、ダブルクリックまたは Enter で閉じます。"
 };

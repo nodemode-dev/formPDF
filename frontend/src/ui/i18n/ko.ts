@@ -2304,5 +2304,12 @@ export const ko: Record<string, string> = {
 "Rename": "이름 바꾸기",
 "Rename bookmark": "책갈피 이름 바꾸기",
 "Rename the bookmark": "이 책갈피 이름 바꾸기",
-"Select a bookmark first": "먼저 책갈피를 선택하세요"
+"Select a bookmark first": "먼저 책갈피를 선택하세요",
+"Cloud": "구름",
+"Squiggly underline": "물결 밑줄",
+"Connected lines": "연결선",
+"Select text to squiggle-underline it.": "물결 밑줄을 넣을 텍스트를 선택하세요.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "각 꼭짓점을 클릭하세요. 첫 번째 점을 클릭하거나 더블클릭 또는 Enter로 닫습니다.",
+"Click each point. Double-click or press Enter to finish.": "각 점을 클릭하세요. 더블클릭 또는 Enter로 완료합니다.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "구름의 각 꼭짓점을 클릭하세요. 첫 번째 점을 클릭하거나 더블클릭 또는 Enter로 닫습니다."
 };

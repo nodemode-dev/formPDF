@@ -2304,5 +2304,12 @@ export const pl: Record<string, string> = {
 "Rename": "Zmień nazwę",
 "Rename bookmark": "Zmień nazwę zakładki",
 "Rename the bookmark": "Zmień nazwę tej zakładki",
-"Select a bookmark first": "Najpierw wybierz zakładkę"
+"Select a bookmark first": "Najpierw wybierz zakładkę",
+"Cloud": "Chmurka",
+"Squiggly underline": "Falisty podkreślnik",
+"Connected lines": "Połączone linie",
+"Select text to squiggle-underline it.": "Zaznacz tekst, aby podkreślić go linią falistą.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Klikaj kolejne narożniki. Aby zamknąć, kliknij pierwszy punkt, kliknij dwukrotnie lub naciśnij Enter.",
+"Click each point. Double-click or press Enter to finish.": "Klikaj kolejne punkty. Aby zakończyć, kliknij dwukrotnie lub naciśnij Enter.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikaj kolejne narożniki chmurki. Aby zamknąć, kliknij pierwszy punkt, kliknij dwukrotnie lub naciśnij Enter."
 };

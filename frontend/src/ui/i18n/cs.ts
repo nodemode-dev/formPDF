@@ -2304,5 +2304,12 @@ export const cs: Record<string, string> = {
 "Rename": "Přejmenovat",
 "Rename bookmark": "Přejmenovat záložku",
 "Rename the bookmark": "Přejmenovat tuto záložku",
-"Select a bookmark first": "Nejprve vyberte záložku"
+"Select a bookmark first": "Nejprve vyberte záložku",
+"Cloud": "Oblak",
+"Squiggly underline": "Vlnovkové podtržení",
+"Connected lines": "Spojené čáry",
+"Select text to squiggle-underline it.": "Vyberte text, který chcete podtrhnout vlnovkou.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Klikejte na jednotlivé rohy. Uzavřete klepnutím na první bod, dvojklikem nebo klávesou Enter.",
+"Click each point. Double-click or press Enter to finish.": "Klikejte na jednotlivé body. Dokončete dvojklikem nebo klávesou Enter.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klikejte na jednotlivé rohy oblaku. Uzavřete klepnutím na první bod, dvojklikem nebo klávesou Enter."
 };

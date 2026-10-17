@@ -2304,5 +2304,12 @@ export const da: Record<string, string> = {
 "Rename": "Omdøb",
 "Rename bookmark": "Omdøb bogmærke",
 "Rename the bookmark": "Omdøb bogmærket",
-"Select a bookmark first": "Vælg først et bogmærke"
+"Select a bookmark first": "Vælg først et bogmærke",
+"Cloud": "Sky",
+"Squiggly underline": "Bølgeunderstregning",
+"Connected lines": "Forbundne linjer",
+"Select text to squiggle-underline it.": "Markér tekst for at give den bølgeunderstregning.",
+"Click each corner. Click the first point, double-click or press Enter to close.": "Klik på hvert hjørne. Klik på det første punkt, dobbeltklik eller tryk på Enter for at lukke.",
+"Click each point. Double-click or press Enter to finish.": "Klik på hvert punkt. Dobbeltklik eller tryk på Enter for at afslutte.",
+"Click each corner of the cloud. Click the first point, double-click or press Enter to close.": "Klik på hvert hjørne af skyen. Klik på det første punkt, dobbeltklik eller tryk på Enter for at lukke."
 };
