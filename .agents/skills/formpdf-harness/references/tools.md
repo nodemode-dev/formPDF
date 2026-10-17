@@ -4,7 +4,11 @@ Server name `formpdf`, HTTP at `http://127.0.0.1:8198/mcp`, stdio through `setup
 
 ## get_context
 
-No arguments. Text lines: version, port and data folder; whether a window is open and agents are allowed; the open PDF (`id`, `key`, name, pages, current page, tab, unsaved changes, whether the last change was an agent's); PDFs agents opened without a window; up to 10 recent PDFs. Structured: `{window, agentsAllowed, doc, open, recent}`.
+No arguments. Text lines: version, port and data folder; whether a window is open and agents are allowed; the open PDF (`id`, `key`, name, pages, current page, tab, unsaved changes, whether the last change was an agent's); PDFs agents opened without a window; up to 10 recent PDFs. Structured: `{window, agentsAllowed, outsideAgents, doc, open, recent}`; `outsideAgents` is `ask`, `allowed` or `blocked`.
+
+## get_agent_access
+
+No arguments. Whether outside agents may use formpdf (`outsideAgents`: `ask`, `allowed` or `blocked`) and which agents have called since formpdf started. Structured `{outsideAgents, clients}`. While access is `blocked`, every tool, this one included, is refused: tell the person it is set in Preferences, Agents, and stop.
 
 `id` names one version of a PDF (every change makes a new id); `key` names the document across its versions. Pass either as `doc`.
 

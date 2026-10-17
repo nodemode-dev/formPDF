@@ -281,7 +281,7 @@ class PreferencesDialog extends Dialog {
     const fill = (n: HTMLElement, r: SeenAgent): void => {
       setText(q(n, '.fs-dlg-net-name'), r.name);
       setText(q(n, '.fs-dlg-net-state'), CHANNEL_LABEL[r.channel] ?? r.channel);
-      setText(q(n, '.fs-dlg-net-note'), `${r.calls} call${r.calls === 1 ? '' : 's'} · last ${new Date(r.last * 1000).toLocaleTimeString()}`);
+      setText(q(n, '.fs-dlg-net-note'), `Calls: ${r.calls} · last ${new Date(r.last * 1000).toLocaleTimeString()}`);
     };
     setHidden(q(this.body, '.fs-dlg-seen-none'), rows.length > 0);
     patchList(q(this.body, '.fs-dlg-seen'), rows, {
