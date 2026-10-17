@@ -127,7 +127,29 @@ export function sameParas(a: Para[], b: Para[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-export interface EditorOpen { page: HTMLElement; geo: Geo; font: Font; paras: Para[]; under: string | null; pageW: number; pageH: number }
+export interface EditorOpen { page: HTMLElement; geo: Geo; font: Font; paras: Para[]; under: string | null; pageW: number; pageH: number; face?: string | null }
+
+export interface OrigFont { name: string; b?: boolean; i?: boolean }
+
+const STANDARD_FACES: Array<[RegExp, string]> = [
+  [/^(helvetica|arial)/i, 'Helvetica, Arial, "Liberation Sans", "Nimbus Sans"'],
+  [/^times/i, '"Times New Roman", Times, "Liberation Serif", "Nimbus Roman"'],
+  [/^courier/i, '"Courier New", Courier, "Liberation Mono", "Nimbus Mono PS"'],
+];
+const docFaces = new Map<string, Promise<string | null>>();
+
+/** The CSS family that draws a PDF font in the editor: its embedded program served as a web font, or the installed match of a standard font. */
+export function docFace(docId: string, page: number, orig: OrigFont): Promise<string | null> {
+  const key = `${docId}|${orig.name}|${orig.i ? 'i' : ''}`;
+  let got = docFaces.get(key);
+  if (!got) {
+    const family = `FpDoc${docFaces.size + 1}`;
+    const face = new FontFace(family, `url("/api/pdf/${encodeURIComponent(docId)}/webfont?page=${page}&name=${encodeURIComponent(orig.name)}")`, { weight: '100 900', style: orig.i ? 'italic' : 'normal' });
+    got = face.load().then((f) => { document.fonts.add(f); return `"${family}"`; }, () => STANDARD_FACES.find(([re]) => re.test(orig.name))?.[1] ?? null);
+    docFaces.set(key, got);
+  }
+  return got;
+}
 
 export class TextEditor {
   readonly frame: HTMLElement;
@@ -136,6 +158,8 @@ export class TextEditor {
   font: Font = { family: 'sans', size: 12, color: '#111111', lineHeight: 1.25 };
   private start: Para[] = [];
   private saved: Range | null = null;
+  private face: string | null = null;
+  private faceFamily = '';
 
   constructor() {
     this.cover = el('<div class="fs-rt-cover" hidden></div>');
@@ -150,6 +174,8 @@ export class TextEditor {
 
   async show(o: EditorOpen): Promise<void> {
     this.font = { ...o.font };
+    this.face = o.face ?? null;
+    this.faceFamily = o.font.family;
     this.start = o.paras;
     this.area.innerHTML = parasHtml(o.paras);
     this.style();
@@ -182,13 +208,14 @@ export class TextEditor {
   }
 
   place(g: Geo): void {
-    const style = `left:${calc(g.x)};top:${calc(g.y)};width:${calc(g.w)};min-height:${calc(g.h)};transform:rotate(${g.rot}deg)`;
+    const style = `left:${calc(g.x)};top:${calc(g.y)};width:${calc(g.w + this.font.size * 0.3)};min-height:${calc(g.h)};transform:rotate(${g.rot}deg)`;
     if (this.frame.getAttribute('style') !== style) this.frame.setAttribute('style', style);
   }
 
   style(): void {
     const f = this.font;
-    const style = `font-family:${familyCss(f.family)},sans-serif;font-size:${calc(f.size)};line-height:${f.lineHeight};color:${f.color}`;
+    const face = this.face && f.family === this.faceFamily ? `${this.face},` : '';
+    const style = `font-family:${face}${familyCss(f.family)},sans-serif;font-size:${calc(f.size)};line-height:${f.lineHeight};color:${f.color}`;
     if (this.area.getAttribute('style') !== style) this.area.setAttribute('style', style);
   }
 

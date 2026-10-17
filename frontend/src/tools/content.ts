@@ -10,7 +10,7 @@ import { icon } from '../ui/icons';
 import { t } from '../ui/i18n';
 import { toast } from '../ui/toast';
 import { calc, PageLayers } from './overlay';
-import { plain, SYS, TextEditor, type Font, type Geo, type Para } from './richtext';
+import { docFace, plain, SYS, TextEditor, type Font, type Geo, type OrigFont, type Para } from './richtext';
 
 type Crop = { l: number; t: number; r: number; b: number };
 interface Item { id: string; kind: 'text' | 'picture'; thread?: string; seq?: number; overflow?: boolean; page: number; x: number; y: number; w: number; h: number; rot?: number; flipH?: boolean; flipV?: boolean; z: number; font?: Font; paras?: Para[]; crop?: Crop; iw?: number; ih?: number; merged?: boolean }
@@ -170,7 +170,7 @@ function groupFrame(host: ToolHost, page: number): Obj | null {
 const layers = new PageLayers('content', (index, layer) => {
   const host = hostRef;
   const page = index + 1;
-  if (host && mode !== 'idle' && !loaded.has(page)) want(page);
+  if (host && mode !== 'idle' && !loaded.has(page) && Math.abs(page - host.ctx.viewer.currentPage()) <= 1) want(page);
   const frame = host && mode !== 'idle' ? groupFrame(host, page) : null;
   const list = !host || mode === 'idle' ? [] : [...objects(page, host).filter((o) => sel.includes(o.key) || o.key === hover || o.kind === 'text' || o.kind === 'ptext' || o.kind === 'picture' || o.kind === 'pic'), ...(frame ? [frame] : [])];
   const single = sel.length === 1;
@@ -223,7 +223,9 @@ function reload(host: ToolHost): void {
   loadedFor = d.id;
   keyOf = d.key;
   loaded.clear();
-  for (const p of keep.length ? keep : [host.ctx.viewer.currentPage()]) want(p);
+  const at = host.ctx.viewer.currentPage();
+  const near = keep.filter((p) => Math.abs(p - at) <= 1);
+  for (const p of near.length ? near : [at]) want(p);
 }
 let keyOf = '';
 
@@ -407,7 +409,11 @@ async function editText(host: ToolHost, o: Obj | null, page: number, g: Geo, at?
   const size = host.ctx.viewer.sizes[page - 1] ?? { w: 612, h: 792 };
   const base = `/api/pdf/${encodeURIComponent(d.id)}/items/under?page=${page}&scale=2`;
   const under = it ? `${base}&id=${encodeURIComponent(it.id)}` : t ? `${base}&paragraph=${encodeURIComponent(t.key)}` : null;
-  const open = (): Promise<void> => editor.show({ page: pv.space, geo: g, font: f, paras: src?.paras ?? [{ align: 'left', list: 'none', level: 0, runs: [{ t: '' }] }], under, pageW: size.w, pageH: size.h });
+  const orig = (f as Font & { orig?: OrigFont }).orig;
+  const open = async (): Promise<void> => {
+    const face = orig?.name ? await docFace(d.id, page, orig) : null;
+    await editor.show({ page: pv.space, geo: g, font: f, paras: src?.paras ?? [{ align: 'left', list: 'none', level: 0, runs: [{ t: '' }] }], under, pageW: size.w, pageH: size.h, face });
+  };
   if (under) await host.ctx.run('Opening the text', open); else await open();
   if (!editor.open) { editing = null; repaint(); return; }
   if (at) caretAt(at.x, at.y);
@@ -456,6 +462,7 @@ function hoverAt(host: ToolHost, pv: PageView, p: Pt): void {
     hoverNext = null;
     if (!n || editing || mode !== 'select') return;
     const page = n.pv.index + 1;
+    if (!loaded.has(page)) want(page);
     const o = hit(page, n.p, n.host);
     const cur = !o ? 'default' : isText(o) ? 'text' : 'move';
     if (n.pv.space.style.cursor !== cur) n.pv.space.style.cursor = cur;
@@ -1208,6 +1215,7 @@ registerTool({
   },
   page: (pv: PageView) => layers.mount(pv),
   rendered: (pv: PageView) => {
+    if (hostRef && mode !== 'idle' && !loaded.has(pv.index + 1)) want(pv.index + 1);
     const list = waiters.get(pv.index);
     if (list?.length) { waiters.delete(pv.index); for (const fn of list) fn(); }
   },

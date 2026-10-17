@@ -151,6 +151,16 @@ async def items_under(doc_id: str, page: int, id: str = "", picture: int = -1, p
     return Response(data, media_type="image/png", headers=IMMUTABLE)
 
 
+@router.get("/pdf/{doc_id}/webfont")
+async def doc_webfont(doc_id: str, page: int, name: str) -> Response:
+    from app.services.pdf import webfont
+
+    data = await _run(webfont.webfont, str(_path(doc_id)), page, name, tuple(_pw(doc_id)))
+    if not data:
+        raise HTTPException(404, "This PDF font cannot be shown in the editor")
+    return Response(data, media_type="font/otf", headers=IMMUTABLE)
+
+
 @router.get("/pdf/{doc_id}/attachment")
 async def attachment(doc_id: str, name: str = "", page: int = 0, index: int = 0) -> Response:
     from app.services.pdf import attach
