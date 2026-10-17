@@ -235,6 +235,7 @@ export class Viewer {
     this.plain.clear();
     this.thumbs.clear();
     for (const pv of this.pages) { pv.task?.cancel(); pv.task = null; }
+    const sameSizes = this.pages.length === sizes.length && this.pages.every((pv, i) => pv.size.w === sizes[i].w && pv.size.h === sizes[i].h && pv.size.rotate === sizes[i].rotate);
     this.setSizes(sizes);
     if (this.paged) {
       const at = opts.keep ? Math.min(this.current, sizes.length) || 1 : 1;
@@ -252,7 +253,7 @@ export class Viewer {
     } else if (!shown) {
       this.parked = this.parked ?? keepAt;
     } else if (keepAt) {
-      if (this.fit) this.applyFit(this.fit, false);
+      if (this.fit && !sameSizes) this.applyFit(this.fit, false);
       this.restore(keepAt);
     }
     this.track();
