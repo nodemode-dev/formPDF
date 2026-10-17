@@ -221,7 +221,13 @@ def _window(el: ET.Element, kind: str, page: int, geo, rect, width: float) -> di
             label = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", icon).strip() or "Stamp"
             a["stamp"] = {"label": label.upper(), "shape": "box", "name": el.get("icon") or "Stamp"}
             a["text"] = a["text"] or label
-    elif kind in ("highlight", "underline", "strikeout"):
+    elif kind in ("polygon", "polyline", "cloud"):
+        v = el.find("vertices")
+        nums = _floats((v.text if v is not None else "").replace(";", ","), 4)
+        a["points"] = [P(nums[i], nums[i + 1]) for i in range(0, len(nums) - 1, 2)]
+        if el.get("interior-color"):
+            a["fill"] = el.get("interior-color")
+    elif kind in ("highlight", "underline", "strikeout", "squiggly"):
         q = _floats(el.get("coords"), 8)
         rects = []
         for i in range(0, len(q) - 7, 8):
@@ -249,7 +255,9 @@ def _kind(el: ET.Element) -> str | None:
     tag = el.tag
     if tag == "line":
         return "arrow" if "Arrow" in (el.get("tail") or "") or "Arrow" in (el.get("head") or "") else "line"
-    return {"text": "note", "freetext": "freetext", "square": "rect", "circle": "ellipse", "highlight": "highlight", "underline": "underline",
+    if tag == "polygon":
+        return "cloud" if el.get("style") == "cloudy" else "polygon"
+    return {"squiggly": "squiggly", "polyline": "polyline","text": "note", "freetext": "freetext", "square": "rect", "circle": "ellipse", "highlight": "highlight", "underline": "underline",
             "strikeout": "strikeout", "ink": "ink", "stamp": "stamp"}.get(tag)
 
 

@@ -19,11 +19,14 @@ from app.core import config
 
 from . import core
 
-KINDS = ("highlight", "underline", "strikeout", "note", "freetext", "ink", "rect", "ellipse", "line", "arrow", "image", "stamp")
-MARKUP = ("highlight", "underline", "strikeout")
+KINDS = ("highlight", "underline", "strikeout", "squiggly", "note", "freetext", "ink", "rect", "ellipse", "line", "arrow", "polygon", "polyline", "cloud",
+         "image", "stamp")
+MARKUP = ("highlight", "underline", "strikeout", "squiggly")
+POLY = ("polygon", "polyline", "cloud")
 BOXED = ("note", "freetext", "image", "rect", "ellipse", "stamp")
-SUBTYPE = {"highlight": "/Highlight", "underline": "/Underline", "strikeout": "/StrikeOut", "note": "/Text", "freetext": "/FreeText",
-           "ink": "/Ink", "rect": "/Square", "ellipse": "/Circle", "line": "/Line", "arrow": "/Line", "image": "/Stamp", "stamp": "/Stamp"}
+SUBTYPE = {"highlight": "/Highlight", "underline": "/Underline", "strikeout": "/StrikeOut", "squiggly": "/Squiggly", "note": "/Text", "freetext": "/FreeText",
+           "ink": "/Ink", "rect": "/Square", "ellipse": "/Circle", "line": "/Line", "arrow": "/Line", "polygon": "/Polygon", "polyline": "/PolyLine",
+           "cloud": "/Polygon", "image": "/Stamp", "stamp": "/Stamp"}
 DEFAULT_COLOR = {"highlight": "#FFD400", "note": "#FFD400", "freetext": "#111111", "image": "#111111", "stamp": "#15803D"}
 SHAPES = ("box", "tag", "mark")
 NOTE = 20.0
@@ -188,6 +191,11 @@ def normalize(a: dict, sizes: list[tuple[float, float]]) -> dict:
             if len(pts) < 2:
                 raise ValueError(f"A {kind} needs two points")
             out["points"] = pts[:2]
+        elif kind in POLY:
+            pts = [_pt(p) for p in (a.get("points") or [])][:2000]
+            if len(pts) < (2 if kind == "polyline" else 3):
+                raise ValueError(f"A {kind} needs at least {2 if kind == 'polyline' else 3} points")
+            out["points"] = pts
         elif kind == "ink":
             paths = [[_pt(p) for p in path][:4000] for path in (a.get("paths") or []) if path]
             if not paths:
@@ -208,15 +216,53 @@ def normalize(a: dict, sizes: list[tuple[float, float]]) -> dict:
     return out
 
 
+def cloud_r(a: dict) -> float:
+    return max(4.0, a["width"] * 3)
+
+
+def cloud_arcs(pts: list[tuple[float, float]], r: float) -> list[tuple[tuple[float, float], ...]]:
+    n = len(pts)
+    area = sum(pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1] for i in range(n))
+    sign = 1 if area >= 0 else -1
+    segs = []
+    for i in range(n):
+        (x0, y0), (x1, y1) = pts[i], pts[(i + 1) % n]
+        length = math.hypot(x1 - x0, y1 - y0)
+        if length < 1e-6:
+            continue
+        k = max(1, round(length / (2 * r)))
+        ux, uy = (x1 - x0) / length, (y1 - y0) / length
+        nx, ny = uy * sign, -ux * sign
+        h = length / k * 0.66
+        for j in range(k):
+            ax, ay = x0 + ux * length * j / k, y0 + uy * length * j / k
+            bx, by = x0 + ux * length * (j + 1) / k, y0 + uy * length * (j + 1) / k
+            segs.append(((ax, ay), (ax + nx * h, ay + ny * h), (bx + nx * h, by + ny * h), (bx, by)))
+    return segs
+
+
+def squiggle(x: float, y: float, w: float, h: float, rot: int) -> tuple[list[tuple[float, float]], float]:
+    across = h if rot % 180 == 0 else w
+    amp = max(0.6, min(across * 0.06, 2.4))
+    step = amp * 2
+    if rot % 180 == 0:
+        base = y + h - amp if rot == 0 else y + amp
+        n = max(2, int(w / step))
+        return [(x + w * i / n, base + (amp if i % 2 else -amp) * 0.5 * (1 if rot == 0 else -1)) for i in range(n + 1)], amp
+    base = x + w - amp if rot == 90 else x + amp
+    n = max(2, int(h / step))
+    return [(base + (amp if i % 2 else -amp) * 0.5, y + h * i / n) for i in range(n + 1)], amp
+
+
 def bbox(a: dict) -> tuple[float, float, float, float]:
     pad = a["width"] / 2 + 1
     if a["kind"] in MARKUP:
         xs = [r[0] for r in a["rects"]] + [r[0] + r[2] for r in a["rects"]]
         ys = [r[1] for r in a["rects"]] + [r[1] + r[3] for r in a["rects"]]
         return min(xs) - 1, min(ys) - 1, max(xs) + 1, max(ys) + 1
-    if a["kind"] in ("line", "arrow", "ink"):
+    if a["kind"] in ("line", "arrow", "ink") + POLY:
         pts = a["points"] if a["kind"] != "ink" else [p for path in a["paths"] for p in path]
-        extra = max(8.0, a["width"] * 4) if a["kind"] == "arrow" else 0
+        extra = max(8.0, a["width"] * 4) if a["kind"] == "arrow" else cloud_r(a) if a["kind"] == "cloud" else 0
         return (min(p[0] for p in pts) - pad - extra, min(p[1] for p in pts) - pad - extra,
                 max(p[0] for p in pts) + pad + extra, max(p[1] for p in pts) + pad + extra)
     x, y, w, h = a["box"]
@@ -386,6 +432,39 @@ def draw(c, a: dict, H: float, flat: bool) -> None:
             else:
                 xx = x + lw / 2 if kind == "underline" else x + w * mid
                 c.line(xx, H - y, xx, H - y - h)
+    elif kind == "squiggly":
+        c.setStrokeColorRGB(*color)
+        _alpha(c, stroke=a["opacity"])
+        for x, y, w, h in a["rects"]:
+            pts, amp = squiggle(x, y, w, h, a["rot"])
+            c.setLineWidth(max(0.5, amp * 0.6))
+            p = c.beginPath()
+            p.moveTo(pts[0][0], H - pts[0][1])
+            for px, py in pts[1:]:
+                p.lineTo(px, H - py)
+            c.drawPath(p, stroke=1, fill=0)
+    elif kind in POLY:
+        c.setStrokeColorRGB(*color)
+        c.setLineWidth(a["width"])
+        _alpha(c, fill=a["opacity"], stroke=a["opacity"])
+        filled = bool(a["fill"]) and kind != "polyline"
+        if filled:
+            c.setFillColorRGB(*a["fill"])
+        pts = a["points"]
+        p = c.beginPath()
+        if kind == "cloud":
+            segs = cloud_arcs(pts, cloud_r(a))
+            p.moveTo(segs[0][0][0], H - segs[0][0][1])
+            for _, c1, c2, e in segs:
+                p.curveTo(c1[0], H - c1[1], c2[0], H - c2[1], e[0], H - e[1])
+            p.close()
+        else:
+            p.moveTo(pts[0][0], H - pts[0][1])
+            for px, py in pts[1:]:
+                p.lineTo(px, H - py)
+            if kind == "polygon":
+                p.close()
+        c.drawPath(p, stroke=1, fill=1 if filled else 0)
     elif kind == "ink":
         c.setStrokeColorRGB(*color)
         _alpha(c, stroke=a["opacity"])
@@ -512,6 +591,16 @@ def _annot(a: dict, rect: list[float], ap, llx: float, lly: float, H: float, aut
         d[NameObject("/BS")] = bs
         if a["fill"]:
             d[NameObject("/IC")] = _arr(a["fill"])
+    elif kind in POLY:
+        d[NameObject("/Vertices")] = _arr([v for p in a["points"] for v in U(*p)])
+        d[NameObject("/BS")] = bs
+        if a["fill"] and kind != "polyline":
+            d[NameObject("/IC")] = _arr(a["fill"])
+        if kind == "cloud":
+            d[NameObject("/BE")] = DictionaryObject({NameObject("/S"): NameObject("/C"), NameObject("/I"): NumberObject(1)})
+            d[NameObject("/IT")] = NameObject("/PolygonCloud")
+        if kind == "polyline":
+            d[NameObject("/LE")] = ArrayObject([NameObject("/None"), NameObject("/None")])
     elif kind in ("line", "arrow"):
         d[NameObject("/L")] = _arr([*U(*a["points"][0]), *U(*a["points"][1])])
         d[NameObject("/BS")] = bs
@@ -627,7 +716,7 @@ def comments(path, passwords: list[str] | None = None, limit: int = 2000) -> lis
             ry0, ry1 = sorted((ry0, ry1))
             color = a.get("/C") or a.get("/IC") or []
             hexc = "#" + "".join(f"{max(0, min(255, round(float(c) * 255))):02X}" for c in list(color)[:3]) if len(color) >= 3 else ""
-            tops[k] = {"page": pi + 1, "index": k, "nm": _text(a.get("/NM")), "kind": LISTED[a["/Subtype"]], "label": str(a["/Subtype"])[1:],
+            tops[k] = {"page": pi + 1, "index": k, "nm": _text(a.get("/NM")), "kind": "cloud" if a["/Subtype"] == "/Polygon" and (str(a.get("/IT") or "") == "/PolygonCloud" or str((a.get("/BE") or {}).get("/S") or "") == "/C") else LISTED[a["/Subtype"]], "label": str(a["/Subtype"])[1:],
                        "text": _text(a.get("/Contents")), "author": _text(a.get("/T")), "date": _when(a.get("/M") or a.get("/CreationDate")),
                        "color": hexc, "rect": {"x": round(rx0 - x0, 2), "y": round(y1 - ry1, 2), "w": round(rx1 - rx0, 2), "h": round(ry1 - ry0, 2)},
                        "replies": [], "status": "none", "statusBy": ""}

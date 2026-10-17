@@ -68,8 +68,8 @@ raster turns marked pages into pictures, for scans); mark_redactions {areas, col
 rotate: 90 | 180 | 270 (with pages, default all), blank: [positions after which a blank page goes]}; protect {password, owner, permissions:
 {print, copy, modify, annotate, fill, assemble}}; unlock {password}; metadata {title, author, subject, keywords, strip}; compress {quality
 10..95}; sanitize {remove: [metadata, javascript, attachments, comments, fields, layers, links, bookmarks, thumbnails, private, hidden_text]};
-fill {values: {field name: value}, flatten}; annotate {annotations: [{page, kind: note | freetext | highlight | underline | strikeout |
-rect | ellipse | line | arrow, text, color, x, y, w, h, rects, points}], highlight: query, flatten}; form {create: [{type: text | multiline |
+fill {values: {field name: value}, flatten}; annotate {annotations: [{page, kind: note | freetext | highlight | underline | strikeout | squiggly |
+rect | ellipse | line | arrow | polygon | polyline | cloud, text, color, fill, x, y, w, h, rects, points}], highlight: query, flatten}; form {create: [{type: text | multiline |
 checkbox | radio | dropdown | listbox | date | signature, page, x, y, w, h, name, options}], rename: {old: new}, delete: [names]};
 merge {paths: [PDFs to append]} (with path and paths and out, merges files instead); edit_links {add: [{page, x, y, w, h, to: url |
 mailto: | page number}], remove: [{page, index}], auto: true (link every web and email address), border}; edit_attachments {add: [{path,
