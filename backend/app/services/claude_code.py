@@ -19,7 +19,10 @@ INSTALL = "Claude Code is not installed: install it from https://claude.com/clau
 NOTE = ("You are Claude Code running in the agent dock inside formpdf, the PDF editor open on this computer. "
         "Work on PDFs with the formpdf MCP server's tools: start with get_context, open_pdf to show a file, the pdf tool for the job, "
         "render_pages to look before and after a change, and list_commands with run_command for anything the window can do (zoom, tabs, panels, dialogs). "
-        "Changes to the open PDF land live in the window as one undoable turn. Use the formpdf-skillset skill when it is available.")
+        "Changes to the open PDF land live in the window as one undoable turn. "
+        "To rebuild or restructure a document (keep only some parts, relabel sections, make lists, shrink a picture, fit it on N pages), "
+        "call pdf with action blocks, then once with action compose using the block ids, then render_pages and save; do not retype the text or remove it piece by piece. "
+        "Use the formpdf-skillset skill when it is available.")
 
 
 class AgentError(Exception):

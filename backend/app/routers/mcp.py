@@ -47,6 +47,14 @@ GUIDE = """# formpdf agent guide
 5. extract {kind: text | tables | images, pages}: content out of the PDF.
 6. save {path}: writes the open PDF's current version to a file. undo: reverts your last turn (calls under 90 s apart form one turn).
 
+## Restructure a document in two calls
+To keep only some parts, relabel, reorder, shrink a picture or fit the result on N pages: pdf {action: blocks} lists every paragraph,
+list item and heading as b1, b2, ... with its text, and every picture as p1, p2, ...; then one pdf {action: compose, max_pages, blocks: [...]}
+rebuilds the open PDF from those ids, choosing the largest text size that fits. Block kinds: title, heading, subheading, text
+(ref | refs | text), bullets and steps (items: ["b4-b9", {ref | text, label, level}]; steps are numbered and keep counting across pages),
+picture (ref: p1, width as a share of the text width such as 0.4, or in points such as 240). New labels are text; everything else is a ref, so nothing is retyped.
+The result is editable page text; render_pages once, then save. Do not delete content piece by piece for this.
+
 ## Pages
 pages is "3", "1-4", "2,5", "4-" (to the end); omit for every page. Coordinates are points from the top left of the page as shown.
 
@@ -187,7 +195,8 @@ TOOLS = [
           "Like every tool it is refused while the setting is blocked.", {}, read=True),
     _tool("open_pdf", "Opens a PDF file (absolute path) in the formpdf window, or in the engine when no window is open, and makes it the open PDF.", {"path": _S}, ["path"]),
     _tool("pdf", "PDF actions. Read: " + ", ".join(READ_ACTIONS) + ". Change: " + ", ".join(CHANGE_ACTIONS) + " (on the open PDF: live in the window as your "
-          "undoable turn; with path: a new file beside it). Export: " + ", ".join(EXPORT_ACTIONS) + ". Arguments per action: resource formpdf://guide.",
+          "undoable turn; with path: a new file beside it). Export: " + ", ".join(EXPORT_ACTIONS) + ". To restructure a document: blocks, then one compose. "
+          "Arguments per action: resource formpdf://guide.",
           {"action": {"type": "string", "enum": ACTIONS}, "doc": _DOC, "path": _PATH, "paths": {"type": "array", "items": _S}, "pages": _PAGES,
            "out": {"type": "string", "description": "Output file or folder"}, "ranges": {"type": "array", "items": _S},
            "header": {"type": "object"}, "footer": {"type": "object"}, "size": {"type": "number"}, "color": _S, "font": {"type": "string", "enum": ["sans", "serif", "mono"]},
@@ -202,6 +211,8 @@ TOOLS = [
            "remove": {"type": "array", "description": "sanitize: names; edit_items: ids, {page, picture} or {page, paragraph}"},
            "add": {"type": "array", "items": {"type": "object"}, "description": "edit_items: text or picture items to add"},
            "update": {"type": "array", "items": {"type": "object"}, "description": "edit_items: changes to items, pictures or paragraphs"},
+           "blocks": {"type": "array", "items": {"type": "object"}, "description": "compose: the blocks to lay out, in order, by id from the blocks action"},
+           "max_pages": {"type": "integer", "description": "compose: the most pages the result may have"},
            "arrange": {"type": "array", "items": {"type": "object"}}, "edits": {"type": "array", "items": {"type": "object"}, "description": "edit_paths: changes per path"},
            "values": {"type": "object"}, "flatten": {"type": "boolean"},
            "annotations": {"type": "array", "items": {"type": "object"}}, "highlight": _S, "create": {"type": "array", "items": {"type": "object"}},
