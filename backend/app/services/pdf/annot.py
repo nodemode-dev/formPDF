@@ -594,6 +594,7 @@ def _form(w: PdfWriter, page, bb: list[float]):
     stream[NameObject("/BBox")] = _arr(bb)
     res = page.get("/Resources")
     if res is not None:
+        w.__dict__.setdefault("_fs_sources", []).append(page.pdf)
         stream[NameObject("/Resources")] = res.get_object().clone(w)
     return w._add_object(stream.flate_encode())
 

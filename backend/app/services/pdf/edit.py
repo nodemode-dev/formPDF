@@ -481,6 +481,7 @@ def redact(src, out, areas: list[dict], *, passwords: list[str] | None = None, d
                     del page[key]
             page[NameObject("/MediaBox")] = RectangleObject([0, 0, Dw, Dh])
             page[NameObject("/Rotate")] = NumberObject(0)
+            w.__dict__.setdefault("_fs_sources", []).append(fresh.pdf)
             page[NameObject("/Resources")] = fresh["/Resources"].get_object().clone(w)
             page.replace_contents(fresh.get_contents())
     finally:
