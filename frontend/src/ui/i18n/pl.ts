@@ -2319,5 +2319,12 @@ export const pl: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Naciśnij miejsce, na które ma wskazywać strzałka, i przeciągnij tam, gdzie ma być tekst, albo po prostu kliknij.",
 "A callout needs an anchor point it points at": "Objaśnienie wymaga punktu zakotwiczenia, na który wskazuje",
 "{0} must be a list, not {1}; nothing was changed": "{0} musi być listą, a nie {1}; nic nie zostało zmienione",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Użyj add (nie create) dla nowego tekstu i obrazów; klucze to add, update, arrange, comments i remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Użyj add (nie create) dla nowego tekstu i obrazów; klucze to add, update, arrange, comments i remove",
+"There is no picture {0}; the document has {1}": "Nie ma obrazu {0}; dokument ma ich {1}",
+"A {0} block needs ref, refs or text": "Blok {0} wymaga ref, refs lub text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Bloki nie mieszczą się w limicie stron ({0}) nawet przy {1} pt; pomiń niektóre lub zezwól na więcej stron",
+"There is no block b{0}; the document has b1 to b{1}": "Nie ma bloku b{0}; dokument ma bloki od b1 do b{1}",
+"Each block is an object with a kind": "Każdy blok jest obiektem z polem kind",
+"A {0} block needs items": "Blok {0} wymaga elementów",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} nie jest identyfikatorem bloku, takim jak b4, ani zakresem, takim jak b4-b9 (odczytaj je akcją blocks)"
 };

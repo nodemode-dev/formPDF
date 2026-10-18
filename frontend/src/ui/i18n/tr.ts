@@ -2319,5 +2319,12 @@ export const tr: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Okun işaret edeceği yere basın ve metnin geleceği yere sürükleyin ya da yalnızca tıklayın.",
 "A callout needs an anchor point it points at": "Belirtme çizgisinin işaret edeceği bir bağlantı noktası olmalıdır",
 "{0} must be a list, not {1}; nothing was changed": "{0} bir liste olmalıdır, {1} olamaz; hiçbir şey değiştirilmedi",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Yeni metin ve resimler için add kullanın (create değil); anahtarlar şunlardır: add, update, arrange, comments ve remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Yeni metin ve resimler için add kullanın (create değil); anahtarlar şunlardır: add, update, arrange, comments ve remove",
+"There is no picture {0}; the document has {1}": "{0} numaralı resim yok; belgede {1} resim var",
+"A {0} block needs ref, refs or text": "{0} bloğu ref, refs veya text gerektirir",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Bloklar {1} pt'de bile sayfa sınırına ({0}) sığmıyor; bazılarını çıkarın veya daha fazla sayfaya izin verin",
+"There is no block b{0}; the document has b1 to b{1}": "b{0} bloğu yok; belgede b1 ile b{1} arası bloklar var",
+"Each block is an object with a kind": "Her blok, kind içeren bir nesnedir",
+"A {0} block needs items": "{0} bloğu öğe gerektirir",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0}, b4 gibi bir blok kimliği ya da b4-b9 gibi bir aralık değil (bunları blocks eylemiyle okuyun)"
 };

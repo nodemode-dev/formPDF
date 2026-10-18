@@ -2319,5 +2319,12 @@ export const hu: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Nyomja meg ott, ahová a nyíl mutat, és húzza oda, ahová a szöveg kerül, vagy egyszerűen kattintson.",
 "A callout needs an anchor point it points at": "A magyarázathoz szükség van egy horgonypontra, amelyre mutat",
 "{0} must be a list, not {1}; nothing was changed": "A(z) {0} értékének listának kell lennie, nem {1}; semmi sem változott",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Új szöveghez és képekhez az add kulcsot használja (ne a create-et); a kulcsok: add, update, arrange, comments és remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Új szöveghez és képekhez az add kulcsot használja (ne a create-et); a kulcsok: add, update, arrange, comments és remove",
+"There is no picture {0}; the document has {1}": "Nincs {0}. kép; a dokumentumban {1} van",
+"A {0} block needs ref, refs or text": "A(z) {0} blokkhoz ref, refs vagy text szükséges",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "A blokkok {1} pt mellett sem férnek el az oldalkorláton belül ({0}); hagyjon ki néhányat, vagy engedélyezzen több oldalt",
+"There is no block b{0}; the document has b1 to b{1}": "Nincs b{0} blokk; a dokumentumban b1-től b{1}-ig vannak blokkok",
+"Each block is an object with a kind": "Minden blokk egy kind értékkel rendelkező objektum",
+"A {0} block needs items": "A(z) {0} blokkhoz elemek szükségesek",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "A(z) {0} nem blokkazonosító, mint a b4, és nem tartomány, mint a b4-b9 (olvassa be őket a blocks művelettel)"
 };

@@ -2319,5 +2319,12 @@ export const cs: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Stiskněte tam, kam má šipka mířit, a přetáhněte na místo textu, nebo jen klikněte.",
 "A callout needs an anchor point it points at": "Popisek potřebuje kotvicí bod, na který míří",
 "{0} must be a list, not {1}; nothing was changed": "{0} musí být seznam, nikoli {1}; nic nebylo změněno",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Pro nový text a obrázky použijte add (ne create); klíče jsou add, update, arrange, comments a remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Pro nový text a obrázky použijte add (ne create); klíče jsou add, update, arrange, comments a remove",
+"There is no picture {0}; the document has {1}": "Obrázek {0} neexistuje; dokument jich má {1}",
+"A {0} block needs ref, refs or text": "Blok {0} potřebuje ref, refs nebo text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Bloky se nevejdou do limitu stránek ({0}) ani při {1} pt; některé vynechejte nebo povolte více stránek",
+"There is no block b{0}; the document has b1 to b{1}": "Blok b{0} neexistuje; dokument má bloky b1 až b{1}",
+"Each block is an object with a kind": "Každý blok je objekt s hodnotou kind",
+"A {0} block needs items": "Blok {0} potřebuje položky",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} není ID bloku jako b4 ani rozsah jako b4-b9 (zobrazíte je akcí blocks)"
 };

@@ -2319,5 +2319,12 @@ export const id: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Tekan di tempat panah menunjuk lalu seret ke tempat teks berada, atau cukup klik.",
 "A callout needs an anchor point it points at": "Callout memerlukan titik jangkar yang ditunjuknya",
 "{0} must be a list, not {1}; nothing was changed": "{0} harus berupa daftar, bukan {1}; tidak ada yang diubah",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Gunakan add (bukan create) untuk teks dan gambar baru; kuncinya adalah add, update, arrange, comments, dan remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Gunakan add (bukan create) untuk teks dan gambar baru; kuncinya adalah add, update, arrange, comments, dan remove",
+"There is no picture {0}; the document has {1}": "Tidak ada gambar {0}; dokumen memiliki {1}",
+"A {0} block needs ref, refs or text": "Blok {0} memerlukan ref, refs, atau text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Blok tidak muat dalam batas halaman ({0}) bahkan pada {1} pt; hilangkan sebagian atau izinkan lebih banyak halaman",
+"There is no block b{0}; the document has b1 to b{1}": "Tidak ada blok b{0}; dokumen memiliki b1 sampai b{1}",
+"Each block is an object with a kind": "Setiap blok adalah objek dengan kind",
+"A {0} block needs items": "Blok {0} memerlukan item",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} bukan ID blok seperti b4 atau rentang seperti b4-b9 (baca dengan aksi blocks)"
 };

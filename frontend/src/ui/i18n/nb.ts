@@ -2319,5 +2319,12 @@ export const nb: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Trykk der pilen skal peke, og dra til der teksten skal være, eller bare klikk.",
 "A callout needs an anchor point it points at": "En tekstboble trenger et ankerpunkt som den peker på",
 "{0} must be a list, not {1}; nothing was changed": "{0} må være en liste, ikke {1}; ingenting ble endret",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Bruk add (ikke create) for ny tekst og nye bilder; nøklene er add, update, arrange, comments og remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Bruk add (ikke create) for ny tekst og nye bilder; nøklene er add, update, arrange, comments og remove",
+"There is no picture {0}; the document has {1}": "Det finnes ikke noe bilde {0}; dokumentet har {1}",
+"A {0} block needs ref, refs or text": "En {0}-blokk trenger ref, refs eller text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Blokkene passer ikke innenfor sidegrensen ({0}) selv ved {1} pt; utelat noen eller tillat flere sider",
+"There is no block b{0}; the document has b1 to b{1}": "Det finnes ingen blokk b{0}; dokumentet har b1 til b{1}",
+"Each block is an object with a kind": "Hver blokk er et objekt med en kind",
+"A {0} block needs items": "En {0}-blokk trenger elementer",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} er verken en blokk-ID som b4 eller et område som b4-b9 (les dem med handlingen blocks)"
 };

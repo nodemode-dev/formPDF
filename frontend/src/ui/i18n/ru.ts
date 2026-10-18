@@ -2319,5 +2319,12 @@ export const ru: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Нажмите там, куда должна указывать стрелка, и перетащите к месту текста или просто щёлкните.",
 "A callout needs an anchor point it points at": "Для выноски нужна точка привязки, на которую она указывает",
 "{0} must be a list, not {1}; nothing was changed": "{0} должно быть списком, а не {1}; ничего не изменено",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Для нового текста и изображений используйте add (не create); ключи: add, update, arrange, comments и remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Для нового текста и изображений используйте add (не create); ключи: add, update, arrange, comments и remove",
+"There is no picture {0}; the document has {1}": "Изображения {0} нет; в документе их {1}",
+"A {0} block needs ref, refs or text": "Блоку {0} нужен ref, refs или text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Блоки не помещаются в лимит страниц ({0}) даже при {1} pt; уберите часть блоков или разрешите больше страниц",
+"There is no block b{0}; the document has b1 to b{1}": "Блока b{0} нет; в документе блоки от b1 до b{1}",
+"Each block is an object with a kind": "Каждый блок является объектом с полем kind",
+"A {0} block needs items": "Блоку {0} нужны элементы",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} не является ни идентификатором блока вида b4, ни диапазоном вида b4-b9 (получите их действием blocks)"
 };

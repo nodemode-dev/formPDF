@@ -2319,5 +2319,12 @@ export const uk: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Натисніть там, куди має вказувати стрілка, і перетягніть до місця тексту або просто клацніть.",
 "A callout needs an anchor point it points at": "Для виноски потрібна точка прив'язки, на яку вона вказує",
 "{0} must be a list, not {1}; nothing was changed": "{0} має бути списком, а не {1}; нічого не змінено",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Для нового тексту й зображень використовуйте add (не create); ключі: add, update, arrange, comments і remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Для нового тексту й зображень використовуйте add (не create); ключі: add, update, arrange, comments і remove",
+"There is no picture {0}; the document has {1}": "Зображення {0} немає; у документі їх {1}",
+"A {0} block needs ref, refs or text": "Блоку {0} потрібен ref, refs або text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Блоки не вміщуються в ліміт сторінок ({0}) навіть при {1} pt; приберіть частину блоків або дозвольте більше сторінок",
+"There is no block b{0}; the document has b1 to b{1}": "Блока b{0} немає; у документі блоки від b1 до b{1}",
+"Each block is an object with a kind": "Кожен блок є об'єктом із полем kind",
+"A {0} block needs items": "Блоку {0} потрібні елементи",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} не є ні ідентифікатором блока на кшталт b4, ні діапазоном на кшталт b4-b9 (отримайте їх дією blocks)"
 };

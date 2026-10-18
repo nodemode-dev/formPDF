@@ -2319,5 +2319,12 @@ export const fi: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Paina kohtaa, johon nuoli osoittaa, ja vedä paikkaan, johon teksti tulee, tai napsauta vain.",
 "A callout needs an anchor point it points at": "Selite tarvitsee ankkuripisteen, johon se osoittaa",
 "{0} must be a list, not {1}; nothing was changed": "{0}:n on oltava luettelo, ei {1}; mitään ei muutettu",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Käytä uudelle tekstille ja kuville avainta add (ei create); avaimet ovat add, update, arrange, comments ja remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Käytä uudelle tekstille ja kuville avainta add (ei create); avaimet ovat add, update, arrange, comments ja remove",
+"There is no picture {0}; the document has {1}": "Kuvaa {0} ei ole; asiakirjassa on {1}",
+"A {0} block needs ref, refs or text": "{0}-lohko tarvitsee ref, refs tai text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Lohkot eivät mahdu sivurajaan ({0}) edes {1} pt:n koolla; jätä joitakin pois tai salli lisää sivuja",
+"There is no block b{0}; the document has b1 to b{1}": "Lohkoa b{0} ei ole; asiakirjassa on lohkot b1:stä b{1}:een",
+"Each block is an object with a kind": "Jokainen lohko on objekti, jolla on kind",
+"A {0} block needs items": "{0}-lohko tarvitsee kohteita",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} ei ole lohkotunnus kuten b4 eikä väli kuten b4-b9 (lue ne blocks-toiminnolla)"
 };

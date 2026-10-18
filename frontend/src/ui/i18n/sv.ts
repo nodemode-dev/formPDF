@@ -2319,5 +2319,12 @@ export const sv: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Tryck där pilen ska peka och dra till där texten ska vara, eller klicka bara.",
 "A callout needs an anchor point it points at": "En pratbubbla behöver en ankarpunkt som den pekar på",
 "{0} must be a list, not {1}; nothing was changed": "{0} måste vara en lista, inte {1}; ingenting ändrades",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Använd add (inte create) för ny text och nya bilder; nycklarna är add, update, arrange, comments och remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Använd add (inte create) för ny text och nya bilder; nycklarna är add, update, arrange, comments och remove",
+"There is no picture {0}; the document has {1}": "Det finns ingen bild {0}; dokumentet har {1}",
+"A {0} block needs ref, refs or text": "Ett {0}-block behöver ref, refs eller text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Blocken ryms inte inom sidgränsen ({0}) ens vid {1} pt; utelämna några eller tillåt fler sidor",
+"There is no block b{0}; the document has b1 to b{1}": "Det finns inget block b{0}; dokumentet har b1 till b{1}",
+"Each block is an object with a kind": "Varje block är ett objekt med en kind",
+"A {0} block needs items": "Ett {0}-block behöver poster",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} är varken ett block-id som b4 eller ett intervall som b4-b9 (läs dem med åtgärden blocks)"
 };

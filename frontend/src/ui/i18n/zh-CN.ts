@@ -2319,5 +2319,12 @@ export const zhCN: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "在箭头所指位置按下，并拖到文本放置的位置，也可以直接单击。",
 "A callout needs an anchor point it points at": "标注需要一个所指向的锚点",
 "{0} must be a list, not {1}; nothing was changed": "{0} 必须是列表，而不是 {1}；未做任何更改",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新增文本和图片请使用 add（不要用 create）；可用的键为 add、update、arrange、comments 和 remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新增文本和图片请使用 add（不要用 create）；可用的键为 add、update、arrange、comments 和 remove",
+"There is no picture {0}; the document has {1}": "没有图片 {0}；文档共有 {1} 张",
+"A {0} block needs ref, refs or text": "{0} 块需要 ref、refs 或 text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "即使使用 {1} pt，这些块也无法放入页数上限（{0}）；请省略部分块或允许更多页",
+"There is no block b{0}; the document has b1 to b{1}": "没有块 b{0}；文档包含 b1 到 b{1}",
+"Each block is an object with a kind": "每个块都是带有 kind 的对象",
+"A {0} block needs items": "{0} 块需要项目",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} 不是 b4 这样的块 ID，也不是 b4-b9 这样的范围（请用 blocks 操作读取）"
 };

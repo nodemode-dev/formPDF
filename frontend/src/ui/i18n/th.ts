@@ -2319,5 +2319,12 @@ export const th: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "กดที่ตำแหน่งที่ลูกศรชี้ แล้วลากไปยังตำแหน่งที่จะวางข้อความ หรือคลิกเพียงครั้งเดียว",
 "A callout needs an anchor point it points at": "คำบรรยายชี้ต้องมีจุดยึดที่ชี้ไปหา",
 "{0} must be a list, not {1}; nothing was changed": "{0} ต้องเป็นรายการ ไม่ใช่ {1}; ไม่มีการเปลี่ยนแปลงใดๆ",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "ใช้ add (ไม่ใช่ create) สำหรับข้อความและรูปภาพใหม่ คีย์ที่ใช้ได้คือ add, update, arrange, comments และ remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "ใช้ add (ไม่ใช่ create) สำหรับข้อความและรูปภาพใหม่ คีย์ที่ใช้ได้คือ add, update, arrange, comments และ remove",
+"There is no picture {0}; the document has {1}": "ไม่มีรูปภาพ {0}; เอกสารมี {1} รูป",
+"A {0} block needs ref, refs or text": "บล็อก {0} ต้องมี ref, refs หรือ text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "บล็อกไม่พอดีกับขีดจำกัดของหน้า ({0}) แม้ที่ {1} pt; ให้ตัดบางบล็อกออกหรืออนุญาตให้มีหลายหน้ามากขึ้น",
+"There is no block b{0}; the document has b1 to b{1}": "ไม่มีบล็อก b{0}; เอกสารมีตั้งแต่ b1 ถึง b{1}",
+"Each block is an object with a kind": "แต่ละบล็อกเป็นออบเจ็กต์ที่มี kind",
+"A {0} block needs items": "บล็อก {0} ต้องมีรายการ",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} ไม่ใช่รหัสบล็อกเช่น b4 หรือช่วงเช่น b4-b9 (อ่านได้ด้วยการดำเนินการ blocks)"
 };

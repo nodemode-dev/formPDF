@@ -2319,5 +2319,12 @@ export const nl: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Druk op de plek waar de pijl naartoe wijst en sleep naar de plek van de tekst, of klik gewoon.",
 "A callout needs an anchor point it points at": "Een tekstballon heeft een verankeringspunt nodig waarnaar hij wijst",
 "{0} must be a list, not {1}; nothing was changed": "{0} moet een lijst zijn, geen {1}; er is niets gewijzigd",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Gebruik add (niet create) voor nieuwe tekst en afbeeldingen; de sleutels zijn add, update, arrange, comments en remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Gebruik add (niet create) voor nieuwe tekst en afbeeldingen; de sleutels zijn add, update, arrange, comments en remove",
+"There is no picture {0}; the document has {1}": "Er is geen afbeelding {0}; het document heeft er {1}",
+"A {0} block needs ref, refs or text": "Een {0}-blok heeft ref, refs of text nodig",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "De blokken passen niet binnen de paginalimiet ({0}), zelfs niet bij {1} pt; laat er enkele weg of sta meer pagina's toe",
+"There is no block b{0}; the document has b1 to b{1}": "Er is geen blok b{0}; het document heeft b1 tot b{1}",
+"Each block is an object with a kind": "Elk blok is een object met een kind",
+"A {0} block needs items": "Een {0}-blok heeft elementen nodig",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} is geen blok-id zoals b4 of een bereik zoals b4-b9 (lees ze met de actie blocks)"
 };

@@ -2319,5 +2319,12 @@ export const ja: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "矢印が指す位置を押し、テキストを置く位置までドラッグします。クリックだけでも配置できます。",
 "A callout needs an anchor point it points at": "吹き出しには、指し示す基点が必要です",
 "{0} must be a list, not {1}; nothing was changed": "{0}はリストにする必要があり、{1}は使えません。何も変更されていません",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新しいテキストや画像には create ではなく add を使います。キーは add、update、arrange、comments、remove です"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新しいテキストや画像には create ではなく add を使います。キーは add、update、arrange、comments、remove です",
+"There is no picture {0}; the document has {1}": "画像 {0} はありません。ドキュメントには {1} 個あります",
+"A {0} block needs ref, refs or text": "{0} ブロックには ref、refs、text のいずれかが必要です",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "{1} pt にしてもブロックがページ上限（{0}）に収まりません。一部を省くか、ページ数を増やしてください",
+"There is no block b{0}; the document has b1 to b{1}": "ブロック b{0} はありません。ドキュメントには b1 から b{1} まであります",
+"Each block is an object with a kind": "各ブロックは kind を持つオブジェクトです",
+"A {0} block needs items": "{0} ブロックには項目が必要です",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} は b4 のようなブロック ID でも b4-b9 のような範囲でもありません（blocks アクションで確認できます）"
 };

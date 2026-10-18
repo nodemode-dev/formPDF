@@ -2319,5 +2319,12 @@ export const da: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Tryk dér, hvor pilen skal pege, og træk derhen, hvor teksten skal være, eller klik blot.",
 "A callout needs an anchor point it points at": "En tekstboble skal have et ankerpunkt, som den peger på",
 "{0} must be a list, not {1}; nothing was changed": "{0} skal være en liste, ikke {1}; intet blev ændret",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Brug add (ikke create) til ny tekst og nye billeder; nøglerne er add, update, arrange, comments og remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Brug add (ikke create) til ny tekst og nye billeder; nøglerne er add, update, arrange, comments og remove",
+"There is no picture {0}; the document has {1}": "Der findes intet billede {0}; dokumentet har {1}",
+"A {0} block needs ref, refs or text": "En {0}-blok kræver ref, refs eller text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Blokkene passer ikke inden for sidegrænsen ({0}) selv ved {1} pt; udelad nogle, eller tillad flere sider",
+"There is no block b{0}; the document has b1 to b{1}": "Der findes ingen blok b{0}; dokumentet har b1 til b{1}",
+"Each block is an object with a kind": "Hver blok er et objekt med en kind",
+"A {0} block needs items": "En {0}-blok kræver elementer",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} er hverken et blok-id som b4 eller et interval som b4-b9 (læs dem med handlingen blocks)"
 };

@@ -2319,5 +2319,12 @@ export const zhTW: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "在箭頭所指的位置按住，並拖曳到文字放置的位置，也可以直接按一下。",
 "A callout needs an anchor point it points at": "標註需要一個所指向的錨點",
 "{0} must be a list, not {1}; nothing was changed": "{0} 必須是清單，而不是 {1}；未做任何變更",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新增文字和圖片請使用 add（不要用 create）；可用的鍵為 add、update、arrange、comments 和 remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "新增文字和圖片請使用 add（不要用 create）；可用的鍵為 add、update、arrange、comments 和 remove",
+"There is no picture {0}; the document has {1}": "沒有圖片 {0}；文件共有 {1} 張",
+"A {0} block needs ref, refs or text": "{0} 區塊需要 ref、refs 或 text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "即使使用 {1} pt，這些區塊也無法放入頁數上限（{0}）；請省略部分區塊或允許更多頁面",
+"There is no block b{0}; the document has b1 to b{1}": "沒有區塊 b{0}；文件包含 b1 到 b{1}",
+"Each block is an object with a kind": "每個區塊都是具有 kind 的物件",
+"A {0} block needs items": "{0} 區塊需要項目",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} 不是 b4 這樣的區塊 ID，也不是 b4-b9 這樣的範圍（請用 blocks 操作讀取）"
 };

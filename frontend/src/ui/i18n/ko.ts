@@ -2319,5 +2319,12 @@ export const ko: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "화살표가 가리킬 위치를 누른 채 텍스트를 놓을 위치까지 드래그하거나, 그냥 클릭하세요.",
 "A callout needs an anchor point it points at": "설명선에는 가리킬 기준점이 필요합니다",
 "{0} must be a list, not {1}; nothing was changed": "{0}은(는) {1}이(가) 아니라 목록이어야 합니다. 변경된 내용은 없습니다",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "새 텍스트와 이미지에는 create가 아니라 add를 사용하세요. 키는 add, update, arrange, comments, remove입니다"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "새 텍스트와 이미지에는 create가 아니라 add를 사용하세요. 키는 add, update, arrange, comments, remove입니다",
+"There is no picture {0}; the document has {1}": "그림 {0}이(가) 없습니다. 문서에는 {1}개가 있습니다",
+"A {0} block needs ref, refs or text": "{0} 블록에는 ref, refs 또는 text가 필요합니다",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "{1} pt로 해도 블록이 페이지 제한({0})에 맞지 않습니다. 일부를 빼거나 페이지를 더 허용하세요",
+"There is no block b{0}; the document has b1 to b{1}": "블록 b{0}이(가) 없습니다. 문서에는 b1부터 b{1}까지 있습니다",
+"Each block is an object with a kind": "각 블록은 kind가 있는 객체입니다",
+"A {0} block needs items": "{0} 블록에는 항목이 필요합니다",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0}은(는) b4 같은 블록 ID도, b4-b9 같은 범위도 아닙니다(blocks 동작으로 확인하세요)"
 };

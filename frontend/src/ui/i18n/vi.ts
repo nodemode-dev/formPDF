@@ -2319,5 +2319,12 @@ export const vi: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Nhấn vào nơi mũi tên chỉ tới rồi kéo đến vị trí đặt văn bản, hoặc chỉ cần nhấp.",
 "A callout needs an anchor point it points at": "Chú thích cần có một điểm neo để chỉ tới",
 "{0} must be a list, not {1}; nothing was changed": "{0} phải là một danh sách, không phải {1}; chưa có gì bị thay đổi",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Dùng add (không dùng create) cho văn bản và hình ảnh mới; các khóa là add, update, arrange, comments và remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Dùng add (không dùng create) cho văn bản và hình ảnh mới; các khóa là add, update, arrange, comments và remove",
+"There is no picture {0}; the document has {1}": "Không có hình ảnh {0}; tài liệu có {1}",
+"A {0} block needs ref, refs or text": "Khối {0} cần ref, refs hoặc text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "Các khối không vừa trong giới hạn trang ({0}) ngay cả ở {1} pt; hãy bỏ bớt một số khối hoặc cho phép thêm trang",
+"There is no block b{0}; the document has b1 to b{1}": "Không có khối b{0}; tài liệu có từ b1 đến b{1}",
+"Each block is an object with a kind": "Mỗi khối là một đối tượng có kind",
+"A {0} block needs items": "Khối {0} cần các mục",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} không phải là mã khối như b4 hay một phạm vi như b4-b9 (đọc chúng bằng hành động blocks)"
 };

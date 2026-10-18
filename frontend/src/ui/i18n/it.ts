@@ -2319,5 +2319,12 @@ export const it: Record<string, string> = {
 "Press where the arrow points and drag to where the text goes, or just click.": "Premi dove deve puntare la freccia e trascina fino a dove andrà il testo, oppure fai semplicemente clic.",
 "A callout needs an anchor point it points at": "Un callout richiede un punto di ancoraggio a cui puntare",
 "{0} must be a list, not {1}; nothing was changed": "{0} deve essere un elenco, non {1}; non è stato modificato nulla",
-"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Usa add (non create) per nuovo testo e nuove immagini; le chiavi sono add, update, arrange, comments e remove"
+"Use add (not create) for new text and pictures; the keys are add, update, arrange, comments and remove": "Usa add (non create) per nuovo testo e nuove immagini; le chiavi sono add, update, arrange, comments e remove",
+"There is no picture {0}; the document has {1}": "Non esiste l'immagine {0}; il documento ne ha {1}",
+"A {0} block needs ref, refs or text": "Un blocco {0} richiede ref, refs o text",
+"The blocks do not fit within the page limit ({0}) even at {1} pt; leave some out or allow more pages": "I blocchi non rientrano nel limite di pagine ({0}) nemmeno a {1} pt; ometti alcuni blocchi o consenti più pagine",
+"There is no block b{0}; the document has b1 to b{1}": "Non esiste il blocco b{0}; il documento va da b1 a b{1}",
+"Each block is an object with a kind": "Ogni blocco è un oggetto con un kind",
+"A {0} block needs items": "Un blocco {0} richiede degli elementi",
+"{0} is not a block id like b4 or a range like b4-b9 (read them with the blocks action)": "{0} non è un id di blocco come b4 né un intervallo come b4-b9 (leggili con l'azione blocks)"
 };
