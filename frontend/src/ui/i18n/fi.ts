@@ -2351,5 +2351,11 @@ export const fi: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} ei ole zip-tiedosto, jonka formpdf osaa lukea",
 "{0} pages": "{0} sivua",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} on purettuna yli 1 Gt; pura se ensin",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Avaa PDF luettavaksi muokkaustyökalut piilotettuina",
+"Show the editing tools again": "Näytä muokkaustyökalut uudelleen",
+"View PDF": "Näytä PDF",
+"View only": "Vain katselu",
+"View only: hide the editing tools": "Vain katselu: piilota muokkaustyökalut",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Katselutila. Valitse teksti kopioidaksesi sen, hae painamalla Ctrl tai Cmd+F. Muokkaa näyttää työkalut uudelleen."
 };

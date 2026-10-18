@@ -2351,5 +2351,11 @@ export const fr: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} n'est pas un fichier zip que formpdf peut lire",
 "{0} pages": "{0} pages",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} dépasse 1 Go une fois décompressé ; décompressez-le d'abord",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Ouvrir un PDF pour le lire, avec les outils de modification masqués",
+"Show the editing tools again": "Réafficher les outils de modification",
+"View PDF": "Afficher le PDF",
+"View only": "Lecture seule",
+"View only: hide the editing tools": "Lecture seule : masquer les outils de modification",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Lecture en cours. Sélectionnez du texte pour le copier, Ctrl ou Cmd+F pour rechercher. Modifier réaffiche les outils."
 };

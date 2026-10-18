@@ -2351,5 +2351,11 @@ export const ko: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0}은(는) formpdf에서 읽을 수 있는 zip 파일이 아닙니다",
 "{0} pages": "{0}페이지",
 "{0} unpacks to more than 1 GB; unzip it first": "{0}은(는) 압축을 풀면 1GB를 넘습니다. 먼저 압축을 푸세요",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "편집 도구를 숨기고 PDF를 열어 읽습니다",
+"Show the editing tools again": "편집 도구 다시 표시",
+"View PDF": "PDF 보기",
+"View only": "보기 전용",
+"View only: hide the editing tools": "보기 전용: 편집 도구 숨기기",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "보는 중입니다. 텍스트를 선택해 복사하고, Ctrl 또는 Cmd+F로 찾으세요. 편집을 누르면 도구가 다시 표시됩니다."
 };

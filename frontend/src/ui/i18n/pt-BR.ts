@@ -2351,5 +2351,11 @@ export const ptBR: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} não é um arquivo zip que o formpdf consegue ler",
 "{0} pages": "{0} páginas",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} ultrapassa 1 GB depois de descompactado; descompacte-o primeiro",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Abra um PDF para ler, com as ferramentas de edição ocultas",
+"Show the editing tools again": "Mostrar as ferramentas de edição novamente",
+"View PDF": "Ver PDF",
+"View only": "Somente visualização",
+"View only: hide the editing tools": "Somente visualização: ocultar as ferramentas de edição",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Visualizando. Selecione o texto para copiá-lo, Ctrl ou Cmd+F para localizar. Editar mostra as ferramentas novamente."
 };

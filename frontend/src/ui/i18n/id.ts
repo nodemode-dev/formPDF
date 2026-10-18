@@ -2351,5 +2351,11 @@ export const id: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} bukan file zip yang dapat dibaca formpdf",
 "{0} pages": "{0} halaman",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} berukuran lebih dari 1 GB setelah diekstrak; ekstrak dulu",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Buka PDF untuk dibaca, dengan alat pengeditan disembunyikan",
+"Show the editing tools again": "Tampilkan alat pengeditan lagi",
+"View PDF": "Lihat PDF",
+"View only": "Hanya lihat",
+"View only: hide the editing tools": "Hanya lihat: sembunyikan alat pengeditan",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Mode lihat. Pilih teks untuk menyalinnya, Ctrl atau Cmd+F untuk mencari. Edit menampilkan alat lagi."
 };

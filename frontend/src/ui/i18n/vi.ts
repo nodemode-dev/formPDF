@@ -2351,5 +2351,11 @@ export const vi: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} không phải là tệp zip mà formpdf đọc được",
 "{0} pages": "{0} trang",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} giải nén ra hơn 1 GB; hãy giải nén trước",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Mở PDF để đọc, với các công cụ chỉnh sửa được ẩn",
+"Show the editing tools again": "Hiện lại các công cụ chỉnh sửa",
+"View PDF": "Xem PDF",
+"View only": "Chỉ xem",
+"View only: hide the editing tools": "Chỉ xem: ẩn các công cụ chỉnh sửa",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Đang xem. Chọn văn bản để sao chép, nhấn Ctrl hoặc Cmd+F để tìm. Chỉnh sửa sẽ hiện lại các công cụ."
 };

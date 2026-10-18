@@ -2351,5 +2351,11 @@ export const de: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} ist keine Zip-Datei, die formpdf lesen kann",
 "{0} pages": "{0} Seiten",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} ist entpackt größer als 1 GB; entpacken Sie es zuerst",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Ein PDF zum Lesen öffnen, mit ausgeblendeten Bearbeitungswerkzeugen",
+"Show the editing tools again": "Bearbeitungswerkzeuge wieder einblenden",
+"View PDF": "PDF ansehen",
+"View only": "Nur ansehen",
+"View only: hide the editing tools": "Nur ansehen: Bearbeitungswerkzeuge ausblenden",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Ansichtsmodus. Markieren Sie Text, um ihn zu kopieren; mit Ctrl oder Cmd+F suchen Sie. Bearbeiten blendet die Werkzeuge wieder ein."
 };

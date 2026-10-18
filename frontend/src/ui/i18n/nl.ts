@@ -2351,5 +2351,11 @@ export const nl: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} is geen zip-bestand dat formpdf kan lezen",
 "{0} pages": "{0} pagina's",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} is uitgepakt meer dan 1 GB; pak het eerst uit",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Open een PDF om te lezen, met de bewerkingsgereedschappen verborgen",
+"Show the editing tools again": "Toon de bewerkingsgereedschappen weer",
+"View PDF": "PDF bekijken",
+"View only": "Alleen weergave",
+"View only: hide the editing tools": "Alleen weergave: verberg de bewerkingsgereedschappen",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Weergavemodus. Selecteer tekst om te kopiëren, Ctrl of Cmd+F om te zoeken. Bewerken toont de gereedschappen weer."
 };

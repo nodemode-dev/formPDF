@@ -2351,5 +2351,11 @@ export const zhCN: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} 不是 formpdf 能读取的 zip 文件",
 "{0} pages": "{0} 页",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} 解压后超过 1 GB；请先解压",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "打开 PDF 阅读，并隐藏编辑工具",
+"Show the editing tools again": "重新显示编辑工具",
+"View PDF": "查看 PDF",
+"View only": "仅查看",
+"View only: hide the editing tools": "仅查看：隐藏编辑工具",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "正在查看。选择文本即可复制，按 Ctrl 或 Cmd+F 查找。点击“编辑”可重新显示工具。"
 };

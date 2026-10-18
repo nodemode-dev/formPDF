@@ -2351,5 +2351,11 @@ export const ja: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} は formpdf で読み取れる zip ファイルではありません",
 "{0} pages": "{0} ページ",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} は展開すると 1 GB を超えます。先に展開してください",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "編集ツールを非表示にして、PDF を開いて読みます",
+"Show the editing tools again": "編集ツールを再表示します",
+"View PDF": "PDF を表示",
+"View only": "表示のみ",
+"View only: hide the editing tools": "表示のみ: 編集ツールを非表示にします",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "表示中です。テキストを選択するとコピーでき、Ctrl または Cmd+F で検索できます。「編集」を押すとツールが再表示されます。"
 };

@@ -2351,5 +2351,11 @@ export const tr: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0}, formpdf'un okuyabileceği bir zip dosyası değil",
 "{0} pages": "{0} sayfa",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} arşivden çıkarılınca 1 GB sınırını aşıyor; önce arşivden çıkarın",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Bir PDF'yi okumak için açın, düzenleme araçları gizlenir",
+"Show the editing tools again": "Düzenleme araçlarını yeniden göster",
+"View PDF": "PDF'yi görüntüle",
+"View only": "Salt görüntüleme",
+"View only: hide the editing tools": "Salt görüntüleme: düzenleme araçlarını gizle",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Görüntüleme modu. Kopyalamak için metni seçin, aramak için Ctrl veya Cmd+F kullanın. Düzenle araçları yeniden gösterir."
 };

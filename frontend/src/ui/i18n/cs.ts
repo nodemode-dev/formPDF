@@ -2351,5 +2351,11 @@ export const cs: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} není soubor zip, který formpdf umí přečíst",
 "{0} pages": "{0} stran",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} se rozbalí na více než 1 GB; nejprve jej rozbalte",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Otevřít PDF pro čtení se skrytými nástroji pro úpravy",
+"Show the editing tools again": "Znovu zobrazit nástroje pro úpravy",
+"View PDF": "Zobrazit PDF",
+"View only": "Pouze zobrazení",
+"View only: hide the editing tools": "Pouze zobrazení: skrýt nástroje pro úpravy",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Prohlížení. Vyberte text a zkopírujte jej, hledat můžete pomocí Ctrl nebo Cmd+F. Úpravy znovu zobrazí nástroje."
 };

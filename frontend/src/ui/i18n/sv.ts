@@ -2351,5 +2351,11 @@ export const sv: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} är inte en zip-fil som formpdf kan läsa",
 "{0} pages": "{0} sidor",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} blir större än 1 GB när det packas upp; packa upp det först",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Öppna en PDF för att läsa den, med redigeringsverktygen dolda",
+"Show the editing tools again": "Visa redigeringsverktygen igen",
+"View PDF": "Visa PDF",
+"View only": "Endast visning",
+"View only: hide the editing tools": "Endast visning: dölj redigeringsverktygen",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Visning. Markera text för att kopiera den, Ctrl eller Cmd+F för att söka. Redigera visar verktygen igen."
 };

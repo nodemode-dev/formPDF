@@ -2351,5 +2351,11 @@ export const uk: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} не є zip-файлом, який formpdf може прочитати",
 "{0} pages": "Сторінок: {0}",
 "{0} unpacks to more than 1 GB; unzip it first": "Після розпакування {0} перевищить 1 ГБ; спершу розпакуйте архів",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "Відкрити PDF для читання, приховавши інструменти редагування",
+"Show the editing tools again": "Знову показати інструменти редагування",
+"View PDF": "Перегляд PDF",
+"View only": "Лише перегляд",
+"View only: hide the editing tools": "Лише перегляд: приховати інструменти редагування",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Режим перегляду. Виділіть текст, щоб скопіювати його, Ctrl або Cmd+F для пошуку. Правка знову показує інструменти."
 };

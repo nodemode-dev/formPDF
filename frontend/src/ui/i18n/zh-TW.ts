@@ -2351,5 +2351,11 @@ export const zhTW: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} 不是 formpdf 可讀取的 zip 檔案",
 "{0} pages": "{0} 頁",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} 解壓縮後超過 1 GB；請先解壓縮",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "開啟 PDF 閱讀，並隱藏編輯工具",
+"Show the editing tools again": "重新顯示編輯工具",
+"View PDF": "檢視 PDF",
+"View only": "僅檢視",
+"View only: hide the editing tools": "僅檢視：隱藏編輯工具",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "檢視中。選取文字即可複製，按 Ctrl 或 Cmd+F 尋找。點選「編輯」可重新顯示工具。"
 };

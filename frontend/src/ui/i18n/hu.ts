@@ -2351,5 +2351,11 @@ export const hu: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "A(z) {0} nem olyan zip-fájl, amelyet a formpdf el tud olvasni",
 "{0} pages": "{0} oldal",
 "{0} unpacks to more than 1 GB; unzip it first": "A(z) {0} kicsomagolva több mint 1 GB; először csomagolja ki",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "PDF megnyitása olvasásra, a szerkesztőeszközök elrejtésével",
+"Show the editing tools again": "A szerkesztőeszközök újbóli megjelenítése",
+"View PDF": "PDF megtekintése",
+"View only": "Csak megtekintés",
+"View only: hide the editing tools": "Csak megtekintés: a szerkesztőeszközök elrejtése",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "Megtekintés. Jelölje ki a szöveget a másoláshoz, kereséshez Ctrl vagy Cmd+F. A Szerkesztés újra megjeleníti az eszközöket."
 };

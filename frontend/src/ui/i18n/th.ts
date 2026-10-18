@@ -2351,5 +2351,11 @@ export const th: Record<string, string> = {
 "{0} is not a zip file formpdf can read": "{0} ไม่ใช่ไฟล์ zip ที่ formpdf อ่านได้",
 "{0} pages": "{0} หน้า",
 "{0} unpacks to more than 1 GB; unzip it first": "{0} มีขนาดเกิน 1 GB เมื่อแตกไฟล์ โปรดแตกไฟล์ก่อน",
-"Math.abs(x - a)": "Math.abs(x - a)"
+"Math.abs(x - a)": "Math.abs(x - a)",
+"Open a PDF to read it, with the editing tools hidden": "เปิด PDF เพื่ออ่านโดยซ่อนเครื่องมือแก้ไข",
+"Show the editing tools again": "แสดงเครื่องมือแก้ไขอีกครั้ง",
+"View PDF": "ดู PDF",
+"View only": "ดูอย่างเดียว",
+"View only: hide the editing tools": "ดูอย่างเดียว: ซ่อนเครื่องมือแก้ไข",
+"Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.": "กำลังดู เลือกข้อความเพื่อคัดลอก กด Ctrl หรือ Cmd+F เพื่อค้นหา แก้ไขจะแสดงเครื่องมืออีกครั้ง"
 };
