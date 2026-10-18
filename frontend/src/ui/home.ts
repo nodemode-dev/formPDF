@@ -7,6 +7,7 @@ import { toast } from './toast';
 
 export interface HomeHooks {
   openFiles(files: File[]): void;
+  viewFiles(files: File[]): void;
   openPath(): void;
   openRecent(id: string): void;
   create(kind: 'pictures' | 'files', files?: File[]): void;
@@ -55,7 +56,7 @@ export class Home {
 <div class="fs-home-hero-text"><div class="fs-home-hero-title">Open a PDF</div>
 <div class="fs-home-hero-sub">Drop a PDF here, or pictures or Office files to make one. View and read aloud, search and compare, comment and stamp, fill, sign and build forms, organize, split and merge, add headers, footers and Bates numbers, find and redact, protect, compress, and export to Word or PowerPoint.</div>
 <div class="fs-home-formats"><span class="fs-home-format">PDF</span><span class="fs-home-format">PNG</span><span class="fs-home-format">JPG</span><span class="fs-home-format">GIF</span><span class="fs-home-format">WEBP</span><span class="fs-home-format">TIFF</span><span class="fs-home-format">DOCX</span><span class="fs-home-format">PPTX</span><span class="fs-home-format">XLSX</span></div></div>
-<div class="fs-home-hero-actions"><button class="fs-btn fs-btn-primary" type="button" data-a="open">${icon('folderOpen', 14)}Open PDF</button><button class="fs-btn" type="button" data-a="pictures">${icon('fileImage', 14)}Create from pictures</button><button class="fs-btn fs-btn-ghost" type="button" data-a="agents">${icon('agent', 14)}Use your agent</button></div>
+<div class="fs-home-hero-actions"><button class="fs-btn fs-btn-primary" type="button" data-a="open">${icon('folderOpen', 14)}Open PDF</button><button class="fs-btn" type="button" data-a="view" title="Open a PDF to read it, with the editing tools hidden">${icon('eye', 14)}View PDF</button><button class="fs-btn" type="button" data-a="pictures">${icon('fileImage', 14)}Create from pictures</button><button class="fs-btn fs-btn-ghost" type="button" data-a="agents">${icon('agent', 14)}Use your agent</button></div>
 </div>
 <section class="fs-home-section"><div class="fs-home-section-head"><h2 class="fs-home-section-title">Recent PDFs</h2><button class="fs-btn fs-btn-ghost fs-btn-sm" type="button" data-v="recent">See all</button></div><div class="fs-card-grid fs-home-recent">${skeleton}${empty}</div></section>
 </div>
@@ -80,6 +81,7 @@ export class Home {
       }
       const a = (t.closest('[data-a]') as HTMLElement | null)?.dataset.a;
       if (a === 'open') this.pick();
+      else if (a === 'view') this.pick(true);
       else if (a === 'path') this.hooks.openPath();
       else if (a === 'pictures') this.hooks.create('pictures');
       else if (a === 'merge') this.hooks.create('files');
@@ -103,7 +105,7 @@ export class Home {
     });
   }
 
-  private async dropped(given: File[]): Promise<void> {
+  async dropped(given: File[]): Promise<void> {
     let all = given;
     try {
       all = await expandZips(given);
@@ -122,11 +124,11 @@ export class Home {
     }
   }
 
-  private pick(): void {
+  private pick(view = false): void {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.pdf,application/pdf';
-    input.onchange = () => { const files = Array.from(input.files ?? []); if (files.length) this.hooks.openFiles(files); };
+    input.onchange = () => { const files = Array.from(input.files ?? []); if (files.length) (view ? this.hooks.viewFiles : this.hooks.openFiles)(files); };
     input.click();
   }
 

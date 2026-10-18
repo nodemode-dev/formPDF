@@ -96,6 +96,7 @@ export async function startApp(): Promise<void> {
 
   const home = new Home({
     openFiles: (files) => { if (files[0]) open({ file: files[0] }); },
+    viewFiles: (files) => { if (files[0]) { bench.setViewer(true); open({ file: files[0] }); } },
     openPath: () => void promptName('Open a PDF by path', '', 'Open').then((p) => { if (p) open({ path: p }); }),
     openRecent: (id) => open({ recent: id }),
     create: (kind, files) => open({ create: kind, files }),
@@ -125,6 +126,16 @@ export async function startApp(): Promise<void> {
     else if (combo === 'Mod+/') { e.preventDefault(); shortcutsDialog(bench.commands); }
     else if (combo === 'Mod+,') { e.preventDefault(); hooks.preferences(); }
     else if (combo === 'Mod+K') { e.preventDefault(); palette.show(); }
+  });
+
+  window.addEventListener('dragover', (e) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); });
+  window.addEventListener('drop', (e) => {
+    if (e.defaultPrevented || !e.dataTransfer?.files.length) return;
+    e.preventDefault();
+    if (anyDialogOpen()) return;
+    const files = Array.from(e.dataTransfer.files);
+    if (bench.isOpen) void bench.dropped(files);
+    else void home.dropped(files);
   });
 
   const openPaths = (paths: string[]): void => { const p = paths.find((x) => /\.pdf$/i.test(x)); if (p) open({ path: p }); };

@@ -179,6 +179,7 @@ fn main() {
                             .inner_size(width, height)
                             .min_inner_size(MIN_LOGICAL.0, MIN_LOGICAL.1)
                             .center()
+                            .disable_drag_drop_handler()
                             .build();
                         close_splash(&handle);
                         check_for_updates(handle.clone());
