@@ -439,6 +439,15 @@
 .fs-pdfwb-hidrow.is-none { opacity: 0.5; }
 
 .fs-pdfwb-create .fs-dialog-body { display: flex; flex-direction: column; gap: var(--space-3); }
+.fs-dialog.fs-preview { height: calc(100vh - 64px); }
+.fs-preview .fs-dialog-body { padding: 0; overflow: hidden; }
+.fs-preview-pages { display: flex; flex-direction: column; align-items: center; gap: var(--space-6); height: 100%; padding: var(--space-5) var(--space-4) var(--space-7); overflow: auto; overscroll-behavior: contain; background: var(--surface-0); outline: 0; }
+.fs-preview-page { position: relative; flex: none; width: min(100%, 880px); aspect-ratio: var(--w) / var(--h); background: #fff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45); }
+.fs-preview-pages.is-actual .fs-preview-page { width: calc(var(--w) * 1.3333px); }
+.fs-preview-page canvas { display: block; width: 100%; height: 100%; }
+.fs-preview-no { position: absolute; left: 50%; bottom: calc(var(--space-5) * -1); transform: translateX(-50%); color: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.fs-preview .fs-dialog-foot { align-items: center; }
+.fs-preview-info { margin-right: auto; }
 .fs-pdfwb-cbody { display: flex; flex-direction: column; gap: var(--space-3); }
 .fs-pdfwb-cbody .fs-note { margin: 0; }
 .fs-pdfwb-cmode { align-self: flex-start; width: 300px; }

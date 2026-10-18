@@ -7,9 +7,11 @@ import { MenuBar, PopupMenu, type MenuDef } from '../ui/menu';
 import { toast } from '../ui/toast';
 import { tf } from '../ui/i18n';
 import { Annotator, DRAW_TOOLS, MARKUP_TOOLS, type Tool } from './annotate';
-import { deliver, isTauri, pdfApi, type Annot, type Derived, type NewFieldType, type Opened, type PdfInfo, type RecentItem } from './api';
+import { chooseSave, deliver, isTauri, pdfApi, Quiet, writeTo, type SaveTarget, type Annot, type Derived, type NewFieldType, type Opened, type PdfInfo, type RecentItem } from './api';
 import { Comparer, ComparePanel } from './compare';
 import { askCreate } from './create';
+import { showPreview } from './preview';
+import { expandZips, isZip } from './unzip';
 import { askScan } from './scan';
 import { Fields } from './fill';
 import { Finder } from './find';
@@ -159,6 +161,7 @@ class Workbench {
   private history: State[] = [];
   private hi = -1;
   private savedId = '';
+  private saveTo: { key: string; target: SaveTarget } | null = null;
   private tab: Tab = 'view';
   private passwords = new Map<string, string>();
   private busy = 0;
@@ -250,6 +253,8 @@ class Workbench {
       { id: 'pdf-reading', label: 'Reading mode', checked: () => this.reading, enabled: () => !!this.doc, run: () => this.setReading(!this.reading) },
       { id: 'pdf-home', label: 'Home', keys: ['Alt+Mod+H'], run: () => this.close() },
       { id: 'pdf-save', label: 'Save', keys: ['Mod+S'], enabled: () => !!this.doc, run: () => void this.save() },
+      { id: 'pdf-save-as', label: 'Save As…', keys: ['Shift+Mod+S'], enabled: () => !!this.doc, run: () => void this.save(true) },
+      { id: 'pdf-preview', label: 'Preview', keys: ['Alt+Mod+P'], enabled: () => !!this.doc, run: () => void this.preview() },
       { id: 'pdf-print', label: 'Print…', keys: ['Mod+P'], enabled: () => !!this.doc, run: () => void this.print() },
       { id: 'pdf-close', label: 'Close PDF', enabled: () => !!this.doc, run: () => this.close() },
       { id: 'pdf-undo', label: () => (this.history[this.hi - 1] ? `Undo ${this.history[this.hi].label}` : 'Undo'), keys: ['Mod+Z'], enabled: () => this.hi > 0, why: () => (this.doc ? 'Nothing to undo yet' : 'Open a PDF first'), run: () => this.undo() },
@@ -282,7 +287,7 @@ class Workbench {
     lateTools(this.panes.root, this.host, (cmds) => { this.cmds.add(...cmds); syncTools(this.host); });
     void loadPlugins();
     const menus: MenuDef[] = [
-      { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', 'pdf-scan', '-', 'pdf-save', 'pdf-print', '-', 'pdf-close'] },
+      { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', 'pdf-scan', '-', 'pdf-save', 'pdf-save-as', 'pdf-preview', 'pdf-print', '-', 'pdf-close'] },
       { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'tool-content-select', 'tool-add-text', 'tool-add-picture', '-', 'tool-fonts', 'tool-move-to-page', '-', 'pdf-find'] },
       { label: 'View', items: [...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare'] },
       { label: 'Tools', items: [...TABS.map(([t]) => `pdf-tab-${t}`), '-', 'tool-lists', 'tool-lists-record'] },
@@ -571,14 +576,7 @@ class Workbench {
       e.preventDefault();
       e.stopPropagation();
       setHidden(q(r, '.fs-pdfwb-drop'), true);
-      const all = Array.from(e.dataTransfer?.files ?? []);
-      const files = all.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-      const pictures = all.filter((f) => IMAGE_FILE.test(f.name) || (f.type.startsWith('image/') && !f.type.includes('svg')));
-      const office = all.filter((f) => OFFICE_FILE.test(f.name));
-      if (pictures.length || office.length) { void this.startCreate(files.length || office.length ? 'files' : 'pictures', [...files, ...pictures, ...office].sort((a, b) => all.indexOf(a) - all.indexOf(b))); return; }
-      if (!files.length) { toast('Drop a PDF file, or pictures or Office files to make one'); return; }
-      if (this.tab === 'organize' && this.doc) { void this.insertPdfs(files, this.organizer.items.length); return; }
-      void this.guard(() => this.openFile(files[0]));
+      void this.dropped(Array.from(e.dataTransfer?.files ?? []));
     });
     this.viewer.scroller.addEventListener('wheel', (e) => {
       if (!e.ctrlKey && !e.metaKey) return;
@@ -714,6 +712,8 @@ class Workbench {
     switch (combo) {
       case 'Mod+F': return run(() => { if (this.reading) this.setReading(false); this.openFind(); });
       case 'Mod+S': return run(() => void this.save());
+      case 'Shift+Mod+S': return run(() => void this.save(true));
+      case 'Alt+Mod+P': return run(() => void this.preview());
       case 'Mod+P': return run(() => void this.print());
       case 'Mod+O': return run(() => void this.pick(false).then((f) => { if (f[0]) void this.guard(() => this.openFile(f[0])); }));
       case 'Mod+=': case 'Shift+Mod+=': return run(() => (this.reading ? this.textSize(1) : v.zoomStep(1)));
@@ -1260,44 +1260,67 @@ class Workbench {
     }
   }
 
-  private async deliver(data: Blob | string, name: string): Promise<void> {
-    const path = await deliver(data, name);
-    if (path) toast(`Saved to ${path}`);
+  private async deliver(data: Blob | string | (() => Promise<Blob | string>), name: string): Promise<void> {
+    let path: string | null = null;
+    try {
+      path = await deliver(data, name);
+    } catch (err) {
+      if (!(err instanceof Quiet)) toast(err instanceof Error ? err.message : String(err), 'error');
+      return;
+    }
+    if (path) toast(path === name ? `Saved ${name}` : `Saved to ${path}`);
   }
 
-  private async save(): Promise<boolean> {
+  private async save(as = false): Promise<boolean> {
     if (!this.doc) return false;
+    const d = this.doc;
+    const orig = d.info.path ?? '';
+    const dir = orig.replace(/[\\/][^\\/]*$/, '');
+    let target: SaveTarget | null = !as && this.saveTo?.key === d.key ? this.saveTo.target : null;
+    if (!target && !as && isTauri() && orig) target = { kind: 'path', path: orig };
+    if (!target) target = await chooseSave(d.name.toLowerCase().endsWith('.pdf') ? d.name : `${d.name}.pdf`, dir);
+    if (!target) return false;
+    const chosen = target;
     const id = await this.run('Saving', () => this.flush());
     if (!id || !this.doc) return false;
-    const d = this.doc;
-    if (isTauri()) {
-      let info: PdfInfo | null = null;
-      try { info = await pdfApi.info(id); } catch { info = null; }
-      const fallback = `~/Formpdf/Exports/${d.name}`;
-      return new Promise((resolve) => {
-        this.bar({
-          text: 'Save as', tone: 'info',
-          input: { type: 'text', value: info?.savePath || info?.path || fallback },
-          actions: [
-            { label: 'Save', kind: 'primary', run: (path) => {
-              void this.run('Saving', async () => {
-                const res = await pdfApi.save(id, path.trim() || fallback);
-                this.hideBar();
-                this.savedId = id;
-                this.syncChrome();
-                toast(`Saved to ${res.path}`);
-                resolve(true);
-              }).then((v) => { if (v === undefined) resolve(false); });
-            } },
-            { label: 'Cancel', kind: 'ghost', run: () => { this.hideBar(); resolve(false); } },
-          ],
-        });
-      });
-    }
-    await deliver(pdfApi.fileUrl(id, true), d.name);
+    const where = await this.run('Saving', async () => (chosen.kind === 'path' ? (await pdfApi.save(id, chosen.path)).path : writeTo(chosen, pdfApi.fileUrl(id, true), d.name)));
+    if (where === undefined) return false;
+    if (chosen.kind !== 'download') this.saveTo = { key: d.key, target: chosen };
     this.savedId = id;
     this.syncChrome();
+    toast(chosen.kind === 'download' ? `Downloaded ${d.name}` : `Saved to ${where}`);
     return true;
+  }
+
+  async dropped(given: File[]): Promise<void> {
+    let all = given;
+    if (given.some(isZip)) {
+      const got = await this.run('Unpacking', () => expandZips(given));
+      if (!got) return;
+      all = got;
+      if (!all.length) { toast('The zip has no PDFs, pictures or Office files in it'); return; }
+    }
+    const files = all.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    const pictures = all.filter((f) => IMAGE_FILE.test(f.name) || (f.type.startsWith('image/') && !f.type.includes('svg')));
+    const office = all.filter((f) => OFFICE_FILE.test(f.name));
+    if (this.tab === 'organize' && this.doc && files.length && !pictures.length && !office.length) { void this.insertPdfs(files, this.organizer.items.length); return; }
+    if (pictures.length || office.length || files.length > 1) { void this.startCreate(files.length || office.length ? 'files' : 'pictures', [...files, ...pictures, ...office].sort((a, b) => all.indexOf(a) - all.indexOf(b))); return; }
+    if (!files.length) { toast('Drop a PDF, pictures, Office files or a zip of them'); return; }
+    void this.guard(() => this.openFile(files[0]));
+  }
+
+  private async preview(): Promise<void> {
+    if (!this.doc) return;
+    const d = this.doc;
+    const blob = await this.run('Preparing the preview', async () => {
+      const id = await this.flush();
+      if (!id) return null;
+      const r = await fetch(pdfApi.fileUrl(id));
+      if (!r.ok) throw new Error(`The preview could not be made (${r.status})`);
+      return r.blob();
+    });
+    if (!blob) return;
+    await showPreview({ data: new Uint8Array(await blob.arrayBuffer()), name: d.name, bytes: blob.size, saveAs: () => void this.save(true), print: () => void this.print() });
   }
 
   private async print(): Promise<void> {

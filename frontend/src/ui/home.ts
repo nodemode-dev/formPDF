@@ -1,4 +1,5 @@
 import { pdfApi, type RecentItem } from '../pdf/api';
+import { expandZips } from '../pdf/unzip';
 import { brandMark } from './brand';
 import { el, escapeHtml, patchList, q, setClass, setHidden, setText } from './dom';
 import { icon } from './icons';
@@ -98,14 +99,27 @@ export class Home {
     this.root.addEventListener('drop', (e) => {
       e.preventDefault();
       setClass(hero, 'is-drag-over', false);
-      const all = Array.from(e.dataTransfer?.files ?? []);
+      void this.dropped(Array.from(e.dataTransfer?.files ?? []));
+    });
+  }
+
+  private async dropped(given: File[]): Promise<void> {
+    let all = given;
+    try {
+      all = await expandZips(given);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), 'error');
+      return;
+    }
+    {
       const pictures = all.filter((f) => IMAGE_FILE.test(f.name));
       const pdfs = all.filter((f) => f.name.toLowerCase().endsWith('.pdf') || f.type === 'application/pdf');
       const office = all.filter((f) => OFFICE_FILE.test(f.name));
       if (pictures.length || office.length || pdfs.length > 1) this.hooks.create(pictures.length && !pdfs.length && !office.length ? 'pictures' : 'files', all.filter((f) => pictures.includes(f) || pdfs.includes(f) || office.includes(f)));
       else if (pdfs.length) this.hooks.openFiles(pdfs);
-      else if (all.length) toast('Drop a PDF file, or pictures or Office files to make one');
-    });
+      else if (all.length) toast('Drop a PDF, pictures, Office files or a zip of them');
+      else if (given.length) toast('The zip has no PDFs, pictures or Office files in it');
+    }
   }
 
   private pick(): void {

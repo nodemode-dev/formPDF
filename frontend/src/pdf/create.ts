@@ -5,6 +5,7 @@ import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 import type { CreateOptions } from './api';
 import type { CreateKind } from './intent';
+import { expandZips, isZip } from './unzip';
 
 const PICTURE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
 const OFFICE = /\.(docx?|docm|dotx?|odt|ott|rtf|txt|wpd|pages|pptx?|pptm|ppsx?|potx?|odp|otp|key|xlsx?|xlsm|xlsb|ods|ots|csv|numbers)$/i;
@@ -67,7 +68,7 @@ class CreateDialog extends Dialog {
       if (!e.dataTransfer?.files.length) return;
       e.preventDefault();
       setClass(drop, 'is-over', false);
-      this.addFiles(Array.from(e.dataTransfer.files));
+      this.addZipped(Array.from(e.dataTransfer.files));
     });
     this.list.addEventListener('dragstart', (e) => { const r = (e.target as HTMLElement).closest('[data-key]') as HTMLElement | null; if (r) { this.dragKey = r.dataset.key ?? ''; e.dataTransfer?.setData('text/plain', this.dragKey); setClass(r, 'is-dragging', true); } });
     this.list.addEventListener('dragend', () => { this.dragKey = ''; for (const r of Array.from(this.list.children)) setClass(r, 'is-dragging', false); });
@@ -112,9 +113,17 @@ class CreateDialog extends Dialog {
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
-    input.accept = this.kind === 'pictures' ? 'image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff' : `.pdf,application/pdf,image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff,${OFFICE_ACCEPT}`;
-    input.onchange = () => this.addFiles(Array.from(input.files ?? []));
+    input.accept = this.kind === 'pictures' ? 'image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff,.zip' : `.pdf,application/pdf,image/*,.png,.jpg,.jpeg,.gif,.webp,.bmp,.tif,.tiff,.zip,${OFFICE_ACCEPT}`;
+    input.onchange = () => this.addZipped(Array.from(input.files ?? []));
     input.click();
+  }
+
+  private addZipped(files: File[]): void {
+    if (!files.some(isZip)) { this.addFiles(files); return; }
+    expandZips(files).then((all) => {
+      if (!all.length) toast('The zip has no PDFs, pictures or Office files in it');
+      else this.addFiles(all);
+    }, (err: unknown) => toast(err instanceof Error ? err.message : String(err), 'error'));
   }
 
   private addFiles(files: File[]): void {
