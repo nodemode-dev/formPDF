@@ -1,8 +1,7 @@
-import { pdfApi } from '../pdf/api';
+import { pdfApi, Quiet } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
 import { q } from '../ui/dom';
 import { icon } from '../ui/icons';
-import { toast } from '../ui/toast';
 
 interface Kind { action: string; ext: string; busy: string }
 
@@ -21,12 +20,11 @@ async function save(root: HTMLElement, host: ToolHost, kind: string): Promise<vo
   const body: Record<string, unknown> = { pages: q<HTMLInputElement>(root, '[data-t="pages"]').value.trim() || undefined };
   if (kind === 'xlsx') body.tables_only = q<HTMLInputElement>(root, '[data-t="tables"]').checked;
   else body.pictures = q<HTMLInputElement>(root, '[data-t="pictures"]').checked;
-  await host.ctx.run(k.busy, async () => {
-    try {
-      const got = await pdfApi.actFile(d.id, k.action, body);
-      await host.ctx.deliver(got.blob, `${stem(d.name)}${k.ext}`);
-    } catch (err) { toast((err as Error).message, 'error'); }
-  });
+  await host.ctx.deliver(async () => {
+    const got = await host.ctx.run(k.busy, async () => (await pdfApi.actFile(d.id, k.action, body)).blob);
+    if (!got) throw new Quiet();
+    return got;
+  }, `${stem(d.name)}${k.ext}`);
 }
 
 const run = (host: ToolHost, kind: string): void => {

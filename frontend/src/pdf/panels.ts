@@ -3,7 +3,7 @@ import { tf } from '../ui/i18n';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 import { KIND_LABEL, uid, type Annotator, type Tool } from './annotate';
-import { pdfApi, type Annot, type Area, type Derived, type HeaderFooter, type HiddenItem, type ImageItem, type Match, type PdfComment, type PdfInfo, type Preset, type RedactEntry, type Status, type TableItem } from './api';
+import { fetchBlob, pdfApi, Quiet, type Annot, type Area, type Derived, type HeaderFooter, type HiddenItem, type ImageItem, type Match, type PdfComment, type PdfInfo, type Preset, type RedactEntry, type Status, type TableItem } from './api';
 import { SignaturePad, typedSignature, type Fields } from './fill';
 import type { Organizer } from './organize';
 import { recall, remember } from './reading';
@@ -19,7 +19,7 @@ export interface Ctx {
   run<T>(label: string, fn: () => Promise<T>): Promise<T | undefined>;
   commit(res: Derived, label: string): Promise<void>;
   flush(): Promise<string | null>;
-  deliver(data: Blob | string, name: string): Promise<void>;
+  deliver(data: Blob | string | (() => Promise<Blob | string>), name: string): Promise<void>;
   tool(t: Tool): void;
   pickPdfs(multiple: boolean): Promise<File[]>;
   remember(id: string, password: string): void;
@@ -30,6 +30,11 @@ export interface Ctx {
 }
 
 const stem = (name: string): string => name.replace(/\.pdf$/i, '');
+const later = (c: Ctx, label: string, url: () => Promise<string>) => async (): Promise<Blob> => {
+  const got = await c.run(label, async () => fetchBlob(await url()));
+  if (!got) throw new Quiet();
+  return got;
+};
 const fmtBytes = (n: number): string => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 const csvCell = (s: string): string => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
 const toCsv = (t: TableItem): string => [t.header, ...t.rows].map((r) => r.map(csvCell).join(',')).join('\n');
@@ -965,10 +970,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
         this.metaFor = '';
         await c.commit(res, a === 'meta-strip' ? 'Remove metadata' : 'Edit metadata');
       }); return;
-      case 'pptx': void c.run('Exporting to PowerPoint', async () => {
-        const id = await c.flush() ?? d.id;
-        await c.deliver(pdfApi.pptxUrl(id, this.val('pptx-pages'), this.$<HTMLInputElement>('[data-a="pptx-text"]').checked), `${stem(d.name)}.pptx`);
-      }); return;
+      case 'pptx': void c.deliver(later(c, 'Exporting to PowerPoint', async () => pdfApi.pptxUrl(await c.flush() ?? d.id, this.val('pptx-pages'), this.$<HTMLInputElement>('[data-a="pptx-text"]').checked)), `${stem(d.name)}.pptx`); return;
       case 'compress': void c.run('Compressing', async () => {
         const id = await c.flush() ?? d.id;
         const res = await pdfApi.compress(id, Number(this.val('cq')));
@@ -1031,14 +1033,8 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
         const res = await pdfApi.watermark(id, { text, opacity: Number(this.val('wm-op')) / 100, angle: Number(this.val('wm-angle')) || 0, size: Number(this.val('wm-size')) || 64, color: this.val('wm-color') });
         await c.commit(res, 'Add watermark');
       }); return;
-      case 'png-zip': void c.run('Rendering pages', async () => {
-        const id = await c.flush() ?? d.id;
-        await c.deliver(pdfApi.zipUrl(id, Number(this.sval('png-scale')) || 2, this.val('png-pages')), `${stem(d.name)} pages.zip`);
-      }); return;
-      case 'docx': void c.run('Converting to Word', async () => {
-        const id = await c.flush() ?? d.id;
-        await c.deliver(pdfApi.docxUrl(id, this.val('docx-pages')), `${stem(d.name)}.docx`);
-      }); return;
+      case 'png-zip': void c.deliver(later(c, 'Rendering pages', async () => pdfApi.zipUrl(await c.flush() ?? d.id, Number(this.sval('png-scale')) || 2, this.val('png-pages'))), `${stem(d.name)} pages.zip`); return;
+      case 'docx': void c.deliver(later(c, 'Converting to Word', async () => pdfApi.docxUrl(await c.flush() ?? d.id, this.val('docx-pages'))), `${stem(d.name)}.docx`); return;
       case 'hid-scan': void c.run('Looking for hidden information', async () => {
         const id = await c.flush() ?? d.id;
         const res = await pdfApi.hidden(id);

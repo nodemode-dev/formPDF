@@ -29,8 +29,8 @@ const GROUPS: Array<[RegExp, string]> = [
   [/^home-/, 'Home'],
   [/^form-/, 'Forms'],
 ];
-const MUTATES = new Set(['pdf-save', 'pdf-undo', 'pdf-redo', 'pdf-undo-agent']);
-const RISKY = new Set(['pdf-save', 'pdf-close', 'pdf-home', 'pdf-undo-agent']);
+const MUTATES = new Set(['pdf-save', 'pdf-save-as', 'pdf-undo', 'pdf-redo', 'pdf-undo-agent']);
+const RISKY = new Set(['pdf-save', 'pdf-save-as', 'pdf-close', 'pdf-home', 'pdf-undo-agent']);
 const WINDOW_ONLY = new Set(['view-agent-dock', 'agent-claude-code', 'agent-chat', 'view-new-terminal', 'pdf-palette']);
 
 const groupOf = (c: Command): string => c.group ?? GROUPS.find(([re]) => re.test(c.id))?.[1] ?? 'Help';

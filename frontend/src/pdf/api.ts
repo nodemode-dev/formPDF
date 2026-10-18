@@ -184,12 +184,73 @@ export const pdfApi = {
 
 export const isTauri = (): boolean => '__TAURI_INTERNALS__' in window;
 
-export async function deliver(data: Blob | string, name: string): Promise<string | null> {
-  const blob = typeof data === 'string' ? await fetch(data).then(async (r) => {
+export type SaveTarget = { kind: 'path'; path: string } | { kind: 'handle'; handle: FileSystemFileHandleLike; name: string } | { kind: 'download' };
+export interface FileSystemFileHandleLike { name: string; createWritable(): Promise<{ write(data: Blob): Promise<void>; close(): Promise<void> }> }
+type SavePicker = (o: { suggestedName: string; types?: Array<{ description: string; accept: Record<string, string[]> }> }) => Promise<FileSystemFileHandleLike>;
+
+const MIME: Record<string, string> = { pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', html: 'text/html', rtf: 'application/rtf', zip: 'application/zip', csv: 'text/csv', json: 'application/json', xfdf: 'application/vnd.adobe.xfdf', png: 'image/png', jpg: 'image/jpeg' };
+const KIND: Record<string, string> = { pdf: 'PDF document', docx: 'Word document', pptx: 'PowerPoint presentation', xlsx: 'Excel workbook', html: 'Web page', rtf: 'Rich text', zip: 'Zip archive', csv: 'CSV file', json: 'JSON file', xfdf: 'XFDF comments', png: 'PNG picture', jpg: 'JPEG picture' };
+
+export async function chooseSave(name: string, defaultDir = ''): Promise<SaveTarget | null> {
+  const ext = (name.match(/\.([a-z0-9]+)$/i)?.[1] ?? '').toLowerCase();
+  if (isTauri()) {
+    const core = await import('@tauri-apps/api/core');
+    const options = { title: 'Save as', defaultPath: defaultDir ? `${defaultDir.replace(/[\\/]+$/, '')}/${name}` : name, ...(ext ? { filters: [{ name: KIND[ext] ?? ext.toUpperCase(), extensions: [ext] }] } : {}) };
+    try {
+      const path = await core.invoke<string | null>('plugin:dialog|save', { options });
+      return path ? { kind: 'path', path } : null;
+    } catch {
+      return { kind: 'download' };
+    }
+  }
+  const picker = (window as unknown as { showSaveFilePicker?: SavePicker }).showSaveFilePicker;
+  if (picker) {
+    try {
+      const handle = await picker({ suggestedName: name, ...(ext && MIME[ext] ? { types: [{ description: KIND[ext] ?? ext.toUpperCase(), accept: { [MIME[ext]]: [`.${ext}`] } }] } : {}) });
+      return { kind: 'handle', handle, name: handle.name };
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return null;
+      return { kind: 'download' };
+    }
+  }
+  return { kind: 'download' };
+}
+
+async function blobOf(data: Blob | string): Promise<Blob> {
+  return typeof data === 'string' ? fetch(data).then(async (r) => {
     if (!r.ok) { let detail = `${r.status} ${r.statusText}`; try { detail = ((await r.json()) as { detail?: string }).detail ?? detail; } catch { return Promise.reject(new Error(detail)); } throw new Error(detail); }
     return r.blob();
   }) : data;
-  if (isTauri()) return (await pdfApi.write(blob, name)).path;
+}
+
+export type Deliverable = Blob | string | (() => Promise<Blob | string>);
+export class Quiet extends Error {}
+
+export async function fetchBlob(url: string): Promise<Blob> {
+  return blobOf(url);
+}
+
+export async function writeTo(target: SaveTarget, data: Deliverable, name: string): Promise<string> {
+  const blob = await blobOf(typeof data === 'function' ? await data() : data);
+  if (target.kind === 'path') return (await pdfApi.write(blob, name, target.path)).path;
+  if (target.kind === 'handle') {
+    const w = await target.handle.createWritable();
+    await w.write(blob);
+    await w.close();
+    return target.name;
+  }
+  download(blob, name);
+  return name;
+}
+
+export async function deliver(data: Deliverable, name: string): Promise<string | null> {
+  const target = await chooseSave(name);
+  if (!target) return null;
+  return writeTo(target, data, name);
+}
+
+function download(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -199,5 +260,4 @@ export async function deliver(data: Blob | string, name: string): Promise<string
   a.click();
   a.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 30000);
-  return null;
 }

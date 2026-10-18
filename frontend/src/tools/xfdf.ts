@@ -1,4 +1,4 @@
-import { pdfApi, type Derived } from '../pdf/api';
+import { pdfApi, Quiet, type Derived } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
@@ -9,13 +9,11 @@ const stem = (name: string): string => name.replace(/\.pdf$/i, '');
 async function exportXfdf(host: ToolHost): Promise<void> {
   const d = host.doc();
   if (!d) return;
-  await host.ctx.run('Exporting comments', async () => {
-    try {
-      const id = await host.ctx.flush() ?? d.id;
-      const got = await pdfApi.actFile(id, 'export_xfdf', { name: d.name });
-      await host.ctx.deliver(got.blob, `${stem(d.name)}.xfdf`);
-    } catch (err) { toast((err as Error).message, 'error'); }
-  });
+  await host.ctx.deliver(async () => {
+    const got = await host.ctx.run('Exporting comments', async () => (await pdfApi.actFile(await host.ctx.flush() ?? d.id, 'export_xfdf', { name: d.name })).blob);
+    if (!got) throw new Quiet();
+    return got;
+  }, `${stem(d.name)}.xfdf`);
 }
 
 type Imported = Derived & { comments?: number; replies?: number; skipped?: number; duplicates?: number; statuses?: number; outside?: number };
