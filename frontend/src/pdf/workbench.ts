@@ -34,8 +34,7 @@ export interface AgentReply { ok: boolean; text: string; data?: Record<string, u
 const svg = (body: string, size = 16): string => `<span class="icon" style="width:${size}px;height:${size}px" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${body}</svg></span>`;
 const LOCAL = {
   print: '<path d="M7 8.5v-5h10v5"/><rect x="3.5" y="8.5" width="17" height="8" rx="1.5"/><path d="M7 13.5h10v7H7z"/>',
-  rect: '<rect x="4" y="6" width="16" height="12" rx="1"/>',
-  ellipse: '<ellipse cx="12" cy="12" rx="8.5" ry="6.5"/>',
+  rect: '<rect x="4" y="6" width="16" height="12" rx="1"/>',  ellipse: '<ellipse cx="12" cy="12" rx="8.5" ry="6.5"/>',
   fitWidth: '<path d="M3.5 4.5v15M20.5 4.5v15M7 12h10M9.5 9.5L7 12l2.5 2.5M14.5 9.5L17 12l-2.5 2.5"/>',
   underline: '<path d="M7 4.5v6a5 5 0 0 0 10 0v-6M5.5 20h13"/>',
   squiggly: '<path d="M7 4.5v6a5 5 0 0 0 10 0v-6M4.5 20l2-1.5 2 1.5 2-1.5 2 1.5 2-1.5 2 1.5 2-1.5 2 1.5"/>',
@@ -46,6 +45,7 @@ const LOCAL = {
 };
 const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print'], ['assistant', 'Assistant']];
 const LAYOUT_KEY = 'fs-pdf-layout';
+const VIEWER_KEY = 'fs-pdf-viewer';
 const SAY_KEY = 'fs-pdf-say';
 const IMAGE_FILE = /\.(png|jpe?g|gif|webp|bmp|tiff?)$/i;
 const OFFICE_FILE = /\.(docx?|docm|odt|rtf|pptx?|ppsx?|odp|key|xlsx?|xlsm|ods|csv|pages|numbers)$/i;
@@ -76,6 +76,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF
 <button class="fs-icon-btn" type="button" data-a="redo" title="Redo" aria-label="Redo">${icon('redo', 16)}</button>
 <span class="fs-sep"></span>
 <button class="fs-tt-btn fs-pdfwb-openbtn" type="button" data-a="open-menu" title="Open or create a PDF" aria-label="Open or create a PDF" aria-haspopup="menu">${icon('folderOpen', 16)}${icon('chevronDown', 10)}</button>
+<button class="fs-tt-btn fs-pdfwb-viewbtn" type="button" data-a="viewer" title="View only: hide the editing tools" aria-label="View only" aria-pressed="false">${icon('eye', 16)}<span class="fs-pdfwb-viewlbl">View only</span></button>
 <button class="fs-tt-btn" type="button" data-a="print" title="Print" aria-label="Print">${svg(LOCAL.print)}</button>
 <button class="fs-tt-btn fs-agent-btn" type="button" data-a="claude" title="Claude Code" aria-label="Claude Code">${icon('agent', 16)}</button>
 <button class="fs-tt-btn" type="button" data-a="terminal" title="Terminal" aria-label="Terminal">${icon('terminal', 16)}</button>
@@ -162,6 +163,7 @@ class Workbench {
   private hi = -1;
   private savedId = '';
   private saveTo: { key: string; target: SaveTarget } | null = null;
+  private viewing = false;
   private tab: Tab = 'view';
   private passwords = new Map<string, string>();
   private busy = 0;
@@ -255,6 +257,7 @@ class Workbench {
       { id: 'pdf-save', label: 'Save', keys: ['Mod+S'], enabled: () => !!this.doc, run: () => void this.save() },
       { id: 'pdf-save-as', label: 'Save As…', keys: ['Shift+Mod+S'], enabled: () => !!this.doc, run: () => void this.save(true) },
       { id: 'pdf-preview', label: 'Preview', keys: ['Alt+Mod+P'], enabled: () => !!this.doc, run: () => void this.preview() },
+      { id: 'pdf-viewer', label: 'View only', keys: ['Alt+Mod+V'], checked: () => this.viewing, run: () => this.setViewer(!this.viewing) },
       { id: 'pdf-print', label: 'Print…', keys: ['Mod+P'], enabled: () => !!this.doc, run: () => void this.print() },
       { id: 'pdf-close', label: 'Close PDF', enabled: () => !!this.doc, run: () => this.close() },
       { id: 'pdf-undo', label: () => (this.history[this.hi - 1] ? `Undo ${this.history[this.hi].label}` : 'Undo'), keys: ['Mod+Z'], enabled: () => this.hi > 0, why: () => (this.doc ? 'Nothing to undo yet' : 'Open a PDF first'), run: () => this.undo() },
@@ -289,7 +292,7 @@ class Workbench {
     const menus: MenuDef[] = [
       { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', 'pdf-scan', '-', 'pdf-save', 'pdf-save-as', 'pdf-preview', 'pdf-print', '-', 'pdf-close'] },
       { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'tool-content-select', 'tool-add-text', 'tool-add-picture', '-', 'tool-fonts', 'tool-move-to-page', '-', 'pdf-find'] },
-      { label: 'View', items: [...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare'] },
+      { label: 'View', items: ['pdf-viewer', '-', ...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare'] },
       { label: 'Tools', items: [...TABS.map(([t]) => `pdf-tab-${t}`), '-', 'tool-lists', 'tool-lists-record'] },
       { label: 'Window', items: () => [...this.ws.menuItems(), '-', 'view-agent-dock', 'view-new-terminal', 'agent-claude-code', 'agent-chat'] },
       { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
@@ -309,6 +312,7 @@ class Workbench {
     this.wsMenu.setItems(this.ws.menuItems());
     const saved = (recall(LAYOUT_KEY) ?? '').split('|');
     if (LAYOUTS.some(([v]) => v === saved[0])) this.viewer.setLayout(saved[0] as Layout, saved[1] === '1');
+    if (recall(VIEWER_KEY) === '1') queueMicrotask(() => this.setViewer(true));
     const say = (recall(SAY_KEY) ?? '').split('|');
     if (say[0]) this.speaker.voiceURI = say[0];
     if (Number(say[1]) > 0) this.speaker.rate = Number(say[1]);
@@ -673,6 +677,7 @@ class Workbench {
       case 'layout': this.act('layout', b.dataset.v); break;
       case 'cover-toggle': case 'reading': case 'rf-smaller': case 'rf-larger': case 'say-page': case 'say-end': case 'say-pause': case 'say-stop': case 'compare': this.act(b.dataset.a); break;
       case 'print': void this.print(); break;
+      case 'viewer': this.setViewer(!this.viewing); break;
       case 'save': void this.save(); break;
       case 'close': this.close(); break;
       case 'find': this.openFind(); break;
@@ -714,6 +719,7 @@ class Workbench {
       case 'Mod+S': return run(() => void this.save());
       case 'Shift+Mod+S': return run(() => void this.save(true));
       case 'Alt+Mod+P': return run(() => void this.preview());
+      case 'Alt+Mod+V': return run(() => this.setViewer(!this.viewing));
       case 'Mod+P': return run(() => void this.print());
       case 'Mod+O': return run(() => void this.pick(false).then((f) => { if (f[0]) void this.guard(() => this.openFile(f[0])); }));
       case 'Mod+=': case 'Shift+Mod+=': return run(() => (this.reading ? this.textSize(1) : v.zoomStep(1)));
@@ -732,6 +738,7 @@ class Workbench {
       case 'Home': return run(() => this.goPage(1));
       case 'End': return run(() => this.goPage(v.pages.length));
       case 'Delete': case 'Backspace':
+        if (this.viewing) return;
         if (this.tab === 'organize') return run(() => this.organizer.remove());
         if (this.tab === 'form' && this.forms.selected) return run(() => void this.forms.removeSelected());
         if (this.annot.selected) return run(() => void this.annot.remove());
@@ -753,7 +760,29 @@ class Workbench {
     }
   }
 
+  setViewer(on: boolean): void {
+    if (on === this.viewing) return;
+    if (on) {
+      this.annot.commitEdit();
+      this.setTab('view');
+      this.setTool('select');
+      this.annot.select(null);
+    }
+    this.viewing = on;
+    setClass(this.root, 'is-viewer', on);
+    const b = q<HTMLButtonElement>(this.root, '[data-a="viewer"]');
+    b.setAttribute('aria-pressed', String(on));
+    setText(q(b, '.fs-pdfwb-viewlbl'), on ? 'Edit' : 'View only');
+    b.setAttribute('aria-label', on ? 'Edit' : 'View only');
+    b.title = on ? 'Show the editing tools again' : 'View only: hide the editing tools';
+    setText(q(this.root, '.fs-pdfwb-hint'), on ? 'Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.' : HINTS[this.annot.tool] ?? '');
+    remember(VIEWER_KEY, on ? '1' : '0');
+  }
+
+  get isViewing(): boolean { return this.viewing; }
+
   private setTab(tab: Tab): void {
+    if (this.viewing && tab !== 'view') this.setViewer(false);
     this.annot.commitEdit();
     if (tab !== 'view' && this.reading) this.setReading(false);
     this.tab = tab;

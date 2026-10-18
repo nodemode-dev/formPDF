@@ -20,6 +20,7 @@ export const META: Record<string, Meta> = {
   'pdf-home': { d: 'Goes back to the Home screen; unsaved changes stay in the version history.', w: 'Use to leave the document and pick another task.', r: true },
   'pdf-save': { d: 'Saves the document to the file it came from or to where it was last saved; asks where when there is neither.', w: 'Use when the person asks to save; agents normally leave saving to the person.', m: true, r: true },
   'pdf-save-as': { d: 'Opens the save dialog so the person chooses the folder and name, then saves the document there.', w: 'Use when the person wants a copy somewhere else or under another name; the person answers the dialog.', m: true, r: true },
+  'pdf-viewer': { d: 'Turns View only on or off: the editing tools and panels are hidden and the PDF is only read.', w: 'Use when the person wants to just read or present a PDF; any editing tab turns it off.' },
   'pdf-preview': { d: 'Shows the document exactly as it will be saved, with all pending edits applied, page count, paper and file size.', w: 'Use when the person wants to check the final result before saving, printing or sending.' },
   'pdf-print': { d: 'Opens the print dialog for the document.', w: 'Use when the person wants to print on a printer.' },
   'pdf-close': { d: 'Closes the document in the window.', w: 'Use when the work on this PDF is finished.', r: true },
