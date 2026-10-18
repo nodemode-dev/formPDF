@@ -1093,7 +1093,7 @@ dependencies = [
 
 [[package]]
 name = "formpdf"
-version = "0.48.1"
+version = "0.49.0"
 dependencies = [
  "regex",
  "serde",
