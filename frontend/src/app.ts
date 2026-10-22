@@ -106,6 +106,7 @@ export async function startApp(): Promise<void> {
     help: hooks.help,
   });
 
+  bench.captions.add(home.root.querySelector<HTMLElement>('.fs-home-drag') as HTMLElement);
   new Batch(home.root.querySelector<HTMLElement>('[data-page="batch"]') as HTMLElement);
   const reviews = new Reviews(home.root.querySelector<HTMLElement>('[data-page="reviews"]') as HTMLElement, (id) => open({ recent: id, restore: { page: 1, tab: 'comment', dirty: false } }));
   home.onView = (v) => { if (v === 'reviews') void reviews.load(); };

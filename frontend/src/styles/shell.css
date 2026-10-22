@@ -24,6 +24,15 @@ body.nm-home #toast-root { z-index: var(--z-home-preview); }
 .fs-menu-btn { height: var(--ctl-md); padding: 0 var(--space-2); border: 0; border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: var(--fs-12); cursor: default; }
 .fs-menu-btn:hover, .fs-menu-btn.is-open { background: var(--bg-tertiary); color: var(--text-primary); }
 .has-native-menus .fs-menubar { display: none; }
+:root.has-caption-buttons .fs-home-drag { display: block; position: absolute; top: 0; left: 0; right: 0; height: var(--fs-titlebar-h); z-index: var(--z-raised); }
+:root.has-caption-buttons .fs-home-nav, :root.has-caption-buttons .fs-home-main { padding-top: calc(var(--fs-titlebar-h) + var(--space-2)); }
+.fs-pdfwb-title { position: relative; }
+.has-caption-buttons .fs-pdfwb-title { padding-right: calc(var(--space-2) + 3 * var(--fs-titlebar-h)); }
+.fs-caption { position: absolute; right: 0; top: 0; height: 100%; display: flex; }
+.fs-caption[hidden] { display: none; }
+.fs-caption-btn { width: var(--fs-titlebar-h); height: 100%; display: grid; place-items: center; border: 0; background: transparent; color: var(--text-secondary); cursor: default; }
+.fs-caption-btn:hover { background: var(--border-light); color: var(--text-primary); }
+.fs-caption-btn.is-close:hover { background: var(--danger); color: var(--text-on-accent); }
 .has-native-menus .fs-pdfwb-title > .fs-pdfwb-doc { grid-column: 3; }
 .has-native-menus .fs-pdfwb-title > .fs-pdfwb-actions { grid-column: 4; }
 .fs-tt-btn { display: inline-grid; place-items: center; flex: none; width: var(--ctl-md); height: var(--ctl-md); padding: 0; border: 1px solid var(--line-2); border-radius: 7px; background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }

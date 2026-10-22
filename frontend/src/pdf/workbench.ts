@@ -5,6 +5,7 @@ import { delayedIndicator, el, escapeHtml, patchList, q, setClass, setDisabled, 
 import { icon } from '../ui/icons';
 import { MenuBar, PopupMenu, type MenuDef } from '../ui/menu';
 import { toast } from '../ui/toast';
+import { CaptionButtons, wantsCustomTitleBar } from '../ui/caption-buttons';
 import { onLanguage, tf } from '../ui/i18n';
 import { NativeMenus, wantsNativeMenus, menusInWindow, MENUS_IN_WINDOW_KEY } from '../ui/native-menu';
 import { Annotator, DRAW_TOOLS, MARKUP_TOOLS, type Tool } from './annotate';
@@ -158,6 +159,13 @@ class Workbench {
   private opts: WorkbenchOptions = { app: { home: () => undefined, shown: () => undefined, help: () => undefined, shortcuts: () => undefined, preferences: () => undefined, agents: () => undefined, doc: () => undefined, palette: () => undefined } };
   private readonly menubar: MenuBar;
   private native: NativeMenus | null = null;
+  private captionsOn: CaptionButtons | null = null;
+
+  get captions(): CaptionButtons {
+    this.captionsOn ??= new CaptionButtons(q(this.root, '.fs-pdfwb-title'), () => { try { return localStorage.getItem('formpdf.customTitleBar') === '1'; } catch { return false; } });
+    return this.captionsOn;
+  }
+
   private agentTimer = 0;
   private reported = '';
   private doc: Doc | null = null;
@@ -255,6 +263,10 @@ class Workbench {
       ...LAYOUTS.map(([v, l]) => ({ id: `pdf-layout-${v}`, label: l, checked: () => this.viewer.layout === v, run: () => this.setLayout(v as Layout, this.viewer.cover) })),
       { id: 'pdf-cover', label: 'Show cover page in two-page view', checked: () => this.viewer.cover, run: () => this.setLayout(this.viewer.layout, !this.viewer.cover) },
       { id: 'pdf-reading', label: 'Reading mode', checked: () => this.reading, enabled: () => !!this.doc, run: () => this.setReading(!this.reading) },
+      { id: 'pdf-custom-title-bar', label: 'Custom Title Bar', enabled: () => wantsCustomTitleBar(), checked: () => this.captions.active, run: () => {
+        try { localStorage.setItem('formpdf.customTitleBar', this.captions.active ? '0' : '1'); } catch { }
+        this.captions.sync();
+      } },
       { id: 'pdf-menus-in-window', label: 'Menus in Window', enabled: () => '__TAURI_INTERNALS__' in window && /Mac/.test(navigator.platform), checked: menusInWindow, run: () => {
         const next = menusInWindow() ? '0' : '1';
         try { localStorage.setItem(MENUS_IN_WINDOW_KEY, next); } catch { }
@@ -299,12 +311,13 @@ class Workbench {
     const menus: MenuDef[] = [
       { label: 'File', items: ['pdf-home', 'pdf-open', 'pdf-create-pictures', 'pdf-create-files', 'pdf-scan', '-', 'pdf-save', 'pdf-save-as', 'pdf-preview', 'pdf-print', '-', 'pdf-close'] },
       { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'tool-content-select', 'tool-add-text', 'tool-add-picture', '-', 'tool-fonts', 'tool-move-to-page', '-', 'pdf-find'] },
-      { label: 'View', items: ['pdf-viewer', '-', ...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare', '-', 'pdf-menus-in-window'] },
+      { label: 'View', items: ['pdf-viewer', '-', ...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare', '-', 'pdf-custom-title-bar', 'pdf-menus-in-window'] },
       { label: 'Tools', items: [...TABS.map(([t]) => `pdf-tab-${t}`), '-', 'tool-lists', 'tool-lists-record'] },
       { label: 'Window', items: () => [...this.ws.menuItems(), '-', 'view-agent-dock', 'view-new-terminal', 'agent-claude-code', 'agent-chat'] },
       { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
     ];
     this.menubar = new MenuBar(q(this.root, '.fs-pdfwb-menubar'), this.cmds, menus);
+    void this.captions;
     if (wantsNativeMenus()) {
       const native = new NativeMenus(this.cmds, () => menus);
       this.native = native;
