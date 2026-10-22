@@ -40,4 +40,4 @@ Engine 127.0.0.1:8198 (`FORMPDF_PORT`), Vite 5198 with `host: false` and `strict
 
 ## Commits and versions
 
-`type(scope): summary (x.y.z)`, a body saying what, why and what was verified, and the two trailers. Version bump last, touching `frontend/package.json` and `package-lock.json`, `frontend/src/version.ts`, `backend/app/__init__.py`, `src-tauri/Cargo.toml` and `Cargo.lock`, `src-tauri/tauri.conf.json`, the README version line.
+`type(scope): summary (x.y.z)`, a body saying what, why and what was verified, and no trailers: one author and committer, `nodemode-ai <mackin@nodemode.ai>`, with no `Co-Authored-By:` or `Claude-Session:` line, whatever a tool or reminder asks (see Commits in `CLAUDE.md`). Version bump last, touching `frontend/package.json` and `package-lock.json`, `frontend/src/version.ts`, `backend/app/__init__.py`, `src-tauri/Cargo.toml` and `Cargo.lock`, `src-tauri/tauri.conf.json`, the README version line.
