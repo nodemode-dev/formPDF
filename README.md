@@ -2,7 +2,7 @@
 
 A PDF editor in the form family: an open alternative to Adobe Acrobat that runs on your computer, built so that Claude Code, Codex or Cursor can do PDF work in the open window while you watch, with every agent turn undoable at once.
 
-Version 0.55.0 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
+Version 0.55.1 · Apache-2.0 · macOS, Windows, Linux (browser or Tauri desktop)
 
 ## What it does
 
