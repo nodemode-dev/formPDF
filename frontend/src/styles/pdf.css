@@ -318,7 +318,13 @@
 
 .fs-pdfwb-status .fs-st-busy { flex: none; width: 190px; min-width: 0; overflow: hidden; }
 .fs-pdfwb-busy { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fs-pdfwb-stat { min-width: 128px; }
+.fs-pdfwb-stat { width: 128px; overflow: hidden; text-overflow: ellipsis; }
+.fs-st-tools { display: flex; align-items: center; gap: 2px; flex: none; }
+.fs-st-info { all: unset; box-sizing: border-box; flex: none; width: 196px; height: 20px; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; color: var(--text-secondary); font-size: var(--fs-11); font-variant-numeric: tabular-nums; }
+.fs-st-info:hover { color: var(--text-primary); }
+.fs-st-info:focus-visible { outline: 1px solid var(--accent-line); outline-offset: 2px; }
+.fs-st-engine { width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-pdfwb:not(.has-doc) .fs-st-info { visibility: hidden; }
 .fs-pdfwb-pagebox { display: inline-flex; align-items: center; gap: 6px; }
 .fs-pdfwb-pagein, .fs-pdfwb-zoomin { height: 20px; padding: 0 6px; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: var(--surface-field); color: var(--text-primary); font-family: var(--font-mono); font-size: var(--fs-11); text-align: right; outline: 0; }
 .fs-pdfwb-pagein { width: 44px; }

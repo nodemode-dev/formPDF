@@ -5,6 +5,7 @@ import { delayedIndicator, el, escapeHtml, patchList, q, setClass, setDisabled, 
 import { icon } from '../ui/icons';
 import { MenuBar, PopupMenu, type MenuDef } from '../ui/menu';
 import { toast } from '../ui/toast';
+import { StatusInfo } from '../ui/status';
 import { CaptionButtons, wantsCustomTitleBar } from '../ui/caption-buttons';
 import { onLanguage, tf } from '../ui/i18n';
 import { NativeMenus, wantsNativeMenus, menusInWindow, MENUS_IN_WINDOW_KEY } from '../ui/native-menu';
@@ -118,7 +119,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF
 <aside class="fs-pdfwb-panel"></aside>
 </div>
 <footer class="fs-status fs-pdfwb-status">
-<div class="fs-status-left"><span class="fs-st fs-pdfwb-stat"></span><span class="fs-st fs-st-busy">${icon('loading', 12).replace('class="icon"', 'class="icon spin"')}<span class="fs-pdfwb-busy" role="status"></span></span><span class="fs-st-hint fs-pdfwb-hint"></span><span class="fs-st fs-st-agent fs-pdfwb-agent" hidden>${icon('agent', 12)}<span class="fs-pdfwb-agentlabel"></span><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="undo-agent" title="Undo the agent's last turn">Undo turn</button></span></div>
+<div class="fs-status-left"><div class="fs-st-tools" role="group" aria-label="History"><button class="fs-icon-btn" type="button" data-a="undo" title="Undo" aria-label="Undo">${icon('undo', 14)}</button><button class="fs-icon-btn" type="button" data-a="redo" title="Redo" aria-label="Redo">${icon('redo', 14)}</button></div><span class="fs-st fs-pdfwb-stat"></span><button class="fs-st fs-st-info" type="button"></button><span class="fs-st fs-st-busy">${icon('loading', 12).replace('class="icon"', 'class="icon spin"')}<span class="fs-pdfwb-busy" role="status"></span></span><span class="fs-st-hint fs-pdfwb-hint"></span><span class="fs-st fs-st-engine"></span><span class="fs-st fs-st-agent fs-pdfwb-agent" hidden>${icon('agent', 12)}<span class="fs-pdfwb-agentlabel"></span><button class="fs-btn fs-btn-sm fs-btn-ghost" type="button" data-a="undo-agent" title="Undo the agent's last turn">Undo turn</button></span></div>
 <div class="fs-status-right">
 <span class="fs-pdfwb-pagebox"><input class="fs-pdfwb-pagein" type="text" inputmode="numeric" aria-label="Page number" value="1"><span class="fs-pdfwb-pageof">of 0</span></span>
 <button class="fs-icon-btn fs-pdfwb-layoutbtn" type="button" data-a="layout-menu" title="Page display" aria-label="Page display" aria-haspopup="menu">${icon('pageScroll', 14)}</button>
@@ -178,11 +179,17 @@ class Workbench {
   private passwords = new Map<string, string>();
   private busy = 0;
   private busyOff: (() => void) | null = null;
+  private readonly status: StatusInfo;
   private loadSeq = 0;
 
   constructor() {
     this.root = el(SHELL);
     (document.getElementById('overlay-root') ?? document.body).appendChild(this.root);
+    this.status = new StatusInfo(this.root, {
+      pageSize: () => this.viewer?.sizes[this.page() - 1] ?? null,
+      edit: () => (this.doc ? { label: this.history[this.hi]?.label ?? '', count: Math.max(0, this.hi) } : null),
+      fileName: () => this.doc?.name ?? '',
+    });
     const center = q(this.root, '.fs-pdfwb-center');
     this.viewer = new Viewer(center, {
       page: (n) => this.onPage(n),
@@ -500,7 +507,7 @@ class Workbench {
     this.viewer.setClass('is-drawing', !!t);
     this.viewer.setClass('is-marking', false);
     for (const b of Array.from(this.root.querySelectorAll<HTMLElement>('[data-ftool]'))) setClass(b, 'is-on', b.dataset.ftool === (t ?? 'select'));
-    setText(q(this.root, '.fs-pdfwb-hint'), t ? `Drag on the page to draw a ${FIELD_LABEL[t].toLowerCase()}, or click to place one. Esc cancels.` : this.tab === 'form' ? 'Click a field to select it. Drag to move it; drag its corner to resize.' : '');
+    this.status.setHint(t ? `Drag on the page to draw a ${FIELD_LABEL[t].toLowerCase()}, or click to place one. Esc cancels.` : this.tab === 'form' ? 'Click a field to select it. Drag to move it; drag its corner to resize.' : '');
   }
 
   private async applyForm(): Promise<void> {
@@ -623,6 +630,7 @@ class Workbench {
     });
     pageIn.addEventListener('blur', () => { pageIn.value = String(this.page()); });
     this.zoomIn.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.zoomIn.blur(); return; }
       if (e.key !== 'Enter') return;
       e.preventDefault();
       const v = parseFloat(this.zoomIn.value);
@@ -801,7 +809,7 @@ class Workbench {
     setText(q(b, '.fs-pdfwb-viewlbl'), on ? 'Edit' : 'View only');
     b.setAttribute('aria-label', on ? 'Edit' : 'View only');
     b.title = on ? 'Show the editing tools again' : 'View only: hide the editing tools';
-    setText(q(this.root, '.fs-pdfwb-hint'), on ? 'Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.' : HINTS[this.annot.tool] ?? '');
+    this.status.setHint(on ? 'Viewing. Select text to copy it, Ctrl or Cmd+F to find. Edit shows the tools again.' : HINTS[this.annot.tool] ?? '');
     remember(VIEWER_KEY, on ? '1' : '0');
   }
 
@@ -847,7 +855,7 @@ class Workbench {
     if (TOOL_COLOR[tool]) this.annot.style.color = TOOL_COLOR[tool];
     this.syncPalette();
     const pl = this.annot.placement;
-    setText(q(this.root, '.fs-pdfwb-hint'), tool === 'place' && pl ? `Click where the ${pl.label} goes. Esc cancels.` : HINTS[tool] ?? '');
+    this.status.setHint(tool === 'place' && pl ? `Click where the ${pl.label} goes. Esc cancels.` : HINTS[tool] ?? '');
     this.panes.syncAreas();
   }
 
@@ -888,6 +896,7 @@ class Workbench {
     const input = q<HTMLInputElement>(this.root, '.fs-pdfwb-pagein');
     if (document.activeElement !== input) setValue(input, String(n));
     this.thumbs.setCurrent(n);
+    this.status.sync();
     if (this.tab === 'view') this.panes.syncDoc();
   }
 
@@ -1209,7 +1218,7 @@ class Workbench {
         if (prev && prev !== t) { prev.cancel?.(); this.annot.custom = null; }
         this.annot.custom = t;
         this.setTool(t ? 'custom' : 'select');
-        if (t) setText(q(this.root, '.fs-pdfwb-hint'), t.hint);
+        if (t) this.status.setHint(t.hint);
       },
       activeTool: () => (this.annot.tool === 'custom' ? this.annot.custom : null),
       bar: (text, choices) => this.bar({ text, tone: 'info', actions: choices.map((c) => ({ label: c.label, kind: c.kind, run: () => c.run() })) }),
@@ -1512,11 +1521,15 @@ class Workbench {
     const has = !!this.doc;
     setClass(this.root, 'has-doc', has);
     const can = this.history[this.hi - 1], next = this.history[this.hi + 1];
-    const undo = q<HTMLButtonElement>(this.root, '[data-a="undo"]'), redo = q<HTMLButtonElement>(this.root, '[data-a="redo"]');
-    setDisabled(undo, !can);
-    setDisabled(redo, !next);
-    undo.title = this.history[this.hi] && can ? `Undo ${this.history[this.hi].label}` : 'Undo';
-    redo.title = next ? `Redo ${next.label}` : 'Redo';
+    for (const undo of Array.from(this.root.querySelectorAll<HTMLButtonElement>('[data-a="undo"]'))) {
+      setDisabled(undo, !can);
+      undo.title = this.history[this.hi] && can ? `Undo ${this.history[this.hi].label}` : 'Undo';
+    }
+    for (const redo of Array.from(this.root.querySelectorAll<HTMLButtonElement>('[data-a="redo"]'))) {
+      setDisabled(redo, !next);
+      redo.title = next ? `Redo ${next.label}` : 'Redo';
+    }
+    this.status.sync();
     for (const a of ['print', 'save']) setDisabled(q<HTMLButtonElement>(this.root, `.fs-pdfwb-actions [data-a="${a}"]`), !has);
     setClass(q(this.root, '.fs-pdfwb-edited'), 'is-off', !this.dirty());
     for (const s of Array.from(this.root.querySelectorAll<HTMLButtonElement>('.fs-pdfwb-tab'))) setDisabled(s, !has && s.dataset.tab !== 'view');
