@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod reveal;
+mod text_edit;
 mod traffic_lights;
 
 use std::sync::Mutex;
@@ -124,7 +125,7 @@ fn main() {
                 let _ = window.set_focus();
             }
         }))
-        .invoke_handler(tauri::generate_handler![print_window, traffic_lights::set_window_title, reveal::app_ready])
+        .invoke_handler(tauri::generate_handler![print_window, traffic_lights::set_window_title, reveal::app_ready, text_edit::text_edit])
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())

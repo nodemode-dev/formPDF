@@ -24,6 +24,8 @@ body.nm-home #toast-root { z-index: var(--z-home-preview); }
 .fs-menu-btn { height: var(--ctl-md); padding: 0 var(--space-2); border: 0; border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: var(--fs-12); cursor: default; }
 .fs-menu-btn:hover, .fs-menu-btn.is-open { background: var(--bg-tertiary); color: var(--text-primary); }
 .has-native-menus .fs-menubar { display: none; }
+.has-native-menus .fs-pdfwb-title > .fs-pdfwb-doc { grid-column: 3; }
+.has-native-menus .fs-pdfwb-title > .fs-pdfwb-actions { grid-column: 4; }
 .fs-tt-btn { display: inline-grid; place-items: center; flex: none; width: var(--ctl-md); height: var(--ctl-md); padding: 0; border: 1px solid var(--line-2); border-radius: 7px; background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
 .fs-tt-btn:hover { background: var(--surface-raised); color: var(--text-primary); }
 .fs-tt-btn.is-on { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-color); }
