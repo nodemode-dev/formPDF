@@ -49,7 +49,7 @@
   "plugins": {
     "updater": {
       "pubkey": "",
-      "endpoints": ["https://github.com/nodemode-ai/formpdf/releases/latest/download/latest.json"]
+      "endpoints": ["https://github.com/nodemode-ai/formcompiler/releases/download/formpdf-updates/latest.json"]
     }
   }
 }
