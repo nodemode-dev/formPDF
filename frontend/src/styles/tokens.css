@@ -44,6 +44,7 @@
   --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
   --shadow-window: 0 24px 60px rgba(0,0,0,0.6);
+  --shadow-ink: #000;
 
   --space-1: 4px;
   --space-2: 8px;

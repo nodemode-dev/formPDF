@@ -3,12 +3,12 @@ import { loadPlugins, type PluginInfo } from '../pdf/plugins';
 import { VERSION } from '../version';
 import { brandMark } from './brand';
 import { formatKeys, type Command, type Commands } from './commands';
-import { Dialog } from './dialogs';
+import { confirmAction, Dialog } from './dialogs';
 import { language, languages, setLanguage } from './i18n';
 import { isLang } from './i18n/langs';
 import { el, escapeHtml, patchList, q, setChecked, setClass, setDisabled, setHidden, setHtml, setText, setValue } from './dom';
 import { icon } from './icons';
-import { THEMES, readChoice, setAccent, setTheme, themeSwatchesHtml } from './themes';
+import { STORAGE_KEY, THEMES, readChoice, setAccent, setTheme, themeSwatchesHtml } from './themes';
 import { toast } from './toast';
 
 interface NetRow { id: string; name: string; state: string; note: string }
@@ -33,6 +33,9 @@ const CHANNEL_LABEL: Record<string, string> = { inapp: 'Built in', stdio: 'Comma
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const setAttr = (node: Element, name: string, value: string): void => { if (node.getAttribute(name) !== value) node.setAttribute(name, value); };
+const RAIL_KEY = 'formpdf.prefsRailCollapsed';
+const KEY_PREFIXES = ['formpdf.', 'fs-'];
+const RAIL_ICONS: Record<string, string> = { General: 'pfGeneral', Interface: 'pfInterface', 'Units & Rulers': 'pfUnits', Type: 'pfType', 'File Handling': 'pfFile', Plugins: 'pfPlugins', AI: 'pfAssistant' };
 const ACCENTS = ['#f97316', '#ef4444', '#ec4899', '#a855f7', '#6366f1', '#3b82f6', '#14b8a6', '#22c55e', '#eab308'];
 
 async function copyText(text: string): Promise<boolean> {
@@ -100,37 +103,50 @@ class PreferencesDialog extends Dialog {
   private readonly words: HTMLTextAreaElement;
   private readonly tsa: HTMLInputElement;
   private readonly formScripts: HTMLInputElement;
+  private readonly nav = el('<nav class="fs-prefs-nav" role="tablist" aria-label="Sections"></nav>');
+  private readonly sections = new Map<string, HTMLElement>();
+  private readonly dataDir = el('<code class="fs-prefs-code"></code>');
+  private pages!: HTMLElement;
+  private shell: { frame: HTMLElement; rail: HTMLElement; port: HTMLElement; shade: SVGPathElement; line: SVGPathElement } | null = null;
+  private current = '';
+  private spyRaf = 0;
+  private wireRaf = 0;
+  private spyMuted = 0;
+  private wireD = '';
+  private portY = -1;
 
   constructor() {
     super('Preferences', 560);
     const c = readChoice();
-    const box = el(`<div class="fs-dlg-stack">
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Language</div>
+    const box = el(`<div class="fs-prefs"><div class="fs-prefs-pages">
+<section class="fs-prefs-group" data-in="Interface"><h3 class="fs-prefs-label">Language</h3>
 <label class="fs-field"><span>Interface</span><select class="fs-input fs-dlg-pref-ui" data-no-i18n>${languages().map(([code, name]) => `<option value="${code}">${name}</option>`).join('')}</select></label>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Appearance</div>
-<div class="fs-field is-top"><span>Theme</span><div><div class="nm-theme-grid fs-dlg-themes">${themeSwatchesHtml(c.theme, c.accentColor)}</div><div class="fs-note fs-dlg-theme-name"></div></div></div>
+<section class="fs-prefs-group" data-in="Interface"><h3 class="fs-prefs-label">Theme</h3>
+<div class="fs-field is-stack"><span>Theme</span><div><div class="nm-theme-grid fs-dlg-themes">${themeSwatchesHtml(c.theme, c.accentColor)}</div><div class="fs-note fs-dlg-theme-name"></div></div></div>
 <div class="fs-field"><span>Accent</span><div class="fs-dlg-accents">${ACCENTS.map((a) => `<button class="fs-swatch" type="button" data-accent="${a}" style="--swatch:${a}" aria-label="Accent ${a}" title="${a}"></button>`).join('')}<label class="fs-dlg-color" title="Custom accent">${icon('palette', 14)}<input type="color" aria-label="Custom accent colour"></label></div></div>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Comments and stamps</div>
+<section class="fs-prefs-group" data-in="General"><h3 class="fs-prefs-label">Comments and stamps</h3>
 <label class="fs-field"><span>Author</span><input class="fs-input fs-dlg-pref-author" type="text" spellcheck="false" placeholder="Your name, written on comments you apply"></label>
+</section>
+<section class="fs-prefs-group" data-in="Units &amp; Rulers"><h3 class="fs-prefs-label">Measurements</h3>
 <div class="fs-field"><span>Units</span><div class="fs-seg is-quiet" data-seg="units"><button type="button" data-v="pt">Points</button><button type="button" data-v="in">Inches</button><button type="button" data-v="cm">Centimetres</button></div></div>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Spelling</div>
+<section class="fs-prefs-group" data-in="Type"><h3 class="fs-prefs-label">Spelling</h3>
 <label class="fs-field"><span>Language</span><select class="fs-input fs-dlg-pref-lang"><option value="en_US">${langName('en_US')}</option></select></label>
-<label class="fs-field is-top"><span>Your words</span><textarea class="fs-input fs-dlg-pref-words" rows="4" spellcheck="false" placeholder="One word per line. Check spelling accepts these, and Add to dictionary puts words here."></textarea></label>
+<label class="fs-field is-stack"><span>Your words</span><textarea class="fs-input fs-dlg-pref-words" rows="4" spellcheck="false" placeholder="One word per line. Check spelling accepts these, and Add to dictionary puts words here."></textarea></label>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Signing</div>
+<section class="fs-prefs-group" data-in="File Handling"><h3 class="fs-prefs-label">Signing</h3>
 <label class="fs-field"><span>Timestamp server</span><input class="fs-input fs-dlg-pref-tsa" type="url" spellcheck="false" placeholder="https://… (optional; used only when you tick Add a timestamp)"></label>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Forms</div>
+<section class="fs-prefs-group" data-in="File Handling"><h3 class="fs-prefs-label">Forms</h3>
 <div class="fs-field"><span>Scripts</span><label class="fs-check"><input type="checkbox" data-f="formscripts"><span>Run form calculations, formatting and checks (Acrobat's standard ones only; other scripts never run)</span></label></div>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Plug-ins</div>
+<section class="fs-prefs-group" data-in="Plugins"><h3 class="fs-prefs-label">Plug-ins</h3>
 <p class="fs-note fs-dlg-plug-note">Plug-ins are folders in the Formpdf plugins folder. A plug-in runs code on this computer with formpdf's access to your files, so it stays off until you allow it, and asks again if it changes.</p>
 <div class="fs-dlg-plugs"></div>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">AI</div>
+<section class="fs-prefs-group" data-in="AI"><h3 class="fs-prefs-label">AI</h3>
 <p class="fs-note fs-dlg-ai-note">The Assistant tab asks questions, summarises, drafts presentations and makes pictures with the provider you choose. Nothing is sent anywhere until you choose one and use it.</p>
 <label class="fs-field"><span>Provider</span><select class="fs-input fs-dlg-ai-provider"><option value="off">Off</option><option value="agent">Your agent (Claude Code, Codex or Cursor)</option><option value="anthropic">Anthropic, with your API key</option><option value="openai">OpenAI, with your API key</option><option value="local">A model on this computer (Ollama, LM Studio or similar)</option></select></label>
 <label class="fs-field"><span>Model</span><input class="fs-input fs-dlg-ai-model" type="text" spellcheck="false"></label>
@@ -139,20 +155,30 @@ class PreferencesDialog extends Dialog {
 <label class="fs-field"><span>Picture server</span><input class="fs-input fs-dlg-ai-imgbase" type="url" spellcheck="false" placeholder="AUTOMATIC1111 or compatible, for pictures"></label>
 <div class="fs-field"><span></span><div class="fs-dlg-ai-test"><button class="fs-btn fs-btn-sm" type="button" data-f="aitest">Test the connection</button><span class="fs-note fs-dlg-ai-say" aria-live="polite"></span></div></div>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Agents</div>
+<section class="fs-prefs-group" data-in="Plugins"><h3 class="fs-prefs-label">Outside Agents</h3>
 <label class="fs-field"><span>Agent access</span><select class="fs-input fs-dlg-pref-access">${ACCESS_OPTIONS}</select></label>
-<div class="fs-field is-top"><span>Agents seen</span><div><p class="fs-note fs-dlg-seen-none">No agent has called since formpdf started.</p><div class="fs-dlg-seen"></div></div></div>
+<div class="fs-field is-stack"><span>Agents seen</span><div><p class="fs-note fs-dlg-seen-none">No agent has called since formpdf started.</p><div class="fs-dlg-seen"></div></div></div>
 <label class="fs-field"><span>Claude Code program</span><input class="fs-input fs-dlg-pref-claudebin" type="text" spellcheck="false" placeholder="Leave empty to find it automatically"></label>
 <label class="fs-field"><span>Claude Code folder</span><input class="fs-input fs-dlg-pref-claudefolder" type="text" spellcheck="false" placeholder="Leave empty to use the Agent folder in Formpdf"></label>
 <label class="fs-field"><span>First message</span><input class="fs-input fs-dlg-pref-claudefirst" type="text" spellcheck="false" placeholder="Optional; sent when Claude Code starts"></label>
 <div class="fs-field"><span></span><span class="fs-note fs-dlg-claude-say" aria-live="polite"></span></div>
 </section>
-<section class="fs-dlg-section"><div class="fs-dlg-section-title">Network</div>
+<section class="fs-prefs-group" data-in="General"><h3 class="fs-prefs-label">Network</h3>
 <p class="fs-note">Everything formpdf could connect to, and whether it does. No account, no telemetry.</p>
 <div class="fs-dlg-net"></div>
 </section>
-</div>`);
+</div></div>`);
     this.body.appendChild(box);
+    this.pages = q(box, '.fs-prefs-pages');
+    const inSection = (name: string): HTMLElement[] => Array.from(this.pages.querySelectorAll<HTMLElement>(`:scope > [data-in="${name}"]`));
+    this.add('General', ...inSection('General'), this.storageGroup(), this.resetGroup());
+    this.add('Interface', ...inSection('Interface'));
+    this.add('Units & Rulers', ...inSection('Units & Rulers'));
+    this.add('Type', ...inSection('Type'));
+    this.add('File Handling', ...inSection('File Handling'));
+    this.add('Plugins', ...inSection('Plugins'));
+    this.add('AI', ...inSection('AI'));
+    this.buildShell();
     this.themes = q(box, '.fs-dlg-themes');
     this.themeName = q(box, '.fs-dlg-theme-name');
     this.accents = q(box, '.fs-dlg-accents');
@@ -201,6 +227,151 @@ class PreferencesDialog extends Dialog {
     ai('imgbase').addEventListener('change', () => void this.saveAi({ imageBase: ai('imgbase').value.trim() }));
     ai('key').addEventListener('change', () => { const v = ai('key').value.trim(); ai('key').value = ''; void this.saveAi({ key: v }); });
     q(box, '[data-f="aitest"]').addEventListener('click', () => void this.testAi());
+  }
+
+  private add(name: string, ...content: HTMLElement[]): void {
+    const ic = RAIL_ICONS[name] ?? 'pfGeneral';
+    const tab = el<HTMLButtonElement>(`<button class="fs-prefs-railtab" type="button" role="tab"><span class="fs-prefs-tabicon">${icon(ic, 18)}</span><span class="fs-prefs-tablabel"></span></button>`);
+    tab.dataset.section = name;
+    setText(q(tab, '.fs-prefs-tablabel'), name);
+    tab.title = name;
+    tab.addEventListener('click', () => this.showSection(name, 'smooth'));
+    this.nav.appendChild(tab);
+    const page = el(`<section class="fs-prefs-sec" role="tabpanel"><button class="fs-prefs-sechead" type="button" aria-expanded="true"><span class="fs-prefs-secicon">${icon(ic, 16)}</span><span class="fs-prefs-seclabel"></span><span class="fs-prefs-chev">${icon('chevronDown', 16)}</span></button><div class="fs-prefs-secbody"></div></section>`);
+    page.dataset.section = name;
+    setText(q(page, '.fs-prefs-seclabel'), name);
+    q(page, '.fs-prefs-sechead').addEventListener('click', () => this.foldSection(name));
+    q(page, '.fs-prefs-secbody').append(...content);
+    this.pages.appendChild(page);
+    this.sections.set(name, page);
+  }
+
+  private buildShell(): void {
+    const frame = q<HTMLElement>(this.scrim, '.fs-dialog');
+    frame.classList.add('fs-prefs-dlg');
+    q<HTMLElement>(this.scrim, '.fs-dialog-head').prepend(el(`<span class="fs-prefs-headicon">${icon('settings', 16)}</span>`));
+    let collapsed = false;
+    try { collapsed = localStorage.getItem(RAIL_KEY) === '1'; } catch { collapsed = false; }
+    const fold = el<HTMLButtonElement>(`<button class="fs-prefs-fold" type="button">${icon('pfFold', 16)}</button>`);
+    const paintRail = (): void => {
+      setClass(frame, 'is-rail-collapsed', collapsed);
+      const label = collapsed ? 'Expand tabs' : 'Collapse tabs';
+      if (fold.title !== label) fold.title = label;
+      setAttr(fold, 'aria-label', label);
+      setAttr(fold, 'aria-expanded', String(!collapsed));
+    };
+    fold.addEventListener('click', () => {
+      collapsed = !collapsed;
+      try { localStorage.setItem(RAIL_KEY, collapsed ? '1' : '0'); } catch { }
+      paintRail();
+      this.queueWire();
+    });
+    paintRail();
+    const rail = el('<div class="fs-prefs-rail"></div>');
+    rail.append(this.nav, fold);
+    const wire = el<HTMLElement>('<svg class="fs-prefs-wire" aria-hidden="true"><path class="fs-prefs-wire-shade"></path><path class="fs-prefs-wire-line"></path></svg>') as unknown as SVGSVGElement;
+    const port = el('<span class="fs-prefs-port" aria-hidden="true"></span>');
+    frame.append(rail, wire, port);
+    this.shell = { frame, rail, port, shade: q<SVGPathElement>(wire, '.fs-prefs-wire-shade'), line: q<SVGPathElement>(wire, '.fs-prefs-wire-line') };
+    this.pages.addEventListener('scroll', () => this.queueSpy(), { passive: true });
+    new ResizeObserver(() => this.queueWire()).observe(frame);
+    window.addEventListener('resize', () => this.queueWire());
+  }
+
+  private storageGroup(): HTMLElement {
+    const g = el('<section class="fs-prefs-group"><h3 class="fs-prefs-label">Settings Storage</h3><div class="fs-prefs-line"></div><p class="fs-note">Documents, batch results and the engine’s stores live in this folder. The window’s own preferences stay in the browser or app storage.</p></section>');
+    q(g, '.fs-prefs-line').appendChild(this.dataDir);
+    return g;
+  }
+
+  private resetGroup(): HTMLElement {
+    const g = el('<section class="fs-prefs-group"><h3 class="fs-prefs-label">Reset</h3><button class="fs-btn fs-btn-danger fs-prefs-reset" type="button">Reset All Preferences...</button></section>');
+    q(g, '.fs-prefs-reset').addEventListener('click', () => void confirmAction('Reset all preferences?', 'The theme, language, panel layout and every setting kept in this window go back to how formpdf comes; your documents are kept. formpdf reloads.', 'Reset', true).then((ok) => {
+      if (!ok) return;
+      try {
+        for (const k of Object.keys(localStorage)) if (KEY_PREFIXES.some((p) => k.startsWith(p)) || k === STORAGE_KEY) localStorage.removeItem(k);
+      } catch { }
+      location.reload();
+    }));
+    return g;
+  }
+
+  private showSection(name: string, scroll: ScrollBehavior | null = null): void {
+    if (!this.sections.has(name)) return;
+    this.markSection(name);
+    if (scroll) this.scrollToSection(name, scroll);
+  }
+
+  private markSection(name: string): void {
+    if (this.current === name) return;
+    this.current = name;
+    for (const [n, page] of this.sections) setClass(page, 'is-current', n === name);
+    for (const tab of Array.from(this.nav.children) as HTMLElement[]) { const on = tab.dataset.section === name; setClass(tab, 'is-active', on); setAttr(tab, 'aria-selected', String(on)); }
+    this.queueWire();
+  }
+
+  private scrollToSection(name: string, behavior: ScrollBehavior): void {
+    const sec = this.sections.get(name);
+    if (!sec) return;
+    if (sec.classList.contains('is-folded')) this.foldSection(name);
+    const top = sec.getBoundingClientRect().top - this.pages.getBoundingClientRect().top + this.pages.scrollTop - 12;
+    this.spyMuted = performance.now() + 700;
+    this.pages.scrollTo({ top, behavior });
+  }
+
+  private foldSection(name: string): void {
+    const sec = this.sections.get(name);
+    if (!sec) return;
+    const folded = !sec.classList.contains('is-folded');
+    setClass(sec, 'is-folded', folded);
+    setHidden(q(sec, '.fs-prefs-secbody'), folded);
+    setAttr(q(sec, '.fs-prefs-sechead'), 'aria-expanded', String(!folded));
+    this.queueWire();
+    this.queueSpy();
+  }
+
+  private queueSpy(): void {
+    if (this.spyRaf) return;
+    this.spyRaf = requestAnimationFrame(() => {
+      this.spyRaf = 0;
+      const pages = this.pages;
+      if (!pages.clientHeight || performance.now() < this.spyMuted) return;
+      const edge = pages.getBoundingClientRect().top + 24;
+      const names = Array.from(this.sections.keys());
+      let best = '', bestD = Infinity;
+      if (pages.scrollHeight > pages.clientHeight + 4 && pages.scrollTop + pages.clientHeight >= pages.scrollHeight - 2) best = names[names.length - 1] ?? '';
+      else for (const [n, sec] of this.sections) {
+        const top = sec.getBoundingClientRect().top, d = top <= edge ? edge - top : top - edge + 100000;
+        if (d < bestD) { bestD = d; best = n; }
+      }
+      if (best) this.markSection(best);
+    });
+  }
+
+  private queueWire(): void {
+    if (this.wireRaf) return;
+    this.wireRaf = requestAnimationFrame(() => { this.wireRaf = 0; this.drawWire(); });
+  }
+
+  private drawWire(): void {
+    const s = this.shell;
+    if (!s || !this.isOpen) return;
+    const F = s.frame.getBoundingClientRect();
+    const tab = this.nav.querySelector<HTMLElement>('.fs-prefs-railtab.is-active');
+    const head = s.frame.querySelector<HTMLElement>('.fs-dialog-head');
+    if (!F.width || !tab || !head) return;
+    const N = this.nav.getBoundingClientRect();
+    let T = tab.getBoundingClientRect();
+    if (T.top < N.top || T.bottom > N.bottom) {
+      this.nav.scrollTop += T.top < N.top ? T.top - N.top - 6 : T.bottom - N.bottom + 6;
+      T = tab.getBoundingClientRect();
+    }
+    const R = s.rail.getBoundingClientRect(), H = head.getBoundingClientRect();
+    const portY = Math.round(H.bottom - F.top), sx = Math.round(T.right - F.left), ty = Math.round(T.top - F.top + T.height / 2);
+    const rr = R.right - F.left, trunk = Math.round(rr - rr * 0.45), dy = portY - ty, r = 10, dir = dy > 0 ? 1 : -1;
+    const d = Math.abs(dy) < 2 * r ? `M ${sx} ${ty} H ${trunk} V ${portY} H -7` : `M ${sx} ${ty} H ${trunk - r} a ${r} ${r} 0 0 ${dir > 0 ? 1 : 0} ${r} ${dir * r} V ${portY - dir * r} a ${r} ${r} 0 0 ${dir > 0 ? 0 : 1} ${r} ${dir * r} H -7`;
+    if (d !== this.wireD) { this.wireD = d; s.shade.setAttribute('d', d); s.line.setAttribute('d', d); }
+    if (portY !== this.portY) { this.portY = portY; s.port.style.transform = `translateY(${portY}px)`; }
   }
 
   private fillAi(s: AiInfo): void {
@@ -325,7 +496,9 @@ class PreferencesDialog extends Dialog {
     this.h = h;
     this.syncLook();
     setValue(this.access, h.agentAccess());
-    this.open(this.themes.querySelector<HTMLElement>('.is-active'));
+    this.open(this.nav.querySelector<HTMLElement>('.is-active') ?? this.nav.querySelector<HTMLElement>('.fs-prefs-railtab'));
+    this.markSection(this.current || 'General');
+    this.queueWire();
     void this.loadPlugs();
     void this.loadClaude();
     void api.get<{ clients: SeenAgent[] }>('/api/mcp/status').then((s) => this.fillSeen(s.clients)).catch(() => undefined);
@@ -353,6 +526,7 @@ class PreferencesDialog extends Dialog {
       }
       if (this.lang.dataset.want) setValue(this.lang, this.lang.dataset.want);
       this.fillNet((c.network as NetRow[] | undefined) ?? []);
+      setText(this.dataDir, str(c.dataDir) || 'Starts with the engine');
     }).catch(() => undefined);
     void api.get<AiInfo>('/api/ai/settings').then((s) => this.fillAi(s)).catch(() => undefined);
   }
