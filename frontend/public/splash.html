@@ -4,11 +4,22 @@
   <meta charset="UTF-8">
   <title>formpdf</title>
   <style>
-    html, body { margin: 0; height: 100%; background: #0a0a0a; color: #a8a8b8; font: 13px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
-    body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
-    svg { display: block; }
+    html { height: 100%; background: transparent; }
+    body { margin: 0; height: 100%; box-sizing: border-box; background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 16px; overflow: hidden; color: #a8a8b8; font: 13px -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+    img { display: block; user-select: none; }
     p { margin: 0; letter-spacing: 0.2px; }
+    .bar { width: 180px; height: 3px; border-radius: 2px; background: #1f1f26; overflow: hidden; }
+    .fill { width: 100%; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #3A7BFF, #9A5CFF 30%, #FF4F7A 62%, #FFAE2B); transform-origin: 0 50%; transform: scaleX(0.04); animation: load 2.6s cubic-bezier(0.25, 0.6, 0.35, 1) forwards; }
+    .fill.done { animation: none; transform: scaleX(1); transition: transform 0.2s ease-out; }
+    @keyframes load { to { transform: scaleX(0.92); } }
   </style>
 </head>
-<body><svg width="72" height="72" role="img" aria-label="formpdf" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="splash-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#24212B"/><stop offset="1" stop-color="#0B0A0E"/></linearGradient><radialGradient id="splash-bloom" cx=".5" cy=".46" r=".5"><stop offset="0" stop-color="#FF4F7A" stop-opacity=".26"/><stop offset=".5" stop-color="#9A5CFF" stop-opacity=".07"/><stop offset="1" stop-color="#9A5CFF" stop-opacity="0"/></radialGradient><linearGradient id="splash-paint" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3A7BFF"/><stop offset=".32" stop-color="#9A5CFF"/><stop offset=".64" stop-color="#FF4F7A"/><stop offset="1" stop-color="#FFAE2B"/></linearGradient><linearGradient id="splash-sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/></linearGradient><linearGradient id="splash-paper" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBFAF7"/><stop offset="1" stop-color="#D9D5CD"/></linearGradient><linearGradient id="splash-flap" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FFE9DA"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient><clipPath id="splash-clip"><rect width="64" height="64" rx="14.4"/></clipPath></defs><g clip-path="url(#splash-clip)"><rect width="64" height="64" fill="url(#splash-bg)"/><rect width="64" height="64" fill="url(#splash-bloom)"/><g transform="scale(.0625)"><g transform="translate(434 498) rotate(-8)"><path d="M-151.9,-245.0 L181.3,-245.0 L181.3,-245.0 L181.3,215.6 Q181.3,245.0 151.9,245.0 L-151.9,245.0 Q-181.3,245.0 -181.3,215.6 L-181.3,-215.6 Q-181.3,-245.0 -151.9,-245.0 Z" fill="#000" fill-opacity=".38" transform="translate(0 18)"/><path d="M-151.9,-245.0 L181.3,-245.0 L181.3,-245.0 L181.3,215.6 Q181.3,245.0 151.9,245.0 L-151.9,245.0 Q-181.3,245.0 -181.3,215.6 L-181.3,-215.6 Q-181.3,-245.0 -151.9,-245.0 Z" fill="url(#splash-paper)"/></g><g transform="translate(551 516) rotate(6)"><path d="M-151.9,-245.0 L65.7,-245.0 L181.3,-129.4 L181.3,215.6 Q181.3,245.0 151.9,245.0 L-151.9,245.0 Q-181.3,245.0 -181.3,215.6 L-181.3,-215.6 Q-181.3,-245.0 -151.9,-245.0 Z" fill="#000" fill-opacity=".38" transform="translate(0 18)"/><path d="M-151.9,-245.0 L65.7,-245.0 L181.3,-129.4 L181.3,215.6 Q181.3,245.0 151.9,245.0 L-151.9,245.0 Q-181.3,245.0 -181.3,215.6 L-181.3,-215.6 Q-181.3,-245.0 -151.9,-245.0 Z" fill="url(#splash-paint)"/><path d="M-151.9,-245.0 L65.7,-245.0 L181.3,-129.4 L181.3,215.6 Q181.3,245.0 151.9,245.0 L-151.9,245.0 Q-181.3,245.0 -181.3,215.6 L-181.3,-215.6 Q-181.3,-245.0 -151.9,-245.0 Z" fill="url(#splash-sheen)"/><path d="M66,-245 L66,-143 Q66,-129 79,-129 L181,-129 Z" fill="#2A0B2E" fill-opacity=".35" transform="translate(-6 8)"/><path d="M66,-245 L66,-143 Q66,-129 79,-129 L181,-129 Z" fill="url(#splash-flap)"/><rect x="-138" y="-196" width="167" height="45" rx="23" fill="#fff" fill-opacity=".96"/><rect x="-138" y="-120" width="255" height="29" rx="15" fill="#fff" fill-opacity=".6"/></g></g></g><rect x=".4" y=".4" width="63.2" height="63.2" rx="14" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width=".8"/></svg><p>Starting the formpdf engine</p></body>
+<body><img src="formpdf-logo.png" width="72" height="72" alt="formpdf" draggable="false"><p>Starting formpdf</p><div class="bar" role="progressbar" aria-label="Starting formpdf"><div class="fill"></div></div><script>
+window.formpdfSplashDone = function () {
+  var fill = document.querySelector('.fill');
+  fill.style.transform = getComputedStyle(fill).transform;
+  fill.classList.add('done');
+  requestAnimationFrame(function () { fill.style.transform = ''; });
+};
+</script></body>
 </html>

@@ -31,6 +31,7 @@ export class Home {
 
   constructor(private readonly hooks: HomeHooks) {
     this.root = el(`<section class="fs-home" aria-label="Home" hidden>
+<div class="fs-home-drag" data-tauri-drag-region></div>
 <nav class="fs-home-nav">
 <div class="fs-home-brand">${brandMark(26)}formpdf <span>by NodeMode</span></div>
 <button class="fs-home-nav-item is-active" type="button" data-v="start">${icon('sparkle', 16)}<span>Start</span></button>

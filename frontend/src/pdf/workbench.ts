@@ -67,7 +67,7 @@ interface State { id: string; annots: Annot[]; label: string; turn?: string; age
 interface BarAction { label: string; kind?: 'primary' | 'ghost' | 'danger'; run: (value: string) => void }
 
 const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF workbench" data-tab="view" data-tool="select" hidden>
-<header class="fs-pdfwb-title">
+<header class="fs-pdfwb-title" data-tauri-drag-region>
 <div class="fs-brand" role="button" tabindex="0" title="Home" data-a="home">${brandMark(20)}<span class="fs-brand-name">formpdf</span></div>
 <nav class="fs-menubar fs-pdfwb-menubar" aria-label="Main menu"></nav>
 <div class="fs-pdfwb-doc"><span class="fs-pdfwb-name">PDF workbench</span><span class="fs-badge fs-pdfwb-edited is-off">Edited</span></div>

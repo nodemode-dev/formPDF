@@ -156,5 +156,5 @@ export async function startApp(): Promise<void> {
     history.replaceState(null, '', location.pathname);
     openPaths(files);
   }
-  revealApp();
+  void Promise.race([document.fonts.ready, new Promise((done) => setTimeout(done, 2500))]).then(revealApp, revealApp);
 }

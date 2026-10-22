@@ -14,6 +14,12 @@ body.nm-home #toast-root { z-index: var(--z-home-preview); }
 .fs-brand[role="button"] { cursor: pointer; }
 .fs-brand-name { color: var(--text-primary); font-size: var(--fs-13); font-weight: 600; letter-spacing: 0.2px; }
 .fs-mark { display: block; flex: none; }
+.fs-home-drag { display: none; }
+:root.has-overlay-titlebar { --fs-titlebar-h: 38px; }
+:root.has-overlay-titlebar .fs-pdfwb-title { padding-left: 78px; }
+:root.has-overlay-titlebar .fs-home-drag { display: block; position: absolute; top: 0; left: 0; right: 0; height: 38px; }
+:root.has-overlay-titlebar .fs-home-nav { padding-top: 44px; }
+:root.has-overlay-titlebar .fs-home-main { padding-top: 44px; }
 .fs-menubar { display: flex; align-items: center; gap: 2px; min-width: 0; }
 .fs-menu-btn { height: var(--ctl-md); padding: 0 var(--space-2); border: 0; border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: var(--fs-12); cursor: default; }
 .fs-menu-btn:hover, .fs-menu-btn.is-open { background: var(--bg-tertiary); color: var(--text-primary); }

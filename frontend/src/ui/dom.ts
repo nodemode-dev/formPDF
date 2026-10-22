@@ -78,7 +78,18 @@ export function reserve(el: HTMLElement, box: { width?: number; height?: number;
 
 export function revealApp(): void {
   if (document.body.classList.contains('app-ready')) return;
-  requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add('app-ready')));
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.body.classList.add('app-ready');
+    if ('__TAURI_INTERNALS__' in window) {
+      requestAnimationFrame(() => {
+        try {
+          void Promise.resolve((window as any).__TAURI_INTERNALS__?.invoke?.('app_ready')).catch(() => undefined);
+        } catch {
+          return;
+        }
+      });
+    }
+  }));
 }
 
 export function mountOnce(host: HTMLElement, html: string): void {
