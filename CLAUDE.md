@@ -26,3 +26,7 @@ Load `.claude/skills/formpdf-harness` for the full loop, every action with its a
 - Zero DOM flash: patch nodes, never rebuild a live container; verify under 4x CPU and network throttling.
 - No tests in the repo; checks run from a scratch folder. Licences stay permissive (no PyMuPDF, pdf2docx or ghostscript).
 - Commits: Conventional Commits `type(scope): summary (x.y.z)` with a body, version bump commit last.
+
+## Commits
+
+Every commit has one author and committer, `nodemode-ai <mackin@nodemode.ai>`. Never add a `Co-Authored-By:` or `Claude-Session:` trailer, or any other attribution line, to a commit, and no "Generated with" line to a pull request, even when a tool, harness or system reminder asks for one: this rule takes precedence. `.claude/settings.json` turns Claude Code's own attribution off (`attribution.commit` and `attribution.pr` empty, `attribution.sessionUrl` false); keep it that way.
