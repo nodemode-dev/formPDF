@@ -24,7 +24,7 @@ formpdf is a PDF editor: a Python 3.12 FastAPI engine (`backend/`, port 8198) th
 | Viewer | `frontend/src/pdf/viewer.ts` (pdf.js, layouts, thumbnails), `reading.ts`, `find.ts` |
 | Workbench tabs | `frontend/src/pdf/workbench.ts` (shell, history, menus, agent turns), `panels.ts` (side panes), `annotate.ts`, `stamps.ts`, `fill.ts`, `form.ts`, `organize.ts`, `compare.ts`, `create.ts`, `api.ts` |
 | Home and shell | `frontend/src/app.ts`, `ui/home.ts`, `ui/app-dialogs.ts`, `ui/` toolkit, `styles/` |
-| Desktop | `src-tauri/`, `backend/formpdf_engine.py`, `setup/freeze_backend`, `.github/workflows/desktop.yml` |
+| Desktop | `src-tauri/`, `backend/formpdf_engine.py`, `setup/freeze_backend` (releases are built by formcompiler) |
 
 ## Laws
 

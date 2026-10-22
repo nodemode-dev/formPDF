@@ -188,7 +188,7 @@ Rows no Acrobat page documents: MCP server for outside agents (HTTP and stdio); 
 
 | Capability | Acrobat | formpdf | Evidence |
 | --- | --- | --- | --- |
-| Desktop app | yes | Partial | Tauri shell in `src-tauri/`, bundles from `.github/workflows/desktop.yml`; signing optional |
+| Desktop app | yes | Partial | Tauri shell in `src-tauri/`, bundles built by formcompiler from a `compile_v*` branch; signing optional |
 | Runs in a browser | yes | Partial | Vite app against a local engine; no hosted service |
 | Phone and tablet | yes | None | nothing found |
-| macOS, Windows and Linux builds | no | Full | `.github/workflows/desktop.yml` builds the Tauri app on macos-latest, ubuntu-22.04 and windows-latest (`src-tauri/tauri.conf.json` bundle targets all) |
+| macOS, Windows and Linux builds | no | Full | formcompiler builds the Tauri app from a `compile_v*` branch on macos-latest, ubuntu-22.04 and windows-latest (`src-tauri/tauri.conf.json` bundle targets all) |

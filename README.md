@@ -51,7 +51,7 @@ On Debian or Ubuntu, Tauri first needs `sudo apt install libwebkit2gtk-4.1-dev b
 ./formpdf desktop build     # freezes the engine sidecar, bundles .app/.dmg, .msi/.exe, .deb/.AppImage
 ```
 
-The desktop app opens .pdf files (Open With formpdf, or a double-click once associated). CI builds all three platforms in `.github/workflows/desktop.yml`.
+The desktop app opens .pdf files (Open With formpdf, or a double-click once associated). formcompiler (`nodemode-ai/formcompiler`) builds all three platforms from a `compile_vX.Y.Z` branch and drafts the release on its own release page.
 
 ## Agents
 

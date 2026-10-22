@@ -122,10 +122,10 @@ row(a, "Skills shipped for Claude Code, Codex and Cursor", 0, F, "`.claude/skill
 row(a, "Headless processing from the command line", 0, F, "`./formpdf run` (`setup/cli.py`): any pdf action on files with --out, --pages, --preset and the rest, plus render and merge, headless")
 
 a = "Platform"
-row(a, "Desktop app", 1, P, "Tauri shell in `src-tauri/`, bundles from `.github/workflows/desktop.yml`; signing optional")
+row(a, "Desktop app", 1, P, "Tauri shell in `src-tauri/`, bundles built by formcompiler from a `compile_v*` branch; signing optional")
 row(a, "Runs in a browser", 1, P, "Vite app against a local engine; no hosted service")
 row(a, "Phone and tablet", 1, N, "nothing found")
-row(a, "macOS, Windows and Linux builds", 0, F, "`.github/workflows/desktop.yml` builds the Tauri app on macos-latest, ubuntu-22.04 and windows-latest (`src-tauri/tauri.conf.json` bundle targets all)")
+row(a, "macOS, Windows and Linux builds", 0, F, "formcompiler builds the Tauri app from a `compile_v*` branch on macos-latest, ubuntu-22.04 and windows-latest (`src-tauri/tauri.conf.json` bundle targets all)")
 
 
 def scored(rows):
