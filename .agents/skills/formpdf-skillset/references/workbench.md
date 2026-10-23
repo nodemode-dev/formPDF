@@ -12,7 +12,7 @@ New tools do not edit `panels.ts`: register them in `pdf/tools.ts` with `registe
 
 ## Panes
 
-`panels.ts` builds every pane once and patches it: View (layouts, reading, read aloud, document, find, compare), Comment (threads with replies and status), Fill & Sign (fields, signature, stamps), Prepare form (`form.ts`), Edit (header and footer with live preview, crop, page numbers, watermark), Organize (`organize.ts`, split, merge), Extract, Protect (password, remove password, find and redact, redact areas, metadata, hidden information), Convert (PowerPoint, Word, compress, pages as PNG).
+`panels.ts` builds every pane once and patches it: View (layouts, reading, read aloud, document, find, compare), Comment (threads with replies and status), Fill Forms and Sign (fields, signature, stamps), Prepare form (`form.ts`), Edit (header and footer with live preview, crop, page numbers, watermark), Organize (`organize.ts`, split, merge), Extract, Protect (password, remove password, find and redact, redact areas, metadata, hidden information), Convert (PowerPoint, Word, compress, pages as PNG).
 
 ## Shell
 

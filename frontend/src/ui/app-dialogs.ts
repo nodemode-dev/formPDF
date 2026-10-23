@@ -140,7 +140,7 @@ class PreferencesDialog extends Dialog {
 <label class="fs-field"><span>Timestamp server</span><input class="fs-input fs-dlg-pref-tsa" type="url" spellcheck="false" placeholder="https://… (optional; used only when you tick Add a timestamp)"></label>
 </section>
 <section class="fs-prefs-group" data-in="File Handling"><h3 class="fs-prefs-label">Forms</h3>
-<div class="fs-field"><span>Scripts</span><label class="fs-check"><input type="checkbox" data-f="formscripts"><span>Run form calculations, formatting and checks (Acrobat's standard ones only; other scripts never run)</span></label></div>
+<div class="fs-field"><span>Scripts</span><label class="fs-check"><input type="checkbox" data-f="formscripts"><span>Run form calculations, formatting and checks (the standard AcroForm ones only; other scripts never run)</span></label></div>
 </section>
 <section class="fs-prefs-group" data-in="Plugins"><h3 class="fs-prefs-label">Plug-ins</h3>
 <p class="fs-note fs-dlg-plug-note">Plug-ins are folders in the Formpdf plugins folder. A plug-in runs code on this computer with formpdf's access to your files, so it stays off until you allow it, and asks again if it changes.</p>
@@ -646,7 +646,7 @@ class HelpDialog extends Dialog {
 <div class="fs-dlg-about">${brandMark(36)}<div><div class="fs-dlg-about-name">formpdf</div><div class="fs-note">Version ${escapeHtml(VERSION)} · a PDF editor in the form family</div></div></div>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Quick start</div><ol class="fs-dlg-steps">
 <li><strong>Open a PDF.</strong> Drop it on Home, choose Open PDF, open one by path, or pick a recent one.</li>
-<li><strong>Pick a tab.</strong> View, Comment, Fill &amp; Sign, Prepare form, Edit, Organize, Extract, Protect and Convert each have their tools above the page and their settings on the right.</li>
+<li><strong>Pick a tab.</strong> View, Comment, Fill Forms and Sign, Prepare form, Edit, Organize, Extract, Protect and Convert each have their tools above the page and their settings on the right.</li>
 <li><strong>Changes build up in a working copy.</strong> Undo steps back through them; Save writes the PDF.</li>
 <li><strong>Bring in your agent.</strong> Connect Claude Code, Codex or Cursor from Help &gt; Agents and MCP. Its changes show live and every turn undoes as one step.</li>
 </ol></section>

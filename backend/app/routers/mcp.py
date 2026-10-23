@@ -112,7 +112,7 @@ read verapdf {flavour: 1a .. 3u | ua1 | ua2, default the one the file claims} ru
 embedding its fonts, and is refused while read accessibility still finds a failed rule;
 read preflight {profile: print | office | screen, tac: ink limit in percent, default 300} checks fonts, picture resolution, colour, ink
 coverage, white set to overprint, artwork at the trim edge without bleed, transparency, hairlines, trim boxes and scripts, each with
-its pages and a fix where one exists; preflight_fix {fixes} applies them; read accessibility runs Acrobat's 32 rules plus a Tag correctness group (heading levels against their size, headings tagged as
+its pages and a fix where one exists; preflight_fix {fixes} applies them; read accessibility runs 32 PDF/UA and WCAG rules plus a Tag correctness group (heading levels against their size, headings tagged as
 paragraphs, reading order against the page, placeholder alternate text, language of each part, right-to-left text drawn in visual order
 without ActualText); fix_accessibility {fixes: [..., headings, spans, rtl]} re-levels headings by size, marks parts in another script with
 their language and gives right-to-left parts their reading order as ActualText; an "Alternate text request" in get_context

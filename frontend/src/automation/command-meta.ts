@@ -36,7 +36,7 @@ export const META: Record<string, Meta> = {
   'pdf-go-page': { d: 'Scrolls to a page by number.', w: 'Use to jump to a page.' },
   'pdf-tab-view': { d: 'Opens the View tab: layout, zoom, reading aloud and properties.', w: 'Use to change how the document is shown.' },
   'pdf-tab-comment': { d: 'Opens the Comment tab: highlights, notes, shapes, stamps and the review round-trip.', w: 'Use to review or mark up the PDF.' },
-  'pdf-tab-fill': { d: 'Opens the Fill & Sign tab: form fields, signatures and initials.', w: 'Use to fill in a form or sign.' },
+  'pdf-tab-fill': { d: 'Opens the Fill Forms and Sign tab: form fields, signatures and initials.', w: 'Use to fill in a form or sign.' },
   'pdf-tab-form': { d: 'Opens the Prepare form tab: add and arrange form fields.', w: 'Use to turn a PDF into a fillable form.' },
   'pdf-tab-edit': { d: 'Opens the Edit tab: page text, pictures, shapes, links, headers and footers.', w: 'Use to change the content of pages.' },
   'pdf-tab-organize': { d: 'Opens the Organize tab: move, turn, insert, delete and split pages.', w: 'Use to change the pages themselves.' },

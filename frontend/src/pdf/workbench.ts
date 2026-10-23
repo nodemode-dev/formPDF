@@ -46,7 +46,7 @@ const LOCAL = {
   polyline: '<path d="M3.5 18.5l5-9 5 6 7-11"/><circle cx="3.5" cy="18.5" r="1"/><circle cx="20.5" cy="4.5" r="1"/>',
   cloud: '<path d="M5 8.5a2.2 2.2 0 0 1 3.5-2.4a2.2 2.2 0 0 1 3.5 0a2.2 2.2 0 0 1 3.5 0a2.2 2.2 0 0 1 3.5 2.4a2.2 2.2 0 0 1 0 3.5a2.2 2.2 0 0 1 0 3.5a2.2 2.2 0 0 1-3.5 2.4a2.2 2.2 0 0 1-3.5 0a2.2 2.2 0 0 1-3.5 0a2.2 2.2 0 0 1-3.5-2.4a2.2 2.2 0 0 1 0-3.5a2.2 2.2 0 0 1 0-3.5z"/>',
 };
-const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill & Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print'], ['assistant', 'Assistant']];
+const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill Forms and Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print'], ['assistant', 'Assistant']];
 const LAYOUT_KEY = 'fs-pdf-layout';
 const VIEWER_KEY = 'fs-pdf-viewer';
 const SAY_KEY = 'fs-pdf-say';
@@ -521,7 +521,7 @@ class Workbench {
       if (this.forms.dirty) return;
       const parts = [made ? (made === 1 ? `${made} field added` : `${made} fields added`) : '', renamed ? `${renamed} renamed` : '', gone ? `${gone} deleted` : ''].filter(Boolean);
       const list = parts.join(', ') || 'Form updated';  // a value of its own, so the sentence is a key and the parts translate inside it
-      toast(`${list}. Fill & Sign can fill them now.`);
+      toast(`${list}. Fill Forms and Sign can fill them now.`);
     });
   }
 

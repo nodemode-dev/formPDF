@@ -26,7 +26,7 @@ const TYPE_LABEL: Record<string, string> = { P: 'Paragraph', H1: 'Heading 1', H2
   BlockQuote: 'Quotation', Caption: 'Caption', Note: 'Note', Code: 'Code', Formula: 'Formula', Figure: 'Figure', Span: 'Text span', L: 'List', Table: 'Table',
   Link: 'Link', Form: 'Form field', Annot: 'Comment', TOC: 'Contents', LI: 'List item', TR: 'Table row', TH: 'Header cell', TD: 'Cell', Artifact: 'Background (not read)' };
 const RETAG = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BlockQuote', 'Caption', 'Note', 'Code', 'Formula', 'Figure', 'Span'];
-const CHECK_INTRO = 'Checks Acrobat\'s 32 accessibility rules, then whether the tags are right, and says what to fix. Nothing changes until you choose a fix.';
+const CHECK_INTRO = 'Checks 32 PDF/UA and WCAG accessibility rules, then whether the tags are right, and says what to fix. Nothing changes until you choose a fix.';
 
 let hostRef: ToolHost | null = null;
 let checkRoot: HTMLElement | null = null;
