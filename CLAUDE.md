@@ -27,6 +27,12 @@ Load `.claude/skills/formpdf-harness` for the full loop, every action with its a
 - No tests in the repo; checks run from a scratch folder. Licences stay permissive (no PyMuPDF, pdf2docx or ghostscript).
 - Commits: Conventional Commits `type(scope): summary (x.y.z)` with a body, version bump commit last.
 
+## Trademarks, copyright and licences
+
+- Other vendors' product names appear only to describe a format or compatibility ("an XFDF file Acrobat and other readers import", the standard AcroForm functions, Word and PowerPoint output). Never as a formpdf tab, command, tool or agent tool name, and never as "an Acrobat alternative" or "Acrobat's rules" in UI text, agent text or READMEs. The tab is Fill Forms and Sign; the accessibility check is 32 PDF/UA and WCAG rules; ids such as `pdf-tab-fill` stay. `README.md` and `NOTICE.md` carry the trademark notice.
+- A changed English string is changed in place in all 23 tables in `frontend/src/ui/i18n/` with a translation of formpdf's own words, never the vendor's localized name; `python3 setup/i18n.py parity` must not get worse.
+- Never copy vendor help text (accessibility rule names and fix text stay formpdf's own), stamps, icons or sample files. Every new dependency, font or data file gets a row in `NOTICE.md`; GPL and AGPL stay out (no PyMuPDF, pdf2docx or ghostscript).
+
 ## Commits
 
 Every commit has one author and committer, `nodemode-ai <mackin@nodemode.ai>`. Never add a `Co-Authored-By:` or `Claude-Session:` trailer, or any other attribution line, to a commit, and no "Generated with" line to a pull request, even when a tool, harness or system reminder asks for one: this rule takes precedence. `.claude/settings.json` turns Claude Code's own attribution off (`attribution.commit` and `attribution.pr` empty, `attribution.sessionUrl` false); keep it that way.

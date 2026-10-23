@@ -57,4 +57,4 @@ The formpdf mark, the stamps and the agent skills are original work of this repo
 
 No GPL or AGPL library is used by the engine or the window: PyMuPDF, pdf2docx and ghostscript are deliberately not used.
 
-Adobe and Acrobat are trademarks of Adobe Inc.; Microsoft, Word and PowerPoint are trademarks of the Microsoft group of companies. formpdf is independent and not affiliated with any of them; the names only describe the formats and workflows it is compatible with.
+Adobe, Acrobat and Adobe Fill & Sign are either registered trademarks or trademarks of Adobe in the United States and/or other countries; Microsoft, Word and PowerPoint are trademarks of the Microsoft group of companies. formpdf is independent and not affiliated with any of them; the names only describe the formats and workflows it is compatible with.
