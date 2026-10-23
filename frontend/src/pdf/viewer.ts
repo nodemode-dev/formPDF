@@ -6,7 +6,7 @@ import type { PageSize } from './api';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 
-const ASSETS = import.meta.glob<string>(['../../node_modules/pdfjs-dist/cmaps/*.bcmap', '../../node_modules/pdfjs-dist/standard_fonts/*.{pfb,ttf}', '../../node_modules/pdfjs-dist/wasm/*.wasm'], { query: '?url', import: 'default', eager: true, exhaustive: true });
+const ASSETS = import.meta.glob<string>(['../../node_modules/pdfjs-dist/cmaps/*.bcmap', '../../node_modules/pdfjs-dist/standard_fonts/*.pfb', '../../../backend/app/fonts/LiberationSans-*.ttf','../../node_modules/pdfjs-dist/wasm/*.wasm'], { query: '?url', import: 'default', eager: true, exhaustive: true });
 const ASSET_URL = new Map<string, string>(Object.entries(ASSETS).map(([p, u]) => [p.slice(p.lastIndexOf('/') + 1), u]));
 
 class BinaryData {
