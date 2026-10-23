@@ -125,6 +125,7 @@ export class Panes {
   private matchesKey = '';
   private stale = false;
   private me = 'me';
+  private peek = '';
   private hfFocus: Slot = 'footer-center';
   private hidden: HiddenItem[] = [];
   private hiddenFor = '';
@@ -188,6 +189,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
     q(this.root, '.fs-pdfwb-sigdraw').appendChild(this.pad.root);
     this.pad.onChange = () => this.syncSig();
     this.root.addEventListener('click', (e) => this.click(e));
+    for (const [type, on] of [['mouseover', true], ['focusin', true], ['mouseout', false], ['focusout', false]] as const) this.ctx.viewer.host.addEventListener(type, (e) => this.peekFrom(e, on));
     this.root.addEventListener('input', (e) => this.input(e));
     this.root.addEventListener('change', (e) => this.input(e));
     q<HTMLInputElement>(this.root, '[data-a="flatten-comments"]').checked = false;
@@ -686,6 +688,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
       const box = n.querySelector('input') as HTMLInputElement;
       setDisabled(box, this.stale);
       if (box.checked !== this.ticked.has(x.i)) box.checked = this.ticked.has(x.i);
+      setClass(n, 'is-peek', !!this.peek && matchKey(x.m) === this.peek);
       for (const node of [box, n.querySelector('.fs-pdfwb-matchbody') as HTMLElement]) if (node.dataset.i !== String(x.i)) node.dataset.i = String(x.i);
     };
     patchList(this.$('.fs-pdfwb-matches'), list, {
@@ -705,6 +708,27 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
 
   private matchAreas(which: Match[]): Area[] {
     return which.flatMap((m) => m.rects.map((r): Area => ({ id: uid('r'), page: m.page, x: r.x - 1, y: r.y - 1, w: r.w + 2, h: r.h + 2, origin: 'find', by: this.me, match: matchKey(m) })));
+  }
+
+  private peekFrom(e: Event, on: boolean): void {
+    const n = (e.target as HTMLElement).closest?.('.fs-pdf-annot[data-origin="find"]') as HTMLElement | null;
+    if (!n) return;
+    if (!on) { this.setPeek(''); return; }
+    const a = this.ctx.annot.areas.find((x) => x.id === n.dataset.key);
+    if (a && a.origin === 'find' && a.by === this.me && a.match) this.setPeek(a.match);
+  }
+
+  private setPeek(key: string): void {
+    if (this.peek === key) return;
+    this.peek = key;
+    let hit: HTMLElement | null = null;
+    for (const r of Array.from(this.$('.fs-pdfwb-matches').children) as HTMLElement[]) {
+      const i = Number((r.querySelector('input') as HTMLInputElement | null)?.dataset.i);
+      const on = !!key && !!this.matches[i] && matchKey(this.matches[i]) === key;
+      setClass(r, 'is-peek', on);
+      if (on) hit = r;
+    }
+    (hit as HTMLElement | null)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
   private async who(): Promise<string> {

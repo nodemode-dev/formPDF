@@ -302,6 +302,7 @@
 .fs-pdfwb-matches { max-height: 320px; margin-top: var(--space-1); overflow-y: auto; overscroll-behavior: contain; }
 .fs-pdfwb-matches:empty { display: none; }
 .fs-pdfwb-match { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 8px; flex: none; padding: 6px 8px; border: 1px solid var(--line-1); border-radius: var(--radius-md); background: var(--surface-2); }
+.fs-pdfwb-match.is-peek { border-color: var(--brand-orange); background: color-mix(in srgb, var(--brand-orange) 18%, var(--surface-2)); box-shadow: inset 0 0 0 1px var(--brand-orange); }
 .fs-pdfwb-match > input { width: 15px; height: 15px; margin: 2px 0 0; accent-color: var(--accent-color); cursor: pointer; }
 .fs-pdfwb-matchbody { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--text-secondary); font: inherit; font-size: var(--fs-12); text-align: left; cursor: pointer; }
 .fs-pdfwb-matchbody:hover .fs-pdfwb-ctx { color: var(--text-primary); }
