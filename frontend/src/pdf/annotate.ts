@@ -297,6 +297,10 @@ export class Annotator {
       if ((n.dataset.white ?? '') !== white) { if (white) n.dataset.white = white; else delete n.dataset.white; }
       const tip = white ? 'Whiteout mark: removed and painted white when applied' : 'Redaction mark: removed and blacked out when applied';
       if (n.title !== tip) n.title = tip;
+      const found = (it.area as Area).origin === 'find' ? 'find' : '';
+      if ((n.dataset.origin ?? '') !== found) {
+        if (found) { n.dataset.origin = found; n.tabIndex = 0; n.setAttribute('aria-label', tip); } else { delete n.dataset.origin; n.removeAttribute('tabindex'); n.removeAttribute('aria-label'); }
+      }
     }
     setClass(n, 'is-selected', this.selected === it.key);
   }

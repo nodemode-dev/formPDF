@@ -158,6 +158,8 @@
 .fs-pdf-notepop { position: absolute; z-index: 2; width: 220px; padding: 6px; border: 1px solid #d4b106; border-radius: 4px; background: #fff8c5; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); pointer-events: auto; }
 .fs-pdf-notepop .fs-pdf-edit { position: static; display: block; min-height: 96px; padding: 4px; outline: 0; background: transparent; color: #222; font-family: var(--font-ui); font-size: 13px; line-height: 1.45; resize: vertical; }
 .fs-pdf-annot[data-kind="redact"] { border: 1.5px solid #dc2626; background: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.55) 0 6px, rgba(220, 38, 38, 0.4) 6px 12px); pointer-events: auto; }
+.fs-pdf-annot[data-kind="redact"][data-origin="find"] { border: 1.5px solid var(--redact-ink); background: var(--redact-ink); }
+.fs-pdf-annot[data-kind="redact"][data-origin="find"]:focus-visible { outline: 2px solid var(--brand-orange); outline-offset: 2px; }
 .fs-pdf-annot[data-kind="redact"][data-white] { border: 1.5px dashed #64748b; background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.92) 0 6px, rgba(148, 163, 184, 0.45) 6px 12px); }
 .fs-pdfwb:not([data-tool="select"]):not([data-tool="redact"]) .fs-pdf-annot[data-kind="redact"] { pointer-events: none; }
 .fs-pdfwb[data-tool="redact"] .fs-pdf-annot[data-kind="redact"] { pointer-events: none; }

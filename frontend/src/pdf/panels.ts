@@ -1,5 +1,6 @@
 import { el, escapeHtml, patchList, q, setClass, setDisabled, setHidden, setText, setValue } from '../ui/dom';
 import { tf } from '../ui/i18n';
+import { api } from '../io/api';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 import { KIND_LABEL, uid, type Annotator, type Tool } from './annotate';
@@ -29,6 +30,7 @@ export interface Ctx {
   undo(): void;
 }
 
+const matchKey = (m: Match): string => `${m.page}:${m.rects[0]?.x ?? 0}:${m.rects[0]?.y ?? 0}:${m.text}`;
 const stem = (name: string): string => name.replace(/\.pdf$/i, '');
 const later = (c: Ctx, label: string, url: () => Promise<string>) => async (): Promise<Blob> => {
   const got = await c.run(label, async () => fetchBlob(await url()));
@@ -122,6 +124,7 @@ export class Panes {
   private matchesFor = '';
   private matchesKey = '';
   private stale = false;
+  private me = 'me';
   private hfFocus: Slot = 'footer-center';
   private hidden: HiddenItem[] = [];
   private hiddenFor = '';
@@ -686,7 +689,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
       for (const node of [box, n.querySelector('.fs-pdfwb-matchbody') as HTMLElement]) if (node.dataset.i !== String(x.i)) node.dataset.i = String(x.i);
     };
     patchList(this.$('.fs-pdfwb-matches'), list, {
-      key: (x) => `${x.m.page}:${x.m.rects[0]?.x ?? 0}:${x.m.rects[0]?.y ?? 0}:${x.m.text}`,
+      key: (x) => matchKey(x.m),
       create: (x) => {
         const n = el(`<div class="fs-pdfwb-match"><input type="checkbox" data-a="fr-tick" data-i="${x.i}" aria-label="Redact this match"><button class="fs-pdfwb-matchbody" type="button" data-a="fr-go" data-i="${x.i}"><span class="fs-pdfwb-matchpage">p. ${x.m.page}</span><span class="fs-pdfwb-ctx"><span></span><mark></mark><span></span></span></button></div>`);
         const parts = n.querySelectorAll('.fs-pdfwb-ctx > *');
@@ -701,7 +704,12 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
   }
 
   private matchAreas(which: Match[]): Area[] {
-    return which.flatMap((m) => m.rects.map((r) => ({ id: uid('r'), page: m.page, x: r.x - 1, y: r.y - 1, w: r.w + 2, h: r.h + 2 })));
+    return which.flatMap((m) => m.rects.map((r): Area => ({ id: uid('r'), page: m.page, x: r.x - 1, y: r.y - 1, w: r.w + 2, h: r.h + 2, origin: 'find', by: this.me, match: matchKey(m) })));
+  }
+
+  private async who(): Promise<string> {
+    try { this.me = String((await api.settings()).author ?? '').trim() || 'me'; } catch { this.me = this.me || 'me'; }
+    return this.me;
   }
 
   private syncSig(): void {
@@ -999,6 +1007,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
         if (!body.preset && !(body.query ?? '').trim()) { this.$<HTMLInputElement>('[data-a="fr-query"]').focus(); return; }
         void c.run('Finding', async () => {
           const res = await pdfApi.find(d.id, body);
+          await this.who();
           this.matches = res.matches;
           this.ticked = new Set(res.matches.map((_, i) => i));
           this.matchesFor = d.id;

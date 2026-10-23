@@ -55,7 +55,7 @@ export interface Annot {
   rects?: Rect[]; points?: Pt[]; paths?: Pt[][]; x?: number; y?: number; w?: number; h?: number; text?: string; size?: number; image?: string; quote?: string;
   replies?: Reply[]; status?: Status; target?: Target; stamp?: StampSpec;
 }
-export interface Area extends Rect { id: string; page: number; white?: boolean }
+export interface Area extends Rect { id: string; page: number; white?: boolean; origin?: 'find'; by?: string; match?: string }
 export interface RedactEntry { page: number; kind: 'text' | 'picture' | 'shape' | 'comment' | 'link' | 'field' | 'item' | 'page'; text: string; box: Rect | null }
 export type Redacted = Derived & { areas?: number; log?: RedactEntry[]; logMore?: number }
 export interface PdfComment {
@@ -126,7 +126,7 @@ export const pdfApi = {
   protect: (id: string, body: { password: string; owner?: string; permissions: Record<string, boolean> }) => api.post<Derived>(`${base(id)}/protect`, body),
   unlock: (id: string, password: string) => api.post<Derived>(`${base(id)}/unlock`, { password }),
   redact: (id: string, areas: Area[], look: { color?: string; overlay?: string; mode?: 'content' | 'raster' } = {}) => api.post<Redacted>(`${base(id)}/redact`, {
-    areas: areas.map((a) => (a.white ? { ...a, color: '#FFFFFF', overlay: '' } : a)), ...look }),
+    areas: areas.map(({ origin: _o, by: _b, match: _m, ...a }) => (a.white ? { ...a, color: '#FFFFFF', overlay: '' } : a)), ...look }),
   metadata: (id: string, body: { title?: string; author?: string; subject?: string; keywords?: string; strip?: boolean }) => api.post<Derived>(`${base(id)}/metadata`, body).then(rec('metadata', body)),
   compress: (id: string, quality: number) => api.post<Derived>(`${base(id)}/compress`, { quality }).then(rec('compress', { quality })),
   pageNumbers: (id: string, body: { position: string; start: number; format: string; size?: number }) => api.post<Derived>(`${base(id)}/page-numbers`, body).then(rec('page_numbers', body)),
