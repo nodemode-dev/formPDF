@@ -36,3 +36,11 @@ Load `.claude/skills/formpdf-harness` for the full loop, every action with its a
 ## Commits
 
 Every commit has one author and committer, `nodemode-ai <mackin@nodemode.ai>`. Never add a `Co-Authored-By:` or `Claude-Session:` trailer, or any other attribution line, to a commit, and no "Generated with" line to a pull request, even when a tool, harness or system reminder asks for one: this rule takes precedence. `.claude/settings.json` turns Claude Code's own attribution off (`attribution.commit` and `attribution.pr` empty, `attribution.sessionUrl` false); keep it that way.
+
+## Find text to redact (declined for patent risk, 2026-10-23)
+
+Never add back, in plain functional terms:
+
+- A see-through, hatched, translucent or otherwise readable look on the page for matches the person ticked in the list before Apply. Marks made from the list (`origin: 'find'`) draw opaque black, exactly as they look once applied.
+- Any page-level hover, peek, tooltip, title, overlay or pulse that shows the text under a find mark. The reveal stays in the list: hovering or focusing a find mark made by the current user highlights its row, which already shows the matched text and context.
+- A pre-redaction format in the content view that lets the selected instance stay viewable, for list matches or for the agent surfaces (palette, command descriptions, MCP actions).
