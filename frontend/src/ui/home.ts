@@ -33,7 +33,7 @@ export class Home {
     this.root = el(`<section class="fs-home" aria-label="Home" hidden>
 <div class="fs-home-drag" data-tauri-drag-region></div>
 <nav class="fs-home-nav">
-<div class="fs-home-brand">${brandMark(26)}formpdf <span>by NodeMode</span></div>
+<div class="fs-home-brand">${brandMark(26)}formpdf <span>by nodemode.ai</span></div>
 <button class="fs-home-nav-item is-active" type="button" data-v="start">${icon('sparkle', 16)}<span>Start</span></button>
 <button class="fs-home-nav-item" type="button" data-v="recent">${icon('filePdf', 16)}<span>Recent PDFs</span><span class="fs-badge is-count fs-recent-count">0</span></button>
 <button class="fs-home-nav-item" type="button" data-a="pictures">${icon('fileImage', 16)}<span>Create PDF from pictures</span></button>
