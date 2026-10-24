@@ -96,7 +96,7 @@ docs/       MANUAL.md
 
 ## Licence
 
-Apache-2.0 (see LICENSE). formpdf was extracted from formsld 0.5.1; third-party notices are in NOTICE.md.
+Apache-2.0. Copyright 2026 NodeAgentc, Inc. (see LICENSE). formpdf was extracted from formsld 0.5.1; third-party notices are in NOTICE.md.
 
 ## Trademarks
 
