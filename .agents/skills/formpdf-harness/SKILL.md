@@ -48,7 +48,7 @@ Full arguments and results: `references/tools.md`. Every pdf action: `references
 
 ## Consent
 
-The first call that changes a PDF or writes a file asks the person in the window: Allow agents to edit? If they say Not now the tool answers that, and asks again only after 120 seconds. Do not retry in a loop; ask the person to allow it (the question in the window, Agents, or Preferences). Reading never asks.
+The first call that changes a PDF or writes a file asks the person in the window: Allow agents to edit? If they say Not now the tool answers that, and asks again only after 120 seconds. Do not retry in a loop; ask the person to allow it (the question in the window, Agents, or Preferences). Reading never asks. With no window open nobody can be asked, so a call that changes a PDF is refused ("The formpdf window is not open, so nobody can approve agents") unless the person already allowed agents; ask them to open formpdf and allow agents, then retry.
 
 ## When something fails
 

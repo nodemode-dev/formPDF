@@ -7,7 +7,7 @@ Two jobs happen in this repo: doing PDF work with formpdf, and developing formpd
 The formpdf MCP server is configured in .mcp.json (http://127.0.0.1:8198/mcp). Start the app with `./formpdf` so changes appear live in the window. Workflow:
 
 1. get_context: is the window open, which PDF is open, are agents allowed.
-2. open_pdf {path} to put a PDF in front of the person, or pass `path` to a pdf action to work on a file without the window.
+2. open_pdf {path} to put a PDF in front of the person, or pass `path` to a pdf action to work on a file without the window (a changing call with no window open is refused unless the person already allowed agents; reading works).
 3. pdf {action, ...} for the job (info, text, find, header_footer, page_numbers, watermark, crop, redact, organize, protect, compress, to_docx, to_pptx and the rest). Without a path, a changing action edits the open PDF live and the person can undo your whole turn.
 4. render_pages {pages} and look at the contact sheet before you say it is done; extract {kind} for text, tables or pictures.
 5. save {path} only when the person asked for a file; otherwise leave the edited working copy for them to review and save.

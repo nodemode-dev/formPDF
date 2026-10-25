@@ -67,7 +67,7 @@ Every menu item, palette entry and shortcut is one command in a single catalogue
 
 Claude Code alone: `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`. Claude Desktop and other stdio clients: `./formpdf mcp`. Then ask, for example: "Use formpdf: add Bates numbers ACME-000001 to the PDF I have open and redact every email address." Changes land live in the window; Edit > Undo agent turn takes back the whole turn. The skills `formpdf-harness` (doing PDF work) and `formpdf-skillset` (developing formpdf) live in `.claude/skills`.
 
-Without the window: `./formpdf run page_numbers report.pdf --format "Page {n} of {total}"`; `./formpdf run actions` lists every action.
+Without the window (changing actions need agents allowed in Preferences, Agents, since nobody can approve with no window open): `./formpdf run page_numbers report.pdf --format "Page {n} of {total}"`; `./formpdf run actions` lists every action.
 
 ## Data
 

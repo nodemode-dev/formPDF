@@ -37,8 +37,8 @@ LABEL = actions.LABEL
 GUIDE = """# formpdf agent guide
 
 ## Loop
-1. get_context: is the window open, which PDF it shows (id, pages, current page, unsaved changes), recent PDFs, consent.
-2. open_pdf {path}: opens an absolute path in the window (and in the engine when no window is open). The PDF becomes "the open PDF".
+1. get_context: is the window open, which PDF it shows (id, pages, current page, unsaved changes), recent PDFs, consent. With no window open, a changing call is refused unless the person already allowed agents; reading always works.
+2. open_pdf {path}: opens an absolute path in the window (and in the engine when no window is open and agents are allowed). The PDF becomes "the open PDF".
 3. pdf {action, ...}: the job. Where it works:
    - no path: on the open PDF (or doc: an id or key from get_context). Changing actions replace it with the result live in the window,
      labelled as your turn; the person can undo the whole turn. Nothing is written to disk until save.
@@ -160,6 +160,7 @@ MODES = ("ask", "allowed", "blocked")
 MAX_SEEN = 40
 INAPP_CLIENT = "Claude Code in formpdf"
 BLOCKED = "Outside agents are blocked in formpdf's Preferences, Agents, so this call was refused. Tell the person where to change it and stop; do not retry."
+NO_WINDOW = "The formpdf window is not open, so nobody can approve agents. Ask the person to open formpdf and allow agents, then retry."
 _declined = [0.0]
 _consent_lock: list = []
 
@@ -299,7 +300,7 @@ async def _consent(a: Agent) -> str | None:
     if a.inapp or access() == "allowed" or any(c.agents for c in bridge.windows()):
         return None
     if not bridge.window_connected():
-        return None
+        return NO_WINDOW
     if time.monotonic() < _declined[0]:
         return "The person did not allow agents to edit in formpdf just now. Ask them to allow it (the question in the formpdf window, or Preferences), then retry."
     if not _consent_lock:
@@ -312,7 +313,7 @@ async def _consent(a: Agent) -> str | None:
             return BLOCKED
         res = await bridge.window_call("consent", {"agent": a.name}, 120)
         if res is None:
-            return None
+            return NO_WINDOW
         if (res.get("structuredContent") or {}).get("allowed"):
             config.write_settings({"outsideAgents": "allowed"})
             return None
@@ -718,7 +719,7 @@ async def t_get_context(a: Agent, args: dict) -> dict:
         lines.append(f"Open PDF: {win['name']} · id {win['id']} · key {win.get('key')} · {win['pages']} pages · on page {win.get('page')} · tab {win.get('tab')}"
                      f"{' · unsaved changes' if win.get('dirty') else ''}{' · last change by an agent' if win.get('agentTurn') else ''}" if win else "Open PDF: none (open_pdf {path} opens one)")
     else:
-        lines.append("Window: none open (headless: open_pdf opens PDFs in the engine; changes are kept as versions until save; ask the person to run ./formpdf to watch)")
+        lines.append("Window: none open (headless: reading works; changing calls need agents already allowed, otherwise ask the person to open formpdf and allow agents; open_pdf opens PDFs in the engine; changes are kept as versions until save)")
     for e in sorted(OPEN.values(), key=lambda e: -e["at"])[:10]:
         if not win or e["key"] != win.get("key"):
             lines.append(f"Agent-opened: {e['name']} · id {e['id']} · key {e['key']} · {len(e['history'])} version{'s' if len(e['history']) != 1 else ''}")
