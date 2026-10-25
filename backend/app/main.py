@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core import config
+from app.core.local_guard import LocalGuard
 from app.routers import agentdock, ai, batch, commands, identity, lists, live, mcp, media, pdf, reviews, scan, system
 from app.services import events, plugins, terminal
 
@@ -44,6 +45,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=config.APP_NAME, version=config.VERSION, lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=config.cors_origins(), allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Slides", "X-Text-Boxes"])
+app.add_middleware(LocalGuard, origins=config.cors_origins())
 app.include_router(system.router, prefix="/api")
 app.include_router(media.router, prefix="/api")
 app.include_router(pdf.router, prefix="/api")
