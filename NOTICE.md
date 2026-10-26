@@ -58,6 +58,7 @@ The formpdf mark, the stamps and the agent skills are original work of this repo
 | TypeScript, Vite, @tauri-apps/cli | Apache-2.0, MIT, MIT or Apache-2.0 |
 | PyInstaller | GPL-2.0 with the bootloader exception, which permits distributing the frozen engine |
 | pytest 9.1.1, httpx 0.28.1 (`backend/requirements-test.txt`, the test suite in `backend/tests` and CI only) | MIT, BSD-3-Clause |
+| Playwright for Python 1.63.0 (`frontend/tests/window`, the window smoke and CI only) | Apache-2.0 |
 | veraPDF (validation during development only, never shipped or called by formpdf) | GPL-3.0 or MPL-2.0 |
 
 No GPL or AGPL library is used by the engine or the window: PyMuPDF, pdf2docx and ghostscript are deliberately not used.
