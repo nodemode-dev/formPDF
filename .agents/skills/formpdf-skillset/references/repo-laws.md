@@ -28,7 +28,7 @@ No emoji anywhere. No em dash (U+2014) in markdown or UI text; use the interpunc
 
 ## Tests
 
-No tests, test files or test runners in the repo. Check with scratch scripts and scratch engines outside it; describe testing intent in the sidecar TEST_PLAN.md.
+Tests live in `backend/tests` and run in CI (FAMILY_TEST_PLAN v0.3.0, decision T0); write only the tests that plan or its successor names, hand-written, comment-free, with fixtures the tests generate. `cd backend && python -m pytest tests` runs them. Other checks still run from scratch scripts and scratch engines outside the repo; the sidecar TEST_PLAN.md says what is covered.
 
 ## Licences
 
