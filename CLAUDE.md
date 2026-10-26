@@ -24,7 +24,7 @@ Load `.claude/skills/formpdf-harness` for the full loop, every action with its a
 - Edits are surgical, one region at a time; no scripted edits. Near-zero comments: rationale goes in frontend/HASHOUT_LOG.md and backend/HASHOUT_LOG.md.
 - No emoji, no em dashes in markdown, icons are inline currentColor SVG in ui/icons.ts, z-index only from tokens.css.
 - Zero DOM flash: patch nodes, never rebuild a live container; verify under 4x CPU and network throttling.
-- No tests in the repo; checks run from a scratch folder. Licences stay permissive (no PyMuPDF, pdf2docx or ghostscript).
+- Tests live in `tests/` folders and run in CI; write only tests this plan or its successor names. The plan is `FAMILY_TEST_PLAN.md` in the formai_dev sidecar; `cd backend && python -m pytest tests` runs them. Licences stay permissive (no PyMuPDF, pdf2docx or ghostscript).
 - Commits: Conventional Commits `type(scope): summary (x.y.z)` with a body, version bump commit last.
 
 ## Trademarks, copyright and licences

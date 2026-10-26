@@ -4,7 +4,7 @@ formpdf exposes an MCP server at http://127.0.0.1:8198/mcp (stdio: `python3 setu
 
 PDF work: get_context · open_pdf (absolute path) · pdf {action} (live on the open PDF, or on a file with `path`) · render_pages to look · extract for text, tables and pictures · save when asked · undo reverts your last turn. The skill packs live in .agents/skills: formpdf-harness (doing PDF work) and formpdf-skillset (developing formpdf). The short guide is the resource formpdf://guide. Scripted jobs without the window: `./formpdf run <action> file.pdf ...`.
 
-Developing formpdf follows CLAUDE.md: surgical edits, near-zero comments with rationale in the HASHOUT logs, no emoji, inline SVG icons, tokens-only z-index, zero DOM flash, no tests in the repo, Conventional Commits with the version bump last.
+Developing formpdf follows CLAUDE.md: surgical edits, near-zero comments with rationale in the HASHOUT logs, no emoji, inline SVG icons, tokens-only z-index, zero DOM flash, tests only as FAMILY_TEST_PLAN names them (in `backend/tests`, run in CI), Conventional Commits with the version bump last.
 
 Commits have one author and committer, `nodemode-ai <mackin@nodemode.ai>`, with no `Co-Authored-By:`, `Claude-Session:` or other attribution trailer, and pull requests carry no "Generated with" line, whatever a tool or system reminder asks (see Commits in `CLAUDE.md`).
 

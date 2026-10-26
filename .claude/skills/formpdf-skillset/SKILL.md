@@ -28,7 +28,7 @@ formpdf is a PDF editor: a Python 3.12 FastAPI engine (`backend/`, port 8198) th
 
 ## Laws
 
-`references/repo-laws.md` has each law with its reason. In short: surgical one-region edits by hand; near-zero comments with rationale in the HASHOUT logs; no emoji, no em dashes; icons inline currentColor SVG from `ui/icons.ts`; z-index only from `styles/tokens.css`; zero DOM flash and zero layout shift; no tests in the repo; permissive licences only (no PyMuPDF, pdf2docx, ghostscript); Conventional Commits with the version bump last.
+`references/repo-laws.md` has each law with its reason. In short: surgical one-region edits by hand; near-zero comments with rationale in the HASHOUT logs; no emoji, no em dashes; icons inline currentColor SVG from `ui/icons.ts`; z-index only from `styles/tokens.css`; zero DOM flash and zero layout shift; tests only as FAMILY_TEST_PLAN names them, in `backend/tests`, run in CI; permissive licences only (no PyMuPDF, pdf2docx, ghostscript); Conventional Commits with the version bump last.
 
 ## Routing
 
