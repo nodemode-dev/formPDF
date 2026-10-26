@@ -22,6 +22,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - run: npm audit
       - run: npm run build
 
   backend:
@@ -45,6 +46,23 @@ jobs:
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8198/api/health && break; sleep 1; done
           curl -sf http://127.0.0.1:8198/api/health
           curl -sf http://127.0.0.1:8198/api/version
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-test.txt
+      - name: Engine and test dependencies
+        run: pip install -r backend/requirements.txt -r backend/requirements-test.txt
+      - name: Family layers, redaction, sanitize, signatures, forms, pages, writes and turns
+        working-directory: backend
+        run: python -m pytest tests -q -p no:cacheprovider
 
   scripts:
     runs-on: ubuntu-latest
