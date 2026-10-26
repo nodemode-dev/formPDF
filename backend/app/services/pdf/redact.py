@@ -498,10 +498,7 @@ def apply(src, out, areas: list[dict], *, passwords: list[str] | None = None, co
         page = w.pages[p - 1]
         ops = interp.page_operations(page, w)
         streams.write_page(page, w, list(ops) + _overlay(w, page, areas_pdf, looks[p]))
-    try:
-        w.compress_identical_objects(remove_identicals=False, remove_orphans=True)
-    except Exception:
-        pass
+    core.drop_unreachable(w)
     with open(out, "wb") as fh:
         w.write(fh)
     apply.last = report

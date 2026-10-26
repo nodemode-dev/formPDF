@@ -435,10 +435,7 @@ def sanitize(src, out, *, remove: list[str], passwords: list[str] | None = None)
             del page["/Annots"]
     if names is not None and isinstance(names, DictionaryObject) and not len(names):
         del root["/Names"]
-    try:
-        w.compress_identical_objects(remove_identicals=False, remove_orphans=True)
-    except Exception:
-        pass
+    core.drop_unreachable(w)
     with open(out, "wb") as fh:
         w.write(fh)
     return {"pages": len(w.pages), "removed": want, "flattened": flattened}

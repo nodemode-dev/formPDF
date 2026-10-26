@@ -41,6 +41,34 @@ def lean(doc) -> None:
         doc.resolved_objects.clear()
 
 
+def drop_unreachable(w: PdfWriter) -> int:
+    from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject
+
+    seen: set[int] = set()
+    stack = [o for o in (w.root_object, getattr(w, "_info", None), getattr(w, "_ID", None), getattr(w, "_encrypt_entry", None)) if o is not None]
+    for start in list(stack):
+        ref = getattr(start, "indirect_reference", None)
+        if isinstance(ref, IndirectObject) and ref.pdf is w:
+            seen.add(ref.idnum)
+    while stack:
+        item = stack.pop()
+        if isinstance(item, IndirectObject):
+            if item.idnum in seen or item.pdf is not w:
+                continue
+            seen.add(item.idnum)
+            item = item.get_object()
+        if isinstance(item, DictionaryObject):
+            stack.extend(item.values())
+        elif isinstance(item, ArrayObject):
+            stack.extend(item)
+    dropped = 0
+    for k, obj in enumerate(w._objects):
+        if obj is not None and k + 1 not in seen:
+            w._objects[k] = None
+            dropped += 1
+    return dropped
+
+
 def reader(path, passwords: list[str] | None = None) -> PdfReader:
     p = Path(str(path))
     lazy = p.is_file() and p.stat().st_size >= LAZY_BYTES

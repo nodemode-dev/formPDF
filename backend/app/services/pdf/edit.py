@@ -216,10 +216,7 @@ def organize(src, out, items: list[dict], resolve, *, passwords: list[str] | Non
     removed = {_idnum(r) for r in original} - used
     _scrub(w, removed)
     _scrub_fields(w, _widgets(r.get_object() for r in original if _idnum(r) in removed))
-    try:
-        w.compress_identical_objects(remove_identicals=False, remove_orphans=True)
-    except Exception:
-        pass
+    core.drop_unreachable(w)
     return _write(w, out)
 
 
@@ -487,10 +484,7 @@ def redact(src, out, areas: list[dict], *, passwords: list[str] | None = None, d
     finally:
         doc.close()
     _scrub_fields(w, removed_widgets)
-    try:
-        w.compress_identical_objects(remove_identicals=False, remove_orphans=True)
-    except Exception:
-        pass
+    core.drop_unreachable(w)
     n = _write(w, out)
     return {"pages": n, "areas": sum(len(b) for b in by_page.values()), "logMore": 0,
             "log": [{"page": p, "kind": "page", "text": "Page turned into a picture: all text, links, comments and fields on it are gone, and the marked areas are painted over",
