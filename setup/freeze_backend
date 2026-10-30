@@ -15,6 +15,11 @@ if [ -d "$FORMPDF_ROOT/backend/app/dict" ]; then extra+=(--add-data "$FORMPDF_RO
 extra+=(--hidden-import ptyprocess)
 if python -c "import winpty" 2>/dev/null; then extra+=(--hidden-import winpty); fi
 if python -c "import rapidocr, onnxruntime" 2>/dev/null; then extra+=(--collect-all rapidocr --collect-all onnxruntime --collect-all shapely --collect-all pyclipper); fi
+release_ocr=""
+[ -n "${FORMCOMPILER_VERSION:-}" ] && [ "${FORMPDF_NO_OCR:-}" != "1" ] && release_ocr=1
+if [ -n "$release_ocr" ]; then
+  python -c "import rapidocr, onnxruntime, shapely, pyclipper, cv2" || fp_die "a release build must bundle text recognition (OCR) and its modules are missing; run ./formpdf install"
+fi
 if [ "$(fp_os)" = macos ]; then
   gpl="$(python -c 'import pathlib, cv2; print("\n".join(str(p) for p in pathlib.Path(cv2.__file__).parent.rglob("*") if any(k in p.name.lower() for k in ("libx264", "libx265", "librubberband", "libvidstab", "libpostproc"))))' 2>/dev/null | head -1)"
   [ -z "$gpl" ] || fp_die "GPL FFmpeg library in OpenCV: $gpl. Reinstall opencv from source without FFmpeg: PIP_NO_BINARY=opencv-python,opencv-python-headless CMAKE_ARGS=-DWITH_FFMPEG=OFF pip install --force-reinstall -r requirements_ocr.txt"
@@ -30,5 +35,9 @@ pyinstaller --noconfirm --clean --onefile --name formpdf-engine \
 mkdir -p "$FORMPDF_ROOT/src-tauri/binaries"
 out="$FORMPDF_ROOT/src-tauri/binaries/formpdf-engine-${triple}${ext}"
 cp "dist-engine/formpdf-engine${ext}" "$out"
-"$out" --selfcheck
+check="$("$out" --selfcheck)"
+printf '%s\n' "$check"
+if [ -n "$release_ocr" ]; then
+  printf '%s\n' "$check" | python -c 'import json, sys; raise SystemExit(0 if json.loads(sys.stdin.read().strip().splitlines()[-1]).get("ocr") is True else 1)' || fp_die "the frozen engine reports text recognition (OCR) unavailable, and a release build must ship it"
+fi
 fp_say "sidecar ready: $out"

@@ -18,5 +18,11 @@ else
   pip install -r requirements.txt
 fi
 if [ "${FORMPDF_NO_OCR:-}" != "1" ]; then
-  pip install -r requirements_ocr.txt || echo "[formpdf] Text recognition (OCR) could not be installed; everything else works. Run ./formpdf install again to retry." >&2
+  if ! pip install -r requirements_ocr.txt; then
+    if [ -n "${FORMCOMPILER_VERSION:-}" ]; then
+      echo "[formpdf] error: text recognition (OCR) could not be installed, and a release build must ship it" >&2
+      exit 1
+    fi
+    echo "[formpdf] Text recognition (OCR) could not be installed; everything else works. Run ./formpdf install again to retry." >&2
+  fi
 fi
