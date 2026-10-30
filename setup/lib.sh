@@ -34,6 +34,9 @@ fp_target_triple() {
   rustc -vV | awk '/^host:/ {print $2}'
 }
 fp_exe() { [ "$(fp_os)" = windows ] && echo ".exe" || echo ""; }
+fp_native_path() {
+  if [ "$(fp_os)" = windows ]; then cygpath -w "$1"; else printf '%s\n' "$1"; fi
+}
 fp_rust_env() {
   [ -d "$HOME/.cargo/bin" ] && PATH="$HOME/.cargo/bin:$PATH"
   export PATH

@@ -10,8 +10,8 @@ sep=":"
 [ "$(fp_os)" = windows ] && sep=";"
 ext="$(fp_exe)"
 extra=()
-if [ -d "$FORMPDF_ROOT/backend/app/fonts" ]; then extra+=(--add-data "$FORMPDF_ROOT/backend/app/fonts${sep}fonts"); fi
-if [ -d "$FORMPDF_ROOT/backend/app/dict" ]; then extra+=(--add-data "$FORMPDF_ROOT/backend/app/dict${sep}dict"); fi
+if [ -d "$FORMPDF_ROOT/backend/app/fonts" ]; then extra+=(--add-data "$(fp_native_path "$FORMPDF_ROOT/backend/app/fonts")${sep}fonts"); fi
+if [ -d "$FORMPDF_ROOT/backend/app/dict" ]; then extra+=(--add-data "$(fp_native_path "$FORMPDF_ROOT/backend/app/dict")${sep}dict"); fi
 extra+=(--hidden-import ptyprocess)
 if python -c "import winpty" 2>/dev/null; then extra+=(--hidden-import winpty); fi
 if python -c "import rapidocr, onnxruntime" 2>/dev/null; then extra+=(--collect-all rapidocr --collect-all onnxruntime --collect-all shapely --collect-all pyclipper); fi
@@ -27,11 +27,11 @@ fi
 rm -rf build/pyinstaller dist-engine
 pyinstaller --noconfirm --clean --onefile --name formpdf-engine \
   --distpath dist-engine --workpath build/pyinstaller --specpath build/pyinstaller \
-  --add-data "$FORMPDF_ROOT/frontend/dist${sep}frontend_dist" \
+  --add-data "$(fp_native_path "$FORMPDF_ROOT/frontend/dist")${sep}frontend_dist" \
   --collect-submodules app --collect-submodules uvicorn --collect-submodules fontTools \
   --collect-all pptx --collect-all pdfplumber --hidden-import pypdfium2 --collect-all pyhanko --collect-all pyhanko_certvalidator \
   "${extra[@]}" \
-  "$FORMPDF_ROOT/backend/formpdf_engine.py"
+  "$(fp_native_path "$FORMPDF_ROOT/backend/formpdf_engine.py")"
 mkdir -p "$FORMPDF_ROOT/src-tauri/binaries"
 out="$FORMPDF_ROOT/src-tauri/binaries/formpdf-engine-${triple}${ext}"
 cp "dist-engine/formpdf-engine${ext}" "$out"
