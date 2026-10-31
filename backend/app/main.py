@@ -1,5 +1,6 @@
 import asyncio
 import json
+import mimetypes
 import os
 import time
 from contextlib import asynccontextmanager
@@ -12,6 +13,10 @@ from app.core import config
 from app.core.local_guard import LocalGuard
 from app.routers import agentdock, ai, batch, commands, identity, lists, live, mcp, media, pdf, reviews, scan, system
 from app.services import events, plugins, terminal
+
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/javascript", ".mjs")
+mimetypes.add_type("text/css", ".css")
 
 
 def _write_discovery() -> None:
