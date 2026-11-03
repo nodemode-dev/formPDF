@@ -54,7 +54,7 @@ tracked text.
 - Keep each pull request to one change, with tests for what it adds or fixes.
 - Write commit subjects the way the history does, in Conventional Commits:
   `feat(scope): ...`, `fix(scope): ...`, `docs(...)`, with a body. Leave the version
-  alone; the maintainer bumps it when releasing.
+  alone; a maintainer bumps it when releasing.
 - Every window action is a command in `frontend/src/ui/commands.ts`, so agents and the
   command line get it too. Add new actions as commands.
 - A changed English string is changed in place in all 23 tables in
@@ -66,17 +66,30 @@ tracked text.
   Every new dependency, font or data file gets a row in `NOTICE.md`.
 - Other vendors' product names appear only to describe a format or compatibility.
   Never copy vendor help text, stamps, icons or sample files.
-- Some find-to-redact behaviours were declined for patent risk; CLAUDE.md says what
-  must never come back.
+- Some find-to-redact behaviours were declined for patent risk and will not come back:
+  a see-through or hatched look for ticked matches before Apply (marks from the find
+  list draw opaque black), any hover, tooltip or overlay on the page that shows the
+  text under a find mark (the list shows it instead), and a pre-redaction view that
+  keeps the selected match readable.
+
+## Maintainers
+
+FormPDF is maintained by:
+
+- the [nodemode-dev](https://github.com/nodemode-dev) organisation on GitHub
+- [@nodemode-ai](https://github.com/nodemode-ai)
+- [@gbarnai](https://github.com/gbarnai)
+
+Reach them through issues and pull requests.
 
 ## How changes land
 
-Only the maintainer pushes to `main`. Everyone else forks the repository and opens a pull request into `main`. A pull request merges when all five checks pass on an up-to-date branch and the maintainer has approved it after its last push.
+Only a maintainer pushes to `main`. Everyone else forks the repository and opens a pull request into `main`. A pull request merges when all five checks pass on an up-to-date branch and a maintainer has approved it after its last push.
 
 ## Releases
 
-A release is a version, and only the maintainer makes one: after the version is bumped on
-`main`, the maintainer cuts a `compile_vX.Y.Z` branch, and formcompiler
+A release is a version, and only a maintainer makes one: after the version is bumped on
+`main`, a maintainer cuts a `compile_vX.Y.Z` branch, and formcompiler
 (`nodemode-dev/formcompiler`) builds every platform and publishes them together. No push
 from a contributor starts a release. The README's Desktop section has the details.
 
