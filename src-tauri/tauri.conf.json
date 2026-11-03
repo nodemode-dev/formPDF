@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "formpdf",
+  "productName": "FormPDF",
   "version": "0.57.0",
   "identifier": "ai.nodemode.formpdf",
   "build": {
@@ -10,7 +10,7 @@
     "windows": [
       {
         "label": "splash",
-        "title": "formpdf",
+        "title": "FormPDF",
         "url": "splash.html",
         "width": 360,
         "height": 200,
