@@ -194,7 +194,7 @@ fn main() {
                             })
                             .unwrap_or(FALLBACK_LOGICAL);
                         let builder = WebviewWindowBuilder::new(&handle, "main", WebviewUrl::External(url))
-                            .title("formpdf")
+                            .title("FormPDF")
                             .visible(reveal::BUILD_VISIBLE)
                             .background_color(reveal::BACKGROUND)
                             .inner_size(width, height)
