@@ -77,7 +77,7 @@ export class NativeMenus {
       };
       const top = [];
       top.push(await api.Submenu.new({ text: 'formpdf', items: [
-        await api.PredefinedMenuItem.new({ item: { About: { name: 'formpdf' } }, text: t('About formpdf') }),
+        await api.PredefinedMenuItem.new({ item: { About: { name: 'formpdf', copyright: 'Copyright 2026 NodeAgentc, Inc. Apache-2.0', license: 'Apache-2.0' } }, text: t('About formpdf') }),
         await api.PredefinedMenuItem.new({ item: 'Separator' }),
         ...(this.commands.get('pdf-preferences') ? [await make('pdf-preferences')] : []),
         await api.PredefinedMenuItem.new({ item: 'Separator' }),
