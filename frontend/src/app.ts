@@ -27,7 +27,7 @@ export async function startApp(): Promise<void> {
   applyTheme();
   await startLanguage(() => api.settings().then((s) => s.language));
   startPageTranslator();
-  document.title = `formpdf ${VERSION}`;
+  document.title = `FormPDF ${VERSION}`;
   const live = new LiveClient(navigator.platform || 'window');
   let agentAccess = 'ask';
   const setAccess = (mode: string): void => {

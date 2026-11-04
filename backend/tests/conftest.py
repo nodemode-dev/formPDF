@@ -33,7 +33,7 @@ READ_TOOL = ("get_context", {})
 CHANGING_TOOL = ("undo", {})
 INAPP_HEADER = "x-formpdf-inapp"
 VERSION_SITES = [
-    ("README.md", r"^Version (\S+) ·"),
+    ("README.md", r'^  <img alt="version (\S+)" src='),
     ("backend/app/__init__.py", r'^__version__ = "([^"]+)"'),
     ("frontend/package.json", r'^  "version": "([^"]+)"'),
     ("frontend/src/version.ts", r"^export const VERSION = '([^']+)'"),
