@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "FormPDF",
-  "version": "0.57.2",
+  "version": "0.57.3",
   "identifier": "ai.nodemode.formpdf",
   "build": {
     "frontendDist": "../frontend/dist"
@@ -33,7 +33,10 @@
     "category": "Productivity",
     "shortDescription": "A PDF editor",
     "longDescription": "formpdf is a PDF editor in the NodeMode design system: read, comment, fill and sign, build forms, organize, split and merge, add headers, footers and Bates numbers, find and redact, protect, compress and export to Word or PowerPoint, with agent automation that edits the open PDF live.",
-    "copyright": "Copyright 2026 nodemode-ai.",
+    "publisher": "NodeAgentc, Inc.",
+    "copyright": "Copyright 2026 NodeAgentc, Inc. Apache-2.0",
+    "license": "Apache-2.0",
+    "licenseFile": "../LICENSE",
     "externalBin": ["binaries/formpdf-engine"],
     "resources": {
       "../LICENSE": "LICENSE",
