@@ -643,7 +643,7 @@ class HelpDialog extends Dialog {
   constructor() {
     super('formpdf Help', 560);
     this.body.appendChild(el(`<div class="fs-dlg-stack">
-<div class="fs-dlg-about">${brandMark(36)}<div><div class="fs-dlg-about-name">formpdf</div><div class="fs-note">Version ${escapeHtml(VERSION)} · a PDF editor in the form family</div></div></div>
+<div class="fs-dlg-about">${brandMark(36)}<div><div class="fs-dlg-about-name">formpdf</div><div class="fs-note">Version ${escapeHtml(VERSION)} · a PDF editor in the form family</div><div class="fs-note">Copyright 2026 NodeAgentc, Inc. · <a href="https://github.com/nodemode-dev/formpdf/blob/main/LICENSE" target="_blank" rel="noopener">Apache License 2.0</a></div></div></div>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Quick start</div><ol class="fs-dlg-steps">
 <li><strong>Open a PDF.</strong> Drop it on Home, choose Open PDF, open one by path, or pick a recent one.</li>
 <li><strong>Pick a tab.</strong> View, Comment, Fill Forms and Sign, Prepare form, Edit, Organize, Extract, Protect and Convert each have their tools above the page and their settings on the right.</li>
