@@ -4,7 +4,7 @@ description: "Guides development of the formpdf codebase: its FastAPI engine, va
 license: Apache-2.0
 metadata:
   author: formpdf
-  version: "0.58.3"
+  version: "0.59.0"
 ---
 
 # formpdf skillset
