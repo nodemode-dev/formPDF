@@ -25,6 +25,7 @@ import { reveal } from './sections';
 import { LAYOUTS, Panes, type Ctx, type Doc, type Tab } from './panels';
 import { recall, REFLOW_SIZES, Reflow, remember, Speaker } from './reading';
 import { loadPlugins } from './plugins';
+import { extensionMenu } from '../ext/extensions';
 import { enterTab, lateTools, mountTools, pageTools, renderedTools, syncTools, TAB_WORDS, type ToolHost } from './tools';
 import { Thumbs, Viewer, type Layout } from './viewer';
 import { Workspaces } from './workspace';
@@ -46,7 +47,7 @@ const LOCAL = {
   polyline: '<path d="M3.5 18.5l5-9 5 6 7-11"/><circle cx="3.5" cy="18.5" r="1"/><circle cx="20.5" cy="4.5" r="1"/>',
   cloud: '<path d="M5 8.5a2.2 2.2 0 0 1 3.5-2.4a2.2 2.2 0 0 1 3.5 0a2.2 2.2 0 0 1 3.5 0a2.2 2.2 0 0 1 3.5 2.4a2.2 2.2 0 0 1 0 3.5a2.2 2.2 0 0 1 0 3.5a2.2 2.2 0 0 1-3.5 2.4a2.2 2.2 0 0 1-3.5 0a2.2 2.2 0 0 1-3.5 0a2.2 2.2 0 0 1-3.5-2.4a2.2 2.2 0 0 1 0-3.5a2.2 2.2 0 0 1 0-3.5z"/>',
 };
-const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill Forms and Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print'], ['assistant', 'Assistant']];
+const TABS: Array<[Tab, string]> = [['view', 'View'], ['comment', 'Comment'], ['fill', 'Fill Forms and Sign'], ['form', 'Prepare form'], ['edit', 'Edit'], ['organize', 'Organize'], ['extract', 'Extract'], ['protect', 'Protect'], ['convert', 'Convert'], ['access', 'Accessibility'], ['print', 'Print'], ['assistant', 'Assistant'], ['extensions', 'Extensions']];
 const LAYOUT_KEY = 'fs-pdf-layout';
 const VIEWER_KEY = 'fs-pdf-viewer';
 const SAY_KEY = 'fs-pdf-say';
@@ -101,6 +102,7 @@ const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF
 <div class="fs-tb fs-pdfwb-set" data-for="convert" hidden><span class="fs-pdfwb-settext">PowerPoint, Word, Excel, web pages, smaller files and pictures.</span></div>
 <div class="fs-tb fs-pdfwb-set" data-for="access" hidden><span class="fs-pdfwb-settext">Check, tag, set the reading order and describe pictures for screen readers.</span></div>
 <div class="fs-tb fs-pdfwb-set" data-for="print" hidden><span class="fs-pdfwb-settext">Pages per sheet, booklets, posters, grayscale, PDF/A, PDF/X and preflight.</span></div>
+<div class="fs-tb fs-pdfwb-set" data-for="extensions" hidden><span class="fs-pdfwb-settext">Extensions from FormPortal and form.ext, each in its own sandbox.</span></div>
 </div>
 <div class="fs-pdfwb-bar" hidden role="alert"><span class="fs-pdfwb-bar-icon">${icon('warning', 16)}</span><span class="fs-pdfwb-bar-text"></span><input class="fs-input fs-pdfwb-bar-input" hidden spellcheck="false"><div class="fs-pdfwb-bar-actions"></div></div>
 <div class="fs-pdfwb-main">
@@ -296,7 +298,7 @@ class Workbench {
       { id: 'pdf-fit-page', label: 'Fit page', enabled: () => !!this.doc, run: () => this.viewer.applyFit('page') },
       { id: 'pdf-rotate', label: 'Rotate view', enabled: () => !!this.doc, run: () => this.viewer.rotateView(90) },
       { id: 'pdf-go-page', label: 'Go to page…', words: ['page number', 'jump'], when: 'Use when the person or a task needs a specific page shown in the window.', params: { page: { type: 'integer', min: 1, description: '1-based page number; without it the page box is focused' } }, enabled: () => !!this.doc, why: () => 'Open a PDF first', run: (p) => { const n = Number(p?.page); if (p?.page !== undefined && this.showPage(n)) return { page: n }; if (p?.page !== undefined) throw new Error(`page ${p.page} is outside 1 to ${this.viewer.pages.length}`); q<HTMLInputElement>(this.root, '.fs-pdfwb-pagein').select(); return null; } },
-      ...TABS.map(([t, l]) => ({ id: `pdf-tab-${t}`, label: l, words: TAB_WORDS[t], checked: () => this.tab === t, enabled: () => !!this.doc || t === 'view', run: () => this.setTab(t) })),
+      ...TABS.map(([t, l]) => ({ id: `pdf-tab-${t}`, label: l, words: TAB_WORDS[t], checked: () => this.tab === t, enabled: () => !!this.doc || t === 'view' || t === 'extensions', run: () => this.setTab(t) })),
       { id: 'pdf-agents', label: 'Agents and MCP…', run: () => this.opts.app.agents() },
       { id: 'pdf-help', label: 'formpdf Help', keys: ['F1'], run: () => this.opts.app.help() },
       { id: 'pdf-shortcuts', label: 'Keyboard shortcuts', keys: ['Mod+/'], run: () => this.opts.app.shortcuts(this.cmds) },
@@ -320,6 +322,7 @@ class Workbench {
       { label: 'Edit', items: ['pdf-undo', 'pdf-redo', 'pdf-undo-agent', '-', 'tool-content-select', 'tool-add-text', 'tool-add-picture', '-', 'tool-fonts', 'tool-move-to-page', '-', 'pdf-find'] },
       { label: 'View', items: ['pdf-viewer', '-', ...LAYOUTS.map(([v]) => `pdf-layout-${v}`), 'pdf-cover', '-', 'pdf-reading', '-', 'pdf-zoom-in', 'pdf-zoom-out', 'pdf-fit-width', 'pdf-fit-page', 'pdf-rotate', '-', 'pdf-compare', '-', 'pdf-custom-title-bar', 'pdf-menus-in-window'] },
       { label: 'Tools', items: [...TABS.map(([t]) => `pdf-tab-${t}`), '-', 'tool-lists', 'tool-lists-record'] },
+      { label: 'Extensions', items: () => extensionMenu() },
       { label: 'Window', items: () => [...this.ws.menuItems(), '-', 'view-agent-dock', 'view-new-terminal', 'agent-claude-code', 'agent-chat'] },
       { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
     ];
@@ -841,6 +844,7 @@ class Workbench {
     this.panes.syncDoc();
     this.panes.syncAnnots();
     if (org) this.organizer.root.focus({ preventScroll: true });
+    this.onView?.();
   }
 
   private setTool(tool: Tool): void {
@@ -898,7 +902,14 @@ class Workbench {
     this.thumbs.setCurrent(n);
     this.status.sync();
     if (this.tab === 'view') this.panes.syncDoc();
+    this.onView?.();
   }
+
+  onView: (() => void) | null = null;
+
+  refreshMenus(): void { void this.native?.build().catch(() => undefined); }
+
+  openTab(tab: Tab): void { this.setTab(tab); }
 
   private async guard(action: () => Promise<void>): Promise<void> {
     if (!this.dirty()) { await action(); return; }
@@ -1532,7 +1543,7 @@ class Workbench {
     this.status.sync();
     for (const a of ['print', 'save']) setDisabled(q<HTMLButtonElement>(this.root, `.fs-pdfwb-actions [data-a="${a}"]`), !has);
     setClass(q(this.root, '.fs-pdfwb-edited'), 'is-off', !this.dirty());
-    for (const s of Array.from(this.root.querySelectorAll<HTMLButtonElement>('.fs-pdfwb-tab'))) setDisabled(s, !has && s.dataset.tab !== 'view');
+    for (const s of Array.from(this.root.querySelectorAll<HTMLButtonElement>('.fs-pdfwb-tab'))) setDisabled(s, !has && s.dataset.tab !== 'view' && s.dataset.tab !== 'extensions');
     setDisabled(q<HTMLButtonElement>(this.root, '[data-a="org-apply"]'), !this.organizer.dirty);
     setDisabled(q<HTMLButtonElement>(this.root, '[data-a="org-reset"]'), !this.organizer.dirty);
     for (const a of ['org-delete']) setDisabled(q<HTMLButtonElement>(this.root, `.fs-pdfwb-tools [data-a="${a}"]`), !this.organizer.selected.size);

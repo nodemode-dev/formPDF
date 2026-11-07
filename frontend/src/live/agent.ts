@@ -1,4 +1,5 @@
 import type { Catalogue } from '../automation/catalogue';
+import type { Extensions } from '../ext/extensions';
 import type { AgentReply, Workbench } from '../pdf/workbench';
 import { Dialog } from '../ui/dialogs';
 import { el, setText } from '../ui/dom';
@@ -42,7 +43,7 @@ export class AgentBridge {
   private consentAsk: Promise<boolean> | null = null;
   private consentDlg: Consent | null = null;
 
-  constructor(private readonly h: { bench: () => Workbench; allow: () => void; catalogue: () => Catalogue }) {}
+  constructor(private readonly h: { bench: () => Workbench; allow: () => void; catalogue: () => Catalogue; extensions?: () => Extensions }) {}
 
   async run(name: string, args: Record<string, unknown>): Promise<ToolResult> {
     const wb = this.h.bench();
@@ -79,6 +80,8 @@ export class AgentBridge {
     if (name === 'commit') return reply(await wb.agentCommit(str(args.from), str(args.id), str(args.label) || 'Agent change', str(args.turn), str(args.agent) || 'Agent'));
     if (name === 'undo-turn') return reply(await wb.undoAgent());
     if (name === 'saved') { wb.agentSaved(str(args.id)); return reply({ ok: true, text: 'The window knows the PDF was saved.' }); }
+    if (name === 'extensions-list' && this.h.extensions) return reply(this.h.extensions().agentList());
+    if (name === 'extension-command' && this.h.extensions) return reply(await this.h.extensions().command(str(args.id), str(args.command), args.args ?? {}));
     if (name === 'ai-answer') { window.dispatchEvent(new CustomEvent('fs-ai-answer', { detail: args })); return reply({ ok: true, text: 'The answer is in the Assistant tab.' }); }
     return reply({ ok: false, text: `The window has no tool named ${name}.` });
   }

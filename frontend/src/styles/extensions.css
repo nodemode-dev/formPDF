@@ -1,0 +1,27 @@
+.fs-ext-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.fs-ext-row { display: flex; flex-direction: column; gap: 6px; padding: var(--space-2) var(--space-3); border: 1px solid var(--line-1); border-radius: var(--radius); background: var(--surface-1); }
+.fs-ext-head { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.fs-ext-name { flex: 0 1 auto; min-width: 0; overflow: hidden; color: var(--text-primary); font-size: var(--fs-13); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.fs-ext-ver { flex: none; color: var(--text-muted); font-family: var(--font-mono); font-size: var(--fs-11); }
+.fs-ext-src { margin-left: auto; }
+.fs-pdfwb-sec .fs-ext-desc, .fs-pdfwb-sec .fs-ext-path, .fs-pdfwb-sec .fs-ext-why, .fs-pdfwb-sec .fs-ext-root { margin: 0; }
+.fs-ext-desc[hidden], .fs-ext-path[hidden], .fs-ext-empty[hidden] { display: none; }
+.fs-ext-chips, .fs-ext-acts { display: flex; flex-wrap: wrap; gap: 4px; }
+.fs-ext-chips:empty, .fs-ext-acts:empty { display: none; }
+.fs-ext-chip { font-family: var(--font-mono); font-weight: 400; }
+.fs-ext-state { display: flex; align-items: center; gap: var(--space-2); min-height: 18px; }
+.fs-ext-st { padding-left: 6px; }
+.fs-ext-st::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.fs-ext-why { min-width: 0; }
+.fs-ext-path, .fs-ext-root { overflow: hidden; font-family: var(--font-mono); font-size: var(--fs-11); text-overflow: ellipsis; white-space: nowrap; }
+.fs-pdfwb-sec p.fs-ext-root { min-height: 1.45em; margin: var(--space-2) 0 var(--space-3); }
+.fs-ext-empty { padding: var(--space-2) 0; }
+.fs-ext-foot { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.fs-ext-dock { padding: 0; }
+.fs-ext-dock > .fs-pdfwb-sec-title, .fs-pdfwb-pane.has-chips > .fs-pdfwb-sec.fs-ext-dock:not(.is-ws-float) > .fs-pdfwb-sec-title { display: flex; margin: 0; }
+.fs-ext-dock-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-ext-frame { position: relative; overflow: hidden; background: var(--bg-secondary); }
+.fs-ext-frame.is-dialog { border: 1px solid var(--line-1); border-radius: var(--radius); }
+.fs-ext-frame > .formext-frame { display: block; width: 100%; height: 100%; border: 0; background: transparent; }
+.fs-ext-hidden { position: fixed; left: 0; top: 0; width: 0; height: 0; overflow: hidden; visibility: hidden; }
+.fs-ext-perms { margin: var(--space-2) 0; padding-left: 20px; color: var(--text-primary); font-size: var(--fs-13); line-height: 1.6; }

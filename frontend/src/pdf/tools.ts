@@ -45,6 +45,7 @@ export const TAB_WORDS: Record<Tab, string[]> = {
   convert: ['word', 'docx', 'powerpoint', 'pptx', 'slides', 'compress', 'reduce size', 'png', 'pictures', 'export'],
   print: ['print', 'booklet', 'pages per sheet', 'n-up', 'poster', 'grayscale', 'pdf/a', 'pdf/x', 'preflight', 'archive'],
   assistant: ['ai', 'ai assistant', 'ask', 'chat', 'summary', 'summarise', 'presentation', 'generate', 'image'],
+  extensions: ['extensions', 'add-ons', 'plug-ins', 'formportal', 'form.ext'],
   access: ['accessibility', 'a11y', 'screen reader', 'tags', 'reading order', 'alt text', 'alternate text', 'pdf/ua', 'wcag', 'section 508'],
 };
 

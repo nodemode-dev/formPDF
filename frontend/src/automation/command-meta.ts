@@ -6,6 +6,9 @@
 export interface Meta { d: string; w?: string; m?: boolean; r?: boolean }
 
 export const META: Record<string, Meta> = {
+  'ext-panel': { d: 'Shows the Extensions tab: every extension formpdf found, its permissions and state.', w: 'Use to see which extensions are installed, why one is refused, or to open an extension panel.' },
+  'ext-reload': { d: 'Reads FormPortal\'s extension lists again and reloads the development extensions that are open.', w: 'Use after installing an extension or changing one in form.ext.' },
+  'ext-manage': { d: 'Opens FormPortal at formpdf\'s extensions.', w: 'Use when the person wants to find, install or remove extensions.' },
   'pdf-open': { d: 'Opens a PDF from this computer in the window.', w: 'Use to start work on a PDF the person names or picks.' },
   'pdf-create-pictures': { d: 'Makes a new PDF with one page per picture.', w: 'Use when the person has photos or scans as picture files and wants one PDF.' },
   'pdf-create-files': { d: 'Combines PDFs, pictures and Office files into one new PDF.', w: 'Use when several files of different kinds should become a single PDF.' },
