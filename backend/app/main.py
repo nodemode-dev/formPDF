@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core import config
 from app.core.local_guard import LocalGuard
-from app.routers import agentdock, ai, batch, commands, identity, lists, live, mcp, media, pdf, reviews, scan, system
+from app.routers import agentdock, ai, batch, commands, extensions, identity, lists, live, mcp, media, pdf, reviews, scan, system
 from app.services import events, plugins, terminal
 
 mimetypes.add_type("text/javascript", ".js")
@@ -63,6 +63,7 @@ app.include_router(ai.router, prefix="/api")
 app.include_router(live.router)
 app.include_router(agentdock.router)
 app.include_router(commands.router)
+app.include_router(extensions.router)
 app.include_router(mcp.router)
 
 _dist = config.dist_dir()
