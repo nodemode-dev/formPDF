@@ -111,6 +111,10 @@
 
 All FormPDF builds are compiled and released from [FormCompiler](https://github.com/nodemode-dev/formcompiler); this repo holds the source.
 
+## Demo
+
+Open [`demo/index.html`](demo/index.html) in a browser, by double-click or from any static server, to try the viewer and page tools offline on your own PDF or a generated sample: find, rotate, reorder, delete, extract, merge, page numbers and watermark. Nothing is uploaded. See [`demo/README.md`](demo/README.md).
+
 ## Run it from source
 
 Prefer it in your browser, or want to contribute? Run the web UI straight from this repo.
