@@ -113,7 +113,7 @@ All FormPDF builds are compiled and released from [FormCompiler](https://github.
 
 ## Demo
 
-Open [`demo/index.html`](demo/index.html) in a browser, by double-click or from any static server, to try the viewer and page tools offline on your own PDF or a generated sample: find, rotate, reorder, delete, extract, merge, page numbers and watermark. Nothing is uploaded. See [`demo/README.md`](demo/README.md).
+Open [`demo/index.html`](demo/index.html) in a browser, by double-click or from any static server, to try the viewer and page tools offline on your own PDF or on the illustrated edition and NASA report excerpts it opens with (sources in [`demo/CREDITS.md`](demo/CREDITS.md)): find, rotate, reorder, delete, extract, merge, page numbers and watermark. Nothing is uploaded. See [`demo/README.md`](demo/README.md).
 
 ## Run it from source
 
