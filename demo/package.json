@@ -1,0 +1,21 @@
+{
+  "name": "formpdf-demo",
+  "private": true,
+  "version": "0.57.3",
+  "description": "formpdf offline browser demo",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "pdf-lib": "1.17.1"
+  },
+  "devDependencies": {
+    "vite": "8.3.5"
+  }
+}
