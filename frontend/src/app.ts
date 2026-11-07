@@ -1,6 +1,7 @@
 import { Catalogue } from './automation/catalogue';
 import { api } from './io/api';
 import { events } from './io/events';
+import { Extensions } from './ext/extensions';
 import { AgentBridge } from './live/agent';
 import { LiveClient } from './live/socket';
 import type { CreateKind } from './pdf/intent';
@@ -115,7 +116,8 @@ export async function startApp(): Promise<void> {
   bench.commands.onChange = () => catalogue.mirror();
   catalogue.mirror();
   (window as unknown as { formpdf?: { catalogue: Catalogue } }).formpdf = { catalogue };
-  const bridge = new AgentBridge({ bench: () => bench, allow: () => setAccess('allowed'), catalogue: () => catalogue });
+  const extensions = new Extensions({ bench: () => bench, showBench: () => { openWorkbench({ app: hooks }); }, catalogue: () => catalogue });
+  const bridge = new AgentBridge({ bench: () => bench, allow: () => setAccess('allowed'), catalogue: () => catalogue, extensions: () => extensions });
   live.onTool = (name, args) => bridge.run(name, args);
   live.connect();
 

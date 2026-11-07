@@ -76,6 +76,19 @@ Plug-ins add actions and tool sections. A plug-in is a folder in `~/Formpdf/plug
 
 Forms with calculations, number, percent, date and phone formats, keystroke limits and range checks written with the standard AcroForm functions work as you fill them: totals update as you type, formatted values show when you leave a field, and a value out of range is marked with the reason. formpdf never runs a form's own JavaScript; a form with custom scripts says how many it skipped. Preferences > Forms turns calculations off.
 
+## Extensions
+
+Extensions are a second, sandboxed kind of add-on, shared by every app in the form family: FormPortal installs them, form.ext makes them, and formai.studio lists them. Each one is a web page that formpdf shows in a sandbox; it can reach formpdf only through the calls `docs/EXTENSIONS.md` lists, and only after you allow what it asks for.
+
+- **Extensions menu** (between Tools and Window): one item per command extensions add, as Name: Title, then Extensions Panel, Reload Extensions and Manage in FormPortal. The same commands are in the Mod+K search.
+- **Extensions tab** (the last tab, also without a PDF open): every extension formpdf found, with its version, where it came from (Catalogue or File from FormPortal, Development from form.ext), the permissions it asks for, and its state: Ready, Needs Permission, or Refused with the reason (made for another app, needs a newer formpdf, a native extension, a broken manifest). Open shows an extension's panel in the same tab, as a chip beside Extensions titled with the extension's name; close it with the x. A development extension also shows its folder. With nothing installed the tab says so and offers Manage in FormPortal.
+- **Permissions**: the first time an extension version opens or runs, formpdf lists what it asks for (read and change the open document, open files you choose, save files where you choose) and you choose Allow or Not Now. Allow is remembered for that version; a new version that asks for more asks again.
+- **Undo**: everything an extension changes in one go is one change in Edit > Undo, labelled with what the extension called it.
+- **Reloading**: formpdf notices installed or removed extensions within two seconds while its window is in front. Reload Extensions reads the lists at once and loads the open development extensions again, so form.ext's Run in App shows your edits.
+- **Agents**: `extensions_list` and `extension_command` run the same commands from Claude Code and other agents, with the same permission dialog.
+
+Extensions live under FormPortal's folder, in `extensions/formpdf/` (`enabled.json` from FormPortal, `dev.json` from form.ext). Folder plug-ins (above) keep working; they are listed in Preferences > Plug-ins.
+
 ## Keyboard shortcuts
 
 | Group | Command | Keys |

@@ -239,6 +239,11 @@ TOOLS = [
     _tool("run_commands", "Runs several window commands in order; stops at the first failure unless stopOnError is false.",
           {"steps": {"type": "array", "items": {"type": "object", "properties": {"id": _S, "params": {"type": "object"}}, "required": ["id"]}},
            "stopOnError": {"type": "boolean"}}, ["steps"]),
+    _tool("extensions_list", "The extensions formpdf has loaded from FormPortal and form.ext: id, name, version, source (catalogue, sideload, development), "
+          "state (ready, needs-permission, refused with the reason) and the commands each contributes. The window must be open.", {}, read=True),
+    _tool("extension_command", "Runs a command an extension contributes (ids from extensions_list), exactly as the Extensions menu does. The first run of an "
+          "extension version asks the person in the window to allow its permissions; a refusal ends the call. The window must be open.",
+          {"id": _S, "command": _S, "args": {"type": "object"}}, ["id", "command"]),
 ]
 NAMES = {t["name"] for t in TOOLS}
 
@@ -260,7 +265,7 @@ def _clip(s: str, n: int) -> str:
 
 
 def _mutating(name: str, args: dict) -> bool:
-    if name in ("open_pdf", "save", "undo"):
+    if name in ("open_pdf", "save", "undo", "extension_command"):
         return True
     if name == "pdf":
         return args.get("action") in CHANGE_ACTIONS + EXPORT_ACTIONS
@@ -475,7 +480,7 @@ async def _annotations(src: Source, args: dict) -> list[dict]:
     return items
 
 
-async def _change(a: Agent, src: Source, action: str, args: dict, pages) -> dict:
+async def _change(a: Agent, src: Source, action: str, args: dict, pages, land: bool = True) -> dict:
     pw = src.passwords
     extra: dict = {}
     if action == "header_footer":
@@ -553,6 +558,8 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages) -> dict
         if action == "protect":
             docs.update_meta(res["id"], protect={"password": kw["password"], "owner": kw.get("owner") or "", "permissions": kw.get("permissions")})
         detail = _detail(res, extra)
+        if not land:
+            return {"id": res["id"], "label": label, "detail": detail}
         return await _land(a, src, res["id"], label, detail)
     out = _out_file(src, args.get("out"), SUFFIX[action])
     positional = [kw.pop(k) for k in ("items", "resolve") if k in kw] if action == "organize" else []
@@ -936,6 +943,23 @@ async def t_run_commands(a: Agent, args: dict) -> dict:
         if not out.get("ok") and args.get("stopOnError", True):
             return _fail(f"Stopped at {s['id']}: {out.get('error')}")
     return _ok(f"Ran {len(results)} commands.", {"results": results})
+
+
+async def _window_tool(name: str, args: dict, timeout: float) -> dict:
+    if not bridge.window_connected():
+        return _fail("The formpdf window is not open, and extensions run only in the window. Ask the person to open formpdf, then retry.")
+    res = await bridge.window_call(name, args, timeout)
+    return res or _fail("The formpdf window did not answer.")
+
+
+async def t_extensions_list(a: Agent, args: dict) -> dict:
+    return await _window_tool("extensions-list", {}, 20)
+
+
+async def t_extension_command(a: Agent, args: dict) -> dict:
+    if not args.get("id") or not args.get("command"):
+        raise ToolError("extension_command needs id and command; extensions_list gives them.")
+    return await _window_tool("extension-command", {"id": str(args["id"]), "command": str(args["command"]), "args": args.get("args") if isinstance(args.get("args"), dict) else {}}, 300)
 
 
 HANDLERS = {name[2:]: fn for name, fn in globals().items() if name.startswith("t_") and callable(fn)}

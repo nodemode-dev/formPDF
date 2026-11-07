@@ -12,7 +12,7 @@ import { SectionChips } from './sections';
 import { dynamicLine, paletteHtml, STAMPS, stampSize } from './stamps';
 import type { Viewer } from './viewer';
 
-export type Tab = 'view' | 'comment' | 'fill' | 'form' | 'edit' | 'organize' | 'extract' | 'protect' | 'convert' | 'access' | 'print' | 'assistant';
+export type Tab = 'view' | 'comment' | 'fill' | 'form' | 'edit' | 'organize' | 'extract' | 'protect' | 'convert' | 'access' | 'print' | 'assistant' | 'extensions';
 export interface Doc { id: string; name: string; info: PdfInfo; key: string }
 export interface Ctx {
   viewer: Viewer; annot: Annotator; fields: Fields; organizer: Organizer;
@@ -185,6 +185,7 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
 <div class="fs-pdfwb-pane" data-for="access" hidden></div>
 <div class="fs-pdfwb-pane" data-for="print" hidden></div>
 <div class="fs-pdfwb-pane" data-for="assistant" hidden></div>
+<div class="fs-pdfwb-pane" data-for="extensions" hidden></div>
 </div>`);
     q(this.root, '.fs-pdfwb-sigdraw').appendChild(this.pad.root);
     this.pad.onChange = () => this.syncSig();

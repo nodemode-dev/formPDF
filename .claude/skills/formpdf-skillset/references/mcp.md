@@ -6,7 +6,11 @@
 
 ## Tools
 
-get_context, open_pdf, pdf (actions in `READ_ACTIONS`, `CHANGE_ACTIONS`, `EXPORT_ACTIONS`), render_pages, extract, save, undo.
+get_context, open_pdf, pdf (actions in `READ_ACTIONS`, `CHANGE_ACTIONS`, `EXPORT_ACTIONS`), render_pages, extract, save, undo, the window command tools, and `extensions_list` and `extension_command` (window tools `extensions-list` and `extension-command`, answered by `ext/extensions.ts`).
+
+## Extensions
+
+Form extensions (Form Extension Contract, API 1; `docs/EXTENSIONS.md`) run in sandboxed frames in the window. Engine: `routers/extensions.py` (list, files, apply, read, manage) over the vendored `services/formext_host.py`; `/api/extensions/apply` chains `_change(..., land=False)` and the window commits once. Window: `ext/extensions.ts` over the vendored `ext/host-bridge.ts` (never edit either vendored file); the Extensions tab, menu and palette entries. Frontend HASHOUT 97, backend HASHOUT 104.
 
 ## Sources
 

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 0.57.3" src="https://img.shields.io/badge/version-0.57.3-eef0f4?style=flat-square">
+  <img alt="version 0.59.0" src="https://img.shields.io/badge/version-0.59.0-eef0f4?style=flat-square">
   <img alt="Python" src="https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/typescript-vite-3178c6?style=flat-square">
   <img alt="macOS, Windows, Linux" src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-native-2f7bf5?style=flat-square">
@@ -93,6 +93,10 @@
 
 `.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. With the engine running, Claude Code can also use `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`. Ctrl+J (Cmd+J on a Mac) opens an agent dock with real terminals. See [`AGENTS.md`](AGENTS.md).
 
+## Extensions
+
+formpdf loads Form family extensions (API 1): FormPortal installs them, form.ext makes them and runs them from a folder. Each one runs in a sandboxed frame and reaches formpdf only through the calls it was allowed: read the open PDF, apply formpdf's own actions as one undoable step, run window commands, open and save files you choose. They show in the Extensions menu, the Extensions tab and the Mod+K search, and agents reach them with `extensions_list` and `extension_command`. The API, with a real document snapshot and the list of actions, is [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md).
+
 ## Under the hood
 
 - **Engine:** a FastAPI service in `backend/` does the PDF work, so the window, CLI and agents share one code path.
@@ -110,6 +114,16 @@
 | Linux | [Download FormPDF for Linux](https://formai.studio/get/formpdf/linux) | [FormPDF releases on FormCompiler](https://github.com/nodemode-dev/formcompiler/releases?q=formpdf-v&expanded=true) |
 
 All FormPDF builds are compiled and released from [FormCompiler](https://github.com/nodemode-dev/formcompiler); this repo holds the source.
+
+## Demo
+
+Open [`demo/index.html`](demo/index.html) in a browser, by double-click or from any static server, to try the viewer and page tools offline on your own PDF or on the illustrated edition and NASA report excerpts it opens with (sources in [`demo/CREDITS.md`](demo/CREDITS.md)): find, rotate, reorder, delete, extract, merge, page numbers and watermark. Nothing is uploaded. See [`demo/README.md`](demo/README.md).
+
+Three demos, each a page you open by double-click:
+
+- [`demo/index.html`](demo/index.html): pages and search, on the illustrated edition and the NASA excerpts.
+- [`demos/sign/index.html`](demos/sign/index.html): annotate, fill and sign a fillable loan agreement, add stamps and comments, flatten and save.
+- [`demos/protect/index.html`](demos/protect/index.html): find and redact, remove hidden information, compare two versions, extract, convert and password-protect.
 
 ## Run it from source
 
