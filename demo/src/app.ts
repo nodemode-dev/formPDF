@@ -33,6 +33,7 @@ const HTML = `
   <header class="fs-pdfwb-title">
     <div class="fs-brand"><img class="fs-mark" src="${logoUrl}" width="22" height="22" alt="" draggable="false"><span class="fs-brand-name">formpdf</span></div>
     <span class="fs-pdfwb-crumb">DEMO ${VERSION}</span>
+    <nav class="dm-demos" aria-label="Demos"><a href="./index.html" aria-current="page">Pages and search</a><a href="../demos/sign/index.html">Annotate and sign</a><a href="../demos/protect/index.html">Redact, compare, convert</a></nav>
     <div class="fs-pdfwb-doc"><span class="fs-pdfwb-name" data-r="name"></span><span class="fs-chip fs-pdfwb-edited is-off" data-r="edited">Edited</span></div>
     <div class="fs-pdfwb-actions">
       ${iconBtn('undo', 'undo', 'Undo')}${iconBtn('redo', 'redo', 'Redo')}

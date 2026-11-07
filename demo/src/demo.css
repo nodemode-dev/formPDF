@@ -5,6 +5,11 @@
 .fs-pdfwb-center > .fs-pdf-scroll { position: absolute; inset: 0; }
 .fs-pdfwb-center > .fs-pdf-scroll[hidden] { display: none; }
 .fs-pdfwb-name { font-weight: 500; }
+.dm-demos { display: flex; align-items: center; gap: var(--space-3); margin-left: var(--space-3); font-size: var(--fs-11); white-space: nowrap; }
+.dm-demos a { color: var(--text-muted); text-decoration: none; }
+.dm-demos a:hover { color: var(--text-primary); }
+.dm-demos a[aria-current="page"] { color: var(--text-secondary); }
+.dm-demos a:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 1px; }
 .fs-pdfwb-actions .fs-btn { height: var(--ctl-lg); }
 .fs-pdfwb-actions .fs-icon-btn { width: var(--ctl-lg); height: var(--ctl-lg); }
 .fs-pdfwb-actions .fs-icon-btn:disabled { opacity: 0.35; }
@@ -60,6 +65,7 @@
 .fs-pdfwb-panel { width: 320px; }
 .fs-pdf-org-marker[hidden] { display: none; }
 @media (max-width: 900px) {
+  .dm-demos { display: none; }
   .fs-pdfwb-main { grid-template-columns: minmax(0, 1fr); }
   .fs-pdfwb-side, .fs-pdfwb-panel { display: none; }
 }

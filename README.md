@@ -115,6 +115,12 @@ All FormPDF builds are compiled and released from [FormCompiler](https://github.
 
 Open [`demo/index.html`](demo/index.html) in a browser, by double-click or from any static server, to try the viewer and page tools offline on your own PDF or on the illustrated edition and NASA report excerpts it opens with (sources in [`demo/CREDITS.md`](demo/CREDITS.md)): find, rotate, reorder, delete, extract, merge, page numbers and watermark. Nothing is uploaded. See [`demo/README.md`](demo/README.md).
 
+Three demos, each a page you open by double-click:
+
+- [`demo/index.html`](demo/index.html): pages and search, on the illustrated edition and the NASA excerpts.
+- [`demos/sign/index.html`](demos/sign/index.html): annotate, fill and sign a fillable loan agreement, add stamps and comments, flatten and save.
+- [`demos/protect/index.html`](demos/protect/index.html): find and redact, remove hidden information, compare two versions, extract, convert and password-protect.
+
 ## Run it from source
 
 Prefer it in your browser, or want to contribute? Run the web UI straight from this repo.
