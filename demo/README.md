@@ -6,7 +6,7 @@ An offline, in-browser demo of formpdf's viewer and page tools. Open `index.html
 
 It runs the app's real viewer: the pdf.js `Viewer`, `Thumbs` and `Finder` from `frontend/src/pdf/`, the real design tokens and shell stylesheets, and the real inline icon set. The window layout follows the app: title bar, tab strip, options row, pages rail, page area, right panel and status bar.
 
-Open your own PDF with Open PDF or drop it on the window. With no file, a four-chapter sample is generated in the browser.
+It opens on a real document: a 53 page illustrated edition of Alice's Adventures in Wonderland (public domain), with a cover, contents, colour plates and line drawings. The Library list in the View and Merge tabs holds two more real PDFs, page excerpts of NASA's Apollo 11 Mission Report, to open or to add to a merge. Sources and licences are in `CREDITS.md`. Open your own PDF with Open PDF or drop it on the window. If a document pack fails to load, a small generated sample opens instead.
 
 | Tab | What you can do |
 |---|---|
@@ -22,7 +22,8 @@ Save writes the working copy as a PDF download. Undo and redo step through every
 
 - Password-protected PDFs are refused with a message.
 - Over file:// the browser blocks module workers, so pdf.js parses on the main thread and logs one "Setting up fake worker" warning. Served over http it uses a real worker and logs nothing.
-- Only the pdf.js standard fonts are bundled. Pages that need CJK character maps or JPEG 2000 and JBIG2 decoders may render those parts blank.
+- Only the pdf.js standard fonts and the JBIG2 decoder are bundled. Pages that need CJK character maps or the JPEG 2000 decoder may render those parts blank.
+- The NASA excerpts are scans; their text layer is the report's own character recognition, so find may match words that run together.
 - Editing text in place, redaction, OCR, signing and forms need the engine in the full app.
 
 ## Rebuild
