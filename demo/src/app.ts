@@ -6,6 +6,7 @@ import { VERSION } from '../../frontend/src/version';
 import logoUrl from '../../frontend/public/formpdf-logo.png';
 import { applyPlan, extractPages, mergeInto, numberPages, pageCount, parseRange, readInfo, setTitle, watermark, type NumberFormat, type NumberPos, type PlanCard } from './pdfops';
 import { makeSample } from './sample';
+import { LIBRARY, loadPack } from './media';
 
 type Tab = 'view' | 'organize' | 'extract' | 'merge' | 'stamp';
 interface Size { w: number; h: number; rotate: number }
@@ -25,6 +26,7 @@ const ic = (name: string, size = 16): string => `<span class="icon" style="width
 const btn = (a: string, icon: string, label: string, cls = ''): string => `<button class="fs-btn ${cls}" type="button" data-a="${a}">${icon ? ic(icon) : ''}<span>${label}</span></button>`;
 const iconBtn = (a: string, icon: string, title: string): string => `<button class="fs-icon-btn" type="button" data-a="${a}" title="${title}" aria-label="${title}">${ic(icon)}</button>`;
 const kb = (n: number): string => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+const libRows = (verb: string, act: string): string => LIBRARY.map((d) => `<div class="dm-lib"><span class="dm-lib-text"><span class="dm-qname">${d.title}</span><span class="dm-muted">${d.note}</span></span><button class="fs-btn" type="button" data-a="${act}" data-lib="${d.id}"><span>${verb}</span></button></div>`).join('');
 
 const HTML = `
 <div class="fs-pdfwb has-doc" id="wb" data-tab="view">
@@ -75,6 +77,7 @@ const HTML = `
     </aside>
     <section class="fs-pdfwb-center" data-r="center">
       <div class="fs-pdf-org" data-r="org" tabindex="0" hidden><div class="fs-pdf-org-grid" data-r="grid"></div><div class="fs-pdf-org-marker" data-r="marker" hidden></div></div>
+      <div class="dm-opening" data-r="opening"><span class="dm-opening-card"><strong data-r="opening-title">Opening Alice in Wonderland</strong><span class="dm-muted">An illustrated edition, typeset as a PDF</span><span class="dm-bar"></span></span></div>
       <div class="dm-drop" data-r="drop" hidden><div class="dm-drop-card">${ic('upload', 28)}<strong>Drop a PDF to open it</strong><span>It stays in this browser tab.</span></div></div>
     </section>
     <aside class="fs-pdfwb-panel">
@@ -83,6 +86,7 @@ const HTML = `
           <dl class="dm-kv"><dt>Title</dt><dd data-r="i-title"></dd><dt>Author</dt><dd data-r="i-author"></dd><dt>Pages</dt><dd data-r="i-pages"></dd><dt>Size</dt><dd data-r="i-size"></dd><dt>Producer</dt><dd data-r="i-prod"></dd></dl>
           <div class="dm-row"><input class="fs-input" data-r="title-in" type="text" placeholder="New title" aria-label="New title">${btn('set-title', 'check', 'Set title')}</div>
         </section>
+        <section class="dm-sec"><h3>Library</h3>${libRows('Open', 'lib-open')}</section>
         <section class="dm-sec"><h3>Matches</h3><div class="dm-hits" data-r="hits"><p class="dm-muted">Type in the find box to search every page.</p></div></section>
       </div>
       <div class="dm-pane" data-pane="organize" hidden>
@@ -93,6 +97,7 @@ const HTML = `
         <section class="dm-sec"><h3>Text on page <span data-r="tx-page"></span></h3><pre class="dm-text" data-r="tx"></pre></section>
       </div>
       <div class="dm-pane" data-pane="merge" hidden>
+        <section class="dm-sec"><h3>Library</h3>${libRows('Add', 'lib-add')}</section>
         <section class="dm-sec"><h3>Files to merge</h3><div class="dm-queue" data-r="queue"><p class="dm-muted">Add PDFs from your computer. They are inserted into the open document.</p></div></section>
       </div>
       <div class="dm-pane" data-pane="stamp" hidden>
@@ -128,7 +133,7 @@ export function start(host: HTMLElement): void {
   const input = (name: string): HTMLInputElement => r(name) as HTMLInputElement;
 
   let bytes: Uint8Array = new Uint8Array(0);
-  let name = 'harbor-light-field-guide.pdf';
+  let name = LIBRARY[0].file;
   let undoStack: Snapshot[] = [];
   let redoStack: Snapshot[] = [];
   let tab: Tab = 'view';
@@ -204,6 +209,7 @@ export function start(host: HTMLElement): void {
     if (run !== loading) return;
     const url = URL.createObjectURL(new Blob([data.slice()], { type: 'application/pdf' }));
     await viewer.load(url, next, { keep, bytes: data.length });
+    setHidden(r('opening'), true);
     const old = blobUrl;
     blobUrl = url;
     if (old) window.setTimeout(() => URL.revokeObjectURL(old), 4000);
@@ -256,6 +262,26 @@ export function start(host: HTMLElement): void {
     renderQueue();
     name = fileName;
     await show(data, `Opened ${fileName}`, false);
+  }
+
+  async function libOpen(id: string): Promise<void> {
+    const doc = LIBRARY.find((d) => d.id === id);
+    if (!doc) return;
+    hint(`Opening ${doc.title}...`);
+    try { await openBytes(await loadPack(id), doc.file); viewer.applyFit('page'); } catch (e) { hint(`${doc.title} could not be loaded: ${e instanceof Error ? e.message : String(e)}`); }
+  }
+
+  async function libAdd(id: string): Promise<void> {
+    const doc = LIBRARY.find((d) => d.id === id);
+    if (!doc) return;
+    if (queue.some((f) => f.name === doc.file)) { hint(`${doc.title} is already in the list.`); return; }
+    hint(`Adding ${doc.title}...`);
+    try {
+      const data = await loadPack(id);
+      queue.push({ name: doc.file, bytes: data, pages: await pageCount(data) });
+      renderQueue();
+      hint(`${queue.length} file${queue.length === 1 ? '' : 's'} ready to merge`);
+    } catch (e) { hint(`${doc.title} could not be loaded: ${e instanceof Error ? e.message : String(e)}`); }
   }
 
   async function openFile(file: File | undefined): Promise<void> {
@@ -537,7 +563,7 @@ export function start(host: HTMLElement): void {
 
   const actions: Record<string, () => void> = {
     open: () => (r('file-open') as HTMLInputElement).click(),
-    sample: () => void guarded('Generating the sample', async () => { await openBytes(await makeSample(), 'harbor-light-field-guide.pdf'); }),
+    sample: () => void libOpen(LIBRARY[0].id),
     save: () => download(bytes, undoStack.length ? `${stem()}-edited.pdf` : name, 'application/pdf'),
     undo: () => {
       const s = undoStack.pop();
@@ -619,8 +645,11 @@ export function start(host: HTMLElement): void {
     const t = e.target as HTMLElement;
     const tabBtn = t.closest('.fs-pdfwb-tab') as HTMLElement | null;
     if (tabBtn) { setTab(tabBtn.dataset.tab as Tab); return; }
-    const a = (t.closest('[data-a]') as HTMLElement | null)?.dataset.a;
-    if (a && actions[a]) actions[a]();
+    const hit = t.closest('[data-a]') as HTMLElement | null;
+    const a = hit?.dataset.a;
+    if (a === 'lib-open' && hit?.dataset.lib) void libOpen(hit.dataset.lib);
+    else if (a === 'lib-add' && hit?.dataset.lib) void libAdd(hit.dataset.lib);
+    else if (a && actions[a]) actions[a]();
   });
 
   r('file-open').addEventListener('change', (e) => { const i = e.target as HTMLInputElement; void openFile(i.files?.[0]); i.value = ''; });
@@ -652,5 +681,5 @@ export function start(host: HTMLElement): void {
   for (const b of root.querySelectorAll<HTMLElement>('.fs-pdfwb-tab')) if (b.dataset.tab === 'view') { setClass(b, 'is-on', true); b.setAttribute('aria-selected', 'true'); }
   (q(root, '[data-a="undo"]') as HTMLButtonElement).disabled = true;
   (q(root, '[data-a="redo"]') as HTMLButtonElement).disabled = true;
-  (window as unknown as { __formpdfDemo: unknown }).__formpdfDemo = { ready: makeSample().then((d) => openBytes(d, 'harbor-light-field-guide.pdf')), viewer, open: openBytes, setTab, actions };
+  (window as unknown as { __formpdfDemo: unknown }).__formpdfDemo = { ready: loadPack(LIBRARY[0].id).then(async (d) => { await openBytes(d, LIBRARY[0].file); viewer.applyFit('page'); }, async () => { setText(r('opening-title'), 'Opening the offline sample'); await openBytes(await makeSample(), 'harbor-light-field-guide.pdf'); }), viewer, libOpen, libAdd, open: openBytes, setTab, actions };
 }

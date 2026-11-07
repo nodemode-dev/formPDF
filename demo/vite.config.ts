@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const DEMO_PORT = 5199;
 const GLOB_FROM = "['../../node_modules/pdfjs-dist/cmaps/*.bcmap', '../../node_modules/pdfjs-dist/standard_fonts/*.pfb', '../../../backend/app/fonts/LiberationSans-*.ttf','../../node_modules/pdfjs-dist/wasm/*.wasm']";
-const GLOB_TO = "['../../node_modules/pdfjs-dist/standard_fonts/*.pfb', '../../../backend/app/fonts/LiberationSans-Regular.ttf']";
+const GLOB_TO = "['../../node_modules/pdfjs-dist/standard_fonts/*.pfb', '../../../backend/app/fonts/LiberationSans-Regular.ttf', '../../node_modules/pdfjs-dist/wasm/jbig2.wasm']";
 
 const WORKER_FROM = "import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';";
 const WORKER_TO = "import workerUrl from 'virtual:formpdf-demo-worker';";
