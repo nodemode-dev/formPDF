@@ -93,6 +93,10 @@
 
 `.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. With the engine running, Claude Code can also use `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`. Ctrl+J (Cmd+J on a Mac) opens an agent dock with real terminals. See [`AGENTS.md`](AGENTS.md).
 
+## Extensions
+
+formpdf loads Form family extensions (API 1): FormPortal installs them, form.ext makes them and runs them from a folder. Each one runs in a sandboxed frame and reaches formpdf only through the calls it was allowed: read the open PDF, apply formpdf's own actions as one undoable step, run window commands, open and save files you choose. They show in the Extensions menu, the Extensions tab and the Mod+K search, and agents reach them with `extensions_list` and `extension_command`. The API, with a real document snapshot and the list of actions, is [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md).
+
 ## Under the hood
 
 - **Engine:** a FastAPI service in `backend/` does the PDF work, so the window, CLI and agents share one code path.

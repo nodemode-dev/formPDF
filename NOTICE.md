@@ -10,6 +10,7 @@ formpdf is licensed under the Apache License 2.0 (see `LICENSE`). It includes or
 | formvis (https://github.com/nodemode-ai/formvis, through formsld), same owner: the form family design system (tokens, 14 theme profiles, the pre-paint theme boot, the DOM toolkit, command registry, menus, dialogs, dropdowns, toasts, icon set) | Apache-2.0 | `frontend/index.html`, `frontend/src/styles/`, `frontend/src/ui/` |
 | NodeMode stylized design system (through formvis): tokens, theme profiles, theme boot, dom-stable helpers, icon subset | MIT | `frontend/src/styles/tokens.css`, `frontend/src/ui/themes.ts`, `frontend/src/ui/dom.ts`, `frontend/src/ui/icons.ts` |
 | `paintbrush` and `hand` icons from Remix Icon (through formvis) | Apache-2.0 | `frontend/src/ui/icons.ts` |
+| Form Extension Contract kit, Apache-2.0, nodemode: the host bridge and the extension resolver and file server, vendored unchanged | Apache-2.0 | `frontend/src/ext/host-bridge.ts`, `backend/app/services/formext_host.py` |
 
 The formpdf mark, the stamps and the agent skills are original work of this repository.
 
