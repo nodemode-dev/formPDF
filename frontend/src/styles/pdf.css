@@ -90,6 +90,14 @@
 .fs-pdfwb-hero { margin-top: 24px; }
 .fs-pdfwb-recent { position: relative; }
 .fs-pdfwb-recent-prev { display: grid; place-items: center; aspect-ratio: 4 / 3; padding: var(--space-3); }
+.fs-home-demo-art { display: block; width: 100%; height: 100%; color: var(--text-muted); }
+.fs-home-demo-art .pg { fill: var(--surface-raised); stroke: var(--line-2); stroke-width: 1; }
+.fs-home-demo-art .ac { fill: var(--accent-color); }
+.fs-home-demo-art .ac-soft { fill: var(--accent-soft); }
+.fs-home-demo-art .bar { fill: var(--redact-ink); }
+.fs-home-demo-art .box { fill: var(--surface-field); stroke: var(--line-3); stroke-width: 1; }
+.fs-home-demo-art .ring, .fs-home-demo-art .line, .fs-home-demo-art .tick { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.fs-home-demo-art .ink, .fs-home-demo-art .shackle { fill: none; stroke: var(--accent-color); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .fs-card-preview.fs-pdfwb-recent-prev > img { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); animation: fs-pdf-in 160ms ease both; }
 .fs-pdfwb .fs-share-btn:disabled { opacity: 0.45; cursor: default; }
 .fs-pdfwb .fs-share-btn:disabled:hover { background: transparent; }

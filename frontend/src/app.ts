@@ -1,17 +1,18 @@
 import { Catalogue } from './automation/catalogue';
+import { DEMOS, seedLoanMarks, type Anchor, type DemoId } from './demos/catalog';
 import { api } from './io/api';
 import { events } from './io/events';
 import { Extensions } from './ext/extensions';
 import { AgentBridge } from './live/agent';
 import { LiveClient } from './live/socket';
 import type { CreateKind } from './pdf/intent';
-import { ensureWorkbench, openWorkbench, type AppHooks, type DocState } from './pdf/workbench';
+import { ensureWorkbench, openWorkbench, type AppHooks, type DemoOpen, type DocState } from './pdf/workbench';
 import './tools';
 import { agentsDialog, applyLang, helpDialog, preferencesDialog, shortcutsDialog } from './ui/app-dialogs';
 import { Batch } from './ui/batch';
 import { comboOf, type Command } from './ui/commands';
 import { anyDialogOpen, promptName } from './ui/dialogs';
-import { language, setLanguage, startLanguage, startPageTranslator } from './ui/i18n';
+import { language, setLanguage, startLanguage, startPageTranslator, tf } from './ui/i18n';
 import { isLang } from './ui/i18n/langs';
 import { revealApp } from './ui/dom';
 import { enhanceAllSelects } from './ui/dropdown';
@@ -93,7 +94,23 @@ export async function startApp(): Promise<void> {
     e.stopPropagation();
     cmd.run();
   }, true);
-  const open =(o: { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; restore?: { page: number; tab: string; dirty: boolean } }): void => { openWorkbench({ ...o, app: hooks }); };
+  const openDemo = async (id: DemoId): Promise<void> => {
+    const d = DEMOS.find((x) => x.id === id);
+    if (!d) return;
+    try {
+      const base = `${import.meta.env.BASE_URL}demos/${d.id}/`;
+      const res = await fetch(base + d.file);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const file = new File([await res.blob()], d.file, { type: 'application/pdf' });
+      const annots = d.marks ? seedLoanMarks(((await (await fetch(`${base}marks.json`)).json()) as { anchors: Record<string, Anchor> }).anchors) : undefined;
+      bench.setViewer(false);
+      open({ demo: { file, title: d.title, tab: d.tab, annots, find: d.find } });
+    } catch (err) { toast(tf('The {0} demo could not be opened: {1}', d.title, err instanceof Error ? err.message : String(err)), 'error'); }
+  };
+  const demoCmds: Command[] = DEMOS.map((d) => ({ id: `demo-${d.id}`, label: `Demo: ${d.title}`, group: 'Help', words: ['demo', 'sample', 'example', 'try'], run: () => void openDemo(d.id) }));
+  bench.commands.add(...demoCmds);
+  bench.refreshMenus();
+  const open =(o: { file?: File; demo?: DemoOpen; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; restore?: { page: number; tab: string; dirty: boolean } }): void => { openWorkbench({ ...o, app: hooks }); };
 
   const home = new Home({
     openFiles: (files) => { if (files[0]) open({ file: files[0] }); },
@@ -105,6 +122,7 @@ export async function startApp(): Promise<void> {
     preferences: hooks.preferences,
     agents: hooks.agents,
     help: hooks.help,
+    demo: (id) => void openDemo(id),
   });
 
   bench.captions.add(home.root.querySelector<HTMLElement>('.fs-home-drag') as HTMLElement);

@@ -67,6 +67,7 @@ src/styles/                 tokens.css (the only z-index source), shell, panels,
 50. Interface languages · ui/i18n.ts, ui/i18n/langs.ts, ui/i18n/<code>.ts; app.ts start; ui/app-dialogs.ts Language picker; setup/i18n.py
 51. Run-time messages by pattern · ui/i18n.ts plain, patternsFor, fromPattern, t; setup/i18n.py _templates, patterns; ui/app-dialogs.ts applyLang
 97. The Form extension host · ext/extensions.ts, ext/host-bridge.ts (vendored), pdf/workbench.ts Extensions tab and menu
+98. The three demos open inside the app · demos/catalog.ts, ui/home.ts, app.ts openDemo, pdf/workbench.ts openDemo, scripts/demo-media.py
 
 ## 1. Opening files by path · _v0.1.0 (app.ts openPaths, pdf/workbench.ts WorkbenchOptions.path)
 
@@ -515,3 +516,14 @@ Form extensions round: every Form app loads extensions the same way (the Form Ex
 - Strings an extension or agent sees (errors) and the command descriptions for agents are in `automation/command-meta.ts` where possible, which `setup/i18n.py` skips; the rest got translations in all tables.
 
 Checked here: see the sidecar `ext-host/TEST_PLAN.md` for the run.
+
+## 98. The three demos open inside the app · _v0.60.0 (demos/catalog.ts DEMOS, seedLoanMarks; ui/home.ts Demos section; app.ts openDemo, demo-* commands; pdf/workbench.ts DemoOpen, openDemo, Help menu; automation/command-meta.ts; ui/menu.ts data-cmd, data-menu; styles/pdf.css .fs-home-demo-art; scripts/demo-media.py; public/demos/)
+
+The owner's rule for the family: every demo opens from inside the installed app, as formwav 2.26.0 does. formpdf's three demos (`demo/` pages and search, `demos/sign` annotate, fill and sign, `demos/protect` redact, compare, convert) were standalone browser pages the desktop app could not reach.
+
+- What opens: each demo's first document, the one its browser page opens on, in the real workbench and the tab the page starts on (View, Fill Forms and Sign, Protect). The sign demo also gets its four starting comments (highlight, note, underline, squiggle) from `seedLoanMarks`, which moved out of `demos/sign/src/app.ts` into `demos/catalog.ts`; the browser page imports it from there, so both build the same marks from the same anchors. The protect demo reveals Find text to redact and runs it for email addresses, as the browser page does on load. The library extras of the browser pages (the Apollo 11 excerpts, the earlier report draft) are not shipped: Open PDF covers them and they would add 2.3 MB to the app.
+- New and unsaved: the PDF goes through `pdfApi.open` like a picked file, so the engine makes a working copy and the source in `dist/demos/` is never written; it has no path, so Save asks where. `savedId = ''` after `adopt` marks it unsaved, as `startCreate` does, and the open runs inside `guard`, so a PDF with unsaved changes gets the usual Save, Discard, Cancel bar first.
+- Media: `scripts/demo-media.py` decodes the PDFs from the demos' base64 packs into `frontend/public/demos/<id>/` (and the sign pack's anchors into `marks.json`), which Vite copies into `dist` and the desktop app embeds. Nothing is copied by hand; rerun it when a demo's pack changes. `NOTICE.md` has a row for the shipped files.
+- Home: a Demos section under Recent PDFs, one `fs-card` per demo with an inline SVG drawing (token colours through classes in `pdf.css`, no picture to load, so the cards paint with the page and nothing shifts). Cards are found by `data-demo`, the section by `data-home-demos`.
+- Help menu and agents: `demo-pages`, `demo-sign`, `demo-protect` are workbench commands added in `app.ts` (like the dock commands), listed in the Help menu between Keyboard shortcuts and Agents, so the native macOS menu, the palette, `/api/commands` and `run_command` all get them. `refreshMenus()` rebuilds the native menu after they are added. Menu items now carry `data-cmd` and menu buttons `data-menu` so tests find them without visible text.
+- Strings: the section title, the three titles and lines, `Demo: {0}`, and the two toasts have entries in every table.

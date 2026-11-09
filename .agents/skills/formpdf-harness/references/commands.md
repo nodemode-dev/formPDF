@@ -1,18 +1,19 @@
 # formpdf window commands
 
-Generated from the window's command catalogue (139 commands) by `./formpdf agents sync`; do not edit by hand. The live list is the MCP tool `list_commands` (and `describe_command` for one); run one with `run_command`, or from a shell with `./formpdf cli run <id> key=value`. Changes (marked below) go through the person's consent like every other change.
+Generated from the window's command catalogue (151 commands) by `./formpdf agents sync`; do not edit by hand. The live list is the MCP tool `list_commands` (and `describe_command` for one); run one with `run_command`, or from a shell with `./formpdf cli run <id> key=value`. Changes (marked below) go through the person's consent like every other change.
 
 ## Contents
 
 - Accessibility: 3
 - Comment: 3
 - Edit: 12
-- File: 8
+- Extensions: 3
+- File: 9
 - Forms: 8
-- Help: 4
+- Help: 11
 - Home: 13
 - Print: 6
-- Tabs: 12
+- Tabs: 13
 - Tools: 36
 - View: 14
 - Workspace: 20
@@ -74,6 +75,14 @@ Generated from the window's command catalogue (139 commands) by `./formpdf agent
 - `tint`: number 0 to 1; how much of the ink, default 1
 - `line`: boolean; colour the line instead of the fill
 
+## Extensions
+
+| Id | Name | Does | Use when |
+| --- | --- | --- | --- |
+| `ext-manage` | Manage in FormPortal | Opens FormPortal at formpdf's extensions. | Use when the person wants to find, install or remove extensions. |
+| `ext-panel` | Extensions Panel | Shows the Extensions tab: every extension formpdf found, its permissions and state. | Use to see which extensions are installed, why one is refused, or to open an extension panel. |
+| `ext-reload` | Reload Extensions | Reads FormPortal's extension lists again and reloads the development extensions that are open. | Use after installing an extension or changing one in form.ext. |
+
 ## File
 
 | Id | Name | Does | Use when |
@@ -84,7 +93,8 @@ Generated from the window's command catalogue (139 commands) by `./formpdf agent
 | `pdf-home` | Home | Goes back to the Home screen; unsaved changes stay in the version history. Asks first. | Use to leave the document and pick another task. |
 | `pdf-open` | Open a PDF… | Opens a PDF from this computer in the window. | Use to start work on a PDF the person names or picks. |
 | `pdf-print` | Print… | Opens the print dialog for the document. | Use when the person wants to print on a printer. |
-| `pdf-save` | Save | Saves the document over the file it came from. Changes the PDF. Asks first. | Use when the person asks to save; agents normally leave saving to the person. |
+| `pdf-save` | Save | Saves the document to the file it came from or to where it was last saved; asks where when there is neither. Changes the PDF. Asks first. | Use when the person asks to save; agents normally leave saving to the person. |
+| `pdf-save-as` | Save As… | Opens the save dialog so the person chooses the folder and name, then saves the document there. Changes the PDF. Asks first. | Use when the person wants a copy somewhere else or under another name; the person answers the dialog. |
 | `pdf-scan` | Scan… | Scans pages from a network scanner into a PDF. | Use when the person wants to scan paper into formpdf. |
 
 ## Forms
@@ -104,10 +114,17 @@ Generated from the window's command catalogue (139 commands) by `./formpdf agent
 
 | Id | Name | Does | Use when |
 | --- | --- | --- | --- |
+| `demo-pages` | Demo: Pages and search | Opens the pages and search demo, a 53 page illustrated Alice in Wonderland, as a new unsaved PDF in the View tab. | Use when the person wants to try reading, searching, organizing or page numbers on a sample. |
+| `demo-protect` | Demo: Redact, compare, convert | Opens the redact, compare and convert demo, a season report with contacts and hidden data, as a new unsaved PDF in the Protect tab. | Use when the person wants to try redaction, removing hidden information or a password on a sample. |
+| `demo-sign` | Demo: Annotate, fill and sign | Opens the annotate, fill and sign demo, a half filled loan form with four comments, as a new unsaved PDF in Fill Forms and Sign. | Use when the person wants to try comments, form filling, signatures or stamps on a sample. |
 | `pdf-agents` | Agents and MCP… | Shows how to connect Claude Code, Codex or Cursor to formpdf. | Use when the person wants an agent to work in formpdf. |
+| `pdf-custom-title-bar` | Custom Title Bar | Custom Title Bar |  |
 | `pdf-help` | formpdf Help | Opens formpdf Help. | Use when the person asks how something works. |
+| `pdf-menus-in-window` | Menus in Window | Menus in Window |  |
 | `pdf-preferences` | Preferences… | Opens Preferences: language, AI provider, spelling and more. | Use to change formpdf settings. |
+| `pdf-preview` | Preview | Shows the document exactly as it will be saved, with all pending edits applied, page count, paper and file size. | Use when the person wants to check the final result before saving, printing or sending. |
 | `pdf-shortcuts` | Keyboard shortcuts | Lists the keyboard shortcuts. | Use when the person asks for shortcuts. |
+| `pdf-viewer` | View only | Turns View only on or off: the editing tools and panels are hidden and the PDF is only read. | Use when the person wants to just read or present a PDF; any editing tab turns it off. |
 
 ## Home
 
@@ -171,8 +188,9 @@ Generated from the window's command catalogue (139 commands) by `./formpdf agent
 | `pdf-tab-comment` | Comment | Opens the Comment tab: highlights, notes, shapes, stamps and the review round-trip. | Use to review or mark up the PDF. |
 | `pdf-tab-convert` | Convert | Opens the Convert tab: Word, PowerPoint, HTML, pictures and text recognition. | Use to turn the PDF into another format or make a scan searchable. |
 | `pdf-tab-edit` | Edit | Opens the Edit tab: page text, pictures, shapes, links, headers and footers. | Use to change the content of pages. |
+| `pdf-tab-extensions` | Extensions | Extensions |  |
 | `pdf-tab-extract` | Extract | Opens the Extract tab: text, pictures and tables out of the PDF. | Use to take content out of the document. |
-| `pdf-tab-fill` | Fill & Sign | Opens the Fill & Sign tab: form fields, signatures and initials. | Use to fill in a form or sign. |
+| `pdf-tab-fill` | Fill Forms and Sign | Opens the Fill Forms and Sign tab: form fields, signatures and initials. | Use to fill in a form or sign. |
 | `pdf-tab-form` | Prepare form | Opens the Prepare form tab: add and arrange form fields. | Use to turn a PDF into a fillable form. |
 | `pdf-tab-organize` | Organize | Opens the Organize tab: move, turn, insert, delete and split pages. | Use to change the pages themselves. |
 | `pdf-tab-print` | Print | Opens the Print tab: preflight, PDF/A, PDF/X, PDF/VT, page boxes and separations. | Use to prepare a PDF for a printer, a press or an archive. |
@@ -198,7 +216,7 @@ Generated from the window's command catalogue (139 commands) by `./formpdf agent
 | `tool-back` | Send to back | Sends the selected objects behind everything. Changes the PDF. | Use to put an object behind the rest of the page. |
 | `tool-backward` | Send backward | Sends the selected objects one step back. Changes the PDF. | Use to fine-tune the stacking order. |
 | `tool-certsign` | Sign with a digital ID | Signs the PDF with a digital ID (a certificate signature). Changes the PDF. Asks first. | Use when the person wants a signature others can verify; it is theirs to place. |
-| `tool-content-select` | Select text and pictures | Selects page text, pictures and shapes to move, resize and edit. | Use to change what is already on a page. |
+| `tool-content-select` | Edit text and pictures | Selects page text, pictures and shapes to move, resize and edit. | Use to change what is already on a page. |
 | `tool-export-html` | Save as HTML | Saves the PDF as a web page. | Use to publish the content on the web. |
 | `tool-export-rtf` | Save as RTF | Saves the text of the PDF as RTF. | Use when the text should open in any word processor. |
 | `tool-export-xlsx` | Save as Excel | Saves the tables in the PDF as an Excel workbook. | Use to work with table data in a spreadsheet. |

@@ -6,7 +6,8 @@ import { STAMPS, dynamicLine, paletteHtml, stampSize } from '../../../frontend/s
 import { icon } from '../../../frontend/src/ui/icons';
 import { el, escapeHtml, mountOnce, patchList, q, setClass, setHidden, setText } from '../../../frontend/src/ui/dom';
 import logoUrl from '../../../frontend/public/formpdf-logo.png';
-import { LIBRARY, loadPack, packMeta, type Anchor } from './media';
+import { seedLoanMarks } from '../../../frontend/src/demos/catalog';
+import { LIBRARY, loadPack, packMeta } from './media';
 import { readFields, readInfo, writePdf } from './pdfwrite';
 
 type Tab = 'comment' | 'fill' | 'finish';
@@ -247,22 +248,10 @@ export function start(host: HTMLElement): void {
     } catch { setText(r('i-title'), 'Unavailable'); }
   }
 
-  const rect = (a: Anchor): Array<{ x: number; y: number; w: number; h: number }> => a.rects;
 
   function seedMarks(id: string): Annot[] {
     const meta = packMeta(id);
-    if (!meta) return [];
-    const a = meta.anchors;
-    const base = { rot: 0, opacity: 1 };
-    const out: Annot[] = [];
-    if (a.deposit) out.push({ ...base, id: uid('a'), page: a.deposit.page, kind: 'highlight', color: '#FFD400', opacity: 0.4, rects: rect(a.deposit), quote: 'A refundable deposit of 40 dollars is held until the instrument is returned complete' });
-    if (a.deposit) {
-      const r0 = a.deposit.rects[0];
-      out.push({ ...base, id: uid('a'), page: a.deposit.page, kind: 'note', color: '#FFD400', x: 574, y: r0.y - 4, text: 'Deposit is repaid within seven days of the return. Confirm the amount with the treasurer before pickup.' });
-    }
-    if (a.sun) out.push({ ...base, id: uid('a'), page: a.sun.page, kind: 'underline', color: '#2563EB', rects: rect(a.sun), quote: 'will never point it at or near the sun' });
-    if (a.damage) out.push({ ...base, id: uid('a'), page: a.damage.page, kind: 'squiggly', color: '#16A34A', rects: rect(a.damage), quote: 'Damage from a fall, from water, or from use against these conditions' });
-    return out;
+    return meta ? seedLoanMarks(meta.anchors) : [];
   }
 
   async function openBytes(data: Uint8Array, fileName: string, seed: string): Promise<void> {
