@@ -1,3 +1,4 @@
+import { DEMOS, type DemoId } from '../demos/catalog';
 import { pdfApi, type RecentItem } from '../pdf/api';
 import { expandZips } from '../pdf/unzip';
 import { brandMark } from './brand';
@@ -15,7 +16,10 @@ export interface HomeHooks {
   preferences(): void;
   agents(): void;
   help(): void;
+  demo(id: DemoId): void;
 }
+
+const demoCards = DEMOS.map((d) => `<div class="fs-card fs-home-demo" role="button" tabindex="0" data-demo="${d.id}" title="${d.line}"><span class="fs-card-preview fs-pdfwb-recent-prev">${d.art}</span><span class="fs-card-body"><span class="fs-card-name">${d.title}</span><span class="fs-card-meta">${d.line}</span></span></div>`).join('');
 
 type View = 'start' | 'recent' | 'batch' | 'reviews';
 
@@ -60,6 +64,7 @@ export class Home {
 <div class="fs-home-hero-actions"><button class="fs-btn fs-btn-primary" type="button" data-a="open">${icon('folderOpen', 14)}Open PDF</button><button class="fs-btn" type="button" data-a="view" title="Open a PDF to read it, with the editing tools hidden">${icon('eye', 14)}View PDF</button><button class="fs-btn" type="button" data-a="pictures">${icon('fileImage', 14)}Create from pictures</button><button class="fs-btn fs-btn-ghost" type="button" data-a="agents">${icon('agent', 14)}Use your agent</button></div>
 </div>
 <section class="fs-home-section"><div class="fs-home-section-head"><h2 class="fs-home-section-title">Recent PDFs</h2><button class="fs-btn fs-btn-ghost fs-btn-sm" type="button" data-v="recent">See all</button></div><div class="fs-card-grid fs-home-recent">${skeleton}${empty}</div></section>
+<section class="fs-home-section" data-home-demos><div class="fs-home-section-head"><h2 class="fs-home-section-title">Demos</h2></div><div class="fs-card-grid">${demoCards}</div></section>
 </div>
 <div data-page="recent" hidden><div class="fs-home-head"><div><h1 class="fs-home-title">Recent PDFs</h1><p class="fs-home-sub">The PDFs you opened here, newest first. Forget removes one from this list; the file itself stays where it is.</p></div></div><div class="fs-card-grid fs-home-recent-full">${skeleton}${empty}</div></div>
 <div data-page="batch" hidden></div>
@@ -74,6 +79,8 @@ export class Home {
       const t = e.target as HTMLElement;
       const v = (t.closest('[data-v]') as HTMLElement | null)?.dataset.v as View | undefined;
       if (v) { this.show(v); return; }
+      const demo = (t.closest('[data-demo]') as HTMLElement | null)?.dataset.demo as DemoId | undefined;
+      if (demo) { this.hooks.demo(demo); return; }
       const card = t.closest('.fs-pdfwb-recent') as HTMLElement | null;
       if (card?.dataset.id) {
         if (t.closest('[data-forget]')) { void pdfApi.forget(card.dataset.keyid ?? '').then(() => this.load()); return; }
@@ -93,6 +100,8 @@ export class Home {
       else if (a === 'local') toast('Your PDFs, working copies and exports stay in the Formpdf folder on this computer.');
     });
     this.root.addEventListener('keydown', (e) => {
+      const demo = (e.target as HTMLElement).closest('[data-demo]') as HTMLElement | null;
+      if (demo && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this.hooks.demo(demo.dataset.demo as DemoId); return; }
       const card = (e.target as HTMLElement).closest('.fs-pdfwb-recent') as HTMLElement | null;
       if (card?.dataset.id && (e.key === 'Enter' || e.key === ' ') && !(e.target as HTMLElement).closest('[data-forget]')) { e.preventDefault(); this.hooks.openRecent(card.dataset.id); }
     });

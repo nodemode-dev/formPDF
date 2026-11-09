@@ -31,7 +31,8 @@ import { Thumbs, Viewer, type Layout } from './viewer';
 import { Workspaces } from './workspace';
 
 export interface AppHooks { home(): void; shown(): void; help(): void; shortcuts(cmds: Commands): void; preferences(): void; agents(): void; doc(state: DocState | null): void; palette(): void }
-export interface WorkbenchOptions { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; app: AppHooks; restore?: { page: number; tab: string; dirty: boolean } }
+export interface DemoOpen { file: File; title: string; tab: Tab; annots?: Annot[]; find?: string }
+export interface WorkbenchOptions { file?: File; path?: string; recent?: string; create?: CreateKind; files?: File[]; scan?: boolean; demo?: DemoOpen; app: AppHooks; restore?: { page: number; tab: string; dirty: boolean } }
 export interface DocState { id: string; key: string; name: string; pages: number; page: number; dirty: boolean; tab: string; path: string | null; agentTurn: string | null }
 export interface AgentReply { ok: boolean; text: string; data?: Record<string, unknown> }
 
@@ -324,7 +325,7 @@ class Workbench {
       { label: 'Tools', items: [...TABS.map(([t]) => `pdf-tab-${t}`), '-', 'tool-lists', 'tool-lists-record'] },
       { label: 'Extensions', items: () => extensionMenu() },
       { label: 'Window', items: () => [...this.ws.menuItems(), '-', 'view-agent-dock', 'view-new-terminal', 'agent-claude-code', 'agent-chat'] },
-      { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'pdf-agents', 'pdf-preferences'] },
+      { label: 'Help', items: ['pdf-palette', 'pdf-help', 'pdf-shortcuts', '-', 'demo-pages', 'demo-sign', 'demo-protect', '-', 'pdf-agents', 'pdf-preferences'] },
     ];
     this.menubar = new MenuBar(q(this.root, '.fs-pdfwb-menubar'), this.cmds, menus);
     void this.captions;
@@ -586,7 +587,8 @@ class Workbench {
     setHidden(this.root, false);
     if (wasHidden) { this.root.focus({ preventScroll: true }); opts.app.shown(); }
     const create = opts.create;
-    if (opts.file) void this.guard(() => this.openFile(opts.file as File));
+    if (opts.demo) { const demo = opts.demo; void this.guard(() => this.openDemo(demo)); }
+    else if (opts.file) void this.guard(() => this.openFile(opts.file as File));
     else if (opts.path) { const path = opts.path; void this.guard(() => this.run('Opening', async () => this.adopt(await pdfApi.openPath(path)))); }
     else if (opts.recent) { const id = opts.recent; void this.guard(() => this.openRecent(id)); }
     else if (!this.doc && !create && !opts.scan) void this.loadRecents();
@@ -946,6 +948,25 @@ class Workbench {
 
   private async openFile(file: File): Promise<void> {
     await this.run(`Opening ${file.name}`, async () => this.adopt(await pdfApi.open(file, file.name)));
+  }
+
+  private async openDemo(d: DemoOpen): Promise<void> {
+    await this.run(`Opening ${d.file.name}`, async () => {
+      await this.adopt(await pdfApi.open(d.file, d.file.name));
+      if (!this.doc) return;
+      this.setTab(d.tab);
+      if (d.annots?.length) this.annot.setItems(d.annots);
+      this.savedId = '';
+      this.syncChrome();
+      if (d.find) {
+        const mode = q<HTMLSelectElement>(this.panes.root, '[data-a="fr-mode"]');
+        reveal(mode.closest('.fs-pdfwb-sec'));
+        mode.value = d.find;
+        mode.dispatchEvent(new Event('change', { bubbles: true }));
+        q(this.panes.root, '[data-a="fr-find"]').click();
+      }
+      toast(tf('Opened the {0} demo as a new PDF. Save As keeps a copy.', d.title));
+    });
   }
 
   private async openRecent(id: string): Promise<void> {

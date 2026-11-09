@@ -115,3 +115,28 @@ def test_window_loads_throttled_without_shift_errors_or_refusals(engine, path):
     assert not failed, f"failed requests: {failed}"
     assert not errors, f"console errors: {errors}"
     assert cls <= CLS_LIMIT, f"layout shift {cls}: {shifts}"
+
+
+DEMOS = [("pages", "view", "alice-in-wonderland.pdf", 53), ("sign", "fill", "telescope-loan-agreement.pdf", 2), ("protect", "protect", "season-report-final.pdf", 4)]
+
+
+def test_every_demo_opens_from_start_as_a_new_pdf(engine):
+    from playwright.sync_api import sync_playwright
+
+    errors, seen = [], []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={"width": 1440, "height": 900})
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.goto(engine + "/", wait_until="networkidle", timeout=120_000)
+        for demo, tab, name, pages in DEMOS:
+            page.wait_for_selector(".fs-home:not([hidden])", timeout=30_000)
+            page.locator(f"[data-home-demos] [data-demo='{demo}']").click()
+            page.wait_for_function("([t, n, c]) => { const r = document.querySelector('.fs-pdfwb'); return r && !r.hidden && r.dataset.tab === t && r.querySelector('.fs-pdfwb-name')?.textContent === n && r.querySelectorAll('.fs-pdf-page').length === c; }", arg=[tab, name, pages], timeout=60_000)
+            seen.append((demo, page.evaluate("() => document.querySelector('.fs-pdfwb .fs-pdfwb-edited')?.className ?? 'missing is-off'")))
+            page.keyboard.press("Alt+Control+KeyH")
+            page.locator(".fs-pdfwb-bar:not([hidden]) .fs-btn-danger").click(timeout=15_000)
+        browser.close()
+    assert [d for d, _ in seen] == [d for d, *_ in DEMOS]
+    assert all("is-off" not in c for _, c in seen), f"a demo should open as an unsaved PDF: {seen}"
+    assert not errors, f"page errors: {errors}"

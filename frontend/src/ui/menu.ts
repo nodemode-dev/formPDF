@@ -54,7 +54,7 @@ export class PopupMenu {
       }
       const cmd = this.commands.get(item);
       if (!cmd) continue;
-      const node = el<HTMLButtonElement>(`<button class="fs-menu-item" role="menuitem" type="button"><span class="fs-menu-check">${icon('check', 14)}</span><span class="fs-menu-label"></span><span class="fs-menu-keys"></span></button>`);
+      const node = el<HTMLButtonElement>(`<button class="fs-menu-item" role="menuitem" type="button" data-cmd="${item}"><span class="fs-menu-check">${icon('check', 14)}</span><span class="fs-menu-label"></span><span class="fs-menu-keys"></span></button>`);
       setText(q(node, '.fs-menu-keys'), this.commands.keyLabel(cmd));
       node.addEventListener('pointerenter', () => this.closeSub());
       node.addEventListener('click', () => { this.root().close(); this.commands.run(item); });
@@ -140,6 +140,7 @@ export class MenuBar {
     defs.forEach((def, i) => {
       const btn = el<HTMLButtonElement>('<button class="fs-menu-btn" type="button" aria-haspopup="menu"></button>');
       btn.textContent = def.label;
+      btn.dataset.menu = def.label.toLowerCase();
       host.appendChild(btn);
       const menu = new PopupMenu(commands);
       menu.setItems(itemsOf(def));
