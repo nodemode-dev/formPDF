@@ -1,6 +1,6 @@
 [package]
 name = "formpdf"
-version = "0.60.0"
+version = "0.60.1"
 description = "formpdf desktop shell"
 authors = ["NodeAgentc, Inc."]
 license = "Apache-2.0"
