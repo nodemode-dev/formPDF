@@ -631,3 +631,9 @@ Python's `mimetypes` takes file types from the Windows registry (`HKEY_CLASSES_R
 `parse_pages` used to `extend` the list with the whole range and check each page afterwards, so a spec such as `1-30000000` on a 5-page file built a 30 million entry list (about 1.2 GB) before saying "out of range". Each range now checks its two ends against `1..n` first and raises the same `Page {p} is out of range (1 to {n})` ValueError, so the error type and text are unchanged and nothing large is allocated.
 
 Checked: the timing one-liner (`parse_pages('1-30000000', 5)`) and the backend pytest suite.
+
+## 106. Bad Bates numbers are refused before a batch starts · _v0.60.1 (routers/batch.py run, _bates)
+
+`_bates` runs `int()` on the `digits` and `start` the client sends, and it was first called inside `_work`, the background task. A value such as `digits: "abc"` raised there with nothing to catch it, so the job stayed `running` for ever. `run` now builds the nested args first and calls `_bates` on a copy (it pops `bates` from the dict it is given) inside a try, answering 400 "Bates digits and start must be whole numbers" before any folder is made or task started, the same way the module already refuses a missing file or a bad output folder. `_work` receives those same args.
+
+Checked: through the test client, `digits: "abc"` and `start: "x"` answer 400, and `digits: 4, start: "7"` runs to `done` with the note `0007 to 0007`.
