@@ -527,3 +527,9 @@ The owner's rule for the family: every demo opens from inside the installed app,
 - Home: a Demos section under Recent PDFs, one `fs-card` per demo with an inline SVG drawing (token colours through classes in `pdf.css`, no picture to load, so the cards paint with the page and nothing shifts). Cards are found by `data-demo`, the section by `data-home-demos`.
 - Help menu and agents: `demo-pages`, `demo-sign`, `demo-protect` are workbench commands added in `app.ts` (like the dock commands), listed in the Help menu between Keyboard shortcuts and Agents, so the native macOS menu, the palette, `/api/commands` and `run_command` all get them. `refreshMenus()` rebuilds the native menu after they are added. Menu items now carry `data-cmd` and menu buttons `data-menu` so tests find them without visible text.
 - Strings: the section title, the three titles and lines, `Demo: {0}`, and the two toasts have entries in every table.
+
+## 99. The PDF page's own stacking values come from tokens · _v0.60.1 (styles/pdf.css, styles/tokens.css --z-page-layer, --z-page-pop)
+
+Five raw `z-index` numbers in `pdf.css` (the text layer and its end marker at 0, the text layer spans and the signature pad canvas at 1, the note popup at 2) sat outside `tokens.css`, which is meant to be the only z-index source. They now read `--z-base` (0, existing), and two new tokens with the same numbers, `--z-page-layer` (1) and `--z-page-pop` (2), so every computed stacking value is unchanged.
+
+Checked: `tsc --noEmit`. Not verified in a browser.
