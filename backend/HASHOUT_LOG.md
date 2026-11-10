@@ -625,3 +625,9 @@ Python's `mimetypes` takes file types from the Windows registry (`HKEY_CLASSES_R
 - `/api/extensions/apply` reuses the MCP `pdf` tool's argument mapping (`mcp._change` with `land=False`, which returns the new version instead of committing it to the window as an agent turn), chaining each op on the previous result, so extensions, agents and the CLI accept the same arguments. `merge`, `protect` and `unlock` are kept out (paths and passwords), and exports are not offered. The window commits the final id once, which is the single undo step. `/api/extensions/read` is `mcp._read`. Both check `local_origin`.
 - `/api/extensions/manage` opens `formai://extensions?product=formpdf` with the system's opener (`open`, `xdg-open`, `os.startfile`), because the desktop window has no opener permission and a webview may not hand a custom scheme on; the URL is fixed, nothing from the request reaches the command.
 - MCP `extensions_list` and `extension_command` call the window tools `extensions-list` and `extension-command` (the window holds the consent grants, so extensions run only with the window open). `extension_command` counts as mutating, so the outside-agent consent applies first, then the extension's own consent in the window.
+
+## 105. Page ranges are bounds-checked before they expand · _v0.60.1 (services/pdf/core.py parse_pages)
+
+`parse_pages` used to `extend` the list with the whole range and check each page afterwards, so a spec such as `1-30000000` on a 5-page file built a 30 million entry list (about 1.2 GB) before saying "out of range". Each range now checks its two ends against `1..n` first and raises the same `Page {p} is out of range (1 to {n})` ValueError, so the error type and text are unchanged and nothing large is allocated.
+
+Checked: the timing one-liner (`parse_pages('1-30000000', 5)`) and the backend pytest suite.

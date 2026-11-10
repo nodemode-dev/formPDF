@@ -188,6 +188,9 @@ def parse_pages(spec, n: int, unique: bool = True) -> list[int]:
                 b = int(m.group(2)) if m.group(2) else n
                 if a > b:
                     raise ValueError(f"The range {part} runs backwards")
+                for p in (a, b):
+                    if not 1 <= p <= n:
+                        raise ValueError(f"Page {p} is out of range (1 to {n})")
                 out.extend(range(a, b + 1))
             elif part.isdigit():
                 out.append(int(part))
