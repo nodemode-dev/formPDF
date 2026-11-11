@@ -611,3 +611,9 @@ kind: fix · logged: v0.60.2 · 2026-11-10
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 PowerPoint, Word, picture and print exports call `ctx.flush()` first, so staged comments, form entries and new fields are in the output; Save as HTML, RTF and Excel and Organize's Extract selected used `d.id`, the version before them, so the outputs of one window disagreed. Both now flush first and use the flushed id; Extract maps the selected pages' source from the organizer's version to the flushed one, as `applyOrganize` does. Checked: `tsc --noEmit`; not run in a browser.
+
+## 113. The palette on Home lists each dock command once · _v0.60.2 (app.ts Palette commands)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+On Home the palette lists Home's commands and then the workbench's. `homeCmds` spreads `dockCmds`, and the same four objects are added to the workbench's commands, so they were listed twice under one key; `patchList` keeps one node per key, and the other node was never updated, moved or removed, so a dead copy of each dock row stayed in the list (even under "Nothing matches") and in the workbench palette, which shares the instance. Workbench commands that are already Home commands are now left out of the Home list. Checked: `tsc --noEmit`; not run in a browser.

@@ -79,7 +79,7 @@ export async function startApp(): Promise<void> {
     ...dockCmds,
   ];
   const palette = new Palette({
-    commands: () => (bench.isOpen ? bench.commands.all() : [...homeCmds, ...bench.commands.all().filter((c) => !/^pdf-(open|create|help|shortcuts|preferences|agents|palette|home)/.test(c.id))]),
+    commands: () => (bench.isOpen ? bench.commands.all() : [...homeCmds, ...bench.commands.all().filter((c) => !homeCmds.includes(c) && !/^pdf-(open|create|help|shortcuts|preferences|agents|palette|home)/.test(c.id))]),
     enabled: (c) => (homeCmds.includes(c) ? true : bench.commands.enabled(c)),
     why: (c) => c.why?.() ?? (bench.hasDoc ? 'Not available right now' : 'Open a PDF first'),
     run: (c) => { if (homeCmds.includes(c)) c.run(); else bench.commands.run(c.id); },
