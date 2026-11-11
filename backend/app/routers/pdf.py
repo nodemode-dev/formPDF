@@ -275,7 +275,12 @@ async def get_tables_xlsx(doc_id: str, pages: str | None = None):
     data = await _run(pdfsvc.tables_xlsx, tables)
     stem = Path(docs.meta(doc_id).get("name") or doc_id).stem
     return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    headers={"Content-Disposition": f'attachment; filename="{stem}-tables.xlsx"'})
+                    headers={"Content-Disposition": _attachment(f"{stem}-tables.xlsx")})
+
+
+def _attachment(fname: str) -> str:
+    safe = fname.replace('"', "'").encode("latin-1", "replace").decode("latin-1")
+    return f"attachment; filename=\"{safe}\"; filename*=UTF-8''{quote(fname)}"
 
 
 @router.get("/pdf/{doc_id}/fields")
@@ -446,7 +451,7 @@ async def render(doc_id: str, page: int, scale: float = 2.0, fmt: str = "png"):
 async def pages_zip(doc_id: str, scale: float = 2.0, pages: str | None = None):
     data = await _run(pdfsvc.pages_zip, _path(doc_id), scale, pages, _pw(doc_id))
     stem = Path(docs.meta(doc_id).get("name") or doc_id).stem
-    return Response(data, media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="{stem}-pages.zip"'})
+    return Response(data, media_type="application/zip", headers={"Content-Disposition": _attachment(f"{stem}-pages.zip")})
 
 
 @router.get("/pdf/{doc_id}/pptx")
@@ -460,7 +465,7 @@ async def to_pptx(doc_id: str, pages: str | None = None, text: int = 1, dpi: flo
         tmp.unlink(missing_ok=True)
     stem = Path(docs.meta(doc_id).get("name") or doc_id).stem
     return Response(data, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    headers={"Content-Disposition": f'attachment; filename="{stem}.pptx"', "X-Slides": str(got["slides"]),
+                    headers={"Content-Disposition": _attachment(f"{stem}.pptx"), "X-Slides": str(got["slides"]),
                              "X-Text-Boxes": str(got["textboxes"])})
 
 
@@ -486,7 +491,7 @@ async def to_docx(doc_id: str, pages: str | None = None):
         tmp.unlink(missing_ok=True)
     stem = Path(docs.meta(doc_id).get("name") or doc_id).stem
     return Response(data, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    headers={"Content-Disposition": f'attachment; filename="{stem}.docx"'})
+                    headers={"Content-Disposition": _attachment(f"{stem}.docx")})
 
 
 @router.post("/pdf/create")

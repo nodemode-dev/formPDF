@@ -679,3 +679,9 @@ Checked: `1 - 3`, `2 -4` and `8- 9` on 10 pages give `[1, 2, 3]`, `[2, 3, 4]` an
 The first use of a page rotates the original page object in place, and `_duplicate` for a later use copied every key, including the `/Rotate` the first use had just changed, so `[{page: 1, rotate: 90}, {page: 1}]` gave two rotated copies. `organize` now records each original page's `/Rotate` (after `_materialize`, so an inherited value counts) in `rot0`, and a duplicate of an original page gets that value back, or loses the key when there was none, before its own `rotate` applies. Pages inserted from another PDF are new objects on every use and are not affected.
 
 Checked: on three blank pages (the third at 180), `[1 rot 90, 1, 2]` gives `/Rotate` 90, 0, 0; `[3 rot 90, 3, 1]` gives 270, 180, 0; `[1, 1 rot 270, 1]` gives 0, 270, 0; tests/test_forms_and_pages.py and tests/test_files_and_turns.py pass.
+
+## 114. Export downloads for any file name · _v0.60.2 (routers/pdf.py _attachment, get_tables_xlsx, pages_zip, to_pptx, to_docx)
+
+Starlette encodes header values as Latin-1, and these four routes put the document's stem straight into `Content-Disposition`, so a name with CJK, Cyrillic, Greek or Arabic letters, an en dash or a curly apostrophe raised `UnicodeEncodeError` after the whole export had run, and the request ended in a 500. `_attachment` builds the header the way the `act` route already did: a Latin-1 `filename` with `"` turned into `'` and anything else unencodable replaced, plus `filename*=UTF-8''` with the percent-encoded real name, which browsers prefer.
+
+Checked: through the test client, `契約書.pdf` and `John’s report.pdf` download tables.xlsx, pages.zip, pptx and docx with 200 and a `filename*` holding the real name.
