@@ -691,3 +691,9 @@ Checked: through the test client, `契約書.pdf` and `John’s report.pdf` down
 `if exist backend\venv\... if exist frontend\node_modules ( ... ) else ( ... )` is two nested `if` commands, and cmd binds the `else` to the inner one. With no `backend\venv` the outer `if` is false and the whole line, `else` included, is skipped, so `setup\install_all.bat` never ran and `install_desktop.bat` then stopped with "backend venv missing". The two checks now set `READY=1`, and one plain `if "%READY%"=="1" ( ... ) else ( ... )` chooses between the message and the install. The `if` that reads `%READY%` is a separate top-level line, so the value is expanded after it is set.
 
 Checked: by reading cmd's documented `if`/`else` parsing; not run on Windows. CRLF line endings kept (`file` reports CRLF on every line).
+
+## 116. backend/oc_install.bat stops when the venv or pip fails · _v0.60.2 (backend/oc_install.bat)
+
+A failed `venv` creation, `pip install --upgrade pip` or `pip install -r requirements.txt` did not stop the script, and its exit code came from the last line, the optional OCR install, whose `|| echo` always succeeds. `install_all.bat` and `build_app.bat` then reported done with a broken engine. Each of those three commands now ends in `|| exit /b 1`. On the `venv` line the `||` belongs to the `if` body, so it only applies when the venv is being made. The OCR line stays optional.
+
+Checked: by reading cmd's documented operator parsing; not run on Windows. CRLF line endings kept.
