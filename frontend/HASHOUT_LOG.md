@@ -617,3 +617,9 @@ PowerPoint, Word, picture and print exports call `ctx.flush()` first, so staged 
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 On Home the palette lists Home's commands and then the workbench's. `homeCmds` spreads `dockCmds`, and the same four objects are added to the workbench's commands, so they were listed twice under one key; `patchList` keeps one node per key, and the other node was never updated, moved or removed, so a dead copy of each dock row stayed in the list (even under "Nothing matches") and in the workbench palette, which shares the instance. Workbench commands that are already Home commands are now left out of the Home list. Checked: `tsc --noEmit`; not run in a browser.
+
+## 114. The Chat tab reloads its transcript after the event stream reconnects · _v0.60.2 (ui/chat-pane.ts ChatPane constructor, resync)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`Events` turns a second `hello` on /api/events into `resync` for exactly this case, but nothing listened. When the engine restarted or the stream dropped while a reply streamed, `chat.done` was published while the window was not subscribed (the engine keeps no replay buffer), so the Chat tab kept "Claude is working..." and Stop, the reply stayed cut off, and the dock refused every new Chat question without a message until a reload. On `resync` a pane that has loaded once now clears, leaves the busy state and loads the stored transcript again, the same path `chat.adopted` takes; `load` turns busy back on if the engine says a reply is still running. Checked: `tsc --noEmit`; the engine restart during a reply was not run.
