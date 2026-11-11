@@ -350,6 +350,46 @@ def _changes(data: bytes, end: int) -> set[str]:
     return cats
 
 
+def _raw(obj) -> bytes:
+    buf = io.BytesIO()
+    if obj is not None:
+        obj.write_to_stream(buf)
+    return buf.getvalue()
+
+
+def _only_markup(data: bytes, end: int) -> bool:
+    from pypdf import PdfReader
+    from pypdf.generic import DictionaryObject, StreamObject
+
+    old, new = PdfReader(io.BytesIO(data[:end]), strict=False), PdfReader(io.BytesIO(data), strict=False)
+    root = old.trailer.raw_get("/Root")
+    if getattr(root, "idnum", None) is None or root.idnum != getattr(new.trailer.raw_get("/Root"), "idnum", None):
+        return False
+    cat = root.get_object()
+    form = cat.raw_get("/AcroForm") if "/AcroForm" in cat else None
+    lists = {getattr(p.raw_get("/Annots"), "idnum", None) for p in old.pages if "/Annots" in p}
+    if form is not None and "/Fields" in form.get_object():
+        lists.add(getattr(form.get_object().raw_get("/Fields"), "idnum", None))
+    lists.add(getattr(form, "idnum", None))
+    lists.discard(None)
+    only = {root.idnum: {"/AcroForm"}, **{p.indirect_reference.idnum: {"/Annots"} for p in old.pages if p.indirect_reference is not None}}
+    for n in set(old.xref_objStm).union(*old.xref.values()):
+        a = old.get_object(n)
+        if a is None:
+            continue
+        b = new.get_object(n)
+        if _raw(a) == _raw(b) or n in lists:
+            continue
+        if isinstance(a, StreamObject) or not isinstance(a, DictionaryObject) or not isinstance(b, DictionaryObject):
+            return False
+        if n in only:
+            if any(_raw(a.raw_get(k) if k in a else None) != _raw(b.raw_get(k) if k in b else None) for k in (set(a) | set(b)) - only[n]):
+                return False
+        elif not ({"/FT", "/T", "/ByteRange"} & set(a) or ("/Rect" in a and "/Subtype" in a)):
+            return False
+    return True
+
+
 CHANGE_WORDS = {"content": "the page content", "pages": "pages", "fields": "form fields", "comments": "comments", "forms": "form values", "sign": "signatures",
                 "newsig": "a new signature field"}
 
@@ -369,6 +409,8 @@ def _docmdp(sd) -> int:
 def _later(data: bytes, end: int, level: int) -> tuple[bool, str]:
     cats = _changes(data, end)
     allowed = {1: set(), 2: {"forms", "sign"}, 3: {"forms", "sign", "comments"}}.get(level, {"forms", "sign", "comments", "newsig"})
+    if cats <= allowed and not _only_markup(data, end):
+        return False, "Changed after this signature: something the signed pages draw, such as a picture, a font or a drawing, was replaced, so what they show may differ from what was signed."
     if not cats:
         return True, "The document has not been changed since this signature was applied, apart from saving."
     names = ", ".join(CHANGE_WORDS[c] for c in sorted(cats))
