@@ -551,3 +551,9 @@ kind: fix · logged: v0.60.2 · 2026-11-10
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 `dateFormat` always read the first number of a typed date as the month and let `new Date` roll impossible values over, so with `AFDate_FormatEx("dd/mm/yyyy")`, formpdf's own default for new Date fields, 03/04/2024 showed as 04/03/2024 and 25/12/2024 as 12/01/2026 while the stored value stayed as typed. The order now comes from the format (day first when its `d` comes before its `m`), and a date whose month or day does not exist (31/02/2024, 2024-02-31) is shown as typed instead of rolled over. Checked: the function copied into node gives 25/12/2024 and 03/04/2024 for dd/mm/yyyy, 12/25/2024 for mm/dd/yyyy, Dec 25, 2024 for mmm d, yyyy, and leaves 31/02/2024 and 25/12/2024 under mm/dd/yyyy unchanged; `tsc --noEmit`.
+
+## 103. Structure tag names and scanner names are escaped in their option lists · _v0.60.2 (tools/access.ts syncOrder; pdf/scan.ts setOptions)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Both lists built `<option>` markup by concatenation and set `innerHTML` without `escapeHtml`, unlike every other list in the area. A structure element type comes from the file (any bytes fit in a PDF name through `#xx`) and a scanner's name and model come from mDNS on the local network, so a crafted file or device could break out of the value attribute or, with Chromium's relaxed select parser, create elements with handlers in the app window. Both builders now escape the value and the text before they are joined; the markup is still compared and written only when it changes, so nothing else is rebuilt. Checked: `tsc --noEmit`; not run in a browser.
