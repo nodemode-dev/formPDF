@@ -16,7 +16,7 @@ export function num(v: string): number {
   if (!s) return 0;
   const neg = /^\(.*\)$/.test(s) || /^-/.test(s.replace(/^[^\d.,-]+/, ''));
   s = s.replace(/[^\d.,]/g, '');
-  if (/,\d{1,2}$/.test(s) && !/\.\d/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+  if (s.lastIndexOf(',') > s.lastIndexOf('.') && /,\d{1,2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
   else s = s.replace(/,/g, '');
   const n = parseFloat(s);
   return Number.isFinite(n) ? (neg ? -n : n) : 0;

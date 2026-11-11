@@ -569,3 +569,9 @@ When the engine's preflight raised on a document, `autoRun` caught the error wit
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 Every dialog, menu and dropdown mounts in `#overlay-root`, which is fixed at `--z-menu` (200) and so is a stacking context: their own `--z-modal` and `--z-context` only count inside it. The dock is a sibling at `--z-dock` (950), so with the dock open in the workbench it covered the bottom of dialogs and menus (the Consent dialog's Allow and Not now in a window about 800 px high) and stayed clickable under a modal; entry 36 meant it to sit below dialogs. On Home the root is already raised to `--z-home-modal`. While the dock is open and Home is not shown, the overlay root now takes `--z-modal` (1000), so dialogs, menus and their scrims cover the dock. The workbench inside the root already ends at `bottom: var(--fs-dock-h)`, so it does not overlap the dock, except the dock's 6 px resize strip, which starts 3 px above the dock: its upper half is now under the workbench's bottom edge and the strip is grabbed by its lower 3 px. Checked: no raw `z-index` added (token only); not run in a browser.
+
+## 106. Comma-decimal numbers with a thousands dot read at their value · _v0.60.2 (pdf/formcalc.ts num)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`num` only took a trailing `,dd` as the decimal part when the string had no `.` followed by a digit, which is exactly the thousands separator of the `1.234,56` style that `numberFormat` itself writes (sepStyle 2), so `1.234,56` read as 1.23456 and a SUM showed 1.23. The comma is now the decimal mark when it is the last separator and one or two digits follow it. Checked in node with the function copied: `1.234,56` 1234.56, `1,234.56` 1234.56, `12,5` 12.5, `1.234.567,8` 1234567.8, `1,234` 1234, `(1.000,5)` -1000.5; `tsc --noEmit`.
