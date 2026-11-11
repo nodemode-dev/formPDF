@@ -575,3 +575,9 @@ Every dialog, menu and dropdown mounts in `#overlay-root`, which is fixed at `--
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 `num` only took a trailing `,dd` as the decimal part when the string had no `.` followed by a digit, which is exactly the thousands separator of the `1.234,56` style that `numberFormat` itself writes (sepStyle 2), so `1.234,56` read as 1.23456 and a SUM showed 1.23. The comma is now the decimal mark when it is the last separator and one or two digits follow it. Checked in node with the function copied: `1.234,56` 1234.56, `1,234.56` 1234.56, `12,5` 12.5, `1.234.567,8` 1234567.8, `1,234` 1234, `(1.000,5)` -1000.5; `tsc --noEmit`.
+
+## 107. Read-only multi-line and choice fields cannot be typed into on Fill Forms · _v0.60.2 (pdf/fill.ts Fields.create)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`create` disabled a ReadOnly field only when its control was an `<input>`, so a read-only multi-line field (a `<textarea>`) or dropdown (a `<select>`) stayed editable and its new value was staged and sent to the engine on Apply or Save. All three control kinds are now disabled for a ReadOnly field. Checked: `tsc --noEmit`; not run with a read-only form in a browser.
