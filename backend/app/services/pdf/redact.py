@@ -488,6 +488,9 @@ def apply(src, out, areas: list[dict], *, passwords: list[str] | None = None, co
         if stripped:
             _log(report, "item", f"{stripped} editable text box{'es' if stripped != 1 else ''} or picture{'s' if stripped != 1 else ''} made plain page content", None)
         widgets |= _annots(w, page, areas_pdf, report)
+        for key in ("/Thumb", "/PieceInfo"):
+            if key in page:
+                del page[key]
         for e in report["log"]:
             if e["page"] is None:
                 e["page"] = p
