@@ -1,4 +1,6 @@
 export const fr: Record<string, string> = {
+"Apply or clear the redaction marks first.": "Appliquez ou effacez d’abord les marques de caviardage.",
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Les pages ont changé : les marques de caviardage qui n’ont pas pu les suivre ont été retirées. Marquez de nouveau ces zones.",
 "Demos": "Démos",
 "Pages and search": "Pages et recherche",
 "Annotate, fill and sign": "Commenter, remplir et signer",

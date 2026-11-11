@@ -18,7 +18,7 @@ export interface Ctx {
   viewer: Viewer; annot: Annotator; fields: Fields; organizer: Organizer;
   doc(): Doc | null;
   run<T>(label: string, fn: () => Promise<T>): Promise<T | undefined>;
-  commit(res: Derived, label: string): Promise<void>;
+  commit(res: Derived, label: string, moves?: boolean): Promise<void>;
   flush(): Promise<string | null>;
   deliver(data: Blob | string | (() => Promise<Blob | string>), name: string): Promise<void>;
   tool(t: Tool): void;
@@ -894,7 +894,9 @@ ${sec('Export pages as images', `${row('Scale', '<select data-a="png-scale" aria
       case 'org-extract': void c.run('Extracting pages', async () => {
         const sel = c.organizer.selection();
         if (!sel.length) return;
-        const res = await pdfApi.organize(d.id, c.organizer.payload(sel));
+        const before = c.organizer.docId;
+        const id = await c.flush() ?? d.id;
+        const res = await pdfApi.organize(id, c.organizer.payload(sel).map((p) => ('src' in p && p.src === before ? { ...p, src: id } : p)));
         await c.deliver(pdfApi.fileUrl(res.id, true), `${stem(d.name)} (extract).pdf`);
       }); return;
       case 'split': void c.run('Splitting', async () => {

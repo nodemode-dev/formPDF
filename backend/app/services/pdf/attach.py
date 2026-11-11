@@ -261,9 +261,12 @@ def read(path, *, args: dict, pages=None, passwords: list[str] | None = None):
     got = listing(path, passwords)
     if args.get("save"):
         name, data = get_file(path, name=str(args["save"]), passwords=passwords)
-        dest = Path(str(args["out"])).expanduser() if args.get("out") else config.exports_dir() / name
+        safe = _clean(name)
+        if safe in (".", ".."):
+            raise ValueError(f"The attached file name {name} cannot be saved as a file")
+        dest = Path(str(args["out"])).expanduser() if args.get("out") else config.exports_dir() / safe
         if dest.is_dir():
-            dest = dest / name
+            dest = dest / safe
         dest.write_bytes(data)
         return f"Saved {name} to {dest} ({len(data)} bytes).", {"path": str(dest), **got}
     lines = [f"{f['name']} · {f['bytes'] if f['bytes'] is not None else '?'} bytes{' · ' + f['description'] if f['description'] else ''}" for f in got["files"]]

@@ -63,3 +63,9 @@ The open call fits the whole page so the cover is seen in full, not cropped by f
 ## 8. The JBIG2 decoder is bundled
 
 The NASA scans store their halftones as JBIG2, which pdf.js decodes with a small wasm file. Without it the figure pages drew blank and the console filled with decode warnings. `narrowAssets` now keeps `jbig2.wasm` (105 KB) beside the standard fonts. The CJK maps and the JPEG 2000 decoder stay out.
+
+## 9. New Organize cards are filled when they are created · _v0.60.2 (src/app.ts createCard)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Reset, Apply, Undo, Redo and Merge build a plan with new uids, so `patchList` creates every card anew, and it only calls `update` for nodes it already had. `createCard` set nothing but the dataset, so after any of these every card lost its page number, its box size and its turn and the thumbnail drew into a 0 by 0 box until the next click in the grid. `createCard` now calls `updateCard` before returning, the rule the app's frontend log records in its entry 14. Checked: `tsc -p demo/tsconfig.json` (noEmit) is clean; not run in a browser.

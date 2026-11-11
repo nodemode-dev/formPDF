@@ -92,6 +92,11 @@ async def run(body: dict) -> dict:
     missing = [str(p) for p in paths if not p.is_file()]
     if missing:
         raise HTTPException(404, f"{missing[0]} does not exist")
+    args = _nest(dict(body.get("args") or {}))
+    try:
+        _bates(act, dict(args))
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Bates digits and start must be whole numbers") from None
     if body.get("out"):
         outdir = Path(str(body["out"])).expanduser()
         if not outdir.is_dir():
@@ -105,7 +110,7 @@ async def run(body: dict) -> dict:
                     "rows": rows, "started": time.time()}
     for old in sorted(JOBS, key=lambda k: JOBS[k]["started"])[:-KEEP]:
         JOBS.pop(old, None)
-    task = asyncio.create_task(_work(JOBS[job_id], act, paths, _nest(dict(body.get("args") or {})), outdir))
+    task = asyncio.create_task(_work(JOBS[job_id], act, paths, args, outdir))
     TASKS.add(task)
     task.add_done_callback(TASKS.discard)
     return {"id": job_id, "out": str(outdir), "total": len(paths)}

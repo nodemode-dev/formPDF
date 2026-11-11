@@ -1,4 +1,6 @@
 export const zhCN: Record<string, string> = {
+"Apply or clear the redaction marks first.": "请先应用或清除涂黑标记。",
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "页面已更改，无法随之移动的涂黑标记已被移除。请重新标记这些区域。",
 "Demos": "演示",
 "Pages and search": "页面与搜索",
 "Annotate, fill and sign": "批注、填写与签名",

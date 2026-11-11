@@ -16,7 +16,7 @@ export function num(v: string): number {
   if (!s) return 0;
   const neg = /^\(.*\)$/.test(s) || /^-/.test(s.replace(/^[^\d.,-]+/, ''));
   s = s.replace(/[^\d.,]/g, '');
-  if (/,\d{1,2}$/.test(s) && !/\.\d/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+  if (s.lastIndexOf(',') > s.lastIndexOf('.') && /,\d{1,2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
   else s = s.replace(/,/g, '');
   const n = parseFloat(s);
   return Number.isFinite(n) ? (neg ? -n : n) : 0;
@@ -32,7 +32,16 @@ function call(code: string, fn: string): Val[] | null {
     const ch = code[i];
     if (ch === '"' || ch === "'") {
       let j = i + 1, s = '';
-      while (j < code.length && code[j] !== ch) { if (code[j] === '\\' && j + 1 < code.length) j++; s += code[j]; j++; }
+      while (j < code.length && code[j] !== ch) {
+        if (code[j] === '\\' && j + 1 < code.length) {
+          const e = code[++j], hex = code.slice(j + 1, j + 5);
+          if (e === 'u' && /^[0-9a-fA-F]{4}$/.test(hex)) { s += String.fromCharCode(parseInt(hex, 16)); j += 5; continue; }
+          s += e === 'n' ? '\n' : e === 't' ? '\t' : e === 'r' ? '\r' : e;
+          j++;
+          continue;
+        }
+        s += code[j]; j++;
+      }
       toks.push(JSON.stringify(s));
       i = j + 1;
       continue;
@@ -175,8 +184,10 @@ function dateFormat(fmt: string): (v: string) => string {
     if (!s) return '';
     const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
     const us = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/.exec(s);
-    const d = iso ? new Date(+iso[1], +iso[2] - 1, +iso[3]) : us ? new Date(+us[3] < 100 ? 2000 + +us[3] : +us[3], +us[1] - 1, +us[2]) : null;
-    if (!d || Number.isNaN(d.getTime())) return s;
+    const di = fmt.indexOf('d'), dayFirst = di >= 0 && di < fmt.indexOf('m');
+    const [y, mo, da] = iso ? [+iso[1], +iso[2], +iso[3]] : us ? [+us[3] < 100 ? 2000 + +us[3] : +us[3], dayFirst ? +us[2] : +us[1], dayFirst ? +us[1] : +us[2]] : [0, 0, 0];
+    const d = iso || us ? new Date(y, mo - 1, da) : null;
+    if (!d || Number.isNaN(d.getTime()) || d.getMonth() !== mo - 1 || d.getDate() !== da) return s;
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const pad = (n: number): string => String(n).padStart(2, '0');
     return fmt.replace(/yyyy|yy|mmmm|mmm|mm|m|dd|d/g, (t) => ({ yyyy: String(d.getFullYear()), yy: pad(d.getFullYear() % 100), mmmm: months[d.getMonth()], mmm: months[d.getMonth()].slice(0, 3),

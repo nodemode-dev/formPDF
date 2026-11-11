@@ -202,6 +202,7 @@ function recall(host: ToolHost): void {
   let s = scales.get(d.key);
   if (!s) { try { s = JSON.parse(localStorage.getItem(`fs-measure-${d.key}`) ?? 'null') ?? undefined; } catch { s = undefined; } }
   if (s && UNITS[s.unit] && s.factor > 0) { unit = s.unit; factor = s.factor; calibrated = s.calibrated; }
+  else { factor = UNITS[unit] ?? UNITS.mm; calibrated = false; calLength = 0; }
 }
 
 function syncForm(): void {

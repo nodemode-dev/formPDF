@@ -127,14 +127,14 @@
 .fs-pdf-page [data-main-rotation="180"] { transform: rotate(180deg) translate(-100%, -100%); }
 .fs-pdf-page [data-main-rotation="270"] { transform: rotate(270deg) translateX(-100%); }
 
-.fs-pdf-page .textLayer { color-scheme: only light; position: absolute; inset: 0; z-index: 0; overflow: clip; opacity: 1; line-height: 1; text-align: initial; letter-spacing: normal; word-spacing: normal; -webkit-text-size-adjust: none; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText; user-select: text; -webkit-user-select: text; --min-font-size: 1; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv: calc(1 / var(--min-font-size)); }
+.fs-pdf-page .textLayer { color-scheme: only light; position: absolute; inset: 0; z-index: var(--z-base); overflow: clip; opacity: 1; line-height: 1; text-align: initial; letter-spacing: normal; word-spacing: normal; -webkit-text-size-adjust: none; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText; user-select: text; -webkit-user-select: text; --min-font-size: 1; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size)); --min-font-size-inv: calc(1 / var(--min-font-size)); }
 .fs-pdf-page .textLayer :is(span, br) { position: absolute; color: transparent; white-space: pre; cursor: text; transform-origin: 0% 0%; user-select: text; -webkit-user-select: text; }
-.fs-pdf-page .textLayer > :not(.markedContent), .fs-pdf-page .textLayer .markedContent span:not(.markedContent) { z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height)); --scale-x: 1; --rotate: 0deg; transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
+.fs-pdf-page .textLayer > :not(.markedContent), .fs-pdf-page .textLayer .markedContent span:not(.markedContent) { z-index: var(--z-page-layer); --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height)); --scale-x: 1; --rotate: 0deg; transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv)); }
 .fs-pdf-page .textLayer .markedContent { display: contents; }
 .fs-pdf-page .textLayer span[role="img"] { user-select: none; cursor: default; }
 .fs-pdf-page .textLayer ::selection { background: color-mix(in srgb, var(--accent-color) 32%, transparent); color: transparent; }
 .fs-pdf-page .textLayer br::selection { background: transparent; }
-.fs-pdf-page .textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; user-select: none; }
+.fs-pdf-page .textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: var(--z-base); cursor: default; user-select: none; }
 .fs-pdf-page .textLayer:active .endOfContent { top: 0; }
 .is-marking .fs-pdf-page .textLayer :is(span, br) { cursor: text; }
 .fs-pdfwb[data-tool="hand"] .fs-pdf-pages { cursor: grab; }
@@ -163,7 +163,7 @@
 .fs-pdf-annot.is-editing .fs-pdf-ft { visibility: hidden; }
 .fs-pdf-annot[data-kind="image"] img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; pointer-events: none; }
 .fs-pdf-edit { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 1em; padding: calc(var(--k) * 2px); border: 0; outline: 1.5px solid var(--accent-color); outline-offset: 1px; border-radius: 1px; background: rgba(255, 255, 255, 0.6); font-family: Helvetica, Arial, sans-serif; line-height: 1.2; resize: none; overflow: hidden; pointer-events: auto; user-select: text; -webkit-user-select: text; }
-.fs-pdf-notepop { position: absolute; z-index: 2; width: 220px; padding: 6px; border: 1px solid #d4b106; border-radius: 4px; background: #fff8c5; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); pointer-events: auto; }
+.fs-pdf-notepop { position: absolute; z-index: var(--z-page-pop); width: 220px; padding: 6px; border: 1px solid #d4b106; border-radius: 4px; background: #fff8c5; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); pointer-events: auto; }
 .fs-pdf-notepop .fs-pdf-edit { position: static; display: block; min-height: 96px; padding: 4px; outline: 0; background: transparent; color: #222; font-family: var(--font-ui); font-size: 13px; line-height: 1.45; resize: vertical; }
 .fs-pdf-annot[data-kind="redact"] { border: 1.5px solid #dc2626; background: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.55) 0 6px, rgba(220, 38, 38, 0.4) 6px 12px); pointer-events: auto; }
 .fs-pdf-annot[data-kind="redact"][data-origin="find"] { border: 1.5px solid var(--redact-ink); background: var(--redact-ink); }
@@ -229,7 +229,7 @@
 .fs-pdfwb-redrow { cursor: pointer; }
 .fs-pdfwb-redrow .fs-row-sub { white-space: normal; overflow-wrap: anywhere; }
 .fs-pdf-pad { position: relative; height: 128px; overflow: hidden; border: 1px dashed var(--line-3); border-radius: var(--radius-md); background: #fff; }
-.fs-pdf-pad > canvas { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.fs-pdf-pad > canvas { position: absolute; inset: 0; z-index: var(--z-page-layer); display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 .fs-pdf-pad-hint { position: absolute; left: 0; right: 0; top: 40%; color: #9a9a9a; font-size: var(--fs-12); text-align: center; pointer-events: none; }
 .fs-pdf-pad-line { position: absolute; left: 16px; right: 16px; bottom: 28px; height: 1px; background: #d6d6d6; pointer-events: none; }
 .fs-pdf-pad.has-ink .fs-pdf-pad-hint { display: none; }

@@ -30,7 +30,7 @@ async function runAction(host: ToolHost, a: ActionInfo): Promise<void> {
   await host.ctx.run(a.label, async () => {
     try {
       const id = await host.ctx.flush() ?? d.id;
-      if (a.kind === 'change') await host.ctx.commit(await pdfApi.act<Derived>(id, a.name, {}), a.label);
+      if (a.kind === 'change') await host.ctx.commit(await pdfApi.act<Derived>(id, a.name, {}), a.label, true);
       else if (a.kind === 'export') { const got = await pdfApi.actFile(id, a.name, {}); await host.ctx.deliver(got.blob, got.name); }
       else { const got = await pdfApi.act<{ text?: string }>(id, a.name, {}); (textDlg ??= new TextDialog()).show(a.label, got.text ?? ''); }
     } catch (err) { toast((err as Error).message, 'error'); }

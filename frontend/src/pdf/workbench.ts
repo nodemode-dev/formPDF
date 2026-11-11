@@ -68,7 +68,7 @@ const HINTS: Partial<Record<Tool, string>> = {
 };
 const toolBtn = (t: Tool, label: string, ic: string): string => `<button class="fs-tb-btn" type="button" data-tool="${t}" title="${label}" aria-label="${label}">${ic}</button>`;
 
-interface State { id: string; annots: Annot[]; label: string; turn?: string; agent?: string }
+interface State { id: string; annots: Annot[]; label: string; turn?: string; agent?: string; layout: number }
 interface BarAction { label: string; kind?: 'primary' | 'ghost' | 'danger'; run: (value: string) => void }
 
 const SHELL = `<div class="fs-pdfwb" tabindex="-1" role="region" aria-label="PDF workbench" data-tab="view" data-tool="select" hidden>
@@ -174,6 +174,7 @@ class Workbench {
   private reported = '';
   private doc: Doc | null = null;
   private history: State[] = [];
+  private layoutSeq = 0;
   private hi = -1;
   private savedId = '';
   private saveTo: { key: string; target: SaveTarget } | null = null;
@@ -379,7 +380,7 @@ class Workbench {
       viewer: this.viewer, annot: this.annot, fields: this.fields, organizer: this.organizer,
       doc: () => this.doc,
       run: (label, fn) => this.run(label, fn),
-      commit: (res, label) => this.commit(res, label),
+      commit: (res, label, moves) => this.commit(res, label, undefined, undefined, moves ? 'moved' : undefined),
       flush: () => this.flush(),
       deliver: (data, name) => this.deliver(data, name),
       tool: (t) => this.setTool(t),
@@ -918,7 +919,7 @@ class Workbench {
     this.bar({
       text: `Save the changes to ${this.doc?.name ?? 'this PDF'} first?`,
       actions: [
-        { label: 'Save', kind: 'primary', run: () => { this.hideBar(); void this.save().then((ok) => (ok ? action() : undefined)); } },
+        { label: 'Save', kind: 'primary', run: () => { this.hideBar(); void this.save().then((ok) => (ok && !this.dirty() ? action() : undefined)); } },
         { label: 'Discard changes', kind: 'danger', run: () => { this.hideBar(); this.discardStaged(); void action(); } },
         { label: 'Cancel', kind: 'ghost', run: () => this.hideBar() },
       ],
@@ -1003,7 +1004,7 @@ class Workbench {
     this.forms.reset();
     this.speaker.stop();
     if (this.comparer.result) this.comparer.set(null);
-    this.history = [{ id: o.id, annots: [], label: 'Open' }];
+    this.history = [{ id: o.id, annots: [], label: 'Open', layout: 0 }];
     this.hi = 0;
     this.savedId = o.id;
     await this.show(o.id, o.name, o.info, false);
@@ -1136,24 +1137,28 @@ class Workbench {
   private pushState(label: string): void {
     if (!this.doc) return;
     this.history = this.history.slice(0, this.hi + 1);
-    this.history.push({ id: this.doc.id, annots: this.annot.items.slice(), label });
+    this.history.push({ id: this.doc.id, annots: this.annot.items.slice(), label, layout: this.history[this.hi]?.layout ?? 0 });
     if (this.history.length > 200) this.history.shift();
     this.hi = this.history.length - 1;
     this.panes.syncAnnots();
     this.syncChrome();
   }
 
-  private async commit(res: Pick<Derived, 'id'>, label: string, turn?: string, agent?: string): Promise<void> {
+  private async commit(res: Pick<Derived, 'id'>, label: string, turn?: string, agent?: string, pages?: Map<number, number[]> | 'moved'): Promise<void> {
     const d = this.doc;
     if (!d) return;
     const pw = this.passwords.get(d.id);
     if (pw && !this.passwords.has(res.id) && label !== 'Remove password') this.passwords.set(res.id, pw);
     const info = await pdfApi.info(res.id);
     const keep = this.annot.items.filter((a) => a.page <= info.pages);
+    const shape = (s: PdfInfo): string => s.sizes.map((z) => `${Math.round(z.w)}x${Math.round(z.h)}r${z.rotate}`).join(',');
+    const same = !pages && !turn && shape(info) === shape(d.info);
+    const layout = same ? this.history[this.hi]?.layout ?? 0 : ++this.layoutSeq;
     this.history = this.history.slice(0, this.hi + 1);
-    this.history.push({ id: res.id, annots: keep, label, turn, agent });
+    this.history.push({ id: res.id, annots: keep, label, turn, agent, layout });
     this.hi = this.history.length - 1;
     this.annot.setItems(keep);
+    if (!same) this.moveAreas(pages instanceof Map ? pages : null);
     await this.show(res.id, d.name, info, true);
     this.panes.syncAnnots();
   }
@@ -1162,6 +1167,7 @@ class Workbench {
     const target = this.history[to], d = this.doc;
     if (!target || !d) return;
     this.annot.commitEdit();
+    if (target.layout !== this.history[this.hi]?.layout) this.moveAreas(null);
     this.hi = to;
     if (target.id !== d.id) {
       await this.run('Restoring', async () => {
@@ -1172,6 +1178,13 @@ class Workbench {
     this.annot.setItems(target.annots.slice());
     this.panes.syncAnnots();
     this.syncChrome();
+  }
+
+  private moveAreas(map: Map<number, number[]> | null): void {
+    const areas = this.annot.areas;
+    if (!areas.length) return;
+    this.annot.setAreas(areas.flatMap((a) => (map?.get(a.page) ?? []).map((page, k) => ({ ...a, page, id: k ? `${a.id}-${k}` : a.id }))));
+    if (areas.some((a) => !map?.get(a.page)?.length)) toast('The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.');
   }
 
   private undo(): void {
@@ -1309,9 +1322,11 @@ class Workbench {
       const before = this.organizer.docId;
       const id = await this.flush() ?? d.id;
       const pages = this.organizer.payload().map((p) => ('src' in p && p.src === before ? { ...p, src: id } : p));
+      const map = new Map<number, number[]>();
+      pages.forEach((p, i) => { if ('src' in p && p.src === id) map.set(p.page, [...(map.get(p.page) ?? []), i + 1]); });
       const res = await pdfApi.organize(id, pages);
       this.organizer.dirty = false;
-      await this.commit(res, 'Organize pages');
+      await this.commit(res, 'Organize pages', undefined, undefined, map);
       this.organizer.reset(res.id, this.doc?.info.sizes ?? []);
       this.panes.syncOrganize();
     });
@@ -1369,6 +1384,7 @@ class Workbench {
 
   private async save(as = false): Promise<boolean> {
     if (!this.doc) return false;
+    if (this.annot.areas.length) { toast('Apply or clear the redaction marks first.', 'error'); return false; }
     const d = this.doc;
     const orig = d.info.path ?? '';
     const dir = orig.replace(/[\\/][^\\/]*$/, '');
@@ -1377,6 +1393,8 @@ class Workbench {
     if (!target) target = await chooseSave(d.name.toLowerCase().endsWith('.pdf') ? d.name : `${d.name}.pdf`, dir);
     if (!target) return false;
     const chosen = target;
+    if (this.organizer.dirty) await this.applyOrganize();
+    if (this.organizer.dirty) return false;
     const id = await this.run('Saving', () => this.flush());
     if (!id || !this.doc) return false;
     const where = await this.run('Saving', async () => (chosen.kind === 'path' ? (await pdfApi.save(id, chosen.path)).path : writeTo(chosen, pdfApi.fileUrl(id, true), d.name)));
@@ -1431,7 +1449,7 @@ class Workbench {
     this.bar({
       text: `Save the changes to ${this.doc?.name ?? 'this PDF'} before closing?`,
       actions: [
-        { label: 'Save', kind: 'primary', run: () => { this.hideBar(); void this.save().then((ok) => { if (ok) this.finishClose(); }); } },
+        { label: 'Save', kind: 'primary', run: () => { this.hideBar(); void this.save().then((ok) => { if (ok && !this.dirty()) this.finishClose(); }); } },
         { label: 'Close without saving', kind: 'danger', run: () => { this.hideBar(); this.finishClose(); } },
         { label: 'Cancel', kind: 'ghost', run: () => this.hideBar() },
       ],

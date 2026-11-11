@@ -123,6 +123,8 @@
   --redact-ink: #000000;
 
   --z-base: 0;
+  --z-page-layer: 1;
+  --z-page-pop: 2;
   --z-raised: 8;
   --z-selected: 9;
   --z-rail: 10;

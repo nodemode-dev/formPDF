@@ -1,4 +1,6 @@
 export const pl: Record<string, string> = {
+"Apply or clear the redaction marks first.": "Najpierw zastosuj lub wyczyść znaczniki redakcji.",
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Strony się zmieniły, więc usunięto znaczniki redakcji, które nie mogły za nimi podążyć. Zaznacz te obszary ponownie.",
 "Demos": "Dema",
 "Pages and search": "Strony i wyszukiwanie",
 "Annotate, fill and sign": "Komentarze, wypełnianie i podpis",

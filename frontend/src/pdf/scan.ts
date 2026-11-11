@@ -1,13 +1,13 @@
 import { api } from '../io/api';
 import { Dialog } from '../ui/dialogs';
-import { el, q, setDisabled, setText } from '../ui/dom';
+import { el, escapeHtml, q, setDisabled, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
 import { pdfApi, type ScanCaps, type ScanDevice, type ScanRequest } from './api';
 
 const SOURCE_LABEL: Record<string, string> = { glass: 'Glass', feeder: 'Document feeder', 'feeder, both sides': 'Feeder, both sides' };
 
 function setOptions(sel: HTMLSelectElement, opts: Array<[string, string]>, keep: string): void {
-  const html = opts.map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  const html = opts.map(([v, t]) => `<option value="${escapeHtml(v)}">${escapeHtml(t)}</option>`).join('');
   if (sel.dataset.html !== html) { sel.innerHTML = html; sel.dataset.html = html; }
   sel.value = opts.some(([v]) => v === keep) ? keep : opts[0]?.[0] ?? '';
 }

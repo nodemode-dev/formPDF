@@ -396,6 +396,7 @@ function showFinding(host: ToolHost, row: HTMLElement): void {
 async function runPf(): Promise<void> {
   const host = hostRef, d = host?.doc(), r = pfRoot;
   if (!host || !d || !r) return;
+  pfFailed = '';
   await host.ctx.run('Preflighting', async () => {
     try {
       const id = await host.ctx.flush() ?? d.id;
@@ -410,11 +411,12 @@ const AUTO_KEY = 'fs-pf-auto';
 let pfAuto = ((): boolean => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch { return true; } })();
 let autoTimer = 0;
 let autoBusy = '';
+let pfFailed = '';
 
 function scheduleAuto(): void {
   const host = hostRef, d = host?.doc(), r = pfRoot;
   window.clearTimeout(autoTimer);
-  if (!pfAuto || !host || !d || !r || pfFor === d.id || autoBusy === d.id || host.ctx.viewer.large) return;
+  if (!pfAuto || !host || !d || !r || pfFor === d.id || autoBusy === d.id || pfFailed === d.id || host.ctx.viewer.large) return;
   autoTimer = window.setTimeout(() => void autoRun(), 900);
 }
 
@@ -425,7 +427,7 @@ async function autoRun(): Promise<void> {
   try {
     const rep = await pdfApi.act<PReport>(d.id, 'preflight', { profile: val(r, 'profile', 'f') });
     if (host.doc()?.id === d.id) { pf = rep; pfFor = d.id; }
-  } catch { pfFor = pfFor || ''; } finally { autoBusy = ''; }
+  } catch { pfFailed = d.id; } finally { autoBusy = ''; }
   syncPf();
   scheduleAuto();
 }
@@ -600,7 +602,7 @@ registerTool({
       try { localStorage.setItem(AUTO_KEY, pfAuto ? '1' : '0'); } catch { pfAuto = (e.target as HTMLInputElement).checked; }
       scheduleAuto();
     });
-    q<HTMLSelectElement>(root, '[data-f="profile"]').addEventListener('change', () => { pfFor = ''; scheduleAuto(); });
+    q<HTMLSelectElement>(root, '[data-f="profile"]').addEventListener('change', () => { pfFor = ''; pfFailed = ''; scheduleAuto(); });
     root.addEventListener('click', (e) => {
       const row = (e.target as HTMLElement).closest<HTMLElement>('.fs-acc-rule[data-page]');
       if (row && !(e.target as HTMLElement).closest('button')) { showFinding(host, row); return; }

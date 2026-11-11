@@ -268,7 +268,7 @@ def _mutating(name: str, args: dict) -> bool:
     if name in ("open_pdf", "save", "undo", "extension_command"):
         return True
     if name == "pdf":
-        return args.get("action") in CHANGE_ACTIONS + EXPORT_ACTIONS
+        return args.get("action") in CHANGE_ACTIONS + EXPORT_ACTIONS or (args.get("action") == "attachments" and bool(args.get("save")))
     if name in ("run_command", "run_commands"):
         ids = [args.get("id")] if name == "run_command" else [s.get("id") for s in args.get("steps") or [] if isinstance(s, dict)]
         return any((c := cmdcat.find(str(i))) is not None and (c.get("mutates") or c.get("risky")) for i in ids)
@@ -505,6 +505,8 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages, land: b
             got = await asyncio.to_thread(lambda: pdfsvc.find(src.path, None if args.get("preset") else args.get("query"), passwords=pw, **_search(args, pages)))
             if not got["count"]:
                 return _ok("No matches, so nothing was redacted.", {"count": 0})
+            if got.get("truncated"):
+                raise ToolError(f"More than {got['count']} matches, so nothing was redacted. Redact a few pages at a time with pages.")
             areas, extra = pdfsvc.match_areas(got["matches"]), {"matches": got["count"]}
         elif not areas and not args.get("marked"):
             raise ToolError("redact needs areas, a query or preset to redact every match, or marked: true to apply the redaction marks.")

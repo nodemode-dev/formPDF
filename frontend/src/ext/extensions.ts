@@ -439,7 +439,7 @@ export class Extensions {
       try {
         const id = (await h.ctx.flush()) ?? d.id;
         out = await api.post<{ applied: number; results: unknown[]; id: string; pages: number }>('/api/extensions/apply', { doc: id, ops, by: ext.name });
-        await h.ctx.commit({ id: out.id, pages: out.pages, bytes: 0 }, name);
+        await h.ctx.commit({ id: out.id, pages: out.pages, bytes: 0 }, name, true);
       } catch (err) { failed = err; }
     });
     if (failed || !out) throw refused(failed instanceof Error ? failed.message : 'formpdf did not make the change');

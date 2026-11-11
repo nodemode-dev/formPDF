@@ -625,3 +625,75 @@ Python's `mimetypes` takes file types from the Windows registry (`HKEY_CLASSES_R
 - `/api/extensions/apply` reuses the MCP `pdf` tool's argument mapping (`mcp._change` with `land=False`, which returns the new version instead of committing it to the window as an agent turn), chaining each op on the previous result, so extensions, agents and the CLI accept the same arguments. `merge`, `protect` and `unlock` are kept out (paths and passwords), and exports are not offered. The window commits the final id once, which is the single undo step. `/api/extensions/read` is `mcp._read`. Both check `local_origin`.
 - `/api/extensions/manage` opens `formai://extensions?product=formpdf` with the system's opener (`open`, `xdg-open`, `os.startfile`), because the desktop window has no opener permission and a webview may not hand a custom scheme on; the URL is fixed, nothing from the request reaches the command.
 - MCP `extensions_list` and `extension_command` call the window tools `extensions-list` and `extension-command` (the window holds the consent grants, so extensions run only with the window open). `extension_command` counts as mutating, so the outside-agent consent applies first, then the extension's own consent in the window.
+
+## 105. Page ranges are bounds-checked before they expand · _v0.60.1 (services/pdf/core.py parse_pages)
+
+`parse_pages` used to `extend` the list with the whole range and check each page afterwards, so a spec such as `1-30000000` on a 5-page file built a 30 million entry list (about 1.2 GB) before saying "out of range". Each range now checks its two ends against `1..n` first and raises the same `Page {p} is out of range (1 to {n})` ValueError, so the error type and text are unchanged and nothing large is allocated.
+
+Checked: the timing one-liner (`parse_pages('1-30000000', 5)`) and the backend pytest suite.
+
+## 106. Bad Bates numbers are refused before a batch starts · _v0.60.1 (routers/batch.py run, _bates)
+
+`_bates` runs `int()` on the `digits` and `start` the client sends, and it was first called inside `_work`, the background task. A value such as `digits: "abc"` raised there with nothing to catch it, so the job stayed `running` for ever. `run` now builds the nested args first and calls `_bates` on a copy (it pops `bates` from the dict it is given) inside a try, answering 400 "Bates digits and start must be whole numbers" before any folder is made or task started, the same way the module already refuses a missing file or a bad output folder. `_work` receives those same args.
+
+Checked: through the test client, `digits: "abc"` and `start: "x"` answer 400, and `digits: 4, start: "7"` runs to `done` with the note `0007 to 0007`.
+
+## 107. Content redaction stops when the walk was cut short · _v0.60.2 (services/pdf/redact.py _cut_short, _verify, apply)
+
+`interp.walk` stops quietly at `MAX_DEPTH` nested forms, on a form whose stream does not parse, on a form that draws itself, and after `MAX_OPS` operators (`truncated`). `apply` never looked, and `_verify` repeated the same short walk, so text in a form nested 9 deep was neither removed nor seen; the clip and the black box hid it from `_render_check`, the result said the redaction was done, and any text extractor still read the words. `_cut_short` now reports a truncated walk, or a form draw over a redaction area (or with no box) whose stream was not walked (`d.where + (d.op,)` missing from `content.streams`). `apply` raises before it rewrites the page, naming raster mode, and `_verify` checks the rewritten page the same way. Existing checks are unchanged.
+
+Checked: a page with ten nested forms and the text in the innermost is refused with "a nested drawing under it could not be read on page 1"; three nested forms still redact (18 glyphs removed, PDFium reads no text); tests/test_redaction.py passes. The `MAX_OPS` path was not run.
+
+## 108. A saved attachment stays in the exports folder, and saving one asks first · _v0.60.2 (services/pdf/attach.py read; routers/mcp.py _mutating)
+
+`attachments` with `save` wrote to `config.exports_dir() / name` with the name taken from the PDF's embedded-file tree, and pathlib keeps `..` and absolute parts, so a file whose attachment is called `../../escaped.txt` or `/Users/me/.zshrc` wrote outside the exports folder over any file the user can write. `read` now passes the name through `_clean` (the base name only, the helper `change` already uses) for the default destination and for an `out` folder, and refuses a name that is only `.` or `..`. Because `attachments` is a read action, an outside agent could also save without the consent question; `_mutating` now counts `attachments` with `save` as changing, like the export actions.
+
+Checked: attachments named `../../escaped.txt` and `/tmp/abs_escape.txt` are saved as `Exports/escaped.txt` and `Exports/abs_escape.txt`, `..` is refused, `_mutating` is true only with `save`; tests/test_f2_consent.py and tests/test_f3_mcp.py pass.
+
+## 109. pyHanko's "other changes" stays invalid unless every changed object is markup · _v0.60.2 (services/pdf/sign.py _raw, _only_markup, _later)
+
+Entry 35's override lets formpdf's own `_changes` replace pyHanko's `ModificationLevel.OTHER`, because pyHanko calls a PDF commented in formpdf "other". `_changes` compares page content bytes, box keys, the names in `/XObject` and `/Font`, annotations and field values, never the objects behind those names, so an incremental update that rewrites an image, font or form stream the page already draws (a shadow attack) came out valid with "not changed apart from saving". `_later` now also requires `_only_markup`: every object of the signed revision that a later revision redefines must be an annotation, a field or widget, a signature dictionary, `/AcroForm` or its `/Fields`, a page `/Annots` array, a page dictionary that differs only in `/Annots`, or the catalogue differing only in `/AcroForm`, and `/Root` must be the same object. Objects are compared by number between `data[:end]` and `data`, serialised with `write_to_stream`. Anything else returns not allowed, so the verdict stays invalid; an exception there leaves `later` as None, which is also invalid for OTHER. The levels pyHanko itself accepts (form filling, annotations, LTA) do not go through this path.
+
+Checked: a signed PDF whose image stream is replaced in an incremental update (red before, blue after in PDFium) is now invalid; the same PDF commented through `/annotate` stays valid with "Changed after this signature: comments"; form filling and a second signature stay valid; tests/test_signatures.py passes.
+
+## 110. Content redaction drops the page thumbnail and private application data · _v0.60.2 (services/pdf/redact.py apply)
+
+Raster redaction (`edit.redact`) already removed `/Thumb` and `/PieceInfo` from the pages it redacts; content mode, the default, left both, so an embedded picture of the unredacted page or an application's private copy of the artwork (Illustrator keeps one in `/PieceInfo`) survived. `apply` now deletes both keys from each redacted page after `_annots`, and `core.drop_unreachable` removes the orphaned objects. Alternate text (`/Alt`, `/ActualText`) on structure elements that describe removed content is not handled yet: mapping removed glyphs and draws back to struct elements through their MCIDs is a larger change, left for its own entry.
+
+Checked: a page with a `/Thumb` image and `/PieceInfo` holding the secret text comes out with neither key and no trace of the text in the file bytes; tests/test_redaction.py and tests/test_sanitize.py pass.
+
+## 111. Redact by query or preset refuses when the search was capped · _v0.60.2 (routers/mcp.py _change redact)
+
+`search.find` stops at `MAX_MATCHES` (2000) and sets `truncated`; the MCP and CLI `redact` with `query` or `preset` ignored it, redacted the first 2000 matches and reported them as if they were all, leaving the rest of the sensitive text in the file. `_change` now raises a `ToolError` when `truncated` is set, before anything is written, and tells the agent to redact a few pages at a time with `pages`. Refusing keeps the one-version-per-call rule; looping over page ranges inside one call was not chosen.
+
+Checked: a 35-page PDF with 2100 copies of one number is refused for the whole file, and pages 1-30 (1800 matches) redact all 1800; tests/test_f2_consent.py and tests/test_f3_mcp.py pass.
+
+## 112. Spaces around a dash in a page range · _v0.60.2 (services/pdf/core.py parse_pages)
+
+`parse_pages` split the spec on whitespace before matching ranges, so in `1 - 3` the lone `-` matched the range pattern with both ends empty (every page), and `2 -4` or `8- 9` became an open range plus a single page: `[2, 1, 3, 4]` and `[8, 9, 10]`. Crop, watermark, header and footer, find, split and export then changed pages nobody asked for. Spaces around each dash are now removed before the split, which is what the range pattern's own `\s*` meant to allow.
+
+Checked: `1 - 3`, `2 -4` and `8- 9` on 10 pages give `[1, 2, 3]`, `[2, 3, 4]` and `[8, 9]`; `2-4,1`, `3-` and `1 3 5` are unchanged; tests/test_forms_and_pages.py passes.
+
+## 113. A page used twice in organize keeps its own rotation per copy · _v0.60.2 (services/pdf/edit.py organize)
+
+The first use of a page rotates the original page object in place, and `_duplicate` for a later use copied every key, including the `/Rotate` the first use had just changed, so `[{page: 1, rotate: 90}, {page: 1}]` gave two rotated copies. `organize` now records each original page's `/Rotate` (after `_materialize`, so an inherited value counts) in `rot0`, and a duplicate of an original page gets that value back, or loses the key when there was none, before its own `rotate` applies. Pages inserted from another PDF are new objects on every use and are not affected.
+
+Checked: on three blank pages (the third at 180), `[1 rot 90, 1, 2]` gives `/Rotate` 90, 0, 0; `[3 rot 90, 3, 1]` gives 270, 180, 0; `[1, 1 rot 270, 1]` gives 0, 270, 0; tests/test_forms_and_pages.py and tests/test_files_and_turns.py pass.
+
+## 114. Export downloads for any file name · _v0.60.2 (routers/pdf.py _attachment, get_tables_xlsx, pages_zip, to_pptx, to_docx)
+
+Starlette encodes header values as Latin-1, and these four routes put the document's stem straight into `Content-Disposition`, so a name with CJK, Cyrillic, Greek or Arabic letters, an en dash or a curly apostrophe raised `UnicodeEncodeError` after the whole export had run, and the request ended in a 500. `_attachment` builds the header the way the `act` route already did: a Latin-1 `filename` with `"` turned into `'` and anything else unencodable replaced, plus `filename*=UTF-8''` with the percent-encoded real name, which browsers prefer.
+
+Checked: through the test client, `契約書.pdf` and `John’s report.pdf` download tables.xlsx, pages.zip, pptx and docx with 200 and a `filename*` holding the real name.
+
+## 115. build_app.bat installs on a fresh checkout · _v0.60.2 (build_app.bat, the install step)
+
+`if exist backend\venv\... if exist frontend\node_modules ( ... ) else ( ... )` is two nested `if` commands, and cmd binds the `else` to the inner one. With no `backend\venv` the outer `if` is false and the whole line, `else` included, is skipped, so `setup\install_all.bat` never ran and `install_desktop.bat` then stopped with "backend venv missing". The two checks now set `READY=1`, and one plain `if "%READY%"=="1" ( ... ) else ( ... )` chooses between the message and the install. The `if` that reads `%READY%` is a separate top-level line, so the value is expanded after it is set.
+
+Checked: by reading cmd's documented `if`/`else` parsing; not run on Windows. CRLF line endings kept (`file` reports CRLF on every line).
+
+## 116. backend/oc_install.bat stops when the venv or pip fails · _v0.60.2 (backend/oc_install.bat)
+
+A failed `venv` creation, `pip install --upgrade pip` or `pip install -r requirements.txt` did not stop the script, and its exit code came from the last line, the optional OCR install, whose `|| echo` always succeeds. `install_all.bat` and `build_app.bat` then reported done with a broken engine. Each of those three commands now ends in `|| exit /b 1`. On the `venv` line the `||` belongs to the `if` body, so it only applies when the venv is being made. The OCR line stays optional.
+
+Checked: by reading cmd's documented operator parsing; not run on Windows. CRLF line endings kept.

@@ -166,6 +166,7 @@ def organize(src, out, items: list[dict], resolve, *, passwords: list[str] | Non
     original = [p.indirect_reference for p in w.pages]
     for p in w.pages:
         _materialize(p)
+    rot0 = {_idnum(r): r.get_object().get("/Rotate") for r in original}
     readers: dict[str, PdfReader] = {}
     used: set[int] = set()
     refs = []
@@ -195,8 +196,14 @@ def organize(src, out, items: list[dict], resolve, *, passwords: list[str] | Non
                     raise ValueError(f"Page {n} of the inserted PDF is out of range (1 to {len(r.pages)})")
                 page = w.add_page(r.pages[n - 1])
                 _materialize(page)
-            if _idnum(page.indirect_reference) in used:
+            first = _idnum(page.indirect_reference)
+            if first in used:
                 page = _duplicate(w, page)
+                if first in rot0:
+                    if rot0[first] is None:
+                        page.pop("/Rotate", None)
+                    else:
+                        page[NameObject("/Rotate")] = rot0[first]
         rot = int(item.get("rotate") or 0)
         if rot % 90:
             raise ValueError("Rotation must be a multiple of 90 degrees")

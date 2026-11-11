@@ -527,3 +527,105 @@ The owner's rule for the family: every demo opens from inside the installed app,
 - Home: a Demos section under Recent PDFs, one `fs-card` per demo with an inline SVG drawing (token colours through classes in `pdf.css`, no picture to load, so the cards paint with the page and nothing shifts). Cards are found by `data-demo`, the section by `data-home-demos`.
 - Help menu and agents: `demo-pages`, `demo-sign`, `demo-protect` are workbench commands added in `app.ts` (like the dock commands), listed in the Help menu between Keyboard shortcuts and Agents, so the native macOS menu, the palette, `/api/commands` and `run_command` all get them. `refreshMenus()` rebuilds the native menu after they are added. Menu items now carry `data-cmd` and menu buttons `data-menu` so tests find them without visible text.
 - Strings: the section title, the three titles and lines, `Demo: {0}`, and the two toasts have entries in every table.
+
+## 99. The PDF page's own stacking values come from tokens · _v0.60.1 (styles/pdf.css, styles/tokens.css --z-page-layer, --z-page-pop)
+
+Five raw `z-index` numbers in `pdf.css` (the text layer and its end marker at 0, the text layer spans and the signature pad canvas at 1, the note popup at 2) sat outside `tokens.css`, which is meant to be the only z-index source. They now read `--z-base` (0, existing), and two new tokens with the same numbers, `--z-page-layer` (1) and `--z-page-pop` (2), so every computed stacking value is unchanged.
+
+Checked: `tsc --noEmit`. Not verified in a browser.
+
+## 100. Redaction marks follow their pages or are removed with a notice · _v0.60.2 (pdf/workbench.ts State.layout, layoutSeq, commit, travel, moveAreas, applyOrganize; pdf/panels.ts Ctx.commit moves; pdf/plugins.ts, ext/extensions.ts, tools/lists.ts)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Marks drawn on Protect and not yet applied kept their page number when the pages changed under them: delete page 2 in Organize, apply, then Apply redactions, and the mark made on page 5 redacted what had become page 5 (the old page 6) while the marked name stayed in the file. The same happened after an agent turn that moved pages and after Undo or Redo across a page change. Every history state now carries a page layout number. A commit keeps the layout only when it comes from the window's own tools and every page keeps its size and turn; Organize passes the old-to-new page map, so its marks move with their pages (to every copy of a duplicated page) and marks on deleted pages are dropped; agent turns, plugins, action lists and extensions (`ctx.commit(res, label, true)`) and any change in page count or size start a new layout and drop the marks. Undo and Redo to a state of another layout drop them too. Whenever a mark is dropped a toast says so, so nothing is ever applied to a page it was not drawn on. Comments staged before an agent turn are not remapped (they are still only trimmed to the page count). Checked: `tsc --noEmit`; not run in a browser.
+
+## 101. Save applies staged page changes and refuses while redaction marks wait · _v0.60.2 (pdf/workbench.ts save, guard, close)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`dirty()` counts staged Organize changes and unapplied redaction marks, so Close and Open offered Save, but `save()` only ran `flush()` (comments, field values, new fields). The file was written without the page changes, then the close or the next open threw them away with no message; Ctrl+S did the same. `save()` now applies staged page changes (`applyOrganize`) after the save target is chosen and stops if they could not be applied, and it refuses with "Apply or clear the redaction marks first." while marks are pending: applying a redaction is permanent and is never done on the person's behalf. The Save choice on the Close and Open bars only goes on when the save leaves nothing unsaved. Checked: `tsc --noEmit`; not run in a browser.
+
+## 102. Date fields read the day and month in the field's own order · _v0.60.2 (pdf/formcalc.ts dateFormat)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`dateFormat` always read the first number of a typed date as the month and let `new Date` roll impossible values over, so with `AFDate_FormatEx("dd/mm/yyyy")`, formpdf's own default for new Date fields, 03/04/2024 showed as 04/03/2024 and 25/12/2024 as 12/01/2026 while the stored value stayed as typed. The order now comes from the format (day first when its `d` comes before its `m`), and a date whose month or day does not exist (31/02/2024, 2024-02-31) is shown as typed instead of rolled over. Checked: the function copied into node gives 25/12/2024 and 03/04/2024 for dd/mm/yyyy, 12/25/2024 for mm/dd/yyyy, Dec 25, 2024 for mmm d, yyyy, and leaves 31/02/2024 and 25/12/2024 under mm/dd/yyyy unchanged; `tsc --noEmit`.
+
+## 103. Structure tag names and scanner names are escaped in their option lists · _v0.60.2 (tools/access.ts syncOrder; pdf/scan.ts setOptions)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Both lists built `<option>` markup by concatenation and set `innerHTML` without `escapeHtml`, unlike every other list in the area. A structure element type comes from the file (any bytes fit in a PDF name through `#xx`) and a scanner's name and model come from mDNS on the local network, so a crafted file or device could break out of the value attribute or, with Chromium's relaxed select parser, create elements with handlers in the app window. Both builders now escape the value and the text before they are joined; the markup is still compared and written only when it changes, so nothing else is rebuilt. Checked: `tsc --noEmit`; not run in a browser.
+
+## 104. Preflight as you work stops after a failure on a version · _v0.60.2 (tools/print.ts pfFailed, scheduleAuto, autoRun, runPf, profile change)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+When the engine's preflight raised on a document, `autoRun` caught the error with a no-op, and `scheduleAuto` (called right after and from every `sync`) saw the version still unchecked and sent another whole-document preflight 900 ms later, for as long as the document stayed open, keeping the engine busy for every other action. A failed version id is now remembered in `pfFailed` and `scheduleAuto` skips it; a new version, a profile change or pressing Run clears it, so the check is tried again only when something changed or the person asks. Checked: `tsc --noEmit`; the network panel check against a failing engine was not run.
+
+## 105. Dialogs, menus and dropdowns sit above the agent dock in the workbench · _v0.60.2 (styles/dock.css #overlay-root)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Every dialog, menu and dropdown mounts in `#overlay-root`, which is fixed at `--z-menu` (200) and so is a stacking context: their own `--z-modal` and `--z-context` only count inside it. The dock is a sibling at `--z-dock` (950), so with the dock open in the workbench it covered the bottom of dialogs and menus (the Consent dialog's Allow and Not now in a window about 800 px high) and stayed clickable under a modal; entry 36 meant it to sit below dialogs. On Home the root is already raised to `--z-home-modal`. While the dock is open and Home is not shown, the overlay root now takes `--z-modal` (1000), so dialogs, menus and their scrims cover the dock. The workbench inside the root already ends at `bottom: var(--fs-dock-h)`, so it does not overlap the dock, except the dock's 6 px resize strip, which starts 3 px above the dock: its upper half is now under the workbench's bottom edge and the strip is grabbed by its lower 3 px. Checked: no raw `z-index` added (token only); not run in a browser.
+
+## 106. Comma-decimal numbers with a thousands dot read at their value · _v0.60.2 (pdf/formcalc.ts num)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`num` only took a trailing `,dd` as the decimal part when the string had no `.` followed by a digit, which is exactly the thousands separator of the `1.234,56` style that `numberFormat` itself writes (sepStyle 2), so `1.234,56` read as 1.23456 and a SUM showed 1.23. The comma is now the decimal mark when it is the last separator and one or two digits follow it. Checked in node with the function copied: `1.234,56` 1234.56, `1,234.56` 1234.56, `12,5` 12.5, `1.234.567,8` 1234567.8, `1,234` 1234, `(1.000,5)` -1000.5; `tsc --noEmit`.
+
+## 107. Read-only multi-line and choice fields cannot be typed into on Fill Forms · _v0.60.2 (pdf/fill.ts Fields.create)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`create` disabled a ReadOnly field only when its control was an `<input>`, so a read-only multi-line field (a `<textarea>`) or dropdown (a `<select>`) stayed editable and its new value was staged and sent to the engine on Apply or Save. All three control kinds are now disabled for a ReadOnly field. Checked: `tsc --noEmit`; not run with a read-only form in a browser.
+
+## 108. Page-box edge drags and arrow nudges follow the screen on turned pages · _v0.60.2 (tools/boxes.ts bindEdges pointermove; tools/content.ts nudge)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Tool layers live in `.fs-pdf-space`, which is in unturned page space and turned by CSS (`data-main-rotation`). Dragging a page-box edge took the raw screen movement as page movement, and the arrow keys in Select added their step in page space, so on a page turned 90 degrees (by /Rotate or Rotate view) the east handle, drawn at the bottom, did not follow a downward drag and ArrowRight moved the selection down on screen. Both now turn the screen step into page space first with the same mapping `Viewer.toPage` uses (90: x = screen y, y = minus screen x; 180: both negated; 270: x = minus screen y, y = screen x), per page from `viewer.total`. Checked: the mapping compared in node against `toPage` deltas for 0, 90, 180 and 270; `tsc --noEmit`; not run on a turned page in a browser.
+
+## 109. Escapes in form-script strings are decoded · _v0.60.2 (pdf/formcalc.ts call)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+The string scanner in `call` dropped a backslash and kept the next character as it was, so `AFNumber_Format(2, 0, 0, 0, "€ ", true)`, the escape form authoring tools write for a non-ASCII currency, gave the currency `u20AC ` and 5 showed as `u20AC 5.00`. `\uXXXX` with four hex digits is now decoded, `\n`, `\t` and `\r` become their characters, and any other escaped character (quotes, backslash) is kept as itself, as before. Checked: the module compiled in scratch gives the arguments `[2,0,0,0,"€ ",true]` and `€ 5.00` for that script, and `a\"b`, `x\\y`, `l\nm` decode to `a"b`, `x\y` and a newline; `tsc --noEmit`.
+
+## 110. Read aloud joins words hyphenated across a line break · _v0.60.2 (pdf/reading.ts chunks)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+The de-hyphenation branch in `chunks` runs on the space that a line break became, but it checked `text[i - 1]` for the newline, which at that point is the hyphen itself, so it never ran: `exam-` at a line end and `ple` on the next line were read as "exam ple" and the highlight split. It now checks `text[i]`, the line break being turned into a space. A hyphen before a capital, or one not at a line end, is kept as before. Checked: `chunks` copied into node gives `example text.` for `exam-\nple text.`, and keeps `well- Known` and `a - b.`; `tsc --noEmit`.
+
+## 111. A calibrated measuring scale stays with its PDF · _v0.60.2 (tools/measure.ts recall)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`recall` runs when a different PDF is shown and only assigned the scale when that PDF had one stored, so a scale calibrated on drawing A (1 pt = 0.5 m) carried over to drawing B and B was measured with it. When the PDF has no stored scale, the unit the person picked is kept but the factor goes back to that unit's true size, the calibrated flag is cleared and any half-drawn calibration line is dropped. Checked: `tsc --noEmit`; not run in a browser.
+
+## 112. HTML, RTF and Excel export and Extract selected include staged edits · _v0.60.2 (tools/exports.ts save; pdf/panels.ts org-extract)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+PowerPoint, Word, picture and print exports call `ctx.flush()` first, so staged comments, form entries and new fields are in the output; Save as HTML, RTF and Excel and Organize's Extract selected used `d.id`, the version before them, so the outputs of one window disagreed. Both now flush first and use the flushed id; Extract maps the selected pages' source from the organizer's version to the flushed one, as `applyOrganize` does. Checked: `tsc --noEmit`; not run in a browser.
+
+## 113. The palette on Home lists each dock command once · _v0.60.2 (app.ts Palette commands)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+On Home the palette lists Home's commands and then the workbench's. `homeCmds` spreads `dockCmds`, and the same four objects are added to the workbench's commands, so they were listed twice under one key; `patchList` keeps one node per key, and the other node was never updated, moved or removed, so a dead copy of each dock row stayed in the list (even under "Nothing matches") and in the workbench palette, which shares the instance. Workbench commands that are already Home commands are now left out of the Home list. Checked: `tsc --noEmit`; not run in a browser.
+
+## 114. The Chat tab reloads its transcript after the event stream reconnects · _v0.60.2 (ui/chat-pane.ts ChatPane constructor, resync)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`Events` turns a second `hello` on /api/events into `resync` for exactly this case, but nothing listened. When the engine restarted or the stream dropped while a reply streamed, `chat.done` was published while the window was not subscribed (the engine keeps no replay buffer), so the Chat tab kept "Claude is working..." and Stop, the reply stayed cut off, and the dock refused every new Chat question without a message until a reload. On `resync` a pane that has loaded once now clears, leaves the busy state and loads the stored transcript again, the same path `chat.adopted` takes; `load` turns busy back on if the engine says a reply is still running. Checked: `tsc --noEmit`; the engine restart during a reply was not run.
+
+## 115. Batch's action list has its search field · _v0.60.2 (ui/batch.ts Batch constructor, load)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Entry 14's guard (enhance the action select in `load` only if startup had not) always skipped: `startApp` runs `enhanceAllSelects(document)` synchronously after constructing Batch, long before `load`'s fetch of the action catalogue returns, so the select was always enhanced without the "Find an action" search. The constructor now enhances it with the search right after the markup is mounted, before `enhanceAllSelects` runs (which then skips it as already enhanced), and the guard in `load` is gone. The dropdown fills its list from the select's options each time it opens, so the options added later by `load` show. Checked: `tsc --noEmit`; not run in a browser.

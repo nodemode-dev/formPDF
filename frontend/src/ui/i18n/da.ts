@@ -1,4 +1,6 @@
 export const da: Record<string, string> = {
+"Apply or clear the redaction marks first.": "Anvend eller ryd censureringsmarkeringerne først.",
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Siderne er ændret, så censureringsmarkeringer, der ikke kunne følge dem, er fjernet. Markér de områder igen.",
 "Demos": "Demoer",
 "Pages and search": "Sider og søgning",
 "Annotate, fill and sign": "Kommentér, udfyld og underskriv",

@@ -21,7 +21,7 @@ async function save(root: HTMLElement, host: ToolHost, kind: string): Promise<vo
   if (kind === 'xlsx') body.tables_only = q<HTMLInputElement>(root, '[data-t="tables"]').checked;
   else body.pictures = q<HTMLInputElement>(root, '[data-t="pictures"]').checked;
   await host.ctx.deliver(async () => {
-    const got = await host.ctx.run(k.busy, async () => (await pdfApi.actFile(d.id, k.action, body)).blob);
+    const got = await host.ctx.run(k.busy, async () => (await pdfApi.actFile(await host.ctx.flush() ?? d.id, k.action, body)).blob);
     if (!got) throw new Quiet();
     return got;
   }, `${stem(d.name)}${k.ext}`);

@@ -1,7 +1,7 @@
 import { api } from '../io/api';
 import { pdfApi, type Derived } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
-import { el, patchList, q, setClass, setDisabled, setHidden, setText } from '../ui/dom';
+import { el, escapeHtml, patchList, q, setClass, setDisabled, setHidden, setText } from '../ui/dom';
 import { icon } from '../ui/icons';
 import { toast } from '../ui/toast';
 import { t } from '../ui/i18n';
@@ -294,7 +294,7 @@ function syncOrder(): void {
   const sel = items.find((r) => r.id === selected) ?? null;
   const tsel = q<HTMLSelectElement>(root, '[data-o="type"]');
   const opts = sel && !RETAG.includes(sel.type) ? [sel.type, ...RETAG, 'Artifact'] : [...RETAG, 'Artifact'];
-  const html = opts.map((t) => `<option value="${t}"${sel && !RETAG.includes(t) && t === sel.type ? ' disabled' : ''}>${label(t)}</option>`).join('');
+  const html = opts.map((t) => `<option value="${escapeHtml(t)}"${sel && !RETAG.includes(t) && t === sel.type ? ' disabled' : ''}>${escapeHtml(label(t))}</option>`).join('');
   if (tsel.dataset.html !== html) { tsel.innerHTML = html; tsel.dataset.html = html; }
   if (sel && tsel.value !== sel.type) tsel.value = sel.type;
   setDisabled(tsel, !sel);

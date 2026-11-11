@@ -179,7 +179,7 @@ def parse_pages(spec, n: int, unique: bool = True) -> list[int]:
         out = [int(p) for p in spec]
     else:
         out = []
-        for part in re.split(r"[,\s;]+", str(spec).strip()):
+        for part in re.split(r"[,\s;]+", re.sub(r"\s*-\s*", "-", str(spec).strip())):
             if not part:
                 continue
             m = re.fullmatch(r"(\d*)\s*-\s*(\d*)", part)
@@ -188,6 +188,9 @@ def parse_pages(spec, n: int, unique: bool = True) -> list[int]:
                 b = int(m.group(2)) if m.group(2) else n
                 if a > b:
                     raise ValueError(f"The range {part} runs backwards")
+                for p in (a, b):
+                    if not 1 <= p <= n:
+                        raise ValueError(f"Page {p} is out of range (1 to {n})")
                 out.extend(range(a, b + 1))
             elif part.isdigit():
                 out.append(int(part))

@@ -110,6 +110,7 @@ export class ChatPane {
     });
     events.on('chat.done', (e) => { this.finish(e); if (e.usage) this.showUsage(e.usage as Usage, -1); });
     events.on('chat.reset', () => { this.clear(); this.setBusy(false); this.showUsage({ ...BLANK }, -1); });
+    events.on('resync', () => { if (!this.loaded) return; this.loaded = false; this.clear(); this.setBusy(false); void this.load(); });
   }
 
   async load(): Promise<void> {

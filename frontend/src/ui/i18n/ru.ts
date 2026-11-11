@@ -1,4 +1,6 @@
 export const ru: Record<string, string> = {
+"Apply or clear the redaction marks first.": "Сначала примените или очистите метки скрытия.",
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Страницы изменились, поэтому метки скрытия, которые не смогли последовать за ними, удалены. Отметьте эти области снова.",
 "Demos": "Демо",
 "Pages and search": "Страницы и поиск",
 "Annotate, fill and sign": "Комментарии, заполнение и подпись",

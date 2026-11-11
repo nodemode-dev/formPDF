@@ -15,7 +15,9 @@ for /f "tokens=1 delims=." %%V in ('node -p "process.versions.node"') do if %%V 
 
 echo.
 echo [formpdf] == installing the engine and the window
-if exist backend\venv\Scripts\activate.bat if exist frontend\node_modules (
+set "READY=0"
+if exist backend\venv\Scripts\activate.bat if exist frontend\node_modules set "READY=1"
+if "%READY%"=="1" (
   echo [formpdf] already installed; formpdf.bat install refreshes it
 ) else (
   call setup\install_all.bat || goto :failed

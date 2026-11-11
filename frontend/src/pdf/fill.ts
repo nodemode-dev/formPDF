@@ -176,7 +176,7 @@ export class Fields {
       if (f.maxLen) (ctl as HTMLInputElement).maxLength = f.maxLen;
       if (f.format) (ctl as HTMLInputElement).placeholder = f.format;
     }
-    if (f.readonly && ctl instanceof HTMLInputElement) ctl.disabled = true;
+    if (f.readonly && (ctl instanceof HTMLInputElement || ctl instanceof HTMLTextAreaElement || ctl instanceof HTMLSelectElement)) ctl.disabled = true;
     if (f.required) box.classList.add('is-required');
     box.appendChild(ctl);
     return box;
