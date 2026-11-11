@@ -268,7 +268,7 @@ def _mutating(name: str, args: dict) -> bool:
     if name in ("open_pdf", "save", "undo", "extension_command"):
         return True
     if name == "pdf":
-        return args.get("action") in CHANGE_ACTIONS + EXPORT_ACTIONS
+        return args.get("action") in CHANGE_ACTIONS + EXPORT_ACTIONS or (args.get("action") == "attachments" and bool(args.get("save")))
     if name in ("run_command", "run_commands"):
         ids = [args.get("id")] if name == "run_command" else [s.get("id") for s in args.get("steps") or [] if isinstance(s, dict)]
         return any((c := cmdcat.find(str(i))) is not None and (c.get("mutates") or c.get("risky")) for i in ids)
