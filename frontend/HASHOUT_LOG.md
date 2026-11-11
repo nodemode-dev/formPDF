@@ -587,3 +587,9 @@ kind: fix · logged: v0.60.2 · 2026-11-10
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 Tool layers live in `.fs-pdf-space`, which is in unturned page space and turned by CSS (`data-main-rotation`). Dragging a page-box edge took the raw screen movement as page movement, and the arrow keys in Select added their step in page space, so on a page turned 90 degrees (by /Rotate or Rotate view) the east handle, drawn at the bottom, did not follow a downward drag and ArrowRight moved the selection down on screen. Both now turn the screen step into page space first with the same mapping `Viewer.toPage` uses (90: x = screen y, y = minus screen x; 180: both negated; 270: x = minus screen y, y = screen x), per page from `viewer.total`. Checked: the mapping compared in node against `toPage` deltas for 0, 90, 180 and 270; `tsc --noEmit`; not run on a turned page in a browser.
+
+## 109. Escapes in form-script strings are decoded · _v0.60.2 (pdf/formcalc.ts call)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+The string scanner in `call` dropped a backslash and kept the next character as it was, so `AFNumber_Format(2, 0, 0, 0, "€ ", true)`, the escape form authoring tools write for a non-ASCII currency, gave the currency `u20AC ` and 5 showed as `u20AC 5.00`. `\uXXXX` with four hex digits is now decoded, `\n`, `\t` and `\r` become their characters, and any other escaped character (quotes, backslash) is kept as itself, as before. Checked: the module compiled in scratch gives the arguments `[2,0,0,0,"€ ",true]` and `€ 5.00` for that script, and `a\"b`, `x\\y`, `l\nm` decode to `a"b`, `x\y` and a newline; `tsc --noEmit`.

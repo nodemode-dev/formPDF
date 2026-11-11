@@ -32,7 +32,16 @@ function call(code: string, fn: string): Val[] | null {
     const ch = code[i];
     if (ch === '"' || ch === "'") {
       let j = i + 1, s = '';
-      while (j < code.length && code[j] !== ch) { if (code[j] === '\\' && j + 1 < code.length) j++; s += code[j]; j++; }
+      while (j < code.length && code[j] !== ch) {
+        if (code[j] === '\\' && j + 1 < code.length) {
+          const e = code[++j], hex = code.slice(j + 1, j + 5);
+          if (e === 'u' && /^[0-9a-fA-F]{4}$/.test(hex)) { s += String.fromCharCode(parseInt(hex, 16)); j += 5; continue; }
+          s += e === 'n' ? '\n' : e === 't' ? '\t' : e === 'r' ? '\r' : e;
+          j++;
+          continue;
+        }
+        s += code[j]; j++;
+      }
       toks.push(JSON.stringify(s));
       i = j + 1;
       continue;
