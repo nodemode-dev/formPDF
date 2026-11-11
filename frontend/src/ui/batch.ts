@@ -61,6 +61,7 @@ export class Batch {
     host.appendChild(this.root);
     this.list = q(this.root, '.fs-batch-list');
     this.select = q<HTMLSelectElement>(this.root, '.fs-batch-action-select');
+    enhanceSelect(this.select, { search: 'Find an action' });
     this.groups = q(this.root, '.fs-batch-groups');
     this.runBtn = q<HTMLButtonElement>(this.root, '[data-b="run"]');
     this.zipBtn = q<HTMLButtonElement>(this.root, '[data-b="zip"]');
@@ -104,7 +105,6 @@ export class Batch {
       this.groups.appendChild(g);
       for (const s of Array.from(g.querySelectorAll<HTMLSelectElement>('select'))) enhanceSelect(s);
     }
-    if (!this.select.classList.contains('fs-dd-native')) enhanceSelect(this.select, { search: 'Find an action' });
     const first = this.actions.find((a) => a.name === 'page_numbers') ?? this.actions[0];
     if (first) this.select.value = first.name;
     this.showGroup();

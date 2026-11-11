@@ -623,3 +623,9 @@ On Home the palette lists Home's commands and then the workbench's. `homeCmds` s
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 `Events` turns a second `hello` on /api/events into `resync` for exactly this case, but nothing listened. When the engine restarted or the stream dropped while a reply streamed, `chat.done` was published while the window was not subscribed (the engine keeps no replay buffer), so the Chat tab kept "Claude is working..." and Stop, the reply stayed cut off, and the dock refused every new Chat question without a message until a reload. On `resync` a pane that has loaded once now clears, leaves the busy state and loads the stored transcript again, the same path `chat.adopted` takes; `load` turns busy back on if the engine says a reply is still running. Checked: `tsc --noEmit`; the engine restart during a reply was not run.
+
+## 115. Batch's action list has its search field · _v0.60.2 (ui/batch.ts Batch constructor, load)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Entry 14's guard (enhance the action select in `load` only if startup had not) always skipped: `startApp` runs `enhanceAllSelects(document)` synchronously after constructing Batch, long before `load`'s fetch of the action catalogue returns, so the select was always enhanced without the "Find an action" search. The constructor now enhances it with the search right after the markup is mounted, before `enhanceAllSelects` runs (which then skips it as already enhanced), and the guard in `load` is gone. The dropdown fills its list from the select's options each time it opens, so the options added later by `load` show. Checked: `tsc --noEmit`; not run in a browser.
