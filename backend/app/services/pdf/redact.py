@@ -375,9 +375,21 @@ def _strip_items(page, areas) -> int:
     return stripped
 
 
+def _cut_short(content, areas) -> str | None:
+    if content.truncated:
+        return "the page has more drawing steps than formpdf can read"
+    for d in content.draws:
+        if d.kind == "form" and (d.box is None or _touches(d.box, areas)) and d.where + (d.op,) not in content.streams:
+            return "a nested drawing under it could not be read"
+    return None
+
+
 def _verify(w: PdfWriter, n: int, areas, cleared: set[str]) -> str | None:
     page = w.pages[n - 1]
     content = interp.walk(page, w)
+    short = _cut_short(content, areas)
+    if short:
+        return f"{short} on page {n}"
     for g in content.glyphs:
         if _covers(g.box, areas) and g.text.strip():
             return f"text is still under a redaction on page {n}"
@@ -449,6 +461,9 @@ def apply(src, out, areas: list[dict], *, passwords: list[str] | None = None, co
         page = w.pages[p - 1]
         areas_pdf = _page_areas(page, boxes)
         content = interp.walk(page, w)
+        short = _cut_short(content, areas_pdf)
+        if short:
+            raise ValueError(f"Redaction stopped: {short} on page {p}. Nothing was changed. Use raster mode for this page.")
         edited: dict[tuple, str] = {}
         for where in sorted(content.streams, key=len, reverse=True):
             if where == ():
