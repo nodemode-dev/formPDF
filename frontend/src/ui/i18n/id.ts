@@ -1,4 +1,5 @@
 export const id: Record<string, string> = {
+"Apply or clear the redaction marks first.": "Terapkan atau hapus tanda penyensoran terlebih dahulu.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Halaman berubah, jadi tanda penyensoran yang tidak dapat mengikutinya telah dihapus. Tandai area tersebut lagi.",
 "Demos": "Demo",
 "Pages and search": "Halaman dan pencarian",

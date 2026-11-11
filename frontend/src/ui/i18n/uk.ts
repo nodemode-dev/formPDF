@@ -1,4 +1,5 @@
 export const uk: Record<string, string> = {
+"Apply or clear the redaction marks first.": "Спершу застосуйте або очистьте позначки приховування.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Сторінки змінилися, тому позначки приховування, які не змогли піти за ними, видалено. Позначте ці області знову.",
 "Demos": "Демо",
 "Pages and search": "Сторінки й пошук",

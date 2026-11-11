@@ -919,7 +919,7 @@ class Workbench {
     this.bar({
       text: `Save the changes to ${this.doc?.name ?? 'this PDF'} first?`,
       actions: [
-        { label: 'Save', kind: 'primary', run: () => { this.hideBar(); void this.save().then((ok) => (ok ? action() : undefined)); } },
+        { label: 'Save', kind: 'primary', run: () => { this.hideBar(); void this.save().then((ok) => (ok && !this.dirty() ? action() : undefined)); } },
         { label: 'Discard changes', kind: 'danger', run: () => { this.hideBar(); this.discardStaged(); void action(); } },
         { label: 'Cancel', kind: 'ghost', run: () => this.hideBar() },
       ],
@@ -1384,6 +1384,7 @@ class Workbench {
 
   private async save(as = false): Promise<boolean> {
     if (!this.doc) return false;
+    if (this.annot.areas.length) { toast('Apply or clear the redaction marks first.', 'error'); return false; }
     const d = this.doc;
     const orig = d.info.path ?? '';
     const dir = orig.replace(/[\\/][^\\/]*$/, '');
@@ -1392,6 +1393,8 @@ class Workbench {
     if (!target) target = await chooseSave(d.name.toLowerCase().endsWith('.pdf') ? d.name : `${d.name}.pdf`, dir);
     if (!target) return false;
     const chosen = target;
+    if (this.organizer.dirty) await this.applyOrganize();
+    if (this.organizer.dirty) return false;
     const id = await this.run('Saving', () => this.flush());
     if (!id || !this.doc) return false;
     const where = await this.run('Saving', async () => (chosen.kind === 'path' ? (await pdfApi.save(id, chosen.path)).path : writeTo(chosen, pdfApi.fileUrl(id, true), d.name)));
@@ -1446,7 +1449,7 @@ class Workbench {
     this.bar({
       text: `Save the changes to ${this.doc?.name ?? 'this PDF'} before closing?`,
       actions: [
-        { label: 'Save', kind: 'primary', run: () => { this.hideBar(); void this.save().then((ok) => { if (ok) this.finishClose(); }); } },
+        { label: 'Save', kind: 'primary', run: () => { this.hideBar(); void this.save().then((ok) => { if (ok && !this.dirty()) this.finishClose(); }); } },
         { label: 'Close without saving', kind: 'danger', run: () => { this.hideBar(); this.finishClose(); } },
         { label: 'Cancel', kind: 'ghost', run: () => this.hideBar() },
       ],
