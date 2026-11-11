@@ -605,3 +605,9 @@ The de-hyphenation branch in `chunks` runs on the space that a line break became
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 `recall` runs when a different PDF is shown and only assigned the scale when that PDF had one stored, so a scale calibrated on drawing A (1 pt = 0.5 m) carried over to drawing B and B was measured with it. When the PDF has no stored scale, the unit the person picked is kept but the factor goes back to that unit's true size, the calibrated flag is cleared and any half-drawn calibration line is dropped. Checked: `tsc --noEmit`; not run in a browser.
+
+## 112. HTML, RTF and Excel export and Extract selected include staged edits · _v0.60.2 (tools/exports.ts save; pdf/panels.ts org-extract)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+PowerPoint, Word, picture and print exports call `ctx.flush()` first, so staged comments, form entries and new fields are in the output; Save as HTML, RTF and Excel and Organize's Extract selected used `d.id`, the version before them, so the outputs of one window disagreed. Both now flush first and use the flushed id; Extract maps the selected pages' source from the organizer's version to the flushed one, as `applyOrganize` does. Checked: `tsc --noEmit`; not run in a browser.
