@@ -685,3 +685,9 @@ Checked: on three blank pages (the third at 180), `[1 rot 90, 1, 2]` gives `/Rot
 Starlette encodes header values as Latin-1, and these four routes put the document's stem straight into `Content-Disposition`, so a name with CJK, Cyrillic, Greek or Arabic letters, an en dash or a curly apostrophe raised `UnicodeEncodeError` after the whole export had run, and the request ended in a 500. `_attachment` builds the header the way the `act` route already did: a Latin-1 `filename` with `"` turned into `'` and anything else unencodable replaced, plus `filename*=UTF-8''` with the percent-encoded real name, which browsers prefer.
 
 Checked: through the test client, `契約書.pdf` and `John’s report.pdf` download tables.xlsx, pages.zip, pptx and docx with 200 and a `filename*` holding the real name.
+
+## 115. build_app.bat installs on a fresh checkout · _v0.60.2 (build_app.bat, the install step)
+
+`if exist backend\venv\... if exist frontend\node_modules ( ... ) else ( ... )` is two nested `if` commands, and cmd binds the `else` to the inner one. With no `backend\venv` the outer `if` is false and the whole line, `else` included, is skipped, so `setup\install_all.bat` never ran and `install_desktop.bat` then stopped with "backend venv missing". The two checks now set `READY=1`, and one plain `if "%READY%"=="1" ( ... ) else ( ... )` chooses between the message and the install. The `if` that reads `%READY%` is a separate top-level line, so the value is expanded after it is set.
+
+Checked: by reading cmd's documented `if`/`else` parsing; not run on Windows. CRLF line endings kept (`file` reports CRLF on every line).
