@@ -2,6 +2,6 @@
 set -e
 source "$(dirname "$0")/lib.sh"
 triple="$(fp_target_triple)" || fp_die "rustc not found; run ./formpdf install-desktop"
-[ -x "$FORMPDF_ROOT/src-tauri/binaries/formpdf-engine-${triple}$(fp_exe)" ] || "$FORMPDF_ROOT/setup/freeze_backend"
+[ -x "$FORMPDF_ROOT/src-tauri/binaries/formpdf-engine-${triple}$(fp_exe)" ] || FORMPDF_DEV_FREEZE=1 "$FORMPDF_ROOT/setup/freeze_backend"
 cd "$FORMPDF_ROOT"
 exec frontend/node_modules/.bin/tauri dev "$@"

@@ -1,7 +1,7 @@
 {
   "name": "formpdf-demo",
   "private": true,
-  "version": "0.60.2",
+  "version": "0.60.3",
   "description": "formpdf offline browser demo",
   "license": "Apache-2.0",
   "type": "module",

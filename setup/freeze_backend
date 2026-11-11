@@ -14,15 +14,31 @@ if [ -d "$FORMPDF_ROOT/backend/app/fonts" ]; then extra+=(--add-data "$(fp_nativ
 if [ -d "$FORMPDF_ROOT/backend/app/dict" ]; then extra+=(--add-data "$(fp_native_path "$FORMPDF_ROOT/backend/app/dict")${sep}dict"); fi
 extra+=(--hidden-import ptyprocess)
 if python -c "import winpty" 2>/dev/null; then extra+=(--hidden-import winpty); fi
-if python -c "import rapidocr, onnxruntime" 2>/dev/null; then extra+=(--collect-all rapidocr --collect-all onnxruntime --collect-all shapely --collect-all pyclipper); fi
 release_ocr=""
+no_ocr=""
 [ -n "${FORMCOMPILER_VERSION:-}" ] && [ "${FORMPDF_NO_OCR:-}" != "1" ] && release_ocr=1
 if [ -n "$release_ocr" ]; then
   python -c "import rapidocr, onnxruntime, shapely, pyclipper, cv2" || fp_die "a release build must bundle text recognition (OCR) and its modules are missing; run ./formpdf install"
 fi
 if [ "$(fp_os)" = macos ]; then
   gpl="$(python -c 'import pathlib, cv2; print("\n".join(str(p) for p in pathlib.Path(cv2.__file__).parent.rglob("*") if any(k in p.name.lower() for k in ("libx264", "libx265", "librubberband", "libvidstab", "libpostproc"))))' 2>/dev/null | head -1)"
-  [ -z "$gpl" ] || fp_die "GPL FFmpeg library in OpenCV: $gpl. Reinstall opencv from source without FFmpeg: PIP_NO_BINARY=opencv-python,opencv-python-headless CMAKE_ARGS=-DWITH_FFMPEG=OFF pip install --force-reinstall -r requirements_ocr.txt"
+  if [ -n "$gpl" ]; then
+    rebuild="cd backend && PIP_NO_BINARY=opencv-python,opencv-python-headless CMAKE_ARGS=\"-DWITH_FFMPEG=OFF -DWITH_GSTREAMER=OFF -DWITH_OPENEXR=OFF -DWITH_VTK=OFF -DWITH_QT=OFF -DWITH_GTK=OFF -DWITH_EIGEN=OFF\" CMAKE_BUILD_PARALLEL_LEVEL=4 venv/bin/pip install --force-reinstall -r requirements_ocr.txt"
+    dev_freeze=""
+    [ "${FORMPDF_DEV_FREEZE:-}" = 1 ] && dev_freeze=1
+    for v in FORMCOMPILER_VERSION APPLE_SIGNING_IDENTITY APPLE_CERTIFICATE APPLE_ID APPLE_API_KEY TAURI_SIGNING_PRIVATE_KEY; do
+      if [ -n "${!v+x}" ]; then dev_freeze=""; fi
+    done
+    [ -n "$dev_freeze" ] || fp_die "GPL FFmpeg library in OpenCV: $gpl. Reinstall opencv from source without FFmpeg (about 25 minutes): $rebuild"
+    fp_say "OpenCV here carries GPL FFmpeg ($gpl), so this sidecar is frozen without text recognition (OCR); everything else works."
+    fp_say "To put OCR back, rebuild OpenCV from source without FFmpeg (about 25 minutes), then rerun setup/freeze_backend: $rebuild"
+    no_ocr=1
+  fi
+fi
+if [ -n "$no_ocr" ]; then
+  extra+=(--exclude-module cv2 --exclude-module rapidocr --exclude-module onnxruntime)
+elif python -c "import rapidocr, onnxruntime" 2>/dev/null; then
+  extra+=(--collect-all rapidocr --collect-all onnxruntime --collect-all shapely --collect-all pyclipper)
 fi
 rm -rf build/pyinstaller dist-engine
 pyinstaller --noconfirm --clean --onefile --name formpdf-engine \

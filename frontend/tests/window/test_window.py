@@ -134,7 +134,7 @@ def test_every_demo_opens_from_start_as_a_new_pdf(engine):
             page.locator(f"[data-home-demos] [data-demo='{demo}']").click()
             page.wait_for_function("([t, n, c]) => { const r = document.querySelector('.fs-pdfwb'); return r && !r.hidden && r.dataset.tab === t && r.querySelector('.fs-pdfwb-name')?.textContent === n && r.querySelectorAll('.fs-pdf-page').length === c; }", arg=[tab, name, pages], timeout=60_000)
             seen.append((demo, page.evaluate("() => document.querySelector('.fs-pdfwb .fs-pdfwb-edited')?.className ?? 'missing is-off'")))
-            page.keyboard.press("Alt+Control+KeyH")
+            page.keyboard.press("Alt+ControlOrMeta+KeyH")
             page.locator(".fs-pdfwb-bar:not([hidden]) .fs-btn-danger").click(timeout=15_000)
         browser.close()
     assert [d for d, _ in seen] == [d for d, *_ in DEMOS]
