@@ -24,7 +24,12 @@ if [ "$(fp_os)" = macos ]; then
   gpl="$(python -c 'import pathlib, cv2; print("\n".join(str(p) for p in pathlib.Path(cv2.__file__).parent.rglob("*") if any(k in p.name.lower() for k in ("libx264", "libx265", "librubberband", "libvidstab", "libpostproc"))))' 2>/dev/null | head -1)"
   if [ -n "$gpl" ]; then
     rebuild="cd backend && PIP_NO_BINARY=opencv-python,opencv-python-headless CMAKE_ARGS=\"-DWITH_FFMPEG=OFF -DWITH_GSTREAMER=OFF -DWITH_OPENEXR=OFF -DWITH_VTK=OFF -DWITH_QT=OFF -DWITH_GTK=OFF -DWITH_EIGEN=OFF\" CMAKE_BUILD_PARALLEL_LEVEL=4 venv/bin/pip install --force-reinstall -r requirements_ocr.txt"
-    [ -z "${FORMCOMPILER_VERSION:-}" ] || fp_die "GPL FFmpeg library in OpenCV: $gpl. Reinstall opencv from source without FFmpeg (about 25 minutes): $rebuild"
+    dev_freeze=""
+    [ "${FORMPDF_DEV_FREEZE:-}" = 1 ] && dev_freeze=1
+    for v in FORMCOMPILER_VERSION APPLE_SIGNING_IDENTITY APPLE_CERTIFICATE APPLE_ID APPLE_API_KEY TAURI_SIGNING_PRIVATE_KEY; do
+      if [ -n "${!v+x}" ]; then dev_freeze=""; fi
+    done
+    [ -n "$dev_freeze" ] || fp_die "GPL FFmpeg library in OpenCV: $gpl. Reinstall opencv from source without FFmpeg (about 25 minutes): $rebuild"
     fp_say "OpenCV here carries GPL FFmpeg ($gpl), so this sidecar is frozen without text recognition (OCR); everything else works."
     fp_say "To put OCR back, rebuild OpenCV from source without FFmpeg (about 25 minutes), then rerun setup/freeze_backend: $rebuild"
     no_ocr=1

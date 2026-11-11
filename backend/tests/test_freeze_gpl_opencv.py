@@ -45,7 +45,7 @@ def fake_tree(tmp_path: Path) -> tuple[Path, dict]:
     (bin_dir / "pyinstaller").write_text(FAKE_PYINSTALLER, encoding="utf-8")
     for tool in ("uname", "pyinstaller"):
         (bin_dir / tool).chmod(0o755)
-    env = {k: v for k, v in os.environ.items() if not k.startswith(("FORMPDF_", "FORMCOMPILER_", "PYTHON"))}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("FORMPDF_", "FORMCOMPILER_", "PYTHON", "APPLE_", "TAURI_SIGNING_"))}
     env.update({
         "PATH": f"{bin_dir}{os.pathsep}{env.get('PATH', '')}",
         "PYTHONPATH": str(mods),
@@ -62,6 +62,7 @@ def freeze(root: Path, env: dict) -> subprocess.CompletedProcess:
 
 def test_a_dev_freeze_with_gpl_opencv_builds_a_sidecar_without_ocr(tmp_path):
     root, env = fake_tree(tmp_path)
+    env["FORMPDF_DEV_FREEZE"] = "1"
     run = freeze(root, env)
     assert run.returncode == 0, run.stdout + run.stderr
     args = (tmp_path / "args.txt").read_text(encoding="utf-8").split("\n")
@@ -88,3 +89,36 @@ def test_a_release_freeze_without_ocr_still_stops_on_gpl_opencv(tmp_path):
     run = freeze(root, env)
     assert run.returncode != 0
     assert "GPL FFmpeg library in OpenCV" in run.stderr
+
+
+def test_a_freeze_without_the_dev_flag_stops_on_gpl_opencv(tmp_path):
+    root, env = fake_tree(tmp_path)
+    run = freeze(root, env)
+    assert run.returncode != 0
+    assert "GPL FFmpeg library in OpenCV" in run.stderr
+    assert not (tmp_path / "args.txt").exists()
+
+
+@pytest.mark.parametrize("name, value", [
+    ("FORMCOMPILER_VERSION", ""),
+    ("FORMCOMPILER_VERSION", "0.0.0"),
+    ("APPLE_SIGNING_IDENTITY", "Developer ID Application: Example"),
+    ("APPLE_CERTIFICATE", ""),
+    ("TAURI_SIGNING_PRIVATE_KEY", "key"),
+])
+def test_a_release_or_signed_freeze_stops_even_with_the_dev_flag(tmp_path, name, value):
+    root, env = fake_tree(tmp_path)
+    env.update({"FORMPDF_DEV_FREEZE": "1", name: value})
+    run = freeze(root, env)
+    assert run.returncode != 0
+    assert "GPL FFmpeg library in OpenCV" in run.stderr
+    assert not (tmp_path / "args.txt").exists()
+
+
+def test_only_desktop_dev_sets_the_dev_freeze_flag():
+    assert "FORMPDF_DEV_FREEZE=1" in (REPO / "setup" / "desktop_dev").read_text(encoding="utf-8")
+    assert "FORMPDF_DEV_FREEZE=1" in (REPO / "setup" / "desktop_dev.bat").read_text(encoding="utf-8")
+    for name in ("build_app", "build_app.bat", "formpdf", "formpdf.bat", "setup/desktop_build", "setup/desktop_build.bat", "setup/freeze_backend.bat"):
+        path = REPO / name
+        if path.exists():
+            assert "FORMPDF_DEV_FREEZE" not in path.read_text(encoding="utf-8", errors="replace"), name
