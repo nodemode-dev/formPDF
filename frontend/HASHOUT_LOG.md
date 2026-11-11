@@ -563,3 +563,9 @@ Both lists built `<option>` markup by concatenation and set `innerHTML` without 
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 When the engine's preflight raised on a document, `autoRun` caught the error with a no-op, and `scheduleAuto` (called right after and from every `sync`) saw the version still unchecked and sent another whole-document preflight 900 ms later, for as long as the document stayed open, keeping the engine busy for every other action. A failed version id is now remembered in `pfFailed` and `scheduleAuto` skips it; a new version, a profile change or pressing Run clears it, so the check is tried again only when something changed or the person asks. Checked: `tsc --noEmit`; the network panel check against a failing engine was not run.
+
+## 105. Dialogs, menus and dropdowns sit above the agent dock in the workbench · _v0.60.2 (styles/dock.css #overlay-root)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Every dialog, menu and dropdown mounts in `#overlay-root`, which is fixed at `--z-menu` (200) and so is a stacking context: their own `--z-modal` and `--z-context` only count inside it. The dock is a sibling at `--z-dock` (950), so with the dock open in the workbench it covered the bottom of dialogs and menus (the Consent dialog's Allow and Not now in a window about 800 px high) and stayed clickable under a modal; entry 36 meant it to sit below dialogs. On Home the root is already raised to `--z-home-modal`. While the dock is open and Home is not shown, the overlay root now takes `--z-modal` (1000), so dialogs, menus and their scrims cover the dock. The workbench inside the root already ends at `bottom: var(--fs-dock-h)`, so it does not overlap the dock, except the dock's 6 px resize strip, which starts 3 px above the dock: its upper half is now under the workbench's bottom edge and the strip is grabbed by its lower 3 px. Checked: no raw `z-index` added (token only); not run in a browser.
