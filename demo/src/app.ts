@@ -359,6 +359,7 @@ export function start(host: HTMLElement): void {
     node.dataset.src = String(c.src);
     node.dataset.uid = String(c.uid);
     cardIo.observe(node);
+    updateCard(node, c);
     return node;
   }
 
