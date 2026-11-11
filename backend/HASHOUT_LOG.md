@@ -667,3 +667,9 @@ Checked: a page with a `/Thumb` image and `/PieceInfo` holding the secret text c
 `search.find` stops at `MAX_MATCHES` (2000) and sets `truncated`; the MCP and CLI `redact` with `query` or `preset` ignored it, redacted the first 2000 matches and reported them as if they were all, leaving the rest of the sensitive text in the file. `_change` now raises a `ToolError` when `truncated` is set, before anything is written, and tells the agent to redact a few pages at a time with `pages`. Refusing keeps the one-version-per-call rule; looping over page ranges inside one call was not chosen.
 
 Checked: a 35-page PDF with 2100 copies of one number is refused for the whole file, and pages 1-30 (1800 matches) redact all 1800; tests/test_f2_consent.py and tests/test_f3_mcp.py pass.
+
+## 112. Spaces around a dash in a page range · _v0.60.2 (services/pdf/core.py parse_pages)
+
+`parse_pages` split the spec on whitespace before matching ranges, so in `1 - 3` the lone `-` matched the range pattern with both ends empty (every page), and `2 -4` or `8- 9` became an open range plus a single page: `[2, 1, 3, 4]` and `[8, 9, 10]`. Crop, watermark, header and footer, find, split and export then changed pages nobody asked for. Spaces around each dash are now removed before the split, which is what the range pattern's own `\s*` meant to allow.
+
+Checked: `1 - 3`, `2 -4` and `8- 9` on 10 pages give `[1, 2, 3]`, `[2, 3, 4]` and `[8, 9]`; `2-4,1`, `3-` and `1 3 5` are unchanged; tests/test_forms_and_pages.py passes.

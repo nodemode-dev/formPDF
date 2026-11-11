@@ -179,7 +179,7 @@ def parse_pages(spec, n: int, unique: bool = True) -> list[int]:
         out = [int(p) for p in spec]
     else:
         out = []
-        for part in re.split(r"[,\s;]+", str(spec).strip()):
+        for part in re.split(r"[,\s;]+", re.sub(r"\s*-\s*", "-", str(spec).strip())):
             if not part:
                 continue
             m = re.fullmatch(r"(\d*)\s*-\s*(\d*)", part)
