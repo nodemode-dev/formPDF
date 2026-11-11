@@ -18,7 +18,7 @@ export interface Ctx {
   viewer: Viewer; annot: Annotator; fields: Fields; organizer: Organizer;
   doc(): Doc | null;
   run<T>(label: string, fn: () => Promise<T>): Promise<T | undefined>;
-  commit(res: Derived, label: string): Promise<void>;
+  commit(res: Derived, label: string, moves?: boolean): Promise<void>;
   flush(): Promise<string | null>;
   deliver(data: Blob | string | (() => Promise<Blob | string>), name: string): Promise<void>;
   tool(t: Tool): void;

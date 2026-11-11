@@ -110,7 +110,7 @@ class ListsDialog extends Dialog {
       try {
         const id = await host.ctx.flush() ?? d.id;
         const res = await pdfApi.act<Derived & { steps?: Array<{ label: string; ok: boolean; ms: number }> }>(id, 'run_list', { list: l.id });
-        await host.ctx.commit(res, l.name);
+        await host.ctx.commit(res, l.name, true);
         toast(`${l.name}: ${(res.steps ?? []).map((s) => s.label).join(', ')} done.`);
       } catch (err) { toast((err as Error).message, 'error'); }
     });

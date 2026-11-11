@@ -1,4 +1,5 @@
 export const hu: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Az oldalak megváltoztak, ezért a kitakarási jelölések, amelyek nem tudták követni őket, törlődtek. Jelölje meg újra ezeket a területeket.",
 "Demos": "Bemutatók",
 "Pages and search": "Oldalak és keresés",
 "Annotate, fill and sign": "Megjegyzés, kitöltés és aláírás",

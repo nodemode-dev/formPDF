@@ -1,4 +1,5 @@
 export const ko: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "페이지가 바뀌어 따라갈 수 없는 가림 처리 표시를 제거했습니다. 해당 영역을 다시 표시하세요.",
 "Demos": "데모",
 "Pages and search": "페이지와 검색",
 "Annotate, fill and sign": "주석, 작성, 서명",

@@ -1,4 +1,5 @@
 export const zhTW: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "頁面已變更，無法隨之移動的塗黑標記已被移除。請重新標記這些區域。",
 "Demos": "示範",
 "Pages and search": "頁面與搜尋",
 "Annotate, fill and sign": "註解、填寫與簽名",

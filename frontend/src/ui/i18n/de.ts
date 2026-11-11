@@ -1,4 +1,5 @@
 export const de: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Die Seiten haben sich geändert, daher wurden Schwärzungsmarkierungen entfernt, die ihnen nicht folgen konnten. Markieren Sie diese Bereiche erneut.",
 "Demos": "Demos",
 "Pages and search": "Seiten und Suche",
 "Annotate, fill and sign": "Kommentieren, ausfüllen und unterschreiben",

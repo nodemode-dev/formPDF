@@ -1,4 +1,5 @@
 export const nl: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "De pagina’s zijn gewijzigd, dus redactiemarkeringen die ze niet konden volgen zijn verwijderd. Markeer die gebieden opnieuw.",
 "Demos": "Demo’s",
 "Pages and search": "Pagina’s en zoeken",
 "Annotate, fill and sign": "Opmerkingen, invullen en ondertekenen",

@@ -1,4 +1,5 @@
 export const tr: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Sayfalar değişti, bu yüzden onları izleyemeyen karartma işaretleri kaldırıldı. Bu alanları yeniden işaretleyin.",
 "Demos": "Demolar",
 "Pages and search": "Sayfalar ve arama",
 "Annotate, fill and sign": "Yorum ekle, doldur ve imzala",

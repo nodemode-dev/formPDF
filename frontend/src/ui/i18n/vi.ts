@@ -1,4 +1,5 @@
 export const vi: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Các trang đã thay đổi nên những dấu che nội dung không thể đi theo đã bị xóa. Hãy đánh dấu lại các vùng đó.",
 "Demos": "Bản demo",
 "Pages and search": "Trang và tìm kiếm",
 "Annotate, fill and sign": "Chú thích, điền và ký",

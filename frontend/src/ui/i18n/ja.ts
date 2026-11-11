@@ -1,4 +1,5 @@
 export const ja: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "ページが変更されたため、追従できなかった墨消しマークを削除しました。その領域をもう一度マークしてください。",
 "Demos": "デモ",
 "Pages and search": "ページと検索",
 "Annotate, fill and sign": "注釈、入力、署名",

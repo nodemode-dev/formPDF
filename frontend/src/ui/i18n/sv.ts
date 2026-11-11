@@ -1,4 +1,5 @@
 export const sv: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Sidorna har ändrats, så maskeringsmarkeringar som inte kunde följa med togs bort. Markera de områdena igen.",
 "Demos": "Demor",
 "Pages and search": "Sidor och sökning",
 "Annotate, fill and sign": "Kommentera, fyll i och signera",

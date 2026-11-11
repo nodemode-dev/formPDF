@@ -1,4 +1,5 @@
 export const es: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Las páginas cambiaron, así que se quitaron las marcas de censura que no pudieron seguirlas. Vuelva a marcar esas áreas.",
 "Demos": "Demos",
 "Pages and search": "Páginas y búsqueda",
 "Annotate, fill and sign": "Comentar, rellenar y firmar",

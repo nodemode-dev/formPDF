@@ -1,4 +1,5 @@
 export const fi: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Sivut muuttuivat, joten sensurointimerkit, jotka eivät voineet seurata niitä, poistettiin. Merkitse ne alueet uudelleen.",
 "Demos": "Esittelyt",
 "Pages and search": "Sivut ja haku",
 "Annotate, fill and sign": "Kommentoi, täytä ja allekirjoita",

@@ -1,4 +1,5 @@
 export const ptBR: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "As páginas mudaram, então as marcas de remoção que não puderam acompanhá-las foram retiradas. Marque essas áreas novamente.",
 "Demos": "Demonstrações",
 "Pages and search": "Páginas e busca",
 "Annotate, fill and sign": "Comentar, preencher e assinar",

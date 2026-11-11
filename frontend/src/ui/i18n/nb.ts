@@ -1,4 +1,5 @@
 export const nb: Record<string, string> = {
+"The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Sidene er endret, så sladdemerker som ikke kunne følge dem, er fjernet. Marker de områdene på nytt.",
 "Demos": "Demoer",
 "Pages and search": "Sider og søk",
 "Annotate, fill and sign": "Kommenter, fyll ut og signer",
