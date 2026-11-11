@@ -661,3 +661,9 @@ Checked: a signed PDF whose image stream is replaced in an incremental update (r
 Raster redaction (`edit.redact`) already removed `/Thumb` and `/PieceInfo` from the pages it redacts; content mode, the default, left both, so an embedded picture of the unredacted page or an application's private copy of the artwork (Illustrator keeps one in `/PieceInfo`) survived. `apply` now deletes both keys from each redacted page after `_annots`, and `core.drop_unreachable` removes the orphaned objects. Alternate text (`/Alt`, `/ActualText`) on structure elements that describe removed content is not handled yet: mapping removed glyphs and draws back to struct elements through their MCIDs is a larger change, left for its own entry.
 
 Checked: a page with a `/Thumb` image and `/PieceInfo` holding the secret text comes out with neither key and no trace of the text in the file bytes; tests/test_redaction.py and tests/test_sanitize.py pass.
+
+## 111. Redact by query or preset refuses when the search was capped · _v0.60.2 (routers/mcp.py _change redact)
+
+`search.find` stops at `MAX_MATCHES` (2000) and sets `truncated`; the MCP and CLI `redact` with `query` or `preset` ignored it, redacted the first 2000 matches and reported them as if they were all, leaving the rest of the sensitive text in the file. `_change` now raises a `ToolError` when `truncated` is set, before anything is written, and tells the agent to redact a few pages at a time with `pages`. Refusing keeps the one-version-per-call rule; looping over page ranges inside one call was not chosen.
+
+Checked: a 35-page PDF with 2100 copies of one number is refused for the whole file, and pages 1-30 (1800 matches) redact all 1800; tests/test_f2_consent.py and tests/test_f3_mcp.py pass.
