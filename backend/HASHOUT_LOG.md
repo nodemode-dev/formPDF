@@ -673,3 +673,9 @@ Checked: a 35-page PDF with 2100 copies of one number is refused for the whole f
 `parse_pages` split the spec on whitespace before matching ranges, so in `1 - 3` the lone `-` matched the range pattern with both ends empty (every page), and `2 -4` or `8- 9` became an open range plus a single page: `[2, 1, 3, 4]` and `[8, 9, 10]`. Crop, watermark, header and footer, find, split and export then changed pages nobody asked for. Spaces around each dash are now removed before the split, which is what the range pattern's own `\s*` meant to allow.
 
 Checked: `1 - 3`, `2 -4` and `8- 9` on 10 pages give `[1, 2, 3]`, `[2, 3, 4]` and `[8, 9]`; `2-4,1`, `3-` and `1 3 5` are unchanged; tests/test_forms_and_pages.py passes.
+
+## 113. A page used twice in organize keeps its own rotation per copy · _v0.60.2 (services/pdf/edit.py organize)
+
+The first use of a page rotates the original page object in place, and `_duplicate` for a later use copied every key, including the `/Rotate` the first use had just changed, so `[{page: 1, rotate: 90}, {page: 1}]` gave two rotated copies. `organize` now records each original page's `/Rotate` (after `_materialize`, so an inherited value counts) in `rot0`, and a duplicate of an original page gets that value back, or loses the key when there was none, before its own `rotate` applies. Pages inserted from another PDF are new objects on every use and are not affected.
+
+Checked: on three blank pages (the third at 180), `[1 rot 90, 1, 2]` gives `/Rotate` 90, 0, 0; `[3 rot 90, 3, 1]` gives 270, 180, 0; `[1, 1 rot 270, 1]` gives 0, 270, 0; tests/test_forms_and_pages.py and tests/test_files_and_turns.py pass.
