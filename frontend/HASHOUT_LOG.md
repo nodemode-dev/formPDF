@@ -593,3 +593,9 @@ Tool layers live in `.fs-pdf-space`, which is in unturned page space and turned 
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 The string scanner in `call` dropped a backslash and kept the next character as it was, so `AFNumber_Format(2, 0, 0, 0, "€ ", true)`, the escape form authoring tools write for a non-ASCII currency, gave the currency `u20AC ` and 5 showed as `u20AC 5.00`. `\uXXXX` with four hex digits is now decoded, `\n`, `\t` and `\r` become their characters, and any other escaped character (quotes, backslash) is kept as itself, as before. Checked: the module compiled in scratch gives the arguments `[2,0,0,0,"€ ",true]` and `€ 5.00` for that script, and `a\"b`, `x\\y`, `l\nm` decode to `a"b`, `x\y` and a newline; `tsc --noEmit`.
+
+## 110. Read aloud joins words hyphenated across a line break · _v0.60.2 (pdf/reading.ts chunks)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+The de-hyphenation branch in `chunks` runs on the space that a line break became, but it checked `text[i - 1]` for the newline, which at that point is the hyphen itself, so it never ran: `exam-` at a line end and `ple` on the next line were read as "exam ple" and the highlight split. It now checks `text[i]`, the line break being turned into a space. A hyphen before a capital, or one not at a line end, is kept as before. Checked: `chunks` copied into node gives `example text.` for `exam-\nple text.`, and keeps `well- Known` and `a - b.`; `tsc --noEmit`.

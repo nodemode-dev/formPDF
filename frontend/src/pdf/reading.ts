@@ -211,7 +211,7 @@ function chunks(text: string, page: number): Chunk[] {
     let ch = text[i];
     if (ch === '\n' || ch === '\r' || ch === '\t') ch = ' ';
     if (ch === ' ' && (!clean || clean.endsWith(' '))) continue;
-    if (ch === ' ' && clean.endsWith('-') && /\p{Ll}/u.test(text[i + 1] ?? '') && (text[i - 1] === '\n' || text[i - 1] === '\r')) { clean = clean.slice(0, -1); map.pop(); continue; }
+    if (ch === ' ' && clean.endsWith('-') && /\p{Ll}/u.test(text[i + 1] ?? '') && (text[i] === '\n' || text[i] === '\r')) { clean = clean.slice(0, -1); map.pop(); continue; }
     clean += ch;
     map.push(i);
   }
