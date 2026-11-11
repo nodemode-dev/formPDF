@@ -545,3 +545,9 @@ Marks drawn on Protect and not yet applied kept their page number when the pages
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 `dirty()` counts staged Organize changes and unapplied redaction marks, so Close and Open offered Save, but `save()` only ran `flush()` (comments, field values, new fields). The file was written without the page changes, then the close or the next open threw them away with no message; Ctrl+S did the same. `save()` now applies staged page changes (`applyOrganize`) after the save target is chosen and stops if they could not be applied, and it refuses with "Apply or clear the redaction marks first." while marks are pending: applying a redaction is permanent and is never done on the person's behalf. The Save choice on the Close and Open bars only goes on when the save leaves nothing unsaved. Checked: `tsc --noEmit`; not run in a browser.
+
+## 102. Date fields read the day and month in the field's own order · _v0.60.2 (pdf/formcalc.ts dateFormat)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`dateFormat` always read the first number of a typed date as the month and let `new Date` roll impossible values over, so with `AFDate_FormatEx("dd/mm/yyyy")`, formpdf's own default for new Date fields, 03/04/2024 showed as 04/03/2024 and 25/12/2024 as 12/01/2026 while the stored value stayed as typed. The order now comes from the format (day first when its `d` comes before its `m`), and a date whose month or day does not exist (31/02/2024, 2024-02-31) is shown as typed instead of rolled over. Checked: the function copied into node gives 25/12/2024 and 03/04/2024 for dd/mm/yyyy, 12/25/2024 for mm/dd/yyyy, Dec 25, 2024 for mmm d, yyyy, and leaves 31/02/2024 and 25/12/2024 under mm/dd/yyyy unchanged; `tsc --noEmit`.

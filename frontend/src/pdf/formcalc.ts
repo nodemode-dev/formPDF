@@ -175,8 +175,10 @@ function dateFormat(fmt: string): (v: string) => string {
     if (!s) return '';
     const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
     const us = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/.exec(s);
-    const d = iso ? new Date(+iso[1], +iso[2] - 1, +iso[3]) : us ? new Date(+us[3] < 100 ? 2000 + +us[3] : +us[3], +us[1] - 1, +us[2]) : null;
-    if (!d || Number.isNaN(d.getTime())) return s;
+    const di = fmt.indexOf('d'), dayFirst = di >= 0 && di < fmt.indexOf('m');
+    const [y, mo, da] = iso ? [+iso[1], +iso[2], +iso[3]] : us ? [+us[3] < 100 ? 2000 + +us[3] : +us[3], dayFirst ? +us[2] : +us[1], dayFirst ? +us[1] : +us[2]] : [0, 0, 0];
+    const d = iso || us ? new Date(y, mo - 1, da) : null;
+    if (!d || Number.isNaN(d.getTime()) || d.getMonth() !== mo - 1 || d.getDate() !== da) return s;
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const pad = (n: number): string => String(n).padStart(2, '0');
     return fmt.replace(/yyyy|yy|mmmm|mmm|mm|m|dd|d/g, (t) => ({ yyyy: String(d.getFullYear()), yy: pad(d.getFullYear() % 100), mmmm: months[d.getMonth()], mmm: months[d.getMonth()].slice(0, 3),
