@@ -690,7 +690,11 @@ function key(host: ToolHost, e: KeyboardEvent): boolean {
 
 async function nudge(host: ToolHost, d: Pt): Promise<void> {
   const changes = new Map<string, Geo>();
-  for (const o of allSelected(host)) changes.set(o.key, { ...o.g, x: o.g.x + d.x, y: o.g.y + d.y });
+  for (const o of allSelected(host)) {
+    const t = host.ctx.viewer.total(o.page - 1);
+    const v = t === 90 ? { x: d.y, y: -d.x } : t === 180 ? { x: -d.x, y: -d.y } : t === 270 ? { x: -d.y, y: d.x } : d;
+    changes.set(o.key, { ...o.g, x: o.g.x + v.x, y: o.g.y + v.y });
+  }
   for (const [k, g] of changes) preview.set(k, g);
   layers.repaint();
   await applyGeo(host, changes, 'Move');

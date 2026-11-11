@@ -581,3 +581,9 @@ kind: fix · logged: v0.60.2 · 2026-11-10
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 `create` disabled a ReadOnly field only when its control was an `<input>`, so a read-only multi-line field (a `<textarea>`) or dropdown (a `<select>`) stayed editable and its new value was staged and sent to the engine on Apply or Save. All three control kinds are now disabled for a ReadOnly field. Checked: `tsc --noEmit`; not run with a read-only form in a browser.
+
+## 108. Page-box edge drags and arrow nudges follow the screen on turned pages · _v0.60.2 (tools/boxes.ts bindEdges pointermove; tools/content.ts nudge)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+Tool layers live in `.fs-pdf-space`, which is in unturned page space and turned by CSS (`data-main-rotation`). Dragging a page-box edge took the raw screen movement as page movement, and the arrow keys in Select added their step in page space, so on a page turned 90 degrees (by /Rotate or Rotate view) the east handle, drawn at the bottom, did not follow a downward drag and ArrowRight moved the selection down on screen. Both now turn the screen step into page space first with the same mapping `Viewer.toPage` uses (90: x = screen y, y = minus screen x; 180: both negated; 270: x = minus screen y, y = screen x), per page from `viewer.total`. Checked: the mapping compared in node against `toPage` deltas for 0, 90, 180 and 270; `tsc --noEmit`; not run on a turned page in a browser.

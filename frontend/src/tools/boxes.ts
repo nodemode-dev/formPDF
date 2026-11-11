@@ -64,7 +64,8 @@ function bindEdges(layer: HTMLElement, page: number): void {
     if (!d || d.page !== page || e.pointerId !== d.id) return;
     const b = data.find((x) => x.page === page);
     if (!b) return;
-    const dx = (e.clientX - d.x0) / d.k, dy = (e.clientY - d.y0) / d.k;
+    const sx = (e.clientX - d.x0) / d.k, sy = (e.clientY - d.y0) / d.k, t = hostRef?.ctx.viewer.total(page - 1) ?? 0;
+    const [dx, dy] = t === 90 ? [sy, -sx] : t === 180 ? [-sx, -sy] : t === 270 ? [-sy, sx] : [sx, sy];
     const mx0 = b.media.x - b.crop.x, my0 = b.media.y - b.crop.y, mx1 = mx0 + b.media.w, my1 = my0 + b.media.h;
     let { x, y, w, h } = d.r0;
     if (d.edge === 'w') { const nx = Math.min(Math.max(mx0, x + dx), x + w - MIN_BOX); w += x - nx; x = nx; }
