@@ -629,3 +629,9 @@ kind: fix · logged: v0.60.2 · 2026-11-10
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 Entry 14's guard (enhance the action select in `load` only if startup had not) always skipped: `startApp` runs `enhanceAllSelects(document)` synchronously after constructing Batch, long before `load`'s fetch of the action catalogue returns, so the select was always enhanced without the "Find an action" search. The constructor now enhances it with the search right after the markup is mounted, before `enhanceAllSelects` runs (which then skips it as already enhanced), and the guard in `load` is gone. The dropdown fills its list from the select's options each time it opens, so the options added later by `load` show. Checked: `tsc --noEmit`; not run in a browser.
+
+## 116. The demo smoke clears each demo with the platform's Mod key · _v0.60.3 (tests/window/test_window.py test_every_demo_opens_from_start_as_a_new_pdf)
+
+kind: fix · logged: v0.60.3 · 2026-11-11
+
+The window test closed each demo with `Alt+Control+KeyH`, but the command's `Mod` is Cmd on macOS (`commands.ts` reads `metaKey` when `isMac`), so on a Mac the shortcut did nothing, the discard bar never showed and the click on `.fs-btn-danger` timed out after 15 s. Linux CI passed because `Mod` is Control there. The test now presses `Alt+ControlOrMeta+KeyH`, which Playwright maps to Meta on macOS and Control elsewhere. Checked on macOS arm64: before, 1 failed and 2 passed (the Locator.click timeout); after, 3 passed.
