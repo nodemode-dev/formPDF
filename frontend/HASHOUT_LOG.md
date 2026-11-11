@@ -599,3 +599,9 @@ The string scanner in `call` dropped a backslash and kept the next character as 
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 The de-hyphenation branch in `chunks` runs on the space that a line break became, but it checked `text[i - 1]` for the newline, which at that point is the hyphen itself, so it never ran: `exam-` at a line end and `ple` on the next line were read as "exam ple" and the highlight split. It now checks `text[i]`, the line break being turned into a space. A hyphen before a capital, or one not at a line end, is kept as before. Checked: `chunks` copied into node gives `example text.` for `exam-\nple text.`, and keeps `well- Known` and `a - b.`; `tsc --noEmit`.
+
+## 111. A calibrated measuring scale stays with its PDF · _v0.60.2 (tools/measure.ts recall)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+`recall` runs when a different PDF is shown and only assigned the scale when that PDF had one stored, so a scale calibrated on drawing A (1 pt = 0.5 m) carried over to drawing B and B was measured with it. When the PDF has no stored scale, the unit the person picked is kept but the factor goes back to that unit's true size, the calibrated flag is cleared and any half-drawn calibration line is dropped. Checked: `tsc --noEmit`; not run in a browser.
