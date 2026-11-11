@@ -557,3 +557,9 @@ kind: fix · logged: v0.60.2 · 2026-11-10
 kind: fix · logged: v0.60.2 · 2026-11-10
 
 Both lists built `<option>` markup by concatenation and set `innerHTML` without `escapeHtml`, unlike every other list in the area. A structure element type comes from the file (any bytes fit in a PDF name through `#xx`) and a scanner's name and model come from mDNS on the local network, so a crafted file or device could break out of the value attribute or, with Chromium's relaxed select parser, create elements with handlers in the app window. Both builders now escape the value and the text before they are joined; the markup is still compared and written only when it changes, so nothing else is rebuilt. Checked: `tsc --noEmit`; not run in a browser.
+
+## 104. Preflight as you work stops after a failure on a version · _v0.60.2 (tools/print.ts pfFailed, scheduleAuto, autoRun, runPf, profile change)
+
+kind: fix · logged: v0.60.2 · 2026-11-10
+
+When the engine's preflight raised on a document, `autoRun` caught the error with a no-op, and `scheduleAuto` (called right after and from every `sync`) saw the version still unchecked and sent another whole-document preflight 900 ms later, for as long as the document stayed open, keeping the engine busy for every other action. A failed version id is now remembered in `pfFailed` and `scheduleAuto` skips it; a new version, a profile change or pressing Run clears it, so the check is tried again only when something changed or the person asks. Checked: `tsc --noEmit`; the network panel check against a failing engine was not run.
