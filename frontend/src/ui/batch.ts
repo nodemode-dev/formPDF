@@ -1,4 +1,5 @@
 import { api } from '../io/api';
+import { keyHeaders } from '../io/window-key';
 import { deliver } from '../pdf/api';
 import { promptName } from './dialogs';
 import { enhanceSelect } from './dropdown';
@@ -134,7 +135,7 @@ export class Batch {
       this.items.push(it);
       const fd = new FormData();
       fd.append('file', f, f.name);
-      void fetch('/api/batch/upload', { method: 'POST', body: fd }).then(async (r) => {
+      void fetch('/api/batch/upload', { method: 'POST', body: fd, headers: keyHeaders() }).then(async (r) => {
         const body = await r.json() as { path?: string; detail?: string };
         if (!r.ok || !body.path) throw new Error(body.detail ?? r.statusText);
         it.path = body.path;

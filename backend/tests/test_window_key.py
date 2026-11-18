@@ -26,9 +26,9 @@ WINDOW_ONLY = [
 
 
 @pytest.mark.parametrize("method,path,body", WINDOW_ONLY)
-def test_window_only_route_refuses_without_the_key(client, method, path, body):
+def test_window_only_route_refuses_without_the_key(bare, method, path, body):
     for headers in ({}, {"x-formpdf-window-key": "x" * 43}):
-        r = client.request(method, path, json=body, headers=headers)
+        r = bare.request(method, path, json=body, headers=headers)
         assert r.status_code == 403
         assert r.json()["detail"] == "Only the formpdf window can do this"
 

@@ -52,8 +52,11 @@ What FormPDF promises:
 - Only the FormPDF window can change agent access (Ask, Allowed, Blocked), change
   which Claude program the agent dock runs, use the agent dock (terminals, Claude
   Code, Chat), turn on a plug-in, change signing identities or trusted
-  certificates, or answer "Allow agents to edit?". Each launch of the engine makes
-  a new key that only the window holds; requests without it are refused.
+  certificates, or answer "Allow agents to edit?". The same holds for every other
+  change made through the engine's window routes: opening, editing and saving PDFs,
+  batch jobs, scans, window commands and the assistant. Each launch of the engine
+  makes a new key that only the window holds; a change requested without it is
+  refused. Outside agents use the MCP server instead, where consent applies.
 - Outside agents (MCP clients, `./formpdf run`, `./formpdf cli`) follow the
   person's choice. Under Ask, a change with no window open is refused. None of them
   can change the choice.

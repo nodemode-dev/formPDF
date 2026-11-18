@@ -32,6 +32,32 @@ def call(method: str, path: str, body: dict | None = None) -> dict:
         sys.exit(f"[formpdf] the engine is not answering at {base()}; start formpdf first (./formpdf)")
 
 
+def rpc(rid: int, method: str, params: dict, sid: str | None = None) -> tuple[str | None, dict]:
+    headers = {"content-type": "application/json", "x-formpdf-agent": "formpdf cli"}
+    if sid:
+        headers["mcp-session-id"] = sid
+    body = json.dumps({"jsonrpc": "2.0", "id": rid, "method": method, "params": params}).encode()
+    req = urllib.request.Request(base() + "/mcp", data=body, method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=180) as r:
+            return r.headers.get("mcp-session-id"), json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError as e:
+        sys.exit(f"[formpdf] {e.reason}")
+    except urllib.error.URLError:
+        sys.exit(f"[formpdf] the engine is not answering at {base()}; start formpdf first (./formpdf)")
+
+
+def run_command(cid: str, params: dict) -> dict:
+    sid, _ = rpc(1, "initialize", {"protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": "formpdf cli", "version": "1"}})
+    _, reply = rpc(2, "tools/call", {"name": "run_command", "arguments": {"id": cid, "params": params}}, sid)
+    if "error" in reply:
+        return {"ok": False, "error": str((reply.get("error") or {}).get("message") or "failed")}
+    res = reply.get("result") or {}
+    if res.get("isError"):
+        return {"ok": False, "error": " ".join(p.get("text", "") for p in res.get("content") or [] if p.get("type") == "text")}
+    return res.get("structuredContent") or {"ok": True}
+
+
 def value(raw: str):
     try:
         return json.loads(raw)
@@ -72,7 +98,7 @@ def main(argv: list[str]) -> int:
         for a in args:
             k, _, v = a.partition("=")
             params[k] = value(v)
-        out = call("POST", f"/api/commands/{urllib.parse.quote(rest[0])}", {"params": params})
+        out = run_command(rest[0], params)
         print(json.dumps(out, indent=2, ensure_ascii=False))
         return 0 if out.get("ok") else 1
     print(USAGE)
