@@ -57,7 +57,12 @@ def set_policy(mode):
 
 
 def inapp_token():
-    return importlib.import_module("app.services.claude_code").INAPP_TOKEN
+    return importlib.import_module("app.services.claude_code").issue()[0]
+
+
+def window_headers():
+    key = importlib.import_module("app.core.window_key")
+    return {key.HEADER: key.KEY}
 
 
 _SANDBOX = Path(tempfile.mkdtemp(prefix=f"{APP_ID}-tests-"))

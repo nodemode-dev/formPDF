@@ -286,7 +286,7 @@ def _agent(request: Request, params: dict) -> Agent:
         a = SESSIONS[key] = Agent(key, named or "agent")
     elif named:
         a.name = named
-    a.inapp = request.headers.get("x-formpdf-inapp") == claude_code.INAPP_TOKEN
+    a.inapp = claude_code.is_inapp(request.headers.get("x-formpdf-inapp"))
     a.channel = "inapp" if a.inapp else "stdio" if header else "http"
     if a.inapp:
         a.name = INAPP_CLIENT

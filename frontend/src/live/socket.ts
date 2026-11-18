@@ -1,4 +1,6 @@
-type ToolHandler = (name: string, args: Record<string, unknown>) => Promise<unknown>;
+import { windowKey } from '../io/window-key';
+
+type ToolHandler =(name: string, args: Record<string, unknown>) => Promise<unknown>;
 
 export class LiveClient {
   connected = false;
@@ -18,7 +20,7 @@ export class LiveClient {
     ws.onopen = () => {
       this.retry = 0;
       this.connected = true;
-      this.raw({ t: 'hello', kind: 'window', name: this.name, agents: this.agents });
+      this.raw({ t: 'hello', kind: 'window', name: this.name, agents: this.agents, key: windowKey() });
       this.raw({ t: 'doc', doc: this.doc });
       this.onStatus?.(true);
     };
@@ -36,7 +38,7 @@ export class LiveClient {
 
   setAgents(on: boolean): void {
     this.agents = on;
-    this.raw({ t: 'hello', kind: 'window', name: this.name, agents: on });
+    this.raw({ t: 'hello', kind: 'window', name: this.name, agents: on, key: windowKey() });
   }
 
   setDoc(doc: unknown): void {

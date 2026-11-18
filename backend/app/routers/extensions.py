@@ -5,7 +5,7 @@ import sys
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
-from app.core import config
+from app.core import config, window_key
 from app.routers import mcp
 from app.routers.live import local_origin
 from app.services import formext_host as fx
@@ -33,6 +33,7 @@ def _current() -> list[fx.Extension]:
 def _guard(request: Request) -> None:
     if not local_origin(request.headers.get("origin")):
         raise HTTPException(403, "formpdf answers this computer's own window only")
+    window_key.require(request)
 
 
 def _source(doc_id: str) -> mcp.Source:

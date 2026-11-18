@@ -3,6 +3,7 @@ import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import { api } from '../io/api';
 import { events } from '../io/events';
+import { windowKey } from '../io/window-key';
 import { ChatPane } from './chat-pane';
 import { el, escapeHtml, isMac, q, setDisabled, setHidden, setText } from './dom';
 import { icon } from './icons';
@@ -324,7 +325,7 @@ export class TerminalDock {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = new WebSocket(`${proto}//${location.host}/api/terminal/${encodeURIComponent(t.id)}`);
     t.socket = socket;
-    socket.addEventListener('open', () => this.sendSize(t));
+    socket.addEventListener('open', () => { socket.send(JSON.stringify({ type: 'key', key: windowKey() })); this.sendSize(t); });
     socket.addEventListener('message', (msg) => {
       const data = String(msg.data);
       if (data === '{"type": "exit"}') {

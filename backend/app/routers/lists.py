@@ -1,8 +1,9 @@
 import asyncio
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
+from app.core import window_key
 from app.services import lists, plugins
 
 router = APIRouter()
@@ -36,7 +37,8 @@ async def get_plugins() -> dict:
 
 
 @router.post("/plugins/{pid}")
-async def set_plugin(pid: str, body: dict) -> dict:
+async def set_plugin(pid: str, body: dict, request: Request) -> dict:
+    window_key.require(request)
     try:
         return await asyncio.to_thread(plugins.allow, pid, bool(body.get("allowed")))
     except ValueError as e:

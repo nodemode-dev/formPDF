@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisco
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
+from app.core import window_key
 from app.routers.live import local_origin
 from app.services import chat, claude_code, events, terminal
 from app.services.claude_code import AgentError
@@ -44,6 +45,7 @@ class ChatAdopt(BaseModel):
 def _guard(request: Request) -> None:
     if not local_origin(request.headers.get("origin")):
         raise HTTPException(403, "Only formpdf's own window can use the agent dock")
+    window_key.require(request)
 
 
 def _session(sid: str) -> terminal.Session:
@@ -113,6 +115,13 @@ async def attach(ws: WebSocket, sid: str) -> None:
         await ws.close(code=4403)
         return
     await ws.accept()
+    try:
+        first = json.loads(await asyncio.wait_for(ws.receive_text(), 10))
+    except (asyncio.TimeoutError, ValueError, WebSocketDisconnect):
+        first = None
+    if not isinstance(first, dict) or first.get("type") != "key" or not window_key.valid(first.get("key")):
+        await ws.close(code=4403)
+        return
     try:
         session = terminal.get(sid)
     except KeyError:
@@ -200,7 +209,8 @@ def chat_adopt(body: ChatAdopt, request: Request) -> dict:
 
 @router.get("/api/chat/image/{name}")
 def chat_image(name: str, request: Request) -> FileResponse:
-    _guard(request)
+    if not local_origin(request.headers.get("origin")):
+        raise HTTPException(403, "Only formpdf's own window can use the agent dock")
     path = chat.image_path(name)
     if path is None:
         raise HTTPException(404, "No such picture")
@@ -208,8 +218,9 @@ def chat_image(name: str, request: Request) -> FileResponse:
 
 
 @router.get("/api/events")
-async def stream(request: Request) -> StreamingResponse:
-    _guard(request)
+async def stream(request: Request, ticket: str = "") -> StreamingResponse:
+    if not local_origin(request.headers.get("origin")) or not window_key.spend(ticket):
+        raise HTTPException(403, window_key.REFUSED)
     queue = events.subscribe()
 
     async def gen():

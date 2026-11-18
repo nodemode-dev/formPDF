@@ -76,9 +76,9 @@ def _usage_of(u: dict) -> tuple[int, int]:
     return context, int(u.get("output_tokens") or 0)
 
 
-def _argv(path: str, text: str, session: str | None) -> list[str]:
+def _argv(path: str, text: str, session: str | None, mcp_file: str) -> list[str]:
     cmd = [path, "-p", text, "--output-format", "stream-json", "--verbose", "--include-partial-messages",
-           "--mcp-config", claude_code.mcp_config(), "--allowedTools", "mcp__formpdf", "--append-system-prompt", NOTE]
+           "--mcp-config", mcp_file, "--allowedTools", "mcp__formpdf", "--append-system-prompt", NOTE]
     if session:
         cmd += ["--resume", session]
     return claude_code.wrap(cmd)
@@ -92,8 +92,10 @@ def _run(text: str, path: str, folder: str) -> None:
     done_out = 0
     call_out = 0
     usage = STATE["usage"]
+    token = ""
     try:
-        proc = subprocess.Popen(_argv(path, text, STATE["session"]), cwd=folder, env=claude_code.child_env(), stdin=subprocess.DEVNULL,
+        token, mcp_file = claude_code.issue()
+        proc = subprocess.Popen(_argv(path, text, STATE["session"], mcp_file), cwd=folder, env=claude_code.child_env(), stdin=subprocess.DEVNULL,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, encoding="utf-8", errors="replace")
         STATE["proc"] = proc
 
@@ -168,6 +170,7 @@ def _run(text: str, path: str, folder: str) -> None:
         reply["error"] = f"Claude Code could not run: {e}"
     finally:
         STATE["proc"] = None
+        claude_code.revoke(token)
     if result is None and not reply["error"]:
         reply["error"] = "Stopped" if STATE.get("cancelled") else "Claude Code stopped before answering" + (f": {tail[-1]}" if tail else "")
     elif result is not None and result.get("is_error"):

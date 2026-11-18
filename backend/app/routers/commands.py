@@ -4,7 +4,7 @@ import time
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from app.core import config
+from app.core import config, window_key
 from app.routers.live import local_origin
 from app.services import bridge
 
@@ -76,6 +76,7 @@ def _guard(request: Request) -> None:
 @router.post("/catalogue")
 def mirror(body: Mirror, request: Request) -> dict:
     _guard(request)
+    window_key.require(request)
     _STATE["commands"], _STATE["at"], _STATE["loaded"] = body.commands, time.time(), True
     try:
         _path().write_text(json.dumps({"at": _STATE["at"], "commands": body.commands}), encoding="utf-8")
@@ -106,4 +107,10 @@ def describe(cid: str, request: Request) -> dict:
 @router.post("/{cid}")
 async def run_one(cid: str, body: Run, request: Request) -> dict:
     _guard(request)
+    from app.routers import mcp
+
+    if mcp._mutating("run_command", {"id": cid}):
+        refusal = await mcp._consent(mcp.Agent("cli-commands", request.headers.get("x-formpdf-agent", "").strip()[:80] or "formpdf cli"))
+        if refusal:
+            return {"ok": False, "error": refusal}
     return await run(cid, body.params)

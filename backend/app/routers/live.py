@@ -5,7 +5,7 @@ import urllib.parse
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.core import config, ids
+from app.core import config, ids, window_key
 from app.services import session
 
 router = APIRouter()
@@ -16,7 +16,7 @@ class Client:
     def __init__(self, cid: str, send):
         self.id = cid
         self.send = send
-        self.kind = "window"
+        self.kind = "observer"
         self.name = "window"
         self.agents = False
         self.doc: dict | None = None
@@ -75,12 +75,16 @@ async def handle(client: Client, msg: dict) -> None:
     t = msg.get("t")
     client.seen = time.monotonic()
     if t == "hello":
-        client.kind = msg.get("kind") or client.kind
-        client.name = msg.get("name") or client.name
+        if client.kind != "window" and not window_key.valid(msg.get("key")):
+            return
+        client.kind = "window"
+        client.name = str(msg.get("name") or client.name)[:80]
         client.agents = bool(msg.get("agents"))
         return
     if t == "ping":
         await client.send({"t": "pong"})
+        return
+    if client.kind != "window":
         return
     if t == "doc":
         doc = msg.get("doc")

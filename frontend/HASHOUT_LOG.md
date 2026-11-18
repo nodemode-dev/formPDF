@@ -635,3 +635,11 @@ Entry 14's guard (enhance the action select in `load` only if startup had not) a
 kind: fix · logged: v0.60.3 · 2026-11-11
 
 The window test closed each demo with `Alt+Control+KeyH`, but the command's `Mod` is Cmd on macOS (`commands.ts` reads `metaKey` when `isMac`), so on a Mac the shortcut did nothing, the discard bar never showed and the click on `.fs-btn-danger` timed out after 15 s. Linux CI passed because `Mod` is Control there. The test now presses `Alt+ControlOrMeta+KeyH`, which Playwright maps to Meta on macOS and Control elsewhere. Checked on macOS arm64: before, 1 failed and 2 passed (the Locator.click timeout); after, 3 passed.
+
+## 117. The window sends its window key · _v0.61.0 (io/window-key.ts; app.ts startApp; io/api.ts post, get; pdf/api.ts form, deleteIdentity, untrust; live/socket.ts connect, setAgents; ui/terminal-dock.ts connect; io/events.ts start, open)
+
+kind: fix · logged: v0.61.0 · 2026-11-18
+
+The engine now asks for a per-launch window key on the routes only the window uses (backend entry 119). `loadWindowKey` runs once at the top of `startApp`, before anything else talks to the engine: it takes `window.__FORMPDF_WINDOW_KEY`, which the desktop shell's initialization script sets only on the engine's own origin, and deletes the global; without it (run from source) it asks `POST /api/window/key` once and keeps the answer in `sessionStorage`, so reloading the same tab still works after the engine has given the key away. The key lives in a module variable. `api.get` and `api.post` send it on every call, as do the three raw fetches in `pdf/api.ts` (uploads through `form`, deleting an identity, untrusting a certificate). The live socket puts it in each `hello`, the terminal socket sends `{type: 'key'}` before the first resize, and `Events` opens `/api/events` with a one-time ticket and, when the stream closes for good (a spent ticket after a reconnect gives 403, which an EventSource does not retry), fetches a new ticket and opens again after 1.5 s; `lastSeq` stays on the instance, so the first hello after that still reads as a resync.
+
+No node is created, changed or moved by any of this; it adds one awaited local request at boot when run from source. Checked: `npx tsc --noEmit` clean. Not run in a browser or the desktop window.

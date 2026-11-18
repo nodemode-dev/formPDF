@@ -1,8 +1,9 @@
 import base64
 import binascii
 
-from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
 
+from app.core import window_key
 from app.routers.pdf import _path, _pw, _run
 from app.services import pdf as pdfsvc
 from app.services.pdf import docs
@@ -18,13 +19,15 @@ async def identities() -> dict:
 
 
 @router.post("/identities")
-async def make(body: dict) -> dict:
+async def make(body: dict, request: Request) -> dict:
+    window_key.require(request)
     return await _run(signsvc.make_identity, str(body.get("name") or ""), str(body.get("email") or ""), str(body.get("org") or ""),
                       str(body.get("password") or ""))
 
 
 @router.post("/identities/import")
-async def import_id(file: UploadFile = File(...), password: str = Form("")) -> dict:
+async def import_id(request: Request, file: UploadFile = File(...), password: str = Form("")) -> dict:
+    window_key.require(request)
     data = await file.read()
     if len(data) > MAX_ID_BYTES:
         raise HTTPException(413, "A digital ID file is never this large; choose the .p12 or .pfx file")
@@ -32,7 +35,8 @@ async def import_id(file: UploadFile = File(...), password: str = Form("")) -> d
 
 
 @router.delete("/identities/{ident}")
-async def delete(ident: str) -> dict:
+async def delete(ident: str, request: Request) -> dict:
+    window_key.require(request)
     await _run(signsvc.delete_identity, ident)
     return {"ok": True}
 
@@ -52,7 +56,8 @@ def _trusted() -> list[dict]:
 
 
 @router.post("/trust")
-async def trust(body: dict) -> dict:
+async def trust(body: dict, request: Request) -> dict:
+    window_key.require(request)
     try:
         der = base64.b64decode(str(body.get("der") or ""), validate=True)
     except (binascii.Error, ValueError):
@@ -63,7 +68,8 @@ async def trust(body: dict) -> dict:
 
 
 @router.delete("/trust/{fp}")
-async def untrust(fp: str) -> dict:
+async def untrust(fp: str, request: Request) -> dict:
+    window_key.require(request)
     await _run(signsvc.untrust, fp)
     return {"ok": True}
 

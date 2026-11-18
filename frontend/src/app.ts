@@ -2,6 +2,7 @@ import { Catalogue } from './automation/catalogue';
 import { DEMOS, seedLoanMarks, type Anchor, type DemoId } from './demos/catalog';
 import { api } from './io/api';
 import { events } from './io/events';
+import { loadWindowKey } from './io/window-key';
 import { Extensions } from './ext/extensions';
 import { AgentBridge } from './live/agent';
 import { LiveClient } from './live/socket';
@@ -27,6 +28,7 @@ import { VERSION } from './version';
 
 export async function startApp(): Promise<void> {
   applyTheme();
+  await loadWindowKey();
   await startLanguage(() => api.settings().then((s) => s.language));
   startPageTranslator();
   document.title = `FormPDF ${VERSION}`;

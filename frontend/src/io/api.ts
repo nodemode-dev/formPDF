@@ -1,3 +1,5 @@
+import { keyHeaders } from './window-key';
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = res.statusText;
@@ -8,8 +10,8 @@ async function json<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-const post = <T>(url: string, body: unknown = {}): Promise<T> => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => json<T>(r));
-const get = <T>(url: string): Promise<T> => fetch(url).then((r) => json<T>(r));
+const post = <T>(url: string, body: unknown = {}): Promise<T> => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...keyHeaders() }, body: JSON.stringify(body) }).then((r) => json<T>(r));
+const get = <T>(url: string): Promise<T> => fetch(url, { headers: keyHeaders() }).then((r) => json<T>(r));
 
 export const api = {
   health: () => get<{ ok: boolean; version: string }>('/api/health'),
