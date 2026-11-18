@@ -140,7 +140,7 @@ The Agents dialog (the Agents button in the title bar, Help > Agents and MCP, or
 | --- | --- |
 | get_context | the open PDF, PDFs the agent opened, recent PDFs, whether agents may edit |
 | open_pdf | opens a file in the window |
-| pdf | 60 actions: info, text, images, tables, find, comments, fields, hidden, compare, links, attachments, measurements, snap_points, spell, items, signatures, accessibility, structure, print_layout, pdfa_check, preflight; header_footer, page_numbers, watermark, crop, redact, mark_redactions, organize, protect, unlock, metadata, compress, sanitize, fill, annotate, form, merge, edit_links, edit_attachments, measure, spell_fix, edit_items, ocr, sign, request_signatures, autotag, fix_accessibility, edit_structure, pdfa, pdfx, preflight_fix; split, to_docx, to_pptx, to_html, to_rtf, to_xlsx, accessibility_report, print_pdf, preflight_report |
+| pdf | 90 actions: info, text, images, tables, find, comments, fields, hidden, compare, links, attachments, measurements, snap_points, spell, items, signatures, accessibility, structure, print_layout, pdfa_check, preflight; header_footer, page_numbers, watermark, crop, redact, mark_redactions, organize, protect, unlock, metadata, compress, sanitize, fill, annotate, form, merge, edit_links, edit_attachments, measure, spell_fix, edit_items, ocr, sign, request_signatures, autotag, fix_accessibility, edit_structure, pdfa, pdfx, preflight_fix; split, to_docx, to_pptx, to_html, to_rtf, to_xlsx, accessibility_report, print_pdf, preflight_report |
 | render_pages | a contact sheet picture of up to 12 pages |
 | extract | text, tables or pictures |
 | save | writes the open PDF to a file |

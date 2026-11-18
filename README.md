@@ -82,7 +82,7 @@
 
 ## Built for agents
 
-83 PDF actions sit in one registry; the window, the command line and the MCP server call the same ones.
+90 PDF actions sit in one registry; the window, the command line and the MCP server call the same ones.
 
 ```sh
 ./formpdf run actions                                          # list every action

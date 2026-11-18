@@ -9,7 +9,7 @@
 | `app/core/ids.py` | short ids, picture ids by content hash |
 | `app/routers/pdf.py` | `/api/pdf/*`: open, open-path, recent, forget, merge, write, create, and per document file, info, text, images, tables(.xlsx), fields, annotate, organize, split, protect, unlock, redact, metadata, compress, page-numbers, watermark, header-footer, crop, find, comments, render, pages.zip, pptx, sheet, reflow, docx, hidden, sanitize, form, compare, save |
 | `app/routers/live.py` | `/api/live` WebSocket: windows say hello, report their open document, answer window tools |
-| `app/routers/mcp.py` | `/mcp` MCP server: 7 tools, the guide resource, the pdf-job prompt, consent, turns, live landing of agent versions |
+| `app/routers/mcp.py` | `/mcp` MCP server: 15 tools, the guide resource, the pdf-job prompt, consent, turns, live landing of agent versions |
 | `app/routers/system.py`, `media.py` | health, version, capabilities, settings; extracted pictures |
 | `app/routers/batch.py` | `/api/batch`: upload copies, run one action on many files as a job, status, zip of results |
 | `app/services/bridge.py` | window list, the window's open document, `window_call` |
