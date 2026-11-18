@@ -104,16 +104,31 @@ def dist_dir() -> Path | None:
     return None
 
 
-def read_settings() -> dict:
+def stored_settings() -> dict:
     try:
-        return json.loads(settings_path().read_text(encoding="utf-8"))
+        found = json.loads(settings_path().read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+    return found if isinstance(found, dict) else {}
+
+
+def read_settings() -> dict:
+    from app.core import seal
+
+    return seal.effective(stored_settings())
 
 
 def write_settings(patch: dict) -> dict:
-    merged = {**read_settings(), **patch}
+    from app.core import seal
+
+    stored = stored_settings()
+    patch = {k: v for k, v in patch.items() if k not in ("seal", "sealBroken")}
+    if any(k in patch for k in seal.SEALED):
+        current = seal.effective(stored)
+        merged = seal.sign({**stored, **{k: current.get(k) for k in seal.SEALED if k in stored or k in current}, **patch})
+    else:
+        merged = {**stored, **patch}
     tmp = settings_path().with_suffix(".tmp")
     tmp.write_text(json.dumps(merged, indent=2), encoding="utf-8")
     tmp.replace(settings_path())
-    return merged
+    return read_settings()

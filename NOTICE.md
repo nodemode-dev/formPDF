@@ -52,6 +52,8 @@ The formpdf mark, the stamps and the agent skills are original work of this repo
 | tqdm | MPL-2.0 and MIT, files unmodified | engine, OCR dependency |
 | pyHanko 0.37.0, pyhanko-certvalidator, asn1crypto, oscrypto, uritools, tzlocal, attrs | MIT | engine, digital signatures: signing, timestamps and validation |
 | cryptography | Apache-2.0 or BSD-3-Clause | engine, digital IDs and signature maths |
+| keyring 25.7.0, jaraco.classes, jaraco.context, jaraco.functools, more-itertools, jeepney (Linux) | MIT | engine, keeps the key that seals the agent access setting in the system keychain |
+| SecretStorage (Linux), pywin32-ctypes (Windows) | BSD-3-Clause | engine, keychain access for keyring |
 | cffi, pycparser, idna | MIT-0, BSD-3-Clause, BSD-3-Clause | engine, signing dependencies |
 | aiohttp, aiosignal, frozenlist, multidict, propcache, yarl | Apache-2.0 (aiohttp also MIT parts) | engine, signing dependencies (reached only for a timestamp server the person sets) |
 | aiohappyeyeballs | PSF-2.0 | engine, signing dependency |
