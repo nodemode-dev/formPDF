@@ -342,10 +342,89 @@ def _walk_fields(fields, fn) -> None:
         stack.extend(_obj(f.get("/Kids")) or [])
 
 
+def _text(v) -> str:
+    v = _obj(v)
+    return str(v) if isinstance(v, str) else ""
+
+
+def _name_leaves(tree) -> list:
+    node = _obj(tree)
+    if not isinstance(node, DictionaryObject):
+        return []
+    arr = _obj(node.get("/Names")) or []
+    out = [(_text(arr[i]), _obj(arr[i + 1])) for i in range(0, len(arr) - 1, 2)]
+    for kid in _obj(node.get("/Kids")) or []:
+        out += _name_leaves(kid)
+    return out
+
+
+def _file_texts(spec) -> list[str]:
+    spec = _obj(spec)
+    if not isinstance(spec, DictionaryObject):
+        return [_text(spec)]
+    return [_text(spec.get(k)) for k in ("/UF", "/F", "/Desc")]
+
+
+def text_places(path, passwords: list[str] | None = None) -> list[tuple[str, str, str]]:
+    r = core.reader(path, passwords)
+    root = r.trailer["/Root"]
+    found: list[tuple[str, str, str]] = []
+    for k, v in (_obj(r.trailer.get("/Info")) or {}).items():
+        found.append(("metadata", str(k).lstrip("/"), _text(v)))
+    xmp = _obj(root.get("/Metadata"))
+    if xmp is not None:
+        try:
+            found.append(("metadata", "XMP", xmp.get_data().decode("utf-8", "replace")))
+        except Exception:
+            pass
+    outlines = _obj(root.get("/Outlines"))
+    if isinstance(outlines, DictionaryObject):
+        stack, seen = [outlines.get("/First")], set()
+        while stack:
+            ref = stack.pop()
+            while ref is not None and getattr(ref, "idnum", id(ref)) not in seen:
+                seen.add(getattr(ref, "idnum", id(ref)))
+                item = _obj(ref)
+                found.append(("bookmarks", "", _text(item.get("/Title"))))
+                if item.get("/First") is not None:
+                    stack.append(item.get("/First"))
+                ref = item.get("/Next")
+    names = _obj(root.get("/Names")) or DictionaryObject()
+    for name, spec in _name_leaves(names.get("/EmbeddedFiles")):
+        found += [("attachments", "", t) for t in [name] + _file_texts(spec)]
+    try:
+        fields = r.get_fields() or {}
+    except Exception:
+        fields = {}
+    for f in fields.values():
+        found.append(("form fields", "", _text(f.get("/V"))))
+    for page in r.pages:
+        for a in _annots(page):
+            sub = str(a.get("/Subtype"))
+            if sub == "/FileAttachment":
+                found += [("attachments", "", t) for t in _file_texts(a.get("/FS")) + [_text(a.get("/Contents"))]]
+            elif sub not in ("/Widget", "/Link", "/Popup"):
+                found += [("comments", "", _text(a.get(k))) for k in ("/Contents", "/T", "/Subj")]
+    return [f for f in found if f[2]]
+
+
+def leftover(path, rx: re.Pattern, check=None, passwords: list[str] | None = None) -> list[dict]:
+    out: dict[str, dict] = {}
+    for place, field, text in text_places(path, passwords):
+        n = sum(1 for m in rx.finditer(text) if m.group(0).strip() and (check is None or check(m.group(0))))
+        if n:
+            row = out.setdefault(place, {"place": place, "count": 0, "fields": []})
+            row["count"] += n
+            if field and field not in row["fields"]:
+                row["fields"].append(field)
+    return list(out.values())
+
+
 def sanitize(src, out, *, remove: list[str], passwords: list[str] | None = None) -> dict:
     want = [k for k in KEYS if k in set(remove or [])]
     if not want:
         raise ValueError("Tick at least one kind of hidden information to remove")
+    before = {it["key"]: it["count"] for it in scan(src, passwords)}
     w = PdfWriter(clone_from=core.reader(src, passwords))
     root = w._root_object
     _, off = _off_layers(root)
@@ -438,4 +517,5 @@ def sanitize(src, out, *, remove: list[str], passwords: list[str] | None = None)
     core.drop_unreachable(w)
     with open(out, "wb") as fh:
         w.write(fh)
-    return {"pages": len(w.pages), "removed": want, "flattened": flattened}
+    found = {k: before.get(k, 0) for k in want if before.get(k)}
+    return {"pages": len(w.pages), "removed": list(found), "found": found, "checked": want, "flattened": flattened}

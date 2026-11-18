@@ -15,6 +15,8 @@ from app.routers.live import local_origin
 from app.services import bridge, claude_code, office
 from app.services import pdf as pdfsvc
 from app.services.pdf import actions, docs
+from app.services.pdf.sanitize import leftover as text_left
+from app.services.pdf.search import pattern as search_pattern
 
 router = APIRouter()
 VERSIONS = ["2026-07-28", "2025-11-25"]
@@ -34,6 +36,7 @@ EXPORT_ACTIONS = actions.EXPORT
 ACTIONS = actions.ALL
 SUFFIX = actions.SUFFIX
 LABEL = actions.LABEL
+REMOVED_WORDS = {"text": "text runs", "glyphs": "glyphs", "pictures": "pictures", "shapes": "shapes", "annotations": "comments or fields"}
 GUIDE = """# formpdf agent guide
 
 ## Loop
@@ -557,6 +560,8 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages, land: b
         if action == "redact":
             positional = [kw.pop("areas")]
         res = await _derive(src, fn, *positional, protect=protect, **kw)
+        if action == "redact" and extra.get("matches"):
+            extra["left"] = await _after_redact(docs.path_of(res["id"]), args, pages, pw)
         if action == "protect":
             docs.update_meta(res["id"], protect={"password": kw["password"], "owner": kw.get("owner") or "", "permissions": kw.get("permissions")})
         detail = _detail(res, extra)
@@ -574,7 +579,9 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages, land: b
     finally:
         tmp.unlink(missing_ok=True)
     res = got if isinstance(got, dict) else {"pages": got}
-    return _ok(f"{label}: wrote {out} ({_detail(res, extra)}).", {"path": str(out), **{k: v for k, v in res.items() if isinstance(v, (int, float, str, list))}, **extra})
+    if action == "redact" and extra.get("matches"):
+        extra["left"] = await _after_redact(out, args, pages, pw)
+    return _ok(f"{label}: wrote {out} ({_detail(res, extra)}).", {"path": str(out), **{k: v for k, v in res.items() if isinstance(v, (int, float, str, list, dict))}, **extra})
 
 
 def _detail(res: dict, extra: dict) -> str:
@@ -588,9 +595,36 @@ def _detail(res: dict, extra: dict) -> str:
             bits.append(f"{v} {word}")
     if res.get("before") and res.get("after"):
         bits.append(f"{res['before'] // 1024} KB to {res['after'] // 1024} KB")
-    if res.get("removed"):
-        bits.append("removed " + ", ".join(str(x) for x in res["removed"]))
+    removed = res.get("removed")
+    if isinstance(removed, dict):
+        done = [f"{v} {REMOVED_WORDS.get(k, k)}" for k, v in removed.items() if v]
+        bits.append("removed " + ", ".join(done) if done else "removed nothing")
+    elif isinstance(res.get("found"), dict):
+        found = res["found"]
+        bits.append("found and removed " + ", ".join(f"{k.replace('_', ' ')} ({found[k]})" for k in found) if found else "found nothing to remove")
+    if extra.get("left"):
+        bits.append(str(extra["left"]))
     return ", ".join(bits) or "done"
+
+
+def _places(found: list[dict]) -> str:
+    return ", ".join(f"{f['count']} in {f['place']}" + (f" ({', '.join(f['fields'])})" if f["fields"] else "") for f in found)
+
+
+def _elsewhere(path, args: dict, pw) -> list[dict]:
+    s = _search(args, None)
+    rx, check = search_pattern(None if s["preset"] else args.get("query"), regex=s["regex"], preset=s["preset"], case_sensitive=s["case_sensitive"],
+                               whole_word=s["whole_word"])
+    return text_left(path, rx, check, pw)
+
+
+async def _after_redact(path, args: dict, pages, pw) -> str:
+    still = (await asyncio.to_thread(lambda: pdfsvc.find(path, None if args.get("preset") else args.get("query"), passwords=pw, **_search(args, pages))))["count"]
+    left = await asyncio.to_thread(_elsewhere, path, args, pw)
+    head = "page content clean" if not still else f"{still} still on the pages"
+    if not left:
+        return head + ", nothing left in metadata, bookmarks, attachments, form fields or comments"
+    return head + ", " + ", ".join(f"{f['count']} left in {f['place']}" + (f" ({', '.join(f['fields'])})" if f["fields"] else "") for f in left) + ", run sanitize"
 
 
 async def _merge(a: Agent, src: Source, args: dict) -> dict:
@@ -692,7 +726,11 @@ async def _read(src: Source, action: str, args: dict, pages) -> dict:
         got = await asyncio.to_thread(lambda: pdfsvc.find(src.path, None if args.get("preset") else args.get("query"), passwords=pw, **_search(args, pages)))
         lines = [f"p{m['page']} · {m['text']} · {m['context']}" for m in got["matches"][:200]]
         head = f"{got['count']} match{'es' if got['count'] != 1 else ''} on {got['pages']} page{'s' if got['pages'] != 1 else ''}"
-        return _ok(head + (":\n" + "\n".join(lines) if lines else "."), {"count": got["count"], "truncated": got["truncated"], "matches": got["matches"][:500]})
+        others = await asyncio.to_thread(_elsewhere, src.path, args, pw)
+        if others:
+            head += f"; also {_places(others)}, which redact does not reach (sanitize removes them)"
+        return _ok(head + (":\n" + "\n".join(lines) if lines else "."), {"count": got["count"], "truncated": got["truncated"], "matches": got["matches"][:500],
+                                                                          "elsewhere": others})
     if action == "comments":
         got = await asyncio.to_thread(pdfsvc.comments, src.path, pw)
         lines = [f"p{c['page']} · {c['label']}{' · ' + c['author'] if c.get('author') else ''} · {c['status']} · {_clip(c.get('text') or '', 120)}"
