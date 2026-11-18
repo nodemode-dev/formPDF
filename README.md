@@ -93,6 +93,8 @@
 
 `.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. With the engine running, Claude Code can also use `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`. Ctrl+J (Cmd+J on a Mac) opens an agent dock with real terminals. See [`AGENTS.md`](AGENTS.md).
 
+**Who decides what agents may do.** Only the FormPDF window can change agent access, open the agent dock, change which Claude program it runs, or answer the question "Allow agents to edit?". Agents and other programs, including `./formpdf run` and `./formpdf cli`, follow the choice the person made: they can read, and they ask before changing anything unless the person allowed it. If agent access is changed outside the app, FormPDF treats it as Ask until the person sets it again in the window (the check uses your system keychain; without one it is skipped). This protects the choice, not your files: any program running as you can still read the files you can. Running from source is weaker than the installed app, because there the first program on this computer to ask the engine for the window's key gets it. Details in [`SECURITY.md`](SECURITY.md).
+
 ## Extensions
 
 formpdf loads Form family extensions (API 1): FormPortal installs them, form.ext makes them and runs them from a folder. Each one runs in a sandboxed frame and reaches formpdf only through the calls it was allowed: read the open PDF, apply formpdf's own actions as one undoable step, run window commands, open and save files you choose. They show in the Extensions menu, the Extensions tab and the Mod+K search, and agents reach them with `extensions_list` and `extension_command`. The API, with a real document snapshot and the list of actions, is [`docs/EXTENSIONS.md`](docs/EXTENSIONS.md).
