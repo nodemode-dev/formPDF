@@ -105,7 +105,7 @@ formpdf loads Form family extensions (API 1): FormPortal installs them, form.ext
 - **Window:** a vanilla TypeScript and Vite app in `frontend/`, with every menu item and shortcut a single command in one catalogue.
 - **Desktop:** a Tauri shell in `src-tauri/` wraps the frozen engine as a sidecar.
 - **Local data:** everything stays in `~/Formpdf`; override it with `FORMPDF_DATA_DIR`.
-- **Tested:** 61 backend tests in `backend/tests`, run in CI.
+- **Tested:** the backend tests in `backend/tests`, run in CI.
 
 ## Download
 

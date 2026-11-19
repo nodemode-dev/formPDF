@@ -57,8 +57,9 @@ tracked text.
   alone; a maintainer bumps it when releasing.
 - Every window action is a command in `frontend/src/ui/commands.ts`, so agents and the
   command line get it too. Add new actions as commands.
-- A changed English string is changed in place in all 23 tables in
-  `frontend/src/ui/i18n`, in FormPDF's own words; `python3 setup/i18n.py parity` must
+- A changed English string is changed in place in every language table in
+  `frontend/src/ui/i18n` (es-MX and fr-CA hold only the words that differ from es and
+  fr, so a key goes there only if it is already there), in FormPDF's own words; `python3 setup/i18n.py parity` must
   not get worse.
 - Icons are inline `currentColor` SVG in `frontend/src/ui/icons.ts`, and z-index comes only
   from `frontend/src/styles/tokens.css`.

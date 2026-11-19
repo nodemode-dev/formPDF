@@ -6,8 +6,8 @@ formpdf is licensed under the Apache License 2.0 (see `LICENSE`). It includes or
 
 | Work | License | Where |
 | --- | --- | --- |
-| formsld (https://github.com/nodemode-ai/formsld, 0.5.1), same owner: the PDF workbench, its engine services and routes, the MCP server and stdio bridge shape, the dispatcher and setup scripts and the Tauri shell, moved out of formsld into this repository | Apache-2.0 | `frontend/src/pdf/`, `backend/app/services/pdf/`, `backend/app/routers/`, `formpdf`, `setup/`, `src-tauri/` |
-| formvis (https://github.com/nodemode-ai/formvis, through formsld), same owner: the form family design system (tokens, 14 theme profiles, the pre-paint theme boot, the DOM toolkit, command registry, menus, dialogs, dropdowns, toasts, icon set) | Apache-2.0 | `frontend/index.html`, `frontend/src/styles/`, `frontend/src/ui/` |
+| formsld (https://github.com/nodemode-dev/formsld, 0.5.1), same owner: the PDF workbench, its engine services and routes, the MCP server and stdio bridge shape, the dispatcher and setup scripts and the Tauri shell, moved out of formsld into this repository | Apache-2.0 | `frontend/src/pdf/`, `backend/app/services/pdf/`, `backend/app/routers/`, `formpdf`, `setup/`, `src-tauri/` |
+| formvis (https://github.com/nodemode-dev/formvis, through formsld), same owner: the form family design system (tokens, 14 theme profiles, the pre-paint theme boot, the DOM toolkit, command registry, menus, dialogs, dropdowns, toasts, icon set) | Apache-2.0 | `frontend/index.html`, `frontend/src/styles/`, `frontend/src/ui/` |
 | NodeMode stylized design system (through formvis): tokens, theme profiles, theme boot, dom-stable helpers, icon subset | MIT | `frontend/src/styles/tokens.css`, `frontend/src/ui/themes.ts`, `frontend/src/ui/dom.ts`, `frontend/src/ui/icons.ts` |
 | `paintbrush` and `hand` icons from Remix Icon (through formvis) | Apache-2.0 | `frontend/src/ui/icons.ts` |
 | Form Extension Contract kit, Apache-2.0, nodemode: the host bridge and the extension resolver and file server, vendored unchanged | Apache-2.0 | `frontend/src/ext/host-bridge.ts`, `backend/app/services/formext_host.py` |
