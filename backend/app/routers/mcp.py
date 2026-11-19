@@ -8,7 +8,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
-from app.core import config
+from app.core import config, ids
 from app.routers import commands as cmdcat
 from app.routers import pdf as routes
 from app.routers.live import local_origin
@@ -164,6 +164,12 @@ MAX_SEEN = 40
 INAPP_CLIENT = "Claude Code in formpdf"
 BLOCKED = "Outside agents are blocked in formpdf's Preferences, Agents, so this call was refused. Tell the person where to change it and stop; do not retry."
 NO_WINDOW = "The formpdf window is not open, so nobody can approve agents. Ask the person to open formpdf and allow agents, then retry."
+CONSENT_SECONDS = 120
+CONSENT_ANSWERS = ["deny", "once", "always"]
+CONSENT_ALWAYS = "all"
+WITHDRAWN = "consentWithdrawn"
+ASKED = {"open_pdf": "open a PDF in the window", "save": "save the open PDF to a file", "undo": "undo its last turn on the open PDF",
+         "extension_command": "run an extension's command"}
 _declined = [0.0]
 _consent_lock: list = []
 
@@ -282,6 +288,16 @@ def _mutating(name: str, args: dict) -> bool:
     return False
 
 
+def _asked(name: str, args: dict) -> str:
+    if name == "pdf":
+        return f"run the PDF action {_clip(args.get('action') or '', 40)} on " + ("a file" if args.get("path") or args.get("paths") else "the open PDF")
+    if name == "run_command":
+        return f"run the window command {_clip(args.get('id') or '', 60)}"
+    if name == "run_commands":
+        return f"run {len([s for s in args.get('steps') or [] if isinstance(s, dict)])} window commands"
+    return ASKED.get(name, f"use {name}")
+
+
 def _agent(request: Request, params: dict) -> Agent:
     sid = request.headers.get("mcp-session-id")
     info = (params.get("_meta") or {}).get("io.modelcontextprotocol/clientInfo") or {}
@@ -296,7 +312,7 @@ def _agent(request: Request, params: dict) -> Agent:
     a.inapp = claude_code.is_inapp(request.headers.get("x-formpdf-inapp"))
     a.channel = "inapp" if a.inapp else "stdio" if header else "http"
     if a.inapp:
-        a.name = INAPP_CLIENT
+        a.name = claude_code.label(request.headers.get("x-formpdf-inapp")) or INAPP_CLIENT
     return a
 
 
@@ -308,7 +324,7 @@ def _turn(a: Agent) -> str:
     return a.turn
 
 
-async def _consent(a: Agent) -> str | None:
+async def _consent(a: Agent, tool: str = "", what: str = "") -> str | None:
     if a.inapp or access() == "allowed" or any(c.agents for c in bridge.windows()):
         return None
     if not bridge.window_connected():
@@ -323,10 +339,21 @@ async def _consent(a: Agent) -> str | None:
             return None
         if state == "blocked":
             return BLOCKED
-        res = await bridge.window_call("consent", {"agent": a.name}, 120)
+        rid = ids.short("t", 10)
+        started = time.monotonic()
+        ask = {"agent": a.name, "request": rid, "tool": tool, "what": what or "change PDFs and write files for you", "answers": CONSENT_ANSWERS,
+               "alwaysCovers": CONSENT_ALWAYS, "seconds": CONSENT_SECONDS, "expiresAt": int((time.time() + CONSENT_SECONDS) * 1000)}
+        res = await bridge.window_call("consent", ask, CONSENT_SECONDS, rid)
         if res is None:
             return NO_WINDOW
-        if (res.get("structuredContent") or {}).get("allowed"):
+        answer = res.get("structuredContent") or {}
+        once = bool(answer.get("allowed")) and bool(answer.get("once"))
+        expired = "allowed" not in answer and time.monotonic() - started >= CONSENT_SECONDS
+        await bridge.tell_windows({"t": WITHDRAWN, "id": rid, "reason": "expired" if expired else "answered",
+                                   "answer": None if "allowed" not in answer else "once" if once else "always" if answer.get("allowed") else "deny"})
+        if once:
+            return None
+        if answer.get("allowed"):
             config.write_settings({"outsideAgents": "allowed"})
             return None
         _declined[0] = time.monotonic() + 120
@@ -1027,7 +1054,7 @@ async def call_tool(a: Agent, name: str, args: dict) -> dict:
     if access() == "blocked":
         return _fail(BLOCKED)
     if _mutating(name, args):
-        refused = await _consent(a)
+        refused = await _consent(a, name, _asked(name, args))
         if refused:
             return _fail(refused)
     try:

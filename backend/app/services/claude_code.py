@@ -12,7 +12,8 @@ from pathlib import Path
 from app.core import config
 from app.services import terminal
 
-TOKENS: dict[str, Path] = {}
+TOKENS: dict[str, Path | None] = {}
+LABELS: dict[str, str] = {}
 KEEP_ENV = {"CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CONFIG_DIR"}
 CANDIDATES = (".claude/local/claude", ".local/bin/claude", ".npm-global/bin/claude", ".bun/bin/claude", ".volta/bin/claude")
 SYSTEM_PATHS = ("/opt/homebrew/bin/claude", "/usr/local/bin/claude", "/usr/bin/claude")
@@ -123,8 +124,22 @@ def issue() -> tuple[str, str]:
     return token, str(path)
 
 
+def issue_env(name: str) -> str:
+    token = secrets.token_urlsafe(32)
+    TOKENS[token] = None
+    LABELS[token] = name
+    return token
+
+
+def label(value) -> str:
+    if not isinstance(value, str) or not value:
+        return ""
+    return next((LABELS[t] for t in list(LABELS) if hmac.compare_digest(value.encode("utf-8"), t.encode("utf-8"))), "")
+
+
 def revoke(token: str) -> None:
     path = TOKENS.pop(token, None)
+    LABELS.pop(token, None)
     if path is not None:
         try:
             path.unlink()

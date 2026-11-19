@@ -110,7 +110,8 @@ async def run_one(cid: str, body: Run, request: Request) -> dict:
     from app.routers import mcp
 
     if mcp._mutating("run_command", {"id": cid}):
-        refusal = await mcp._consent(mcp.Agent("cli-commands", request.headers.get("x-formpdf-agent", "").strip()[:80] or "formpdf cli"))
+        refusal = await mcp._consent(mcp.Agent("cli-commands", request.headers.get("x-formpdf-agent", "").strip()[:80] or "formpdf cli"),
+                                     "run_command", mcp._asked("run_command", {"id": cid}))
         if refusal:
             return {"ok": False, "error": refusal}
     return await run(cid, body.params)

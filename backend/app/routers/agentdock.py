@@ -1,5 +1,6 @@
 import asyncio
 import json
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, StreamingResponse
@@ -7,7 +8,7 @@ from pydantic import BaseModel
 
 from app.core import window_key
 from app.routers.live import local_origin
-from app.services import chat, claude_code, events, terminal
+from app.services import agent_programs, chat, claude_code, events, terminal
 from app.services.claude_code import AgentError
 
 router = APIRouter(tags=["agent-dock"])
@@ -30,6 +31,13 @@ class OpenClaude(BaseModel):
     rows: int | None = None
     fresh: bool = False
     resume: str | None = None
+
+
+class OpenAgent(BaseModel):
+    kind: Literal["codex", "cursor"]
+    cols: int | None = None
+    rows: int | None = None
+    fresh: bool = False
 
 
 class ChatSend(BaseModel):
@@ -129,16 +137,27 @@ async def attach(ws: WebSocket, sid: str) -> None:
         return
     q: asyncio.Queue = asyncio.Queue()
     session.subscribers.add(q)
+    typed = first.get("control") == "binary"
+
+    async def notice(kind: str) -> None:
+        if typed:
+            await ws.send_bytes(json.dumps({"type": kind, "id": sid, "alive": session.alive}).encode("utf-8"))
+        elif kind == "exit":
+            await ws.send_text(json.dumps({"type": "exit"}))
 
     async def outbound() -> None:
+        await notice("hello")
         backlog = session.scrollback()
         if backlog:
             await ws.send_text(backlog)
         if not session.alive:
-            await ws.send_text(json.dumps({"type": "exit"}))
+            await notice("exit")
         while True:
             text = await q.get()
-            await ws.send_text(json.dumps({"type": "exit"}) if text is None else text)
+            if text is None:
+                await notice("exit")
+            else:
+                await ws.send_text(text)
 
     sender = asyncio.create_task(outbound())
     try:
@@ -169,6 +188,18 @@ def claude_status(request: Request) -> dict:
 def claude_open(body: OpenClaude, request: Request) -> dict:
     _guard(request)
     return _agent(claude_code.open_tab, body.prompt, body.cols, body.rows, body.fresh, body.resume)
+
+
+@router.get("/api/agents/status")
+def agents_status(request: Request, fresh: bool = False) -> dict:
+    _guard(request)
+    return agent_programs.status(fresh)
+
+
+@router.post("/api/agents/open")
+def agents_open(body: OpenAgent, request: Request) -> dict:
+    _guard(request)
+    return _agent(agent_programs.open_tab, body.kind, body.cols, body.rows, body.fresh)
 
 
 @router.get("/api/chat/state")
