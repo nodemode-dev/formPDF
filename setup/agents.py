@@ -13,7 +13,28 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ["formpdf-harness", "formpdf-skillset"]
 MANIFEST = ROOT / "agents" / "manifest.json"
 APP = "formpdf"
-DOCK = {"present": True, "positions": ["bottom"], "tabs": ["chat", "claude", "shell"]}
+DOCK = {"present": True, "positions": ["bottom", "right"], "tabs": ["chat", "claude", "codex", "cursor", "shell"]}
+DOCK_DIR = ROOT / "frontend" / "src" / "dock"
+
+
+def dock_drift() -> list:
+    import hashlib
+
+    listed = json.loads((DOCK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))["files"]
+    here = {p.name for p in DOCK_DIR.iterdir() if p.is_file() and p.name != "MANIFEST.json"}
+    bad = {name for name, digest in listed.items() if not (DOCK_DIR / name).is_file() or hashlib.sha256((DOCK_DIR / name).read_bytes()).hexdigest() != digest}
+    return sorted(bad | (here - set(listed)))
+
+
+def dock_strangers() -> list:
+    found = []
+    for p in sorted(DOCK_DIR.glob("*.ts")):
+        for target in re.findall(r"""(?:from|import)\s*\(?\s*['"]([^'"]+)['"]""", p.read_text(encoding="utf-8")):
+            if target.startswith("@xterm/"):
+                continue
+            if not target.startswith("./") or "/" in target[2:]:
+                found.append(f"{p.name} imports {target}")
+    return found
 ENGINE_FACTS = """
 import json
 from app.main import app
@@ -298,7 +319,14 @@ def sync(check: bool) -> int:
             if not check:
                 ref.parent.mkdir(parents=True, exist_ok=True)
                 ref.write_text(want, encoding="utf-8")
-    n = skills(check, said) + drift
+    broken = [f"  frontend/src/dock/{name} does not match frontend/src/dock/MANIFEST.json; the shared dock folder is copied whole from formvis and never edited here" for name in dock_drift()]
+    broken += [f"  frontend/src/dock/{line}; the shared dock folder imports nothing from formpdf" for line in dock_strangers()]
+    said.extend(broken)
+    if broken and not check:
+        print("\n".join(said))
+        print("agents: the shared dock folder is not what its manifest says; nothing was written for it")
+        return 1
+    n = skills(check, said) + drift + len(broken)
     print("\n".join(said))
     if check:
         print("agents: in step" if n == 0 else "agents: manifest, skills or references drifted (run ./formpdf agents sync)")

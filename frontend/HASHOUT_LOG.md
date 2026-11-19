@@ -697,3 +697,99 @@ When the engine finds that the stored agent permission was changed outside the a
 kind: fix · logged: v0.61.0 · 2026-11-19
 
 The dock gave each terminal its colours once, when the terminal was mounted, from `--surface-0` and `--text-primary`. Switching theme afterwards left every open terminal in the old colours: with Studio chosen first and AMOLED Black after, the terminal body stayed `#111111` with `#f7f7f7` text in a dock that was otherwise `#000000` (measured in headless Chrome, 1440 by 900, CPU 4x slower, slow network, cache off). The dock now listens to `nm:ui-settings-changed`, which every theme and accent change already sends, and sets `term.options.theme` on each open terminal from the same `theme()` that mounting uses. No node is created or moved: xterm repaints its own canvas. Measured after the change, same setup: the xterm screen is `#000000` at four corners and the centre, text `#ededed`; the dock, its head, the Ask line, the Chat tab (bar and log) and the tool ribbon are `#000000` too. The live switch Studio, AMOLED Black, Studio with the dock open (a terminal tab, the Chat tab) and Preferences open: 5332 elements before and after each switch, none new, none removed, no box moved except the rotating spinner icon, whose box changes with its animation. The ANSI colours are xterm's own and were left alone: on `#000000` black is 1.7 to 1, bright black 2.9, blue 3.5, red 3.6, magenta 3.2 and the rest above 5, which is better than on Studio's `#111111` (1.5, 2.6, 3.2, 3.2, 2.9), so AMOLED does not make any terminal colour harder to read than the default theme does.
+
+## 126. The dock is the family's shared module 2.0.1 · _v0.61.0 (src/dock/ whole; src/dock-adapter.ts; styles/dock-tokens.css; styles/dock.css; app.ts; index.html; live/socket.ts; live/agent.ts; ui/chat-pane.ts; ui/i18n.ts SKIP; ui/terminal-dock.ts removed)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+`src/dock/` is formvis's `frontend/src/dock` at commit 1ee307fc, 15 files, copied byte for byte. Nothing in it is edited here; `./formpdf agents sync --check` fails and names the file when one does not match `MANIFEST.json` or imports from formpdf. Everything formpdf-specific is in `src/dock-adapter.ts` and `styles/dock-tokens.css`.
+
+Decisions, and why:
+
+- Storage key `formpdf.dock` (no other store used that name). The old keys were a bare number (`fs-dock-h`) and a bare word (`fs-dock-last`), so `dockLegacy.read` converts them; the module moves them once and deletes them. The pre-paint block in index.html reads only the new key: with only old keys present the dock was never open at launch, so there is nothing to reserve.
+- Chat stays formpdf's own (`chat: { pane(host) }`): Markdown replies, page buttons and pictures on tool chips, the usage meter, From Claude Code and the kept history are not in the module's Chat. The module hides its ask line for the whole dock when the app owns the Chat pane (dock.css:65), so `ChatPane` now has its own line (`.fs-chat-ask`) and `claudeLine(dock)` appends formpdf's own "Ask Claude Code" line to `dock.root` and hides it while the Chat tab is active (`dock.onTab`, `dock.activeTab()`). Both are the app's elements with the app's classes; the stage is the same height on every tab, as before.
+- The chord is the one formpdf had: Cmd+J on macOS, Ctrl+J elsewhere, never under an open dialog (`isDockChord`). Shift and Alt with the chord (Claude Code, Chat) are still taken by app.ts's capture listener, and `passKey` names exactly those two so a terminal leaves them alone. Plain Mod+J is now the module's listener; app.ts no longer handles it.
+- The question an outside agent causes no longer goes through `AgentBridge.run`: `LiveClient` hands the `consent` tool call and `consentWithdrawn` to the adapter (`onConsent`, `onWithdrawn`) and the answer goes back with `LiveClient.result(id, ...)`. Waiting questions are kept in `sessionStorage` (`formpdf.consentWaiting`) because the engine asks once and does not ask a reloaded window again; a kept question is shown again until its `expires`, and its answer still reaches the engine because the engine waits on the id. Escape is Deny, as closing the old dialog was. The old dialog's three sentences are the request's `notes`.
+- `t` returns the English: the page translator walks the DOM. `[translate="no"]` joined its skip list so terminals and whatever the module marks are left alone. The module's new sentences are not in the 25 tables yet and show in English.
+- `body:not(.app-ready) .ft-dock { visibility: hidden }`: a dock remembered open would otherwise paint before the app is revealed.
+- Head icons are the module's (owner decision E of the dock spec); the title bar keeps its own Claude Code mark.
+
+Removed, quoted. `ui/terminal-dock.ts` (398 lines, whole text: `git show 3093098:frontend/src/ui/terminal-dock.ts`); its parts that carried behaviour:
+
+```ts
+const HEIGHT_KEY = 'fs-dock-h';
+const LAST_KEY = 'fs-dock-last';
+const MIN_H = 160;
+export function isDockCombo(e: KeyboardEvent): boolean {
+  return (isMac ? e.metaKey : e.ctrlKey) && e.code === 'KeyJ';
+}
+    this.root.addEventListener('keydown', (e) => { if (!isDockCombo(e)) e.stopPropagation(); });
+  private applyHeight(): void {
+    const max = Math.max(MIN_H, Math.round(window.innerHeight * 0.75));
+    const h = Math.min(max, Math.max(MIN_H, this.height));
+    document.documentElement.style.setProperty('--fs-dock-h', `${h}px`);
+  }
+  private async openFresh(): Promise<void> {
+    const last = lastKind();
+    if (last === 'chat') { await this.showChat(); return; }
+    const installed = last === 'shell' ? false : await api.get<{ installed?: boolean }>('/api/claude/status').then((s) => !!s.installed, () => false);
+    if (installed) await this.claude();
+    else await this.terminal();
+  }
+  private async send(): Promise<void> {
+    const text = this.ask.value.trim();
+    if (!text) return;
+    const extra = this.context();
+    if (this.active === 'chat' && this.chatPane?.isBusy()) return;
+    this.ask.value = '';
+    if (this.active === 'chat' && this.chatPane) await this.chatPane.send(text, extra, this.note());
+    else await this.claude(extra ? `${text} (${extra})` : text);
+  }
+    socket.addEventListener('open', () => { socket.send(JSON.stringify({ type: 'key', key: windowKey() })); this.sendSize(t); });
+    socket.addEventListener('message', (msg) => {
+      const data = String(msg.data);
+      if (data === '{"type": "exit"}') {
+        t.term.write(`\r\n\x1b[2m[${t.kind === 'claude' ? 'Claude Code' : 'shell'} exited · Restart runs it again]\x1b[0m\r\n`);
+        return;
+      }
+      t.term.write(data);
+    });
+```
+
+From `styles/dock.css`, lines 1 to 28 (the `.fs-dock*` and `.fs-term` rules); the ones that placed the dock:
+
+```css
+html.is-dock-open .fs-pdfwb, html.is-dock-open .fs-home { bottom: var(--fs-dock-h); }
+html.is-dock-open body:not(.nm-home) #overlay-root { z-index: var(--z-modal); }
+.fs-dock { position: fixed; left: 0; right: 0; bottom: 0; height: var(--fs-dock-h, 300px); z-index: var(--z-dock); display: grid; grid-template-rows: 34px minmax(0, 1fr) 40px; min-width: 0; min-height: 0; background: var(--surface-0); color: var(--text-primary); border-top: 1px solid var(--line-1); font-family: var(--font-ui); }
+.fs-dock-rsz { position: absolute; top: -3px; left: 0; right: 0; height: 6px; cursor: row-resize; z-index: var(--z-raised); touch-action: none; }
+.fs-term { position: absolute; inset: 6px 4px 0 10px; }
+:root[data-oled] .fs-dock-head, :root[data-oled] .fs-dock-ask { background: var(--bg-primary); }
+```
+
+From `live/agent.ts`, the dialog and its branch in `run`:
+
+```ts
+class Consent extends Dialog {
+  constructor() {
+    super('Allow agents to edit?', 460);
+    this.button('Not now', 'ghost', () => this.finish(false));
+    this.allowBtn = this.button('Allow', 'primary', () => this.finish(true));
+    this.onClose = () => this.finish(false);
+  }
+  ask(agent: string): Promise<boolean> {
+    this.setTitle(`Allow ${agent} to edit your PDFs?`);
+    setText(this.lead, `${agent} is connected to formpdf and asks to change PDFs and write files for you.`);
+    this.open(this.allowBtn);
+    return new Promise((r) => { this.resolve = r; });
+  }
+}
+    if (name === 'consent') {
+      const agent = str(args.agent) || 'An agent';
+      this.consentAsk ??= this.ask(agent).finally(() => { this.consentAsk = null; });
+      const allowed = await this.consentAsk;
+      return { content: [{ type: 'text', text: allowed ? 'The person allowed agents to edit PDFs.' : 'The person did not allow agents to edit PDFs for now.' }], structuredContent: { allowed } };
+    }
+```
+
+Not kept, because the module does not serve it: the first ever open preferring Claude Code when it is installed (the module opens a shell, or Chat when Chat was last); the chord in the Claude Code button's tooltip (the Chat tooltip carries its chord through `strings.chatAbout`); the two button weights in the module's own bars. Measured in headless Chrome at 1440 by 900 against the engine from source: dock closed 0 pixels differ from before; open on a shell 795 (head icons and the four new head buttons); open on Chat about 2,000 (the same head band).

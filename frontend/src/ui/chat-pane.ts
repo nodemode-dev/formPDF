@@ -55,6 +55,9 @@ export class ChatPane {
   onFail: (err: unknown) => void = () => undefined;
   onHandoff: (session: string) => void = () => undefined;
   onPage: (page: number) => void = () => undefined;
+  context: () => string = () => '';
+  note: () => string = () => '';
+  private readonly input: HTMLInputElement;
   private readonly log: HTMLElement;
   private readonly empty: HTMLElement;
   private readonly meter: HTMLElement;
@@ -73,14 +76,21 @@ export class ChatPane {
   private adoptDlg: AdoptDialog | null = null;
 
   constructor() {
-    this.root = el(`<div class="fs-chat" hidden>
+    this.root = el(`<div class="fs-chat">
 <div class="fs-chat-bar"><span class="fs-chat-status"></span><span class="fs-chat-usage" title="Memory: how much of Claude's working memory this conversation uses. Reply: tokens written so far. Chat: everything sent and written in this conversation."></span><span class="fs-dock-spacer"></span>
 <button type="button" class="fs-btn fs-btn-sm fs-btn-ghost fs-chat-stop" hidden>Stop</button>
 <button type="button" class="fs-btn fs-btn-sm fs-btn-ghost fs-chat-adopt" title="Bring a conversation you had in a Claude Code tab into this chat">From Claude Code...</button>
 <button type="button" class="fs-btn fs-btn-sm fs-btn-ghost fs-chat-handoff" title="Continue this conversation in a Claude Code terminal tab">Open in Claude Code</button>
 <button type="button" class="fs-btn fs-btn-sm fs-chat-new">New Chat</button></div>
 <div class="fs-chat-log" role="log" aria-live="polite"><p class="fs-chat-empty fs-note">Ask Claude about the open PDF in the line below: summarise it, find and redact, fill a form, fix headers, prepare it for print. It works through formpdf's tools, every change shows in the window, and each turn can be undone.</p></div>
+<form class="fs-chat-ask" autocomplete="off">
+<span class="fs-chat-ask-mark">${icon('agent', 15)}</span>
+<input class="fs-input fs-chat-ask-input" type="text" spellcheck="false" placeholder="Ask Claude about the open PDF (Enter to send)" aria-label="Ask Claude">
+<button type="submit" class="fs-icon-btn is-sm" title="Send" aria-label="Send">${icon('send', 14)}</button>
+</form>
 </div>`);
+    this.input = q<HTMLInputElement>(this.root, '.fs-chat-ask-input');
+    q(this.root, '.fs-chat-ask').addEventListener('submit', (e) => { e.preventDefault(); const text = this.input.value; this.input.value = ''; void this.ask(text).then((sent) => { if (!sent && !this.input.value) this.input.value = text; }); });
     this.log = q(this.root, '.fs-chat-log');
     this.log.addEventListener('wheel', () => requestAnimationFrame(() => this.track()), { passive: true });
     this.log.addEventListener('pointerdown', () => { const up = (): void => { this.track(); window.removeEventListener('pointerup', up); }; window.addEventListener('pointerup', up); });
@@ -137,6 +147,15 @@ export class ChatPane {
   }
 
   isBusy(): boolean { return this.busy; }
+
+  async ask(text: string): Promise<boolean> {
+    const said = text.trim();
+    if (!said || this.busy) return false;
+    await this.send(said, this.context(), this.note());
+    return true;
+  }
+
+  focus(): void { this.input.focus({ preventScroll: true }); }
 
   private clear(): void {
     for (const n of Array.from(this.log.children)) if (n !== this.empty) n.remove();
