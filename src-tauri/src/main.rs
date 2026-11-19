@@ -156,7 +156,8 @@ fn main() {
                 let key_pattern = regex::Regex::new(r"formpdf-window-key: ([A-Za-z0-9_-]{32,})").unwrap();
                 let mut port: Option<u16> = None;
                 let mut key: Option<String> = None;
-                while let Some(event) = rx.recv().await {
+                let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+                while let Ok(Some(event)) = tokio::time::timeout_at(deadline, rx.recv()).await {
                     let line = match event {
                         CommandEvent::Stdout(bytes) => {
                             let text = String::from_utf8_lossy(&bytes).into_owned();
@@ -178,7 +179,7 @@ fn main() {
                         break;
                     }
                 }
-                match port {
+                match port.filter(|_| key.is_some()) {
                     Some(found) => {
                         let mut url: tauri::Url = format!("http://127.0.0.1:{found}")
                             .parse()
