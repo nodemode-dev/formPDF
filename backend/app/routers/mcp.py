@@ -267,8 +267,12 @@ def _clip(s: str, n: int) -> str:
     return s if len(s) <= n else s[: n - 1] + "..."
 
 
+GATED = ("open_pdf", "save", "undo", "extension_command")
+GATED_BY_ARGUMENTS = ("pdf", "run_command", "run_commands")
+
+
 def _mutating(name: str, args: dict) -> bool:
-    if name in ("open_pdf", "save", "undo", "extension_command"):
+    if name in GATED:
         return True
     if name == "pdf":
         return args.get("action") in CHANGE_ACTIONS + EXPORT_ACTIONS or (args.get("action") == "attachments" and bool(args.get("save")))

@@ -20,7 +20,7 @@ On Windows use `formpdf.bat install` and `formpdf.bat`. The one-click installers
 | `./formpdf install-desktop`, `./formpdf desktop dev`, `./formpdf desktop build` | the Tauri desktop app (checks Rust and PyInstaller, runs it, bundles it) |
 | `./formpdf freeze` | freeze the engine into the desktop sidecar |
 | `./formpdf mcp` | the MCP server over stdio, for Claude Desktop and other stdio clients |
-| `./formpdf agents install`, `./formpdf agents sync` | set up Claude Code, Codex and Cursor; refresh the skills |
+| `./formpdf agents install`, `./formpdf agents sync` | set up Claude Code, Codex and Cursor; refresh the skills and `agents/manifest.json` |
 | `./formpdf run ...` | a PDF job without the window (see The headless CLI) |
 | `./formpdf clean [--all]` | remove build output (`--all` also the venv and node_modules) |
 

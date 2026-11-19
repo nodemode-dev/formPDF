@@ -5,16 +5,34 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ["formpdf-harness", "formpdf-skillset"]
+MANIFEST = ROOT / "agents" / "manifest.json"
+APP = "formpdf"
+DOCK = {"present": True, "positions": ["bottom"], "tabs": ["chat", "claude", "shell"]}
+ENGINE_FACTS = """
+import json
+from app.main import app
+from app.routers import mcp
+from app.services import formext_host
+tools = [t["name"] for t in mcp.TOOLS]
+print(json.dumps({
+    "tools": tools,
+    "read_only": [t["name"] for t in mcp.TOOLS if t["annotations"]["readOnlyHint"]],
+    "approval_gated": [n for n in tools if n in mcp.GATED or n in mcp.GATED_BY_ARGUMENTS],
+    "http": "post" in app.openapi().get("paths", {}).get("/mcp", {}),
+    "host_api": formext_host.API,
+}))
+"""
 PORT = int(os.environ.get("FORMPDF_PORT") or 8198)
 PY = "python" if os.name == "nt" else "python3"
 LAUNCH = str(ROOT / ("formpdf.bat" if os.name == "nt" else "formpdf"))
 USAGE = """usage: ./formpdf agents install [--dry-run]   set up Claude Code, Codex and Cursor here and in the folder you ran it from
-       ./formpdf agents sync [--check]       write the window commands reference from the catalogue, then copy the formpdf skills again
+       ./formpdf agents sync [--check]       write agents/manifest.json and the window commands reference from the catalogue, then copy the formpdf skills again
                                              (and mirror .claude/skills to .agents/skills)"""
 
 
@@ -215,9 +233,61 @@ def generated() -> dict[Path, str]:
     return {ROOT / ".claude" / "skills" / "formpdf-harness" / "references" / "commands.md": commands_reference(rows)} if rows else {}
 
 
+def engine_python() -> str:
+    for py in (ROOT / "backend" / "venv" / "bin" / "python", ROOT / "backend" / "venv" / "Scripts" / "python.exe"):
+        if py.is_file():
+            return str(py)
+    return sys.executable
+
+
+def engine_facts() -> dict:
+    with tempfile.TemporaryDirectory(prefix="formpdf-manifest-") as scratch:
+        env = {**os.environ, "FORMPDF_DATA_DIR": scratch, "PYTHONDONTWRITEBYTECODE": "1"}
+        done = subprocess.run([engine_python(), "-c", ENGINE_FACTS], cwd=ROOT / "backend", env=env, capture_output=True, text=True)
+    if done.returncode != 0:
+        raise RuntimeError("cannot read the MCP registry from the engine code (install backend/requirements.txt, then run again): " + (done.stderr.strip().splitlines() or ["no output"])[-1])
+    return json.loads(done.stdout.strip().splitlines()[-1])
+
+
+def skill_entries() -> list[dict]:
+    base = ROOT / ".claude" / "skills"
+    out = []
+    for folder in sorted(p for p in base.iterdir() if (p / "SKILL.md").is_file()) if base.is_dir() else []:
+        subs = folder / "sub-skills"
+        names = sorted(p.name for p in subs.iterdir() if (p / "SUB-SKILL.md").is_file()) if subs.is_dir() else []
+        out.append({"name": folder.name, "sub_skills": names})
+    return out
+
+
+def manifest_text() -> str:
+    facts = engine_facts()
+    transports = (["stdio"] if (ROOT / "setup" / "mcp_stdio.py").is_file() else []) + (["http"] if facts["http"] else [])
+    body = {
+        "format": "form-agent-manifest",
+        "version": 1,
+        "app": APP,
+        "mcp": {"tools": facts["tools"], "read_only": facts["read_only"], "approval_gated": facts["approval_gated"], "transports": transports},
+        "skills": skill_entries(),
+        "dock": DOCK,
+        "extensions": {"host_api": facts["host_api"]},
+    }
+    return json.dumps(body, indent=2) + "\n"
+
+
+def manifest_drift() -> bool:
+    return not MANIFEST.is_file() or MANIFEST.read_text(encoding="utf-8") != manifest_text()
+
+
 def sync(check: bool) -> int:
     said: list = []
     drift = 0
+    wanted = manifest_text()
+    if not MANIFEST.is_file() or MANIFEST.read_text(encoding="utf-8") != wanted:
+        drift += 1
+        said.append(f"  {'would write' if check else 'wrote'} {MANIFEST.relative_to(ROOT)}")
+        if not check:
+            MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+            MANIFEST.write_text(wanted, encoding="utf-8")
     made = generated()
     if not made:
         said.append(f"Commands reference: no catalogue at {catalogue_file()} yet; open formpdf once, then sync again")
@@ -231,7 +301,7 @@ def sync(check: bool) -> int:
     n = skills(check, said) + drift
     print("\n".join(said))
     if check:
-        print("agents: in step" if n == 0 else "agents: skills drifted (run ./formpdf agents sync)")
+        print("agents: in step" if n == 0 else "agents: manifest, skills or references drifted (run ./formpdf agents sync)")
         return 1 if n else 0
     print(f"agents: {n} file{'s' if n != 1 else ''} and skill cop{'ies' if n != 1 else 'y'} updated")
     return 0
