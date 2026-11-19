@@ -116,7 +116,7 @@ def issue() -> tuple[str, str]:
     folder = config.data_dir() / "AgentTokens"
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     path = folder / f"mcp-{secrets.token_hex(8)}.json"
-    body = json.dumps({"mcpServers": {"formpdf": {"type": "http", "url": config.engine_url() + "/mcp", "headers": {"x-formpdf-inapp": token}}}})
+    body = json.dumps({"mcpServers": {"formpdf_tab": {"type": "http", "url": config.engine_url() + "/mcp", "headers": {"x-formpdf-inapp": token}}}})
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(body)
@@ -168,7 +168,7 @@ def wrap(cmd: list[str]) -> list[str]:
 
 
 def argv(path: str, prompt: str | None, resume: str | None, mcp_file: str) -> list[str]:
-    cmd = [path, "--mcp-config", mcp_file, "--allowedTools", "mcp__formpdf", "--append-system-prompt", NOTE]
+    cmd = [path, "--mcp-config", mcp_file, "--allowedTools", "mcp__formpdf_tab", "--append-system-prompt", NOTE]
     if resume:
         cmd += ["--resume", resume]
     if prompt:

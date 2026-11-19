@@ -160,7 +160,7 @@ def test_an_agent_tab_gets_its_own_token_outside_the_command_line_until_it_close
         if kind == "cursor":
             written = tmp_path / "work" / ".cursor" / "mcp.json"
             assert stat.S_IMODE(written.stat().st_mode) == 0o600
-            assert json.loads(written.read_text(encoding="utf-8"))["mcpServers"]["formpdf"]["headers"] == {INAPP_HEADER: "${env:FORMPDF_INAPP_TOKEN}"}
+            assert json.loads(written.read_text(encoding="utf-8"))["mcpServers"]["formpdf_tab"]["headers"] == {INAPP_HEADER: "${env:FORMPDF_INAPP_TOKEN}"}
             assert token not in written.read_text(encoding="utf-8")
         assert client.post("/api/agents/open", json={"kind": kind}, headers=window_headers()).json()["id"] == tab["id"]
     finally:
@@ -210,3 +210,16 @@ def test_the_exit_notice_is_a_binary_frame_for_a_window_that_asks(client):
                 frame = ws.receive_text()
     finally:
         client.post(f"/api/terminals/{term['id']}/close", headers=window_headers())
+
+
+def test_the_entry_the_engine_writes_for_its_own_tabs_is_named_formpdf_tab(tmp_path):
+    programs = importlib.import_module("app.services.agent_programs")
+    claude_code = importlib.import_module("app.services.claude_code")
+    assert [a.split("=")[0].rsplit(".", 1)[0] for a in programs.codex_args()[1::2]] == ["mcp_servers.formpdf_tab", "mcp_servers.formpdf_tab"]
+    assert programs.cursor_file(tmp_path) == "file"
+    assert list(json.loads((tmp_path / ".cursor" / "mcp.json").read_text(encoding="utf-8"))["mcpServers"]) == ["formpdf_tab"]
+    token, path = claude_code.issue()
+    try:
+        assert list(json.loads(open(path, encoding="utf-8").read())["mcpServers"]) == ["formpdf_tab"]
+    finally:
+        claude_code.revoke(token)

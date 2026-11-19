@@ -73,19 +73,19 @@ def status(fresh: bool = False) -> dict:
 
 def codex_args() -> list[str]:
     url = config.engine_url() + "/mcp"
-    return ["-c", f"mcp_servers.formpdf.url={json.dumps(url)}", "-c", f"mcp_servers.formpdf.env_http_headers={{{json.dumps(HEADER)}={json.dumps(TOKEN_ENV)}}}"]
+    return ["-c", f"mcp_servers.formpdf_tab.url={json.dumps(url)}", "-c", f"mcp_servers.formpdf_tab.env_http_headers={{{json.dumps(HEADER)}={json.dumps(TOKEN_ENV)}}}"]
 
 
 def cursor_file(folder: Path) -> str:
     path = folder / ".cursor" / "mcp.json"
     entry = {"url": config.engine_url() + "/mcp", "headers": {HEADER: "${env:" + TOKEN_ENV + "}"}}
-    body = {"mcpServers": {"formpdf": entry}}
+    body = {"mcpServers": {"formpdf_tab": entry}}
     try:
         if path.is_file():
             have = json.loads(path.read_text(encoding="utf-8"))
             if have == body:
                 return "file"
-            if not isinstance(have, dict) or list(have) != ["mcpServers"] or list(have["mcpServers"]) != ["formpdf"] or have["mcpServers"]["formpdf"] | {"url": ""} != entry | {"url": ""}:
+            if not isinstance(have, dict) or list(have) != ["mcpServers"] or list(have["mcpServers"]) != ["formpdf_tab"] or have["mcpServers"]["formpdf_tab"] | {"url": ""} != entry | {"url": ""}:
                 return "not written"
             path.unlink()
         path.parent.mkdir(mode=0o700, exist_ok=True)
