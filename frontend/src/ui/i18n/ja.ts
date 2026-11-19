@@ -1,4 +1,5 @@
 export const ja: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "保存されていたエージェントの権限が formpdf の外で変更されたため、「質問」に戻りました。",
 "Apply or clear the redaction marks first.": "先に墨消しマークを適用するか、クリアしてください。",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "ページが変更されたため、追従できなかった墨消しマークを削除しました。その領域をもう一度マークしてください。",
 "Demos": "デモ",
