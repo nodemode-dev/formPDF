@@ -1,5 +1,7 @@
 import importlib
 import json
+import re
+import shutil
 import sys
 
 from conftest import REPO
@@ -45,3 +47,46 @@ def test_manifest_names_the_skills_and_the_host_api():
     assert [s["name"] for s in manifest["skills"]] == sorted(p.name for p in (REPO / ".claude" / "skills").iterdir() if (p / "SKILL.md").is_file())
     assert manifest["extensions"] == {"host_api": importlib.import_module("app.services.formext_host").API}
     assert manifest["app"] == "formpdf"
+
+
+def test_the_shared_dock_folder_is_what_its_manifest_says():
+    sync = sync_module()
+    assert sync.dock_drift() == []
+    assert sync.dock_strangers() == []
+    assert json.loads((sync.DOCK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))["version"] == "2.0.1"
+
+
+def test_an_edited_added_or_app_importing_dock_file_is_named(tmp_path, monkeypatch, capsys):
+    sync = sync_module()
+    copy = tmp_path / "dock"
+    shutil.copytree(sync.DOCK_DIR, copy)
+    with (copy / "keys.ts").open("a", encoding="utf-8") as f:
+        f.write("\n")
+    (copy / "extra.ts").write_text("import { api } from '../io/api';\n", encoding="utf-8")
+    monkeypatch.setattr(sync, "DOCK_DIR", copy)
+    assert sync.dock_drift() == ["extra.ts", "keys.ts"]
+    assert sync.dock_strangers() == ["extra.ts imports ../io/api"]
+    monkeypatch.setattr(sync, "skills", lambda check, said: 0)
+    assert sync.sync(True) == 1
+    said = capsys.readouterr().out
+    assert "frontend/src/dock/keys.ts does not match frontend/src/dock/MANIFEST.json" in said
+    assert "frontend/src/dock/extra.ts imports ../io/api" in said
+
+
+def test_the_manifest_dock_block_is_what_the_adapter_offers():
+    adapter = (REPO / "frontend" / "src" / "dock-adapter.ts").read_text(encoding="utf-8")
+    offered = re.search(r"builtin: \[([^\]]+)\]", adapter).group(1).replace("'", "").replace(" ", "").split(",")
+    dock = committed()["dock"]
+    assert sorted(offered) == dock["tabs"]
+    assert dock["positions"] == ["bottom", "right"]
+    assert "mode: 'own'" in adapter
+
+
+def test_the_dock_storage_key_and_the_old_keys_are_the_ones_the_pre_paint_script_reads():
+    adapter = (REPO / "frontend" / "src" / "dock-adapter.ts").read_text(encoding="utf-8")
+    page = (REPO / "frontend" / "index.html").read_text(encoding="utf-8")
+    assert "export const DOCK_KEY = 'formpdf.dock';" in adapter
+    assert "export const DOCK_OLD_KEYS = ['fs-dock-h', 'fs-dock-last'];" in adapter
+    assert "localStorage.getItem('formpdf.dock')" in page
+    assert page.index("localStorage.getItem('formpdf.dock')") < page.index('<link rel="stylesheet"')
+    assert not (REPO / "frontend" / "src" / "ui" / "terminal-dock.ts").exists()
