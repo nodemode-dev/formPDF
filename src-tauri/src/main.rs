@@ -156,8 +156,7 @@ fn main() {
                 let key_pattern = regex::Regex::new(r"formpdf-window-key: ([A-Za-z0-9_-]{32,})").unwrap();
                 let mut port: Option<u16> = None;
                 let mut key: Option<String> = None;
-                let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
-                while let Ok(Some(event)) = tokio::time::timeout_at(deadline, rx.recv()).await {
+                while let Some(event) = rx.recv().await {
                     let line = match event {
                         CommandEvent::Stdout(bytes) => {
                             let text = String::from_utf8_lossy(&bytes).into_owned();
@@ -170,13 +169,29 @@ fn main() {
                         CommandEvent::Terminated(_) => break,
                         _ => continue,
                     };
-                    if port.is_none() {
-                        if let Some(captures) = pattern.captures(&line) {
-                            port = captures[1].parse().ok();
+                    if let Some(captures) = pattern.captures(&line) {
+                        port = captures[1].parse().ok();
+                        if port.is_some() {
+                            break;
                         }
                     }
-                    if port.is_some() && key.is_some() {
-                        break;
+                }
+                let grace = std::time::Instant::now() + std::time::Duration::from_secs(10);
+                while port.is_some() && key.is_none() && std::time::Instant::now() < grace {
+                    match rx.try_recv() {
+                        Ok(CommandEvent::Stdout(bytes)) => {
+                            key = key_pattern
+                                .captures(&String::from_utf8_lossy(&bytes))
+                                .map(|found| found[1].to_string());
+                        }
+                        Ok(CommandEvent::Terminated(_)) => break,
+                        Ok(_) => {}
+                        Err(_) => {
+                            let _ = tauri::async_runtime::spawn_blocking(|| {
+                                std::thread::sleep(std::time::Duration::from_millis(20))
+                            })
+                            .await;
+                        }
                     }
                 }
                 match port.filter(|_| key.is_some()) {
