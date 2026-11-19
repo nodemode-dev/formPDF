@@ -1,7 +1,7 @@
 import { Catalogue } from './automation/catalogue';
 import { DEMOS, seedLoanMarks, type Anchor, type DemoId } from './demos/catalog';
 import { Dock } from './dock/dock';
-import { claudeLine, formpdfDock, isDockCombo } from './dock-adapter';
+import { formpdfDock, isDockCombo } from './dock-adapter';
 import { api } from './io/api';
 import { events } from './io/events';
 import { loadWindowKey } from './io/window-key';
@@ -106,7 +106,6 @@ export async function startApp(): Promise<void> {
     e.stopPropagation();
     cmd.run();
   }, true);
-  claudeLine(dock);
   dock.mount(document.body);
   const openDemo = async (id: DemoId): Promise<void> => {
     const d = DEMOS.find((x) => x.id === id);

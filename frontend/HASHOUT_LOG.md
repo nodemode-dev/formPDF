@@ -793,3 +793,77 @@ class Consent extends Dialog {
 ```
 
 Not kept, because the module does not serve it: the first ever open preferring Claude Code when it is installed (the module opens a shell, or Chat when Chat was last); the chord in the Claude Code button's tooltip (the Chat tooltip carries its chord through `strings.chatAbout`); the two button weights in the module's own bars. Measured in headless Chrome at 1440 by 900 against the engine from source: dock closed 0 pixels differ from before; open on a shell 795 (head icons and the four new head buttons); open on Chat about 2,000 (the same head band).
+
+## 127. One ask line under every dock tab, the module's · _v0.61.0 (src/dock/ whole, module 2.1.0; src/dock-adapter.ts claudeLine removed, strings, chat; app.ts; ui/chat-pane.ts constructor, send, ask, shown, hidden, closed, scroll; styles/dock.css)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+`src/dock/` is formvis's folder at commit 8bbdf61b (module 2.1.0), copied byte for byte. With it the adapter says `chat: { pane, ask: 'line' }`: the module's own line shows under every tab. On Chat the text goes to the pane's `send`; under a terminal it opens Claude Code with the text, and `terminal.open` adds where the person is, as before. `strings.askPlaceholder` and `strings.chatPlaceholder` keep formpdf's two sentences. The pane now answers `send` with whether the text was taken (false while Claude works, false when the engine refused), gives `busy()`, reads the conversation in `shown()` in place of at construction, stops pinning the log to its end while `hidden()`, and on `closed()` forgets what it drew so the next show reads the engine's state again. The guide's "how to ask" step points at the line, so formpdf's own `tourChatBody` is gone and the module's sentence shows.
+
+Removed from `src/dock-adapter.ts`, the app's own line that was appended to `dock.root` and hidden on Chat (and its call `claudeLine(dock);` in `app.ts`):
+
+```ts
+export function claudeLine(dock: Dock): void {
+  const form = el(`<form class="fs-chat-ask fs-dock-ask" autocomplete="off">
+<span class="fs-chat-ask-mark">${icon('agent', 15)}</span>
+<input class="fs-input fs-chat-ask-input" type="text" spellcheck="false" placeholder="Ask Claude Code to work on the open PDF" aria-label="Ask Claude Code">
+<button type="submit" class="fs-icon-btn is-sm" title="Send" aria-label="Send">${icon('send', 14)}</button>
+</form>`);
+  const input = q<HTMLInputElement>(form, '.fs-chat-ask-input');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    void dock.claude(text).then((sent) => { if (!sent && !input.value) input.value = text; });
+  });
+  const sync = (): void => setHidden(form, dock.activeTab() === 'chat');
+  dock.onTab = sync;
+  dock.root.appendChild(form);
+  sync();
+}
+```
+
+and from the adapter's `strings` and `chat.pane`:
+
+```ts
+      tourChatBody: 'Open Chat with the speech bubble, type what you want in its line, for example "{example}", and press Enter. Claude does it in {app}, and each turn can be undone.',
+        void chat.load();
+        return { send: (text) => { void chat.ask(text); }, focus: () => chat.focus() };
+```
+
+Removed from `ui/chat-pane.ts`, the pane's own line, its field, its listener and `focus`:
+
+```ts
+<form class="fs-chat-ask" autocomplete="off">
+<span class="fs-chat-ask-mark">${icon('agent', 15)}</span>
+<input class="fs-input fs-chat-ask-input" type="text" spellcheck="false" placeholder="Ask Claude about the open PDF (Enter to send)" aria-label="Ask Claude">
+<button type="submit" class="fs-icon-btn is-sm" title="Send" aria-label="Send">${icon('send', 14)}</button>
+</form>
+  private readonly input: HTMLInputElement;
+    this.input = q<HTMLInputElement>(this.root, '.fs-chat-ask-input');
+    q(this.root, '.fs-chat-ask').addEventListener('submit', (e) => { e.preventDefault(); const text = this.input.value; this.input.value = ''; void this.ask(text).then((sent) => { if (!sent && !this.input.value) this.input.value = text; }); });
+  focus(): void { this.input.focus({ preventScroll: true }); }
+```
+
+`send` there returned nothing and `ask` answered true whenever it had tried:
+
+```ts
+  async send(text: string, context = '', note = ''): Promise<void> {
+    try { await api.post('/api/chat/send', { text, context, note }); } catch (err) { this.onFail(err); }
+  }
+    await this.send(said, this.context(), this.note());
+    return true;
+```
+
+Removed from `styles/dock.css`, the rules for both lines, and the pane's third grid row (`grid-template-rows: 30px minmax(0, 1fr) 40px` is now `30px minmax(0, 1fr)`):
+
+```css
+.fs-chat-ask { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); background: var(--surface-1); border-top: 1px solid var(--line-0); }
+.fs-dock-ask { flex: none; height: 40px; }
+.fs-dock-ask[hidden] { display: none; }
+:root[data-oled] .fs-chat-ask { background: var(--bg-primary); }
+.fs-chat-ask-mark { display: inline-grid; place-items: center; color: var(--accent-color); }
+.fs-chat-ask-input { flex: 1; height: 28px; }
+.fs-chat-ask .fs-icon-btn { width: 28px; height: 28px; }
+```

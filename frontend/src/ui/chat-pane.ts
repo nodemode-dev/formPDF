@@ -57,7 +57,6 @@ export class ChatPane {
   onPage: (page: number) => void = () => undefined;
   context: () => string = () => '';
   note: () => string = () => '';
-  private readonly input: HTMLInputElement;
   private readonly log: HTMLElement;
   private readonly empty: HTMLElement;
   private readonly meter: HTMLElement;
@@ -73,6 +72,7 @@ export class ChatPane {
     this.follow = l.scrollHeight - l.scrollTop - l.clientHeight < 80;
   }
   private loaded = false;
+  private visible = false;
   private adoptDlg: AdoptDialog | null = null;
 
   constructor() {
@@ -83,14 +83,7 @@ export class ChatPane {
 <button type="button" class="fs-btn fs-btn-sm fs-btn-ghost fs-chat-handoff" title="Continue this conversation in a Claude Code terminal tab">Open in Claude Code</button>
 <button type="button" class="fs-btn fs-btn-sm fs-chat-new">New Chat</button></div>
 <div class="fs-chat-log" role="log" aria-live="polite"><p class="fs-chat-empty fs-note">Ask Claude about the open PDF in the line below: summarise it, find and redact, fill a form, fix headers, prepare it for print. It works through formpdf's tools, every change shows in the window, and each turn can be undone.</p></div>
-<form class="fs-chat-ask" autocomplete="off">
-<span class="fs-chat-ask-mark">${icon('agent', 15)}</span>
-<input class="fs-input fs-chat-ask-input" type="text" spellcheck="false" placeholder="Ask Claude about the open PDF (Enter to send)" aria-label="Ask Claude">
-<button type="submit" class="fs-icon-btn is-sm" title="Send" aria-label="Send">${icon('send', 14)}</button>
-</form>
 </div>`);
-    this.input = q<HTMLInputElement>(this.root, '.fs-chat-ask-input');
-    q(this.root, '.fs-chat-ask').addEventListener('submit', (e) => { e.preventDefault(); const text = this.input.value; this.input.value = ''; void this.ask(text).then((sent) => { if (!sent && !this.input.value) this.input.value = text; }); });
     this.log = q(this.root, '.fs-chat-log');
     this.log.addEventListener('wheel', () => requestAnimationFrame(() => this.track()), { passive: true });
     this.log.addEventListener('pointerdown', () => { const up = (): void => { this.track(); window.removeEventListener('pointerup', up); }; window.addEventListener('pointerup', up); });
@@ -142,8 +135,8 @@ export class ChatPane {
     } catch (err) { this.onFail(err); }
   }
 
-  async send(text: string, context = '', note = ''): Promise<void> {
-    try { await api.post('/api/chat/send', { text, context, note }); } catch (err) { this.onFail(err); }
+  async send(text: string, context = '', note = ''): Promise<boolean> {
+    try { await api.post('/api/chat/send', { text, context, note }); return true; } catch (err) { this.onFail(err); return false; }
   }
 
   isBusy(): boolean { return this.busy; }
@@ -151,11 +144,23 @@ export class ChatPane {
   async ask(text: string): Promise<boolean> {
     const said = text.trim();
     if (!said || this.busy) return false;
-    await this.send(said, this.context(), this.note());
-    return true;
+    return this.send(said, this.context(), this.note());
   }
 
-  focus(): void { this.input.focus({ preventScroll: true }); }
+  shown(): void {
+    this.visible = true;
+    if (this.loaded) { this.scroll(); return; }
+    this.clear();
+    void this.load();
+  }
+
+  hidden(): void { this.visible = false; }
+
+  closed(): void {
+    this.visible = false;
+    this.loaded = false;
+    this.clear();
+  }
 
   private clear(): void {
     for (const n of Array.from(this.log.children)) if (n !== this.empty) n.remove();
@@ -172,7 +177,7 @@ export class ChatPane {
   }
 
   private scroll(): void {
-    if (this.follow) this.log.scrollTop = this.log.scrollHeight;
+    if (this.visible && this.follow) this.log.scrollTop = this.log.scrollHeight;
   }
 
   private user(text: string, note = ''): void {

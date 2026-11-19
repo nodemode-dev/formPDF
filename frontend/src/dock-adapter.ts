@@ -1,11 +1,9 @@
 import type { ConsentChoice, ConsentRequest, DockAdapter, DockAgentStatus, DockChannel, DockErrorKind, DockKind, DockLegacy, DockState, DockTerminal, PtyKind, StoredChoice, StoredChoiceState } from './dock/adapter';
-import type { Dock } from './dock/dock';
 import { api } from './io/api';
 import { keyHeaders, windowKey } from './io/window-key';
 import type { LiveClient } from './live/socket';
 import { ChatPane } from './ui/chat-pane';
-import { el, isMac, q, setHidden } from './ui/dom';
-import { icon } from './ui/icons';
+import { isMac } from './ui/dom';
 
 export const DOCK_KEY = 'formpdf.dock';
 export const DOCK_OLD_KEYS = ['fs-dock-h', 'fs-dock-last'];
@@ -124,26 +122,6 @@ function request(id: string, args: Record<string, unknown>): ConsentRequest {
   };
 }
 
-export function claudeLine(dock: Dock): void {
-  const form = el(`<form class="fs-chat-ask fs-dock-ask" autocomplete="off">
-<span class="fs-chat-ask-mark">${icon('agent', 15)}</span>
-<input class="fs-input fs-chat-ask-input" type="text" spellcheck="false" placeholder="Ask Claude Code to work on the open PDF" aria-label="Ask Claude Code">
-<button type="submit" class="fs-icon-btn is-sm" title="Send" aria-label="Send">${icon('send', 14)}</button>
-</form>`);
-  const input = q<HTMLInputElement>(form, '.fs-chat-ask-input');
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-    void dock.claude(text).then((sent) => { if (!sent && !input.value) input.value = text; });
-  });
-  const sync = (): void => setHidden(form, dock.activeTab() === 'chat');
-  dock.onTab = sync;
-  dock.root.appendChild(form);
-  sync();
-}
-
 export function formpdfDock(o: DockHooks): { adapter: DockAdapter; desk: ConsentDesk } {
   const open = new Map<string, ConsentRequest>();
   const early: ConsentRequest[] = [];
@@ -182,7 +160,8 @@ export function formpdfDock(o: DockHooks): { adapter: DockAdapter; desk: Consent
       toRight: 'Move the agent dock to the right',
       toBottom: 'Move the agent dock to the bottom',
       empty: 'Nothing is open. Start a shell with the plus button, Claude Code with the agent button, or Chat with the speech bubble.',
-      tourChatBody: 'Open Chat with the speech bubble, type what you want in its line, for example "{example}", and press Enter. Claude does it in {app}, and each turn can be undone.',
+      askPlaceholder: 'Ask Claude Code to work on the open PDF',
+      chatPlaceholder: 'Ask Claude about the open PDF (Enter to send)',
     },
     placement: { mode: 'own', storage: { key: DOCK_KEY, legacy: dockLegacy }, sizes: DOCK_SIZES },
     isDockChord: (e) => isDockCombo(e) && !e.shiftKey && !e.altKey && !o.layerOpen(),
@@ -225,9 +204,9 @@ export function formpdfDock(o: DockHooks): { adapter: DockAdapter; desk: Consent
         chat.context = o.context;
         chat.note = o.note;
         host.appendChild(chat.root);
-        void chat.load();
-        return { send: (text) => { void chat.ask(text); }, focus: () => chat.focus() };
+        return { send: (text) => chat.ask(text), busy: () => chat.isBusy(), shown: () => chat.shown(), hidden: () => chat.hidden(), closed: () => chat.closed() };
       },
+      ask: 'line',
     },
     consent: {
       subscribe: (onAdd, onWithdraw) => {
