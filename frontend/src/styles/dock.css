@@ -22,6 +22,7 @@ html.is-dock-open body:not(.nm-home) #overlay-root { z-index: var(--z-modal); }
 .fs-dock-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 0 var(--space-4); text-align: center; }
 .fs-dock-empty[hidden] { display: none; }
 .fs-dock-ask { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); background: var(--surface-1); border-top: 1px solid var(--line-0); }
+:root[data-oled] .fs-dock-head, :root[data-oled] .fs-dock-ask { background: var(--bg-primary); }
 .fs-dock-ask-mark { display: inline-grid; place-items: center; color: var(--accent-color); }
 .fs-dock-ask-input { flex: 1; height: 28px; }
 .fs-dock-ask .fs-icon-btn { width: 28px; height: 28px; }

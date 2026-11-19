@@ -159,6 +159,7 @@ body.nm-home #toast-root { z-index: var(--z-home-preview); }
 .fs-home-nav-title { padding: 12px 10px 6px; color: var(--text-muted); font-size: var(--fs-11); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .fs-home-nav-item { display: flex; align-items: center; gap: 10px; flex: none; height: 34px; padding: 0 10px; border: 1px solid transparent; border-radius: var(--radius-md); background: transparent; color: var(--text-secondary); font: inherit; font-size: var(--fs-13); text-align: left; cursor: pointer; }
 .fs-home-nav-item:hover { background: var(--surface-1); color: var(--text-primary); }
+:root[data-oled] .fs-home-nav-item:hover { background: var(--bg-hover); }
 .fs-home-nav-item .fs-badge.is-count { min-width: 30px; }
 .fs-home-nav-item.is-active { border-color: var(--line-3); background: var(--surface-raised); color: var(--text-primary); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
 .fs-home-nav-item.is-active .icon { color: var(--accent-ink); }
@@ -213,6 +214,7 @@ body.nm-home #toast-root { z-index: var(--z-home-preview); }
 .fs-card-preview > img, .fs-card-preview > canvas { display: block; width: 100%; height: 100%; object-fit: cover; }
 .fs-card-preview > .fs-badge { position: absolute; top: 8px; left: 8px; }
 .fs-card-preview.is-blank { display: grid; place-items: center; border: 1px dashed var(--line-3); background: transparent; color: var(--text-muted); }
+:root[data-oled] .fs-card-preview:not(.is-blank) { background: var(--bg-primary); }
 .fs-card:hover .fs-card-preview.is-blank { color: var(--text-primary); }
 .fs-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 0 4px; }
 .fs-card-name { overflow: hidden; color: var(--text-primary); font-size: var(--fs-13); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }

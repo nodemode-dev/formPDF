@@ -649,3 +649,21 @@ No node is created, changed or moved by any of this; it adds one awaited local r
 kind: fix · logged: v0.61.0 · 2026-11-18
 
 The engine now refuses any write without the window key (backend entry 122). `api.post`, `form`, `deleteIdentity` and `untrust` already sent it; the remaining raw `fetch` calls with a write method were `pdfApi.act` and `actFile` (POST `/act/{name}`), the Batch upload (POST with FormData), the Assistant's question delete and the action list delete (DELETE). Each now adds `keyHeaders()` to its own headers. A search of `frontend/src` for `fetch(`, `XMLHttpRequest`, `sendBeacon` and `method:` finds no other write. No DOM change. Checked: `npx tsc --noEmit` clean; not run in a browser.
+
+## 119. AMOLED Black, the profile · _v0.61.0 (ui/themes.ts THEMES, ThemeProfile, applyTheme)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+A true-black theme for OLED screens, id `amoled`, label "AMOLED Black", after High Contrast: window, panels, node and canvas `#000000`, `--bg-tertiary` `#141414` (inputs, menus and selected rows use it as their only fill), borders `#262626` and `#3a3a3a`, text `#ededed`, `#a6a6a6` and `#858585` (17.9, 8.6 and 5.7 to 1 on black); the accent is the app's own, unchanged. It also sets `--grid-color` to white at 10%, as High Contrast does, because the PDF pasteboard draws its dot grid from it and a theme that left it out would keep the previous theme's grey. `ThemeProfile` gains `oled?: boolean`; `applyTheme` sets `data-oled` on `html` for an oled profile and removes it for every other, touching the attribute only when it changes. The picker and the swatch grid are built from `THEMES`, so no control was added. No node is created or moved by a switch.
+
+## 120. AMOLED Black in the pre-paint script · _v0.61.0 (index.html pre-paint script OLED, PROFILES)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+The pre-paint script holds a second copy of the profile table, so `amoled` is added there too (28 profiles in each table before, 29 after, rows in step), with an `OLED = { 'amoled': 1 }` table and `data-oled` set beside the variables before first paint. A theme in one table and not the other would paint Studio Dark first and switch later, which is a flash. The row is `[bg, panel, tertiary, border, border-light, text, text-2, muted, canvas, grid, node]` like the Studio row; `html` background is its first value, `#000000`.
+
+## 121. AMOLED Black, the tokens and the large surfaces · _v0.61.0 (styles/tokens.css :root[data-oled]; pdf.css; dock.css; shell.css)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+`:root[data-oled]` takes the hover tint and the soft border from white at 6% and 8% to 10% and 12%, which over black gave too little contrast, and `--surface-raised` (the hover and selected fill of buttons, tabs, segments) from 8% to 12% of the text colour, because at 8% it came out `#131313`, 1.1 to 1 on black. CSS hangs on the flag, never on the theme id, so another OLED profile needs only the flag. Surfaces that mix a little of the palette into their fill and so were `#0a0a0a`: the workbench title bar, the tool ribbon and the pages side panel (`--surface-1`, pdf.css), the dock head and ask line (dock.css), the image preview of a home card (shell.css) take `--bg-primary`; the home nav hover took `--surface-1`, now `--bg-hover`. A PDF page and its thumbnails keep the document's colour. No other theme changes.
