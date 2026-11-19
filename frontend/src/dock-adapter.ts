@@ -55,7 +55,7 @@ export function errorKind(err: unknown): DockErrorKind | null {
 export const dockLegacy: DockLegacy = {
   keys: DOCK_OLD_KEYS,
   read: (store) => {
-    const out: Partial<DockState> = {};
+    const out: Partial<DockState> & { seen?: boolean } = { seen: true };
     const h = Number(store.getItem('fs-dock-h'));
     const last = store.getItem('fs-dock-last');
     if (Number.isFinite(h) && h >= DOCK_SIZES.minHeight) out.h = Math.round(h);

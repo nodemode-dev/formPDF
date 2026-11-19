@@ -867,3 +867,15 @@ Removed from `styles/dock.css`, the rules for both lines, and the pane's third g
 .fs-chat-ask-input { flex: 1; height: 28px; }
 .fs-chat-ask .fs-icon-btn { width: 28px; height: 28px; }
 ```
+
+## 128. A dock layout moved from the old keys counts as seen, and the terminal keeps formpdf's inset · _v0.61.0 (src/dock-adapter.ts dockLegacy; styles/dock-tokens.css)
+
+kind: fix · logged: v0.61.0 · 2026-11-19
+
+`dockLegacy.read` now answers `seen: true` with what it read from `fs-dock-h` and `fs-dock-last`, so module 2.1.0 writes it with the moved layout and a person who already used formpdf's dock is not walked through the guide on the next open. A person with no stored layout still gets it. Replaced:
+
+```ts
+    const out: Partial<DockState> = {};
+```
+
+`--dock-stage-pad: 6px 4px 0 10px` in `styles/dock-tokens.css` gives the terminal the inset formpdf's own dock had (`.fs-term { position: absolute; inset: 6px 4px 0 10px; }`, entry 126); under module 2.0.1 the padding was the module's literal `4px 8px 0`. The Chat pane fills the stage as before; only a terminal moves, by 2 pixels.
