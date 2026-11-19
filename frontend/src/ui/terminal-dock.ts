@@ -106,6 +106,7 @@ export class TerminalDock {
     this.root.addEventListener('keydown', (e) => { if (!isDockCombo(e)) e.stopPropagation(); });
     this.resizer(q(this.root, '.fs-dock-rsz'));
     new ResizeObserver(() => this.fitActive()).observe(this.stage);
+    document.addEventListener('nm:ui-settings-changed', () => { for (const t of this.tabs.values()) t.term.options.theme = this.theme(); });
     events.on('terminal.exited', (e) => {
       const info = e.terminal as TermInfo | undefined;
       const t = info ? this.tabs.get(info.id) : undefined;
