@@ -1,9 +1,9 @@
-import type { DockAdapter, DockAgentStatus, DockAppTab, DockChannel, DockKind, DockTerminal, PtyKind } from './adapter';
+import type { DockAdapter, DockAgentStatus, DockAppTab, DockChannel, DockKind, DockOwnAsk, DockPaneHidden, DockTerminal, PtyKind } from './adapter';
 import { ChatPane, OwnChat, type DockChatView } from './chat';
 import { Consent } from './consent';
 import { el, q, setClass, setDisabled, setHidden, setText } from './dom';
 import { dockIcon as icon } from './icons';
-import { chordLabel, contain, isChord, leaves } from './keys';
+import { chordLabel, contain, isChord, keeps, leaves } from './keys';
 import { placementFor, type Placement } from './placement';
 import type { DockSide } from './state';
 import type { DockTerm } from './terminal';
@@ -41,6 +41,7 @@ export class Dock {
   private readonly tabs = new Map<string, Tab>();
   private readonly owned = new Map<string, { spec: DockAppTab; tab: HTMLElement; host: HTMLElement; mounted: boolean; off: (() => void) | undefined }>();
   private chat: DockChatView | null = null;
+  private readonly ownAsk: DockOwnAsk | null;
   private chatTab: HTMLElement | null = null;
   private active: string | null = null;
   private started = false;
@@ -48,6 +49,7 @@ export class Dock {
   private emulator: Promise<typeof import('./terminal')> | null = null;
   private asked: Promise<DockAgentStatus | null> | null = null;
   private mounted = false;
+  private revealing = false;
   private readonly place: Placement;
   onTab: () => void = () => undefined;
   onChange: () => void = () => undefined;
@@ -119,6 +121,15 @@ export class Dock {
     this.noteCopy.addEventListener('click', () => { void navigator.clipboard?.writeText(this.noteCmd.textContent ?? '').catch(() => undefined); });
     contain(this.root, a);
     setClass(this.root, 'has-own-chat', !!a.chat && 'pane' in a.chat);
+    const ask = a.chat && 'pane' in a.chat ? a.chat.ask : undefined;
+    this.ownAsk = !ask || ask === 'none' ? null : ask === 'line' ? {} : ask;
+    if (this.ownAsk?.element) {
+      const slot = q(this.root, '.ft-dock-ask');
+      const box = el('<div class="ft-dock-ask-own"></div>');
+      box.appendChild(this.ownAsk.element);
+      slot.classList.add('has-element');
+      slot.appendChild(box);
+    }
   }
 
   mount(host: HTMLElement, before: Node | null = null): void {
@@ -148,22 +159,31 @@ export class Dock {
 
   isOpen(): boolean { return this.place.isOpen(); }
 
+  keeps(event: Event): boolean { return keeps(this.a, event); }
+
   shown(): void {
     this.place.shown(true);
+    this.tell('dock');
     void this.ensure();
     this.onTab();
   }
 
   hidden(): void {
     this.place.shown(false);
+    this.tell('dock');
     this.tour.end(false);
     this.onTab();
+  }
+
+  private tell(why: DockPaneHidden): void {
+    this.chat?.visible?.(this.isOpen() && this.active === 'chat' && this.chatTab !== null, why);
   }
 
   toggle(on = !this.isOpen(), seed: DockKind | 'none' = 'shell'): void {
     const p = this.a.placement;
     if (p.mode === 'hosted') { p.request(on); return; }
     this.place.setOpen(on);
+    this.tell('dock');
     this.keep();
     this.onChange();
     window.dispatchEvent(new Event('resize'));
@@ -225,6 +245,7 @@ export class Dock {
     setHidden(q(this.root, '.ft-dock-claude'), !this.offers('claude'));
     setHidden(this.restartBtn, !this.a.terminal.restart);
     setClass(this.root, 'has-no-ask', !this.offers('claude') && !this.offers('chat'));
+    setClass(this.root, 'has-ask-line', this.ownAsk !== null && (this.offers('claude') || this.offers('chat')));
     const want = new Map((this.a.tabs().own ?? []).map((spec) => [spec.id, spec]));
     for (const [id, o] of [...this.owned]) {
       if (want.has(id)) continue;
@@ -302,7 +323,7 @@ export class Dock {
           : { target: '.ft-dock-claude', title: 'tourInstalledTitle', body: 'tourInstalledBody' };
     const steps: TourStep[] = [
       { target: '.ft-dock', title: 'tourPanelTitle', body: 'tourPanelBody' },
-      { target: '.ft-dock-ask-input', title: 'tourChatTitle', body: 'tourChatBody' },
+      { target: this.ownAsk?.element ? '.ft-dock-ask' : this.ownAsk ? '.ft-dock-ask-input' : this.chat?.askTarget?.() ?? '.ft-dock-ask-input', title: 'tourChatTitle', body: 'tourChatBody' },
       middle,
       ...(this.consent ? [{ target: '.ft-dock-more', title: 'tourAskTitle', body: 'tourAskBody' } as TourStep] : []),
       { target: '.ft-dock-side', title: 'tourSideTitle', body: 'tourSideBody' },
@@ -376,18 +397,36 @@ export class Dock {
     void this.programs();
     this.fitActive();
     this.focus();
+    this.awaitReveal();
     this.onTab();
   }
 
+  private awaitReveal(): void {
+    const root = this.root;
+    const hiddenNow = (): boolean => root.getClientRects().length === 0 || getComputedStyle(root).visibility === 'hidden';
+    const lost = document.activeElement;
+    if (this.revealing || !this.isOpen() || root.contains(lost) || !hiddenNow()) return;
+    this.revealing = true;
+    const watch = new MutationObserver(() => {
+      const moved = document.activeElement !== lost || !this.isOpen();
+      if (!moved && hiddenNow()) return;
+      watch.disconnect();
+      this.revealing = false;
+      if (!moved) this.focus();
+    });
+    for (let node: Node | null = root.parentNode; node instanceof Element; node = node.parentNode) watch.observe(node, { attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+  }
+
   focus(): void {
-    if (this.active === 'chat' && this.chat?.focus) this.chat.focus();
+    if (this.active === 'chat' && this.ownAsk && !this.ownAsk.element) this.ask.focus({ preventScroll: true });
+    else if (this.active === 'chat' && this.chat?.focus) this.chat.focus();
     else if (this.active === 'chat') this.ask.focus({ preventScroll: true });
     else if (this.active) this.tabs.get(this.active)?.term?.focus();
   }
 
-  async sendChat(text: string): Promise<void> {
+  async sendChat(text: string): Promise<boolean> {
     await this.show('chat');
-    await this.chat?.send(text);
+    return this.chat ? this.chat.send(text) : false;
   }
 
   async showChat(): Promise<void> {
@@ -421,6 +460,7 @@ export class Dock {
   private closeChat(): void {
     this.chatTab?.remove();
     this.chatTab = null;
+    this.tell('tab');
     this.chat?.release();
     if (this.chat) setHidden(this.chat.root, true);
     if (this.active === 'chat') {
@@ -440,6 +480,15 @@ export class Dock {
   private async send(): Promise<void> {
     const text = this.ask.value.trim();
     if (!text) return;
+    const chat = this.chat;
+    if (this.ownAsk && (this.ownAsk.send || (this.active === 'chat' && chat))) {
+      const route = this.ownAsk.send;
+      if (!route && chat?.isBusy()) return;
+      this.ask.value = '';
+      const went = route ? (await route(text, this.activeKind())) !== false : chat ? await chat.send(text) : false;
+      if (!went && !this.ask.value) this.ask.value = text;
+      return;
+    }
     if (this.active === 'chat' && this.chat) {
       if (this.chat.isBusy()) return;
       this.ask.value = '';
@@ -599,6 +648,7 @@ export class Dock {
     this.fitActive();
     if (focus) this.focus();
     this.keep();
+    this.tell('tab');
     this.onTab();
   }
 

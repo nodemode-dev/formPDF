@@ -1,4 +1,4 @@
-import type { ChatMode, DockAdapter, DockChatEngine, DockChatEvent, DockChatPane, DockChatStatus, DockOwnChat } from './adapter';
+import type { ChatMode, DockAdapter, DockChatEngine, DockChatEvent, DockChatPane, DockChatStatus, DockOwnChat, DockPaneHidden } from './adapter';
 import { el, q, setClass, setDisabled, setHidden, setText } from './dom';
 import { dockIcon as icon } from './icons';
 import { lead as appLead, strings, type Say, type StringKey } from './strings';
@@ -16,13 +16,16 @@ export interface DockChatView {
   load(): Promise<void>;
   release(): void;
   isBusy(): boolean;
-  send(text: string): Promise<void>;
+  send(text: string): Promise<boolean>;
   focus?(): void;
+  visible?(on: boolean, why: DockPaneHidden): void;
+  askTarget?(): HTMLElement | undefined;
 }
 
 export class OwnChat implements DockChatView {
   readonly root: HTMLElement;
   private readonly own: DockOwnChat;
+  private on = false;
 
   constructor(pane: DockChatPane) {
     this.root = el('<div class="ft-chat is-own" hidden></div>');
@@ -30,10 +33,19 @@ export class OwnChat implements DockChatView {
   }
 
   load(): Promise<void> { return Promise.resolve(); }
-  release(): void { return; }
-  isBusy(): boolean { return false; }
-  send(text: string): Promise<void> { this.own.send?.(text); return Promise.resolve(); }
+  release(): void { this.own.closed?.(); }
+  isBusy(): boolean { return this.own.busy?.() === true; }
+  async send(text: string): Promise<boolean> {
+    if (!this.own.send || this.isBusy()) return false;
+    return (await this.own.send(text)) !== false;
+  }
   focus(): void { this.own.focus?.(); }
+  askTarget(): HTMLElement | undefined { return this.own.askTarget; }
+  visible(on: boolean, why: DockPaneHidden): void {
+    if (on === this.on) return;
+    this.on = on;
+    if (on) this.own.shown?.(); else this.own.hidden?.(why);
+  }
 }
 
 export class ChatPane implements DockChatView {
@@ -113,13 +125,16 @@ export class ChatPane implements DockChatView {
     live?.off();
   }
 
-  async send(text: string): Promise<void> {
-    if (!text || this.state === 'busy') return;
-    if (!this.running && !(await this.begin(false))) return;
+  async send(text: string): Promise<boolean> {
+    if (!text || this.state === 'busy') return false;
+    if (!this.running && !(await this.begin(false))) return false;
+    let went = true;
     try { await this.a.chat.send(text); } catch (err) {
+      went = false;
       this.note('note', this.a.errors.message(err) ?? this.s('sendFailed'));
     }
     this.paint();
+    return went;
   }
 
   private async refresh(): Promise<void> {

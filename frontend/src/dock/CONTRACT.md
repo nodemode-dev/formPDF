@@ -1,6 +1,6 @@
 # The dock's engine contract
 
-Module version 2.0.0. This file travels with the shared dock folder and is the same in every app.
+Module version 2.1.0. This file travels with the shared dock folder and is the same in every app.
 
 The dock's frontend never talks to an engine. It calls the functions of `DockAdapter` (adapter.ts), and each app's adapter turns them into its engine's routes, sockets or event streams. This file says what an engine has to provide so that an adapter can deliver each function, in words that do not depend on the engine's language. Paths, header names and transports are each app's own. Where a clause says "the adapter", the engine may do the work instead; where it says "the engine", the adapter cannot make it up.
 
@@ -42,6 +42,19 @@ Sixteen clauses. An engine that lacks one says so in its app's port notes and th
 ## Versions
 
 16. **A number, not a missing route.** The engine reports the contract version it implements (this file's module version) where its adapter can read it, so "this engine is too old" is decided by comparing numbers. An adapter maps an older engine onto `oldEngine` errors and onto a smaller `tabs()` set.
+
+## Module 2.1.0: what an adapter may now say
+
+Nothing an engine provides changed in 2.1.0: the sixteen clauses read as they did, and an engine that meets them for 2.0 meets them for 2.1. An adapter written for 2.0.1 compiles and behaves as before; every item here is used only by an adapter that asks for it. The one type that widened is `dock.sendChat(text)`, which now resolves to a boolean (false when nothing was sent).
+
+- **The app's own Chat pane is told what happens to it.** `pane(host)` is still called once, and the object it returns may have `shown()` (the dock is open and Chat is the tab in front), `hidden(why)` with `'tab'` (another tab was chosen or the Chat tab was closed) or `'dock'` (the dock was closed or its host hid it), `closed()` (the Chat tab's cross; the host element is kept and the next show is `shown()` again), `busy()` and `askTarget` (the element the guide's "how to ask" step points at). `send(text)` may answer `false`, or a promise of it, when the text was not taken. The host is `.ft-chat.is-own`, an absolutely placed box that fills the stage with `overflow: auto`; a pane that scrolls by itself fills it (`position: absolute; inset: 0` or `height: 100%`) and manages its own overflow.
+- **The ask line beside an own pane**, `chat.ask`. Absent or `'none'`: no ask line on any tab. `'line'`: the module's line on every tab; on Chat the text goes to the pane's `send`, elsewhere it opens Claude Code with the text as `prompt` (clause 4). `{ send(text, tab) }`: the module's line on every tab and every submit goes to that function with the kind of the tab in front. `{ element }`: the app's own element is placed in the slot. The slot is `form.ft-dock-ask`, the same box on every tab; the root has `has-ask-line` while it shows. A busy pane or an answer of `false` leaves the text in the line.
+- **First run.** The guide counts the steps it can show. A legacy reader (`placement.storage.legacy.read`) may return `seen: true` with the layout it moves, and `jsonLegacy(keys, true)` from state.ts says it for old keys that hold JSON; without that a moved layout is not taken as seen.
+- **Focus at load.** When the dock is restored open before the app has revealed its window, the dock focuses once at the first `class`, `style` or `hidden` change on one of its ancestors that leaves it shown. An app that reveals itself another way (removing a cover, swapping a stylesheet) calls `dock.focus()` after its reveal.
+- **Keys in capture-phase listeners.** The module stops keys at its roots in the bubble phase. An app listener in the capture phase starts with `if (dock.keeps(event)) return;`.
+- **Notes of a question** (`ConsentRequest.notes`, clause 15) are shown one element each, so each is one whole sentence, already in the person's language or matchable by the app's page translator.
+- **Names.** The classes, attributes and tokens an app may rely on are `DOCK_PUBLIC` in adapter.ts and nowhere else; 2.1.0 added the classes `has-ask-line`, `ft-dock-ask`, `ft-dock-ask-own`, `ft-dock-head`, `ft-dock-tab`, `ft-dock-stage`, `ft-icon`, `is-on`, `is-own` and the tokens `--dock-stage-pad`, `--dock-ask-ctl-h`, `--dock-tab-accent`, each token defaulting to the value 2.0 had written.
+- **Type check.** Before a module version is cut, and as a step of every port, the folder is compiled with `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, `noImplicitOverride` and `noImplicitReturns` on.
 
 ## The manifest
 

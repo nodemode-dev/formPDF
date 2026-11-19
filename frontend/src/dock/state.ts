@@ -2,14 +2,14 @@ export type DockSide = 'bottom' | 'right';
 export interface DockState { open: boolean; side: DockSide; h: number; w: number; tab: string }
 export interface DockStore { getItem(key: string): string | null; setItem(key: string, value: string): void; removeItem(key: string): void }
 
-export interface DockLegacy { keys: string[]; read(store: DockStore): Partial<DockState> | null }
+export interface DockLegacy { keys: string[]; read(store: DockStore): (Partial<DockState> & { seen?: boolean }) | null }
 
-export function jsonLegacy(keys: string[]): DockLegacy {
+export function jsonLegacy(keys: string[], seen = false): DockLegacy {
   return {
     keys,
     read: (store) => {
       for (const k of keys) {
-        try { const v = store.getItem(k); const s: unknown = v ? JSON.parse(v) : null; if (s && typeof s === 'object') return s as Partial<DockState>; } catch { continue; }
+        try { const v = store.getItem(k); const s: unknown = v ? JSON.parse(v) : null; if (s && typeof s === 'object') return { ...(s as Partial<DockState>), seen }; } catch { continue; }
       }
       return null;
     },
@@ -37,7 +37,8 @@ export function moveLegacy(store: DockStore, key: string, from: DockLegacy | str
   const legacy = Array.isArray(from) ? jsonLegacy(from) : from;
   try {
     if (!legacy || store.getItem(key) !== null || !legacy.keys.some((k) => store.getItem(k) !== null)) return false;
-    store.setItem(key, JSON.stringify(readState(store, key, legacy, defaults)));
+    const state = readState(store, key, legacy, defaults);
+    store.setItem(key, JSON.stringify(legacy.read(store)?.seen === true ? { ...state, seen: true } : state));
     for (const k of legacy.keys) store.removeItem(k);
     return true;
   } catch { return false; }

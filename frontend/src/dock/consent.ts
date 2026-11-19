@@ -84,8 +84,13 @@ export class Consent {
     setText(q(d, '.ft-consent-title'), r.agent ? fill(s('consentTitle'), { agent: r.agent }) : s('consentTitleUnnamed'));
     setText(q(d, '.ft-consent-what'), fill(s('consentWhat'), { what: r.what }));
     const notes = q(d, '.ft-consent-notes');
-    setText(notes, (r.notes ?? []).join('\n'));
-    setHidden(notes, !r.notes?.length);
+    const lines = r.notes ?? [];
+    for (let i = 0; i < Math.max(lines.length, notes.children.length); i += 1) {
+      const line = (notes.children[i] as HTMLElement | undefined) ?? notes.appendChild(el('<span class="ft-consent-note"></span>'));
+      setText(line, lines[i] ?? '');
+      setHidden(line, i >= lines.length);
+    }
+    setHidden(notes, !lines.length);
     const count = q(d, '.ft-consent-count');
     setText(count, fill(s('consentCount'), { n: 1, total: this.queue.length }));
     setClass(count, 'is-one', this.queue.length < 2);

@@ -29,3 +29,7 @@ export function ownsEvent(e: Event): boolean {
   const at = e.target;
   return at instanceof Element && at.closest('.ft-dock, .ft-consent, .ft-tour') !== null;
 }
+
+export function keeps(a: DockKeys, e: Event): boolean {
+  return ownsEvent(e) && !(e instanceof KeyboardEvent && leaves(a, e));
+}

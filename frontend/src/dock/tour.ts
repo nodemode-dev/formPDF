@@ -3,7 +3,9 @@ import { el, q, setHidden, setText } from './dom';
 import { contain } from './keys';
 import { strings, type Say, type StringKey } from './strings';
 
-export interface TourStep { target: string; title: StringKey; body: StringKey; cmd?: string }
+export interface TourStep { target: string | HTMLElement; title: StringKey; body: StringKey; cmd?: string }
+
+const find = (target: string | HTMLElement): Element | null => (typeof target === 'string' ? document.querySelector(target) : target);
 
 const GAP = 12;
 const EDGE = 8;
@@ -102,7 +104,7 @@ export class Tour {
   private go(from: number, dir: 1 | -1): boolean {
     for (let i = from; i >= 0 && i < this.steps.length; i += dir) {
       const at = this.steps[i];
-      const node = at ? document.querySelector(at.target) : null;
+      const node = at ? find(at.target) : null;
       if (!shown(node)) continue;
       this.at = i;
       this.watch.disconnect();
@@ -117,14 +119,15 @@ export class Tour {
   private fill(): void {
     const step = this.steps[this.at];
     if (!step) return;
-    const total = this.steps.length;
-    setText(this.count, this.s('tourCount').replace('{n}', String(this.at + 1)).replace('{total}', String(total)));
+    const before = this.steps.slice(0, this.at).filter((x) => shown(find(x.target))).length;
+    const after = this.steps.slice(this.at + 1).filter((x) => shown(find(x.target))).length;
+    setText(this.count, this.s('tourCount').replace('{n}', String(before + 1)).replace('{total}', String(before + 1 + after)));
     setText(this.title, this.s(step.title));
     setText(this.body, this.s(step.body));
     setText(this.cmd, step.cmd ?? '');
     setHidden(this.cmdRow, !step.cmd);
-    const first = !this.steps.slice(0, this.at).some((x) => shown(document.querySelector(x.target)));
-    const last = !this.steps.slice(this.at + 1).some((x) => shown(document.querySelector(x.target)));
+    const first = before === 0;
+    const last = after === 0;
     setHidden(this.back, first);
     setText(this.next, last ? this.s('tourDone') : this.s('tourNext'));
   }

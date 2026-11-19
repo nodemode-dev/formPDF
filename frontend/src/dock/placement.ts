@@ -145,7 +145,6 @@ class HostedPlacement implements Placement {
   readonly hosted = true;
   private on = false;
   private tab = '';
-  private told = false;
 
   start(root: HTMLElement): void { root.classList.add('is-hosted'); }
   isOpen(): boolean { return this.on; }
@@ -157,7 +156,7 @@ class HostedPlacement implements Placement {
   keep(tab: string | null): void { if (tab) this.tab = tab; }
   savedTab(): string { return this.tab; }
   seen(): boolean { return true; }
-  markSeen(): void { this.told = true; }
+  markSeen(): void { return; }
   shown(on: boolean): void { this.on = on; }
 }
 
