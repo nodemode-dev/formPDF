@@ -142,6 +142,46 @@ def antigravity_folder_gone(folder: Path, token: str) -> None:
             return
 
 
+def sweep_antigravity_folders() -> list[str]:
+    root = config.data_dir() / "agent-tabs" / "antigravity"
+    owned = {os.path.normcase(os.path.abspath(s.cwd)) for s in list(terminal.SESSIONS.values()) if s.kind == "antigravity"}
+    try:
+        found = sorted(root.iterdir()) if root.is_dir() and not root.is_symlink() else []
+    except OSError:
+        return []
+    swept = []
+    for folder in found:
+        if len(folder.name) != 12 or any(c not in "0123456789abcdef" for c in folder.name) or folder.is_symlink() or not folder.is_dir():
+            continue
+        if os.path.normcase(os.path.abspath(folder)) in owned:
+            continue
+        path = antigravity_file(folder)
+        try:
+            if path.parent.is_symlink() or path.is_symlink():
+                continue
+            for part in path.parent.glob(path.name + ".part-*") if path.parent.is_dir() else []:
+                if part.is_file() and not part.is_symlink():
+                    part.unlink()
+            data = _servers(path)
+            if "formpdf_tab" in data.get("mcpServers", {}):
+                del data["mcpServers"]["formpdf_tab"]
+                _replace(path, data)
+            if path.exists() and data == {"mcpServers": {}}:
+                path.unlink()
+        except (OSError, ValueError, TypeError):
+            continue
+        for emptied in (path.parent, folder):
+            try:
+                emptied.rmdir()
+            except FileNotFoundError:
+                continue
+            except OSError:
+                break
+        if not folder.exists():
+            swept.append(folder.name)
+    return swept
+
+
 def open_tab(kind: str, cols: int | None = None, rows: int | None = None, fresh: bool = False) -> dict:
     p = PROGRAMS[kind]
     running = next((s for s in terminal.SESSIONS.values() if s.kind == kind and s.alive), None)
