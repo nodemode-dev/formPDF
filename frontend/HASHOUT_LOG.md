@@ -889,3 +889,13 @@ kind: feat · logged: v0.62.0 · 2026-11-19
 The adapter is now `DockAdapter<'antigravity'>`: `tabs().builtin` lists `antigravity`, `terminal.open('antigravity', ...)` goes to `POST /api/agents/open` like Codex and Cursor, a terminal record of that kind keeps its kind, and `agentStatus()` returns the `antigravity` key. For any of the four programs that the engine did not find running, the engine's own sentence (where it looked, the install line) is passed as `note`.
 
 Checked: `tsc --noEmit` is clean and the shared folder matches its manifest. Not looked at in a browser, in the desktop window, or on macOS or Windows; the new button and row were not seen on screen here. The engine side was run with a stand-in `agy` (backend entry 129).
+
+## 130. The shell tells its engine which process it is · _v0.63.0, logged 2026-11-19 (src-tauri/src/main.rs setup, the engine start)
+
+kind: fix · logged: v0.63.0 · 2026-11-19
+
+The engine now watches the process named in `FORMPDF_SHELL_PID` and leaves when it ends, and a frozen engine that is given no such process takes itself for one started alone: it opens the app and serves nothing (backend entry 131). So the shell sets `FORMPDF_SHELL_PID` to its own process id where it starts the engine. One line; without it the app as built would not get an engine.
+
+This is the only part of the family's shell-side pattern that is in. Not built, and held for the next pass: the job object that ends the engine with the shell on Windows (`win_job.rs`), the failure text with the engine's last lines and the log's path (`engine_start.rs`), a limit on the wait for the address, and showing the failure dialog before the loading window is closed. The shell starts its engine through tauri-plugin-shell and still does.
+
+Not compiled: the desktop shell cannot be built on the machine this was written on. The line was read against the two `.env` calls above it (`std::process::id()` is a `u32`, `.to_string()` gives the `String` the call takes). Not run on Windows or macOS.

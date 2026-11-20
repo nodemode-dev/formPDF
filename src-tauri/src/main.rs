@@ -140,6 +140,7 @@ fn main() {
                 .expect("sidecar binary is bundled")
                 .env("FORMPDF_PORT", "0")
                 .env("FORMPDF_WINDOW_KEY_STDOUT", "1")
+                .env("FORMPDF_SHELL_PID", std::process::id().to_string())
                 .spawn()
                 .expect("the formpdf engine failed to spawn");
             app.state::<Backend>().0.lock().unwrap().replace(child);
