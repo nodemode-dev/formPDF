@@ -88,7 +88,7 @@
 ./formpdf run actions                                          # list every action
 ./formpdf run page_numbers report.pdf --format "Page {n} of {total}"   # a job without the window
 ./formpdf cli list                                             # every window command
-./formpdf mcp                                                  # MCP server on stdio for Claude Code, Codex and Cursor
+./formpdf mcp                                                  # MCP server on stdio for Claude Code, Codex, Cursor and Antigravity
 ```
 
 `.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. With the engine running, Claude Code can also use `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`. Ctrl+J (Cmd+J on a Mac) opens an agent dock with real terminals. See [`AGENTS.md`](AGENTS.md).

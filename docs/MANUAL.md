@@ -20,7 +20,7 @@ On Windows use `formpdf.bat install` and `formpdf.bat`. The one-click installers
 | `./formpdf install-desktop`, `./formpdf desktop dev`, `./formpdf desktop build` | the Tauri desktop app (checks Rust and PyInstaller, runs it, bundles it) |
 | `./formpdf freeze` | freeze the engine into the desktop sidecar |
 | `./formpdf mcp` | the MCP server over stdio, for Claude Desktop and other stdio clients |
-| `./formpdf agents install`, `./formpdf agents sync` | set up Claude Code, Codex and Cursor; refresh the skills and `agents/manifest.json`; `agents sync --check` changes nothing and fails when they are out of date |
+| `./formpdf agents install`, `./formpdf agents sync` | set up Claude Code, Codex, Cursor and Antigravity; refresh the skills and `agents/manifest.json`; `agents sync --check` changes nothing and fails when they are out of date |
 | `./formpdf run ...` | a PDF job without the window (see The headless CLI) |
 | `./formpdf clean [--all]` | remove build output (`--all` also the venv and node_modules) |
 
@@ -120,13 +120,13 @@ Extensions live under FormPortal's folder, in `extensions/formpdf/` (`enabled.js
 
 ## Agents
 
-Claude Code, Codex, Cursor and Claude Desktop can work on PDFs through formpdf's MCP server. They see the PDF you have open, and their changes land in the window live.
+Claude Code, Codex, Cursor, Antigravity and Claude Desktop can work on PDFs through formpdf's MCP server. They see the PDF you have open, and their changes land in the window live.
 
 ### Setup
 
 Start formpdf first (`./formpdf`). Then pick one:
 
-- **All at once**: `./formpdf agents install` writes `.mcp.json` (Claude Code), `.codex/config.toml` (Codex) and `.cursor/mcp.json` (Cursor) in the formpdf folder and in the folder you ran it from, and installs the formpdf skills into `~/.claude/skills` and `~/.agents/skills`. `--dry-run` shows what it would do.
+- **All at once**: `./formpdf agents install` writes `.mcp.json` (Claude Code), `.codex/config.toml` (Codex) and `.cursor/mcp.json` (Cursor) in the formpdf folder and in the folder you ran it from, adds formpdf to Antigravity (Google's `agy` program) in `~/.gemini/config/mcp_config.json`, and installs the formpdf skills into `~/.claude/skills` and `~/.agents/skills`. `--dry-run` shows what it would do.
 - **Claude Code**: `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`.
 - **Codex**: add `[mcp_servers.formpdf]` with `url = "http://127.0.0.1:8198/mcp"` to `~/.codex/config.toml`.
 - **Cursor**: add `{"mcpServers": {"formpdf": {"url": "http://127.0.0.1:8198/mcp"}}}` to `~/.cursor/mcp.json` or a project's `.cursor/mcp.json`.
