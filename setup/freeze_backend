@@ -15,6 +15,7 @@ if [ -d "$FORMPDF_ROOT/backend/app/dict" ]; then extra+=(--add-data "$(fp_native
 extra+=(--hidden-import ptyprocess)
 extra+=(--collect-submodules keyring)
 if python -c "import winpty" 2>/dev/null; then extra+=(--hidden-import winpty); fi
+if [ "$(fp_os)" = windows ] && [ "${FORMPDF_ENGINE_WINDOWED:-1}" != "0" ]; then extra+=(--noconsole); fi
 release_ocr=""
 no_ocr=""
 [ -n "${FORMCOMPILER_VERSION:-}" ] && [ "${FORMPDF_NO_OCR:-}" != "1" ] && release_ocr=1

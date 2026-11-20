@@ -911,3 +911,26 @@ The sentence is new too. Since entry 131 of the backend log only one engine can 
 Still held from entry 130: the job object, the engine's last lines and exit code in the message, and a limit on the wait for the address.
 
 Not compiled: the desktop shell cannot be built on the machine this was written on. One string, and one existing statement (`close_splash(&handle);`) moved below the `blocking_show()` call it stood above; no name or type is new. Not run on any system.
+
+## 132. The engine ends with the app on Windows, a failed start says why, and the wait for the address has a limit · _v0.64.0, logged 2026-11-20 (src-tauri/src/win_job.rs; src-tauri/src/engine_start.rs; src-tauri/src/main.rs kill_backend, start_limit, engine_failed, setup; Cargo.toml, Cargo.lock)
+
+kind: fix · logged: v0.64.0 · 2026-11-20
+
+The rest of the shell side held in entries 130 and 131, after FormVis, whose shell also starts its engine through tauri-plugin-shell; the start stays there.
+
+- `win_job.rs` (Windows only): one job object with "kill on job close". The engine is put in it by its process id right after the start (`hold_pid(child.pid())`), so when the app ends in any way, a crash or Task Manager included, Windows ends the engine. `kill_backend` ends the job first and then the child.
+- `engine_start.rs`: the sentence for each way a start can fail (the engine program missing, not started, stopped with exit code 2 because another engine holds the data folder, 5 because the data folder cannot be used, any other code, no code, a wait that ran out, the window that could not open), then the engine's last 12 lines (each cut at 300 characters, never the window key line), then the log's full path. The path follows `backend/app/core/config.py`: `FORMPDF_DATA_DIR` with a leading `~` taken as the home folder, else `Formpdf` in the home folder, then `Logs/formpdf-engine.log`.
+- The read loop takes the engine's lines and two timers from one channel. The address has 90 seconds (the owner's number for every app); before this an engine that never gave its address left the loading window up for good. After the address the key line has 10 seconds, as before. When the engine stops, one more second is given for its last lines, and the message carries its exit code.
+- Every failure, a start that never happened included, shows the dialog first, then closes the loading window, ends the engine and leaves.
+
+`windows-sys` 0.61.2 was already in `Cargo.lock` (through other crates); it is now also a direct dependency on Windows, with the features for job objects and processes. A copy of `src-tauri` with `cargo update --workspace --offline` locked 0 packages and left `Cargo.lock` unchanged.
+
+Checked here: a scratch crate holding these two files passes `cargo check --target x86_64-pc-windows-msvc`, and `cargo test` runs the 4 tests of `engine_start.rs` (all pass). Not compiled as part of the shell, which cannot be built here: `main.rs` was read line by line against FormVis `src-tauri/src/main.rs` for every name, type and `cfg`. Not run on Windows or macOS.
+
+## 133. The shared panel module is 2.2.1: its guide names Codex, Cursor and Antigravity · _v0.64.0, logged 2026-11-20 (dock/ from FormVis 23b01889; backend/tests/test_agent_manifest.py)
+
+kind: change · logged: v0.64.0 · 2026-11-20
+
+Every file of `frontend/src/dock/` was copied unchanged from FormVis commit `23b01889`, `MANIFEST.json` included. Three files differ from 2.2.0: `strings.ts` (the guide's two sentences for a computer that has Claude Code, `tourInstalledBody` and `tourReadyBody`, each end with "Codex, Cursor and Antigravity each get a button of their own here when they are on this computer."), `CONTRACT.md` and `MANIFEST.json`. The adapter needs no change. FormPDF carries no translations of the panel's sentences, so no table changed. The manifest test now expects 2.2.1.
+
+Ran: `setup/agents.py sync --check` in step; `tests/test_agent_manifest.py` and `tests/test_dock_contract.py` 25 passed.

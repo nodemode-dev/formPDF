@@ -14,6 +14,7 @@ if exist "%ROOT%\backend\app\fonts" set FONTS=--add-data "%ROOT%\backend\app\fon
 if exist "%ROOT%\backend\app\dict" set FONTS=%FONTS% --add-data "%ROOT%\backend\app\dict;dict"
 set "FONTS=%FONTS% --hidden-import ptyprocess --collect-submodules keyring"
 python -c "import winpty" >nul 2>nul && set FONTS=%FONTS% --hidden-import winpty
+if not "%FORMPDF_ENGINE_WINDOWED%"=="0" set FONTS=%FONTS% --noconsole
 python -c "import rapidocr, onnxruntime" >nul 2>nul && set FONTS=%FONTS% --collect-all rapidocr --collect-all onnxruntime --collect-all shapely --collect-all pyclipper
 cd backend
 if exist build\pyinstaller rmdir /s /q build\pyinstaller

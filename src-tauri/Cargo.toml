@@ -1,6 +1,6 @@
 [package]
 name = "formpdf"
-version = "0.63.0"
+version = "0.64.0"
 description = "formpdf desktop shell"
 authors = ["NodeAgentc, Inc."]
 license = "Apache-2.0"
@@ -19,6 +19,9 @@ tauri-plugin-single-instance = "2"
 regex = "1"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"

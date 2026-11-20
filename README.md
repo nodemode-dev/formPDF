@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 0.63.0" src="https://img.shields.io/badge/version-0.63.0-eef0f4?style=flat-square">
+  <img alt="version 0.64.0" src="https://img.shields.io/badge/version-0.64.0-eef0f4?style=flat-square">
   <img alt="Python" src="https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/typescript-vite-3178c6?style=flat-square">
   <img alt="macOS, Windows, Linux" src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-native-2f7bf5?style=flat-square">
@@ -146,6 +146,7 @@ cd formpdf
 |---|---|
 | `FORMPDF_DATA_DIR` | Where working copies, exports and settings live (default `~/Formpdf`) |
 | `FORMPDF_NO_OCR` | Set to `1` before `./formpdf install` to leave out OCR (about 150 MB) |
+| `FORMPDF_ENGINE_WINDOWED` | On Windows the engine is frozen with no console window; set to `0` before `setup/freeze_backend` to keep the console |
 
 > [!IMPORTANT]
 > **Status:** pre-release. Gaps include hosted sharing, form JavaScript beyond the standard AcroForm functions and print production (CMYK, flattening). See [`docs/PARITY.md`](docs/PARITY.md).
