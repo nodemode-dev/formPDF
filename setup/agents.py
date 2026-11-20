@@ -250,7 +250,7 @@ def install(dry: bool) -> int:
         print(f"""
 Next:
   1. Start formpdf: ./formpdf (the window at http://localhost:5198; the engine at http://127.0.0.1:{PORT}).
-  2. Open Claude Code, Codex or Cursor in {where} and approve the formpdf MCP server
+  2. Open Claude Code, Codex, Cursor or Antigravity in {where} and approve the formpdf MCP server
      (Claude Code: /mcp; the formpdf-stdio entry starts the engine itself when it is not running).
   3. Ask: "Use formpdf: add page numbers and a CONFIDENTIAL watermark to ./report.pdf". The first change asks you once, in the formpdf window, to allow agents.""")
     return 0
