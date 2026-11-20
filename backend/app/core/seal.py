@@ -6,7 +6,9 @@ import secrets
 SERVICE = "FormPDF"
 ACCOUNT = "settings-seal"
 FIELD = "seal"
-SEALED = ("outsideAgents", "agentsAllowed", "claudeBin")
+PATHS = ("claudeBin", "codexBin", "cursorBin", "antigravityBin")
+LATER = ("codexBin", "cursorBin", "antigravityBin")
+SEALED = ("outsideAgents", "agentsAllowed") + PATHS
 _CACHE: dict = {"tried": False, "available": False, "key": None}
 
 
@@ -39,12 +41,12 @@ def available() -> bool:
 
 
 def digest(values: dict, key: bytes) -> str:
-    body = json.dumps({k: values.get(k) for k in SEALED}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    body = json.dumps({k: values.get(k) for k in SEALED if k not in LATER or values.get(k)}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hmac.new(key, body.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def loosened(values: dict) -> bool:
-    return values.get("outsideAgents") == "allowed" or bool(values.get("agentsAllowed")) or bool(str(values.get("claudeBin") or "").strip())
+    return values.get("outsideAgents") == "allowed" or bool(values.get("agentsAllowed")) or any(str(values.get(k) or "").strip() for k in PATHS)
 
 
 def effective(stored: dict) -> dict:
@@ -57,7 +59,7 @@ def effective(stored: dict) -> dict:
         return {**out, "seal": "ok", "sealBroken": False}
     if not loosened(stored):
         return {**out, "seal": "unsealed", "sealBroken": False}
-    out.update(outsideAgents="blocked" if stored.get("outsideAgents") == "blocked" else "ask", agentsAllowed=False, claudeBin="")
+    out.update(outsideAgents="blocked" if stored.get("outsideAgents") == "blocked" else "ask", agentsAllowed=False, **{k: "" for k in PATHS})
     return {**out, "seal": "broken", "sealBroken": True}
 
 

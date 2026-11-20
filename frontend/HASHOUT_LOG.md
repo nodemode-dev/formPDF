@@ -944,3 +944,11 @@ The side bar button, the AI provider choice "Your agent (...)", the note of the 
 The table key "Let Claude Code, Codex and Cursor read and edit PDFs" is not in the source any more (it is one of the keys `setup/i18n.py parity` counts as no longer in the source), so nothing on screen shows it; it was left as it was.
 
 Ran: `setup/i18n.py parity` gives the same lines before and after (no table got worse); `setup/agents.py sync --check` in step.
+
+## 135. Preferences has a place for Codex, Cursor and Antigravity beside Claude Code's · _v0.65.0, logged 2026-11-20 (ui/app-dialogs.ts Preferences markup, the field loop, the settings fill; ui/i18n/*.ts)
+
+kind: change · logged: v0.65.0 · 2026-11-20
+
+Under "Claude Code program" the Agents part of Preferences now has "Codex program", "Cursor program" and "Antigravity program", each with the same "Leave empty to find it automatically" placeholder. They are filled from `/api/settings` and saved on change through the same loop as the Claude Code field, so they go to the sealed choice the backend keeps (backend HASHOUT 134). The three labels are in each of the 23 full tables, right after "Claude Code program", built the way each table builds that label; no native speaker has read them.
+
+Ran: `setup/i18n.py parity`: 2503 keys (three more), every full table three entries more, missing and stale counts unchanged.
