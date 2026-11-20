@@ -817,3 +817,13 @@ Changed sentences. A missing or broken program is refused with the finder's sent
 Two existing tests changed because the behaviour they read changed: the status test now expects four programs and the new fields, and the missing-program test no longer replaces `agent_programs.find` (the open route does not call it now) but points PATH at an empty folder and reads the finder's sentence from the real route.
 
 Run with stand-in programs only, never a real one: `setup/claude_launch.py` with no claude printed the finder's sentence and exited 1, and with a stand-in first on PATH started it with the same arguments as before; `install_claude_user` in dry-run mode named the `claude mcp add` line with the stand-in and the finder's sentence without it; the dock, manifest, window-key and boot tests, 56 passed. Not run: Windows, macOS, a frozen engine, any real agent program.
+
+The test run itself (tests/conftest.py, the commit after this one) now finds only stand-in programs: its own PATH and login shell, the finder's system folders emptied and its kept answers forgotten before each test, and a summary line that counts stand-in starts.
+
+## 128. The engine starts when it has no output streams · _v0.62.0, logged 2026-11-19 (formpdf_engine.py top of file)
+
+kind: fix · logged: v0.62.0 · 2026-11-19
+
+A Windows engine built without a console has `sys.stdin`, `sys.stdout` and `sys.stderr` set to `None`, and the first thing that writes a log line stops the start. A tester met this in another engine of the family. `formpdf_engine.py`, the file the packaging freezes as the engine, now replaces each stream that is `None` with the null device before any import of formpdf's own, the way formweb's entry does.
+
+Run on Linux: `python formpdf_engine.py >&- 2>&-` on its own port and data folder. Before the change the engine ended with exit code 1 and never answered; after it `/api/health` answered `{"ok":true,"app":"formpdf",...}`. Started normally it still printed uvicorn's log lines. Not run: Windows, a frozen engine.
