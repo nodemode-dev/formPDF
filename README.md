@@ -16,7 +16,7 @@
   <img alt="TypeScript" src="https://img.shields.io/badge/typescript-vite-3178c6?style=flat-square">
   <img alt="macOS, Windows, Linux" src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-native-2f7bf5?style=flat-square">
   <img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-3a3a3a?style=flat-square">
-  <img alt="Status: pre-release" src="https://img.shields.io/badge/status-pre--release-d69e2e?style=flat-square">
+  <img alt="Status: released" src="https://img.shields.io/badge/status-released-d69e2e?style=flat-square">
 </p>
 
 <p align="center">
@@ -149,7 +149,7 @@ cd formpdf
 | `FORMPDF_ENGINE_WINDOWED` | On Windows the engine is frozen with no console window; set to `0` before `setup/freeze_backend` to keep the console |
 
 > [!IMPORTANT]
-> **Status:** pre-release. Gaps include hosted sharing, form JavaScript beyond the standard AcroForm functions and print production (CMYK, flattening). See [`docs/PARITY.md`](docs/PARITY.md).
+> **Status:** released. FormPDF is built and bundled for macOS, Windows and Linux and has been tested on all three. Gaps include hosted sharing, form JavaScript beyond the standard AcroForm functions and print production (CMYK, flattening). See [`docs/PARITY.md`](docs/PARITY.md).
 
 **Contributing:** branch from `main`, keep changes to source here, and leave packaging and releases to FormCompiler. See [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md).
 
