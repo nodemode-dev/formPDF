@@ -49,7 +49,7 @@ export const META: Record<string, Meta> = {
   'pdf-tab-access': { d: 'Opens the Accessibility tab: checks, tags, reading order and alternate text.', w: 'Use to make the PDF work with screen readers.' },
   'pdf-tab-print': { d: 'Opens the Print tab: preflight, PDF/A, PDF/X, PDF/VT, page boxes and separations.', w: 'Use to prepare a PDF for a printer, a press or an archive.' },
   'pdf-tab-assistant': { d: 'Opens the Assistant tab: ask, summarise and generate with the AI provider.', w: 'Use for AI help with this PDF.' },
-  'pdf-agents': { d: 'Shows how to connect Claude Code, Codex or Cursor to formpdf.', w: 'Use when the person wants an agent to work in formpdf.' },
+  'pdf-agents': { d: 'Shows how to connect Claude Code, Codex, Cursor or Antigravity to formpdf.', w: 'Use when the person wants an agent to work in formpdf.' },
   'pdf-help': { d: 'Opens formpdf Help.', w: 'Use when the person asks how something works.' },
   'pdf-shortcuts': { d: 'Lists the keyboard shortcuts.', w: 'Use when the person asks for shortcuts.' },
   'pdf-preferences': { d: 'Opens Preferences: language, AI provider, spelling and more.', w: 'Use to change formpdf settings.' },
@@ -153,5 +153,5 @@ export const META: Record<string, Meta> = {
   'demo-protect': { d: 'Opens the redact, compare and convert demo, a season report with contacts and hidden data, as a new unsaved PDF in the Protect tab.', w: 'Use when the person wants to try redaction, removing hidden information or a password on a sample.' },
   'home-shortcuts': { d: 'Lists the keyboard shortcuts.', w: 'Use when the person asks for shortcuts.' },
   'home-prefs': { d: 'Opens Preferences.', w: 'Use to change formpdf settings.' },
-  'home-agents': { d: 'Shows how to connect Claude Code, Codex or Cursor to formpdf.', w: 'Use when the person wants an agent to work in formpdf.' },
+  'home-agents': { d: 'Shows how to connect Claude Code, Codex, Cursor or Antigravity to formpdf.', w: 'Use when the person wants an agent to work in formpdf.' },
 };

@@ -47,7 +47,7 @@ export class Home {
 <button class="fs-home-nav-item" type="button" data-v="reviews">${icon('comments', 16)}<span>Reviews</span></button>
 <div class="fs-home-nav-sep"></div>
 <div class="fs-home-nav-title">Agents</div>
-<button class="fs-home-nav-item" type="button" data-a="agents">${icon('agent', 16)}<span>Claude Code, Codex, Cursor</span></button>
+<button class="fs-home-nav-item" type="button" data-a="agents">${icon('agent', 16)}<span>Claude Code, Codex, Cursor, Antigravity</span></button>
 <div class="fs-home-nav-foot">
 <button class="fs-home-nav-item" type="button" data-a="local" title="Your PDFs stay on this computer">${icon('cloudOff', 16)}<span>Local only</span></button>
 <button class="fs-home-nav-item" type="button" data-a="help">${icon('info', 16)}<span>Help</span></button>

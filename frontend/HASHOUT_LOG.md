@@ -934,3 +934,13 @@ kind: change · logged: v0.64.0 · 2026-11-20
 Every file of `frontend/src/dock/` was copied unchanged from FormVis commit `23b01889`, `MANIFEST.json` included. Three files differ from 2.2.0: `strings.ts` (the guide's two sentences for a computer that has Claude Code, `tourInstalledBody` and `tourReadyBody`, each end with "Codex, Cursor and Antigravity each get a button of their own here when they are on this computer."), `CONTRACT.md` and `MANIFEST.json`. The adapter needs no change. FormPDF carries no translations of the panel's sentences, so no table changed. The manifest test now expects 2.2.1.
 
 Ran: `setup/agents.py sync --check` in step; `tests/test_agent_manifest.py` and `tests/test_dock_contract.py` 25 passed.
+
+## 134. Every sentence that lists the agent programs names all four · _v0.65.0, logged 2026-11-20 (ui/home.ts side bar; ui/app-dialogs.ts AI provider, install note, welcome; tools/assistant.ts; tools/access.ts; automation/command-meta.ts; ui/i18n/*.ts; backend app/services/ai.py LABEL)
+
+kind: change · logged: v0.65.0 · 2026-11-20
+
+The side bar button, the AI provider choice "Your agent (...)", the note of the Agents dialog's "All at once" tab, the welcome's "Bring in your agent" line and the two "answer my formpdf question" sentences named Claude Code, Codex and Cursor. They now name Claude Code, Codex, Cursor and Antigravity, in that order. `./formpdf agents install` already sets up Antigravity for the user, so the install note is true as written. The English sentence is the lookup key, so the six keys and their values changed together in each of the 23 full tables (es-MX and fr-CA hold none of them). The translations add Antigravity with each language's own list word and case ending (Finnish -lle and -ssä, Hungarian -nek, -ben and -t, Turkish 'ye, 'de and 'yi); no native speaker has read them. The backend's provider label in `ai.py` says the same as the window. The agents' command catalogue (`command-meta.ts`, two rows) says the same; its generated copy in the harness skill's `references/commands.md` was changed in the same two rows by hand, because the generator reads a catalogue the window writes when it runs, and both skill folders were brought in step with `setup/agents.py sync`.
+
+The table key "Let Claude Code, Codex and Cursor read and edit PDFs" is not in the source any more (it is one of the keys `setup/i18n.py parity` counts as no longer in the source), so nothing on screen shows it; it was left as it was.
+
+Ran: `setup/i18n.py parity` gives the same lines before and after (no table got worse); `setup/agents.py sync --check` in step.
