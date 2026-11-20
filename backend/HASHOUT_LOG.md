@@ -841,3 +841,15 @@ Where the tab's tools entry goes. Antigravity reads its MCP servers from a file,
 `DOCK.tabs` lists `antigravity`, and `agents/manifest.json` was written again by `agents sync`.
 
 Run with a stand-in `agy` only: status reported it (`finding: runs`, version, `signedIn: null`); a tab opened through the real route and its stream showed the stand-in's banner with the token set; the folder file gained `formpdf_tab` beside an entry and a key that were there, mode 0600, and after close held exactly what it held before; the token then counted for nothing; without the stand-in the route answered 404 with the finder's sentence. The install target was run in two scratch homes (a file with another entry; only the older file). Not run: a real `agy`, Windows, macOS. Nobody here has seen a real Antigravity install or whether it accepts this entry.
+
+## 130. Each Antigravity tab has a folder of its own · _v0.63.0, logged 2026-11-19 (services/agent_programs.py antigravity_folder, antigravity_folder_gone, open_tab; tests/test_dock_contract.py)
+
+kind: fix · logged: v0.63.0 · 2026-11-19
+
+Entry 129 put every Antigravity tab's `formpdf_tab` entry into the one agent folder. A second Antigravity tab (the dock's "new tab" asks with `fresh`) then wrote over the first tab's entry, so the first tab's program read the second tab's token, and closing either left the other without an entry it could trust. Each Antigravity tab now starts in `agent-tabs/antigravity/<12 hex>` under the data folder, made mode 0700 for that tab, and its entry is written there. Codex and Cursor tabs still start in the agent folder; nothing is written into the agent folder for Antigravity any more.
+
+At close the entry is taken out as before (only while it carries that tab's token), then the file is removed when it holds nothing but the empty server list, and `.agents` and the tab's folder are removed when they are empty. A folder the program wrote something into is kept with what it wrote. A folder that cannot be made is refused with a sentence (400) before any token is issued.
+
+Left as it was: a tab's folder is not swept at the next start when the engine was ended with the tab open; the token in such a file counts for nothing after the engine stops, because tokens live in memory only. The agent folder setting (Preferences, Agents) no longer decides where Antigravity starts.
+
+Run with a stand-in `agy` through the real routes: two tabs open at once had different folders, each with its own `formpdf_tab` and token (file 0600, folder 0700), and the stand-in's own log showed each started in its folder with its token; closing the first ended its token and removed its folder while the second's file and token were unchanged; closing the second removed its file and kept the folder that held a file of the person's. Not seen: the refusal for a folder that cannot be made (the checks here run as root, which can always make it). The test that read the entry from the agent folder was replaced by one for two tabs, because that behaviour is gone.

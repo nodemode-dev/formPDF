@@ -170,30 +170,41 @@ def test_an_agent_tab_gets_its_own_token_outside_the_command_line_until_it_close
 
 
 @posix
-def test_an_antigravity_tab_has_its_entry_in_the_folder_file_until_it_closes(client, tmp_path, monkeypatch):
+def test_each_antigravity_tab_has_its_own_folder_and_entry_until_it_closes(client, tmp_path, monkeypatch):
     claude_code = importlib.import_module("app.services.claude_code")
+    config = importlib.import_module("app.core.config")
     monkeypatch.setenv("FORMPDF_AGENT_DIR", str(tmp_path / "work"))
     standins(tmp_path, monkeypatch, ["agy"])
-    written = tmp_path / "work" / ".agents" / "mcp_config.json"
-    written.parent.mkdir(parents=True)
-    written.write_text(json.dumps({"mcpServers": {"other": {"command": "x"}}, "keep": 1}), encoding="utf-8")
-    tab = client.post("/api/agents/open", json={"kind": "antigravity", "cols": 80, "rows": 20}, headers=window_headers()).json()
+    first = client.post("/api/agents/open", json={"kind": "antigravity", "cols": 80, "rows": 20}, headers=window_headers()).json()
+    second = client.post("/api/agents/open", json={"kind": "antigravity", "cols": 80, "rows": 20, "fresh": True}, headers=window_headers()).json()
+    tokens = []
     try:
-        assert tab["kind"] == "antigravity" and tab["alive"] and tab["title"] == "Antigravity" and tab["mcp"] == "file"
-        have = json.loads(written.read_text(encoding="utf-8"))
-        token = have["mcpServers"]["formpdf_tab"]["headers"][INAPP_HEADER]
-        assert have["mcpServers"]["formpdf_tab"]["serverUrl"].endswith("/mcp") and have["mcpServers"]["other"] == {"command": "x"} and have["keep"] == 1
-        assert stat.S_IMODE(written.stat().st_mode) == 0o600
-        assert claude_code.is_inapp(token) and claude_code.label(token) == "Antigravity in formpdf"
-        note = tmp_path / "agy.txt"
-        deadline = time.monotonic() + 15
-        while time.monotonic() < deadline and not (note.exists() and "token=" in note.read_text(encoding="utf-8")):
-            time.sleep(0.1)
-        assert f"token={token}" in note.read_text(encoding="utf-8").splitlines()
+        assert first["id"] != second["id"] and first["cwd"] != second["cwd"]
+        for tab in (first, second):
+            assert tab["kind"] == "antigravity" and tab["alive"] and tab["title"] == "Antigravity" and tab["mcp"] == "file"
+            folder = config.data_dir() / "agent-tabs" / "antigravity"
+            assert os.path.dirname(tab["cwd"]) == str(folder) and stat.S_IMODE(os.stat(tab["cwd"]).st_mode) == 0o700
+            written = os.path.join(tab["cwd"], ".agents", "mcp_config.json")
+            with open(written, encoding="utf-8") as f:
+                have = json.load(f)
+            assert list(have) == ["mcpServers"] and list(have["mcpServers"]) == ["formpdf_tab"]
+            assert have["mcpServers"]["formpdf_tab"]["serverUrl"].endswith("/mcp") and stat.S_IMODE(os.stat(written).st_mode) == 0o600
+            tokens.append(have["mcpServers"]["formpdf_tab"]["headers"][INAPP_HEADER])
+        assert tokens[0] != tokens[1]
+        assert all(claude_code.is_inapp(token) and claude_code.label(token) == "Antigravity in formpdf" for token in tokens)
+        assert not (tmp_path / "work" / ".agents").exists()
+        with open(os.path.join(second["cwd"], "notes.txt"), "w", encoding="utf-8") as f:
+            f.write("kept")
+        client.post(f"/api/terminals/{first['id']}/close", headers=window_headers())
+        assert not claude_code.is_inapp(tokens[0]) and claude_code.is_inapp(tokens[1])
+        assert not os.path.exists(first["cwd"])
+        with open(os.path.join(second["cwd"], ".agents", "mcp_config.json"), encoding="utf-8") as f:
+            assert json.load(f)["mcpServers"]["formpdf_tab"]["headers"][INAPP_HEADER] == tokens[1]
     finally:
-        client.post(f"/api/terminals/{tab['id']}/close", headers=window_headers())
-    assert not claude_code.is_inapp(token)
-    assert json.loads(written.read_text(encoding="utf-8")) == {"mcpServers": {"other": {"command": "x"}}, "keep": 1}
+        for tab in (first, second):
+            client.post(f"/api/terminals/{tab['id']}/close", headers=window_headers())
+    assert not claude_code.is_inapp(tokens[1])
+    assert sorted(os.listdir(second["cwd"])) == ["notes.txt"]
 
 
 def test_a_cursor_file_the_engine_did_not_write_is_left_alone(tmp_path):

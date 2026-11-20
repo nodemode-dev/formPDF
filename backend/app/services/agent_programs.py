@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import time
+import uuid
 from pathlib import Path
 
 from app.core import config
@@ -117,6 +118,30 @@ def antigravity_entry_gone(folder: Path, token: str) -> None:
         return
 
 
+def antigravity_folder() -> Path:
+    folder = config.data_dir() / "agent-tabs" / "antigravity" / uuid.uuid4().hex[:12]
+    try:
+        folder.mkdir(parents=True, mode=0o700)
+    except OSError as e:
+        raise AgentError(f"Antigravity cannot start in {folder}: {e.strerror or e}", 400) from None
+    return folder
+
+
+def antigravity_folder_gone(folder: Path, token: str) -> None:
+    antigravity_entry_gone(folder, token)
+    path = antigravity_file(folder)
+    try:
+        if path.exists() and _servers(path) == {"mcpServers": {}}:
+            path.unlink()
+    except (OSError, ValueError, TypeError):
+        return
+    for emptied in (path.parent, folder):
+        try:
+            emptied.rmdir()
+        except OSError:
+            return
+
+
 def open_tab(kind: str, cols: int | None = None, rows: int | None = None, fresh: bool = False) -> dict:
     p = PROGRAMS[kind]
     running = next((s for s in terminal.SESSIONS.values() if s.kind == kind and s.alive), None)
@@ -126,7 +151,7 @@ def open_tab(kind: str, cols: int | None = None, rows: int | None = None, fresh:
     if found.state != "runs":
         raise AgentError(agent_lookup.sentence(found, p["install"], claude_code.otherwise(kind)), 404)
     path = found.path
-    folder = claude_code.workdir()
+    folder = antigravity_folder() if kind == "antigravity" else claude_code.workdir()
     token = claude_code.issue_env(p["client"])
     try:
         how, extra = ("arguments", codex_args()) if kind == "codex" else (cursor_file(folder), []) if kind == "cursor" else (antigravity_entry(folder, token), [])
@@ -134,9 +159,9 @@ def open_tab(kind: str, cols: int | None = None, rows: int | None = None, fresh:
     except BaseException:
         claude_code.revoke(token)
         if kind == "antigravity":
-            antigravity_entry_gone(folder, token)
+            antigravity_folder_gone(folder, token)
         raise
     session.on_close.append(lambda: claude_code.revoke(token))
     if kind == "antigravity":
-        session.on_close.append(lambda: antigravity_entry_gone(folder, token))
+        session.on_close.append(lambda: antigravity_folder_gone(folder, token))
     return session.describe() | {"mcp": how}
