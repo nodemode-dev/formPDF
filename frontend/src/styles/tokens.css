@@ -12,7 +12,7 @@
   --border-light: #34333a;
   --text-primary: #f7f7f7;
   --text-secondary: #a4a4a4;
-  --text-muted: #8a8a8b;
+  --text-muted: #717072;
   --canvas-bg: #1c1b1d;
   --grid-color: #5e5e60;
   --node-shadow: 0 6px 18px rgba(0,0,0,0.45);
@@ -122,9 +122,13 @@
   --brand-orange: #f97316;
   --redact-ink: #000000;
 
+  --z-under: -1;
   --z-base: 0;
   --z-page-layer: 1;
   --z-page-pop: 2;
+  --z-local-2: 2;
+  --z-local-4: 4;
+  --z-local-5: 5;
   --z-raised: 8;
   --z-selected: 9;
   --z-rail: 10;
@@ -194,10 +198,27 @@ body.animations-disabled * { transition: none !important; animation: none !impor
 body.nm-home .nm-canvas-surface { display: none !important; }
 
 :root {
-  --fs-titlebar-h: 44px;
-  --fs-tabs-h: 32px;
-  --fs-options-h: calc(var(--fs-tabs-h) + 44px);
-  --fs-status-h: 28px;
+  --cv-titlebar-h: 44px;
+  --cv-options-h: 44px;
+  --cv-tabs-h: 32px;
+  --cv-status-h: 28px;
+  --cv-rail-w: 52px;
+  --cv-layers-w: 288px;
+  --cv-row-h: 40px;
+  --cv-thumb: 30px;
+  --cv-checker-a: #ffffff;
+  --cv-checker-b: #cccccc;
+  --cv-ants-a: #000000;
+  --cv-ants-b: #ffffff;
+  --cv-pixel-grid: rgba(128, 128, 140, 0.35);
+  --cv-handle-fill: #ffffff;
+  --cv-doc-edge: rgba(0, 0, 0, 0.55);
+  --cv-action-blue: #3b82f6;
+  --cv-action-violet: #8b5cf6;
+  --fs-titlebar-h: var(--cv-titlebar-h);
+  --fs-tabs-h: var(--cv-tabs-h);
+  --fs-options-h: calc(var(--fs-tabs-h) + var(--cv-options-h));
+  --fs-status-h: var(--cv-status-h);
   --fs-pasteboard: var(--canvas-bg);
   --z-toast: 3000;
 }
