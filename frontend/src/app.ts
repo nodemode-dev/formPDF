@@ -1,7 +1,10 @@
 import { Catalogue } from './automation/catalogue';
 import { DEMOS, seedLoanMarks, type Anchor, type DemoId } from './demos/catalog';
+import { Dock } from './dock/dock';
+import { formpdfDock, isDockCombo } from './dock-adapter';
 import { api } from './io/api';
 import { events } from './io/events';
+import { loadWindowKey } from './io/window-key';
 import { Extensions } from './ext/extensions';
 import { AgentBridge } from './live/agent';
 import { LiveClient } from './live/socket';
@@ -20,13 +23,13 @@ import { Home } from './ui/home';
 import { Palette } from './ui/palette';
 import { Reviews } from './ui/reviews';
 import { offerResume } from './ui/resume';
-import { isDockCombo, TerminalDock } from './ui/terminal-dock';
 import { applyTheme } from './ui/themes';
 import { toast } from './ui/toast';
 import { VERSION } from './version';
 
 export async function startApp(): Promise<void> {
   applyTheme();
+  await loadWindowKey();
   await startLanguage(() => api.settings().then((s) => s.language));
   startPageTranslator();
   document.title = `FormPDF ${VERSION}`;
@@ -40,16 +43,25 @@ export async function startApp(): Promise<void> {
   const agentHooks = { agentAccess: () => agentAccess, setAccess };
   events.start();
   let docNow: DocState | null = null;
-  const dock = new TerminalDock();
-  dock.onFail = (err) => toast(err instanceof Error ? err.message : String(err), 'error');
-  dock.onPage = (n) => { if (!bench.showPage(n)) toast('Open the PDF in the window to go to that page'); };
-  dock.context = () => (docNow ? `formpdf window: ${docNow.name} open, page ${docNow.page} of ${docNow.pages}, ${docNow.tab} tab, doc id ${docNow.id}${docNow.path ? `, file ${docNow.path}` : ''}${docNow.dirty ? ', unsaved changes' : ''}` : 'formpdf window: no PDF open');
-  dock.note = () => (docNow ? `with ${docNow.name} open` : '');
+  const docked = formpdfDock({
+    live,
+    context: () => (docNow ? `formpdf window: ${docNow.name} open, page ${docNow.page} of ${docNow.pages}, ${docNow.tab} tab, doc id ${docNow.id}${docNow.path ? `, file ${docNow.path}` : ''}${docNow.dirty ? ', unsaved changes' : ''}` : 'formpdf window: no PDF open'),
+    note: () => (docNow ? `with ${docNow.name} open` : ''),
+    fail: (err) => toast(err instanceof Error ? err.message : String(err), 'error'),
+    page: (n) => { if (!bench.showPage(n)) toast('Open the PDF in the window to go to that page'); },
+    handoff: (session) => void dock.claude(undefined, session),
+    settings: () => hooks.agents(),
+    layerOpen: anyDialogOpen,
+    setAccess: (mode) => setAccess(mode),
+  });
+  const dock = new Dock(docked.adapter);
+  live.onConsent = (id, args) => docked.desk.arrive(id, args);
+  live.onWithdrawn = (id) => docked.desk.gone(id);
   const dockCmds: Command[] = [
-    { id: 'view-agent-dock', label: 'Show agent dock and terminal', keys: ['Mod+J'], words: ['terminal', 'shell', 'console', 'dock', 'agent'], run: () => void dock.toggle() },
-    { id: 'agent-claude-code', label: 'Claude Code in the dock', keys: ['Shift+Mod+J'], words: ['claude', 'agent', 'ai', 'terminal'], run: () => void dock.claude() },
-    { id: 'agent-chat', label: 'Chat with Claude about this PDF', keys: ['Alt+Mod+J'], words: ['claude', 'chat', 'ask', 'ai', 'assistant'], run: () => void dock.showChat() },
-    { id: 'view-new-terminal', label: 'New terminal', words: ['shell', 'console', 'bash', 'zsh'], run: () => void dock.open() },
+    { id: 'view-agent-dock', label: 'Show agent dock and terminal', keys: ['Mod+J'], words: ['terminal', 'shell', 'console', 'dock', 'agent'], run: () => dock.toggle() },
+    { id: 'agent-claude-code', label: 'Claude Code in the dock', keys: ['Shift+Mod+J'], words: ['claude', 'agent', 'ai', 'terminal'], run: () => void dock.show('claude') },
+    { id: 'agent-chat', label: 'Chat with Claude about this PDF', keys: ['Alt+Mod+J'], words: ['claude', 'chat', 'ask', 'ai', 'assistant'], run: () => void dock.show('chat') },
+    { id: 'view-new-terminal', label: 'New terminal', words: ['shell', 'console', 'bash', 'zsh'], run: () => void dock.newTerminal() },
   ];
 
   const hooks: AppHooks = {
@@ -87,13 +99,14 @@ export async function startApp(): Promise<void> {
   const bench = ensureWorkbench(hooks);
   bench.commands.add(...dockCmds);
   window.addEventListener('keydown', (e) => {
-    if (!isDockCombo(e) || anyDialogOpen()) return;
+    if (!isDockCombo(e) || !(e.shiftKey || e.altKey) || anyDialogOpen()) return;
     const cmd = bench.commands.forCombo(comboOf(e));
     if (!cmd || !dockCmds.includes(cmd)) return;
     e.preventDefault();
     e.stopPropagation();
     cmd.run();
   }, true);
+  dock.mount(document.body);
   const openDemo = async (id: DemoId): Promise<void> => {
     const d = DEMOS.find((x) => x.id === id);
     if (!d) return;
@@ -135,7 +148,7 @@ export async function startApp(): Promise<void> {
   catalogue.mirror();
   (window as unknown as { formpdf?: { catalogue: Catalogue } }).formpdf = { catalogue };
   const extensions = new Extensions({ bench: () => bench, showBench: () => { openWorkbench({ app: hooks }); }, catalogue: () => catalogue });
-  const bridge = new AgentBridge({ bench: () => bench, allow: () => setAccess('allowed'), catalogue: () => catalogue, extensions: () => extensions });
+  const bridge = new AgentBridge({ bench: () => bench, catalogue: () => catalogue, extensions: () => extensions });
   live.onTool = (name, args) => bridge.run(name, args);
   live.connect();
 

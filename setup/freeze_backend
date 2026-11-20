@@ -13,6 +13,7 @@ extra=()
 if [ -d "$FORMPDF_ROOT/backend/app/fonts" ]; then extra+=(--add-data "$(fp_native_path "$FORMPDF_ROOT/backend/app/fonts")${sep}fonts"); fi
 if [ -d "$FORMPDF_ROOT/backend/app/dict" ]; then extra+=(--add-data "$(fp_native_path "$FORMPDF_ROOT/backend/app/dict")${sep}dict"); fi
 extra+=(--hidden-import ptyprocess)
+extra+=(--collect-submodules keyring)
 if python -c "import winpty" 2>/dev/null; then extra+=(--hidden-import winpty); fi
 release_ocr=""
 no_ocr=""

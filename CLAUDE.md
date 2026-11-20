@@ -30,7 +30,7 @@ Load `.claude/skills/formpdf-harness` for the full loop, every action with its a
 ## Trademarks, copyright and licences
 
 - Other vendors' product names appear only to describe a format or compatibility ("an XFDF file Acrobat and other readers import", the standard AcroForm functions, Word and PowerPoint output). Never as a formpdf tab, command, tool or agent tool name, and never as "an Acrobat alternative" or "Acrobat's rules" in UI text, agent text or READMEs. The tab is Fill Forms and Sign; the accessibility check is 32 PDF/UA and WCAG rules; ids such as `pdf-tab-fill` stay. `README.md` and `NOTICE.md` carry the trademark notice.
-- A changed English string is changed in place in all 23 tables in `frontend/src/ui/i18n/` with a translation of formpdf's own words, never the vendor's localized name; `python3 setup/i18n.py parity` must not get worse.
+- A changed English string is changed in place in every language table in `frontend/src/ui/i18n/` (es-MX and fr-CA hold only the words that differ from es and fr, so a key goes there only if it is already there) with a translation of formpdf's own words, never the vendor's localized name; `python3 setup/i18n.py parity` must not get worse.
 - Never copy vendor help text (accessibility rule names and fix text stay formpdf's own), stamps, icons or sample files. Every new dependency, font or data file gets a row in `NOTICE.md`; GPL and AGPL stay out (no PyMuPDF, pdf2docx or ghostscript).
 
 ## Commits

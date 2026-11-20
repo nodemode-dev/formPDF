@@ -1,4 +1,5 @@
 export const zhCN: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "已保存的代理权限在 formpdf 之外被更改，现已恢复为“提问”。",
 "Apply or clear the redaction marks first.": "请先应用或清除涂黑标记。",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "页面已更改，无法随之移动的涂黑标记已被移除。请重新标记这些区域。",
 "Demos": "演示",

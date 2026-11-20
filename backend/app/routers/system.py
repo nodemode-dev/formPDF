@@ -1,9 +1,9 @@
 import platform
 import sys
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
-from app.core import config
+from app.core import config, window_key
 from app.services import session
 from app.services import ai, office
 from app.services.pdf import fontkit, ocr, spell
@@ -79,13 +79,30 @@ def dismiss_session() -> dict:
     return {"ok": True}
 
 
+@router.post("/window/key")
+def claim_window_key() -> dict:
+    if window_key.stdout_mode():
+        raise HTTPException(404, "Not Found")
+    key = window_key.claim()
+    if key is None:
+        raise HTTPException(409, "Another window already holds this engine's window key; use that window, or restart formpdf")
+    return {"key": key}
+
+
+@router.post("/window/ticket")
+def window_ticket(request: Request) -> dict:
+    window_key.require(request)
+    return {"ticket": window_key.ticket()}
+
+
 @router.get("/settings")
 def get_settings() -> dict:
-    return config.read_settings()
+    return {**config.read_settings(), "secondWindowClaim": window_key.STATE["secondClaim"]}
 
 
 @router.post("/settings")
-def set_settings(patch: dict) -> dict:
+def set_settings(patch: dict, request: Request) -> dict:
+    window_key.require(request)
     allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "outsideAgents", "claudeBin", "claudeFolder", "claudeFirstMessage", "author", "units", "spellLang", "timestampUrl", "formScripts", "language"}}
     if "outsideAgents" in allowed:
         if allowed["outsideAgents"] not in ("ask", "allowed", "blocked"):

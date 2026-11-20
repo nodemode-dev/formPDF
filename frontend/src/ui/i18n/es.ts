@@ -1,4 +1,5 @@
 export const es: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "El permiso de agentes guardado se cambió fuera de formpdf, así que vuelve a Preguntar.",
 "Apply or clear the redaction marks first.": "Primero aplique o borre las marcas de censura.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Las páginas cambiaron, así que se quitaron las marcas de censura que no pudieron seguirlas. Vuelva a marcar esas áreas.",
 "Demos": "Demos",

@@ -1,4 +1,5 @@
 export const vi: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "Quyền đã lưu cho tác tử bị thay đổi bên ngoài formpdf nên đã trở lại Hỏi.",
 "Apply or clear the redaction marks first.": "Hãy áp dụng hoặc xóa các dấu che nội dung trước.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Các trang đã thay đổi nên những dấu che nội dung không thể đi theo đã bị xóa. Hãy đánh dấu lại các vùng đó.",
 "Demos": "Bản demo",

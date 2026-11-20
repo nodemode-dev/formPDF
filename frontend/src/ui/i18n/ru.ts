@@ -1,4 +1,5 @@
 export const ru: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "Сохранённое разрешение для агентов было изменено вне formpdf, поэтому снова выбрано «Спросить».",
 "Apply or clear the redaction marks first.": "Сначала примените или очистите метки скрытия.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Страницы изменились, поэтому метки скрытия, которые не смогли последовать за ними, удалены. Отметьте эти области снова.",
 "Demos": "Демо",

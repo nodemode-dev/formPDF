@@ -55,6 +55,8 @@ export class ChatPane {
   onFail: (err: unknown) => void = () => undefined;
   onHandoff: (session: string) => void = () => undefined;
   onPage: (page: number) => void = () => undefined;
+  context: () => string = () => '';
+  note: () => string = () => '';
   private readonly log: HTMLElement;
   private readonly empty: HTMLElement;
   private readonly meter: HTMLElement;
@@ -70,10 +72,11 @@ export class ChatPane {
     this.follow = l.scrollHeight - l.scrollTop - l.clientHeight < 80;
   }
   private loaded = false;
+  private visible = false;
   private adoptDlg: AdoptDialog | null = null;
 
   constructor() {
-    this.root = el(`<div class="fs-chat" hidden>
+    this.root = el(`<div class="fs-chat">
 <div class="fs-chat-bar"><span class="fs-chat-status"></span><span class="fs-chat-usage" title="Memory: how much of Claude's working memory this conversation uses. Reply: tokens written so far. Chat: everything sent and written in this conversation."></span><span class="fs-dock-spacer"></span>
 <button type="button" class="fs-btn fs-btn-sm fs-btn-ghost fs-chat-stop" hidden>Stop</button>
 <button type="button" class="fs-btn fs-btn-sm fs-btn-ghost fs-chat-adopt" title="Bring a conversation you had in a Claude Code tab into this chat">From Claude Code...</button>
@@ -132,11 +135,32 @@ export class ChatPane {
     } catch (err) { this.onFail(err); }
   }
 
-  async send(text: string, context = '', note = ''): Promise<void> {
-    try { await api.post('/api/chat/send', { text, context, note }); } catch (err) { this.onFail(err); }
+  async send(text: string, context = '', note = ''): Promise<boolean> {
+    try { await api.post('/api/chat/send', { text, context, note }); return true; } catch (err) { this.onFail(err); return false; }
   }
 
   isBusy(): boolean { return this.busy; }
+
+  async ask(text: string): Promise<boolean> {
+    const said = text.trim();
+    if (!said || this.busy) return false;
+    return this.send(said, this.context(), this.note());
+  }
+
+  shown(): void {
+    this.visible = true;
+    if (this.loaded) { this.scroll(); return; }
+    this.clear();
+    void this.load();
+  }
+
+  hidden(): void { this.visible = false; }
+
+  closed(): void {
+    this.visible = false;
+    this.loaded = false;
+    this.clear();
+  }
 
   private clear(): void {
     for (const n of Array.from(this.log.children)) if (n !== this.empty) n.remove();
@@ -153,7 +177,7 @@ export class ChatPane {
   }
 
   private scroll(): void {
-    if (this.follow) this.log.scrollTop = this.log.scrollHeight;
+    if (this.visible && this.follow) this.log.scrollTop = this.log.scrollHeight;
   }
 
   private user(text: string, note = ''): void {

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 0.60.3" src="https://img.shields.io/badge/version-0.60.3-eef0f4?style=flat-square">
+  <img alt="version 0.62.0" src="https://img.shields.io/badge/version-0.62.0-eef0f4?style=flat-square">
   <img alt="Python" src="https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white">
   <img alt="TypeScript" src="https://img.shields.io/badge/typescript-vite-3178c6?style=flat-square">
   <img alt="macOS, Windows, Linux" src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-native-2f7bf5?style=flat-square">
@@ -82,16 +82,18 @@
 
 ## Built for agents
 
-83 PDF actions sit in one registry; the window, the command line and the MCP server call the same ones.
+90 PDF actions sit in one registry; the window, the command line and the MCP server call the same ones.
 
 ```sh
 ./formpdf run actions                                          # list every action
 ./formpdf run page_numbers report.pdf --format "Page {n} of {total}"   # a job without the window
 ./formpdf cli list                                             # every window command
-./formpdf mcp                                                  # MCP server on stdio for Claude Code, Codex and Cursor
+./formpdf mcp                                                  # MCP server on stdio for Claude Code, Codex, Cursor and Antigravity
 ```
 
 `.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. With the engine running, Claude Code can also use `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`. Ctrl+J (Cmd+J on a Mac) opens an agent dock with real terminals. See [`AGENTS.md`](AGENTS.md).
+
+**Who decides what agents may do.** Only the FormPDF window can change agent access, open the agent dock, change which Claude program it runs, or answer the question "Allow agents to edit?". Agents and other programs, including `./formpdf run` and `./formpdf cli`, follow the choice the person made: they can read, and they ask before changing anything unless the person allowed it. If agent access is changed outside the app, FormPDF treats it as Ask until the person sets it again in the window (the check uses your system keychain; without one it is skipped). This protects the choice, not your files: any program running as you can still read the files you can. Running from source is weaker than the installed app, because there the first program on this computer to ask the engine for the window's key gets it. Details in [`SECURITY.md`](SECURITY.md).
 
 ## Extensions
 
@@ -103,7 +105,7 @@ formpdf loads Form family extensions (API 1): FormPortal installs them, form.ext
 - **Window:** a vanilla TypeScript and Vite app in `frontend/`, with every menu item and shortcut a single command in one catalogue.
 - **Desktop:** a Tauri shell in `src-tauri/` wraps the frozen engine as a sidecar.
 - **Local data:** everything stays in `~/Formpdf`; override it with `FORMPDF_DATA_DIR`.
-- **Tested:** 61 backend tests in `backend/tests`, run in CI.
+- **Tested:** the backend tests in `backend/tests`, run in CI.
 
 ## Download
 

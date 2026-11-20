@@ -147,6 +147,11 @@
   --z-overlay-modal: 60000;
   --z-debug: 100000;
 }
+:root[data-oled] {
+  --bg-hover: rgba(255, 255, 255, 0.1);
+  --border-soft: rgba(255, 255, 255, 0.12);
+  --surface-raised: color-mix(in srgb, var(--bg-node) 70%, var(--text-primary) 12%);
+}
 
 body.theme-light {
   color-scheme: light;

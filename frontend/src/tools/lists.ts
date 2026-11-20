@@ -1,4 +1,5 @@
 import { api } from '../io/api';
+import { keyHeaders } from '../io/window-key';
 import { pdfApi, type Derived } from '../pdf/api';
 import { isRecording, onRecording, recorded, startRecording, stopRecording, type Step } from '../pdf/recorder';
 import { registerTool, type ToolHost } from '../pdf/tools';
@@ -120,7 +121,7 @@ class ListsDialog extends Dialog {
     const l = this.lists.find((x) => x.id === this.chosen);
     if (!l || l.builtin) return;
     if (!(await confirmAction('Delete action list', `Delete ${l.name}? This cannot be undone.`, 'Delete', true))) { this.open(this.names); return; }
-    try { await fetch(`/api/lists/${encodeURIComponent(l.id)}`, { method: 'DELETE' }); } catch { toast('Could not delete the list', 'error'); }
+    try { await fetch(`/api/lists/${encodeURIComponent(l.id)}`, { method: 'DELETE', headers: keyHeaders() }); } catch { toast('Could not delete the list', 'error'); }
     this.open(this.names);
     await this.load();
   }

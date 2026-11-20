@@ -1,4 +1,5 @@
 export const de: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "Die gespeicherte Agentenberechtigung wurde außerhalb von formpdf geändert und steht deshalb wieder auf Fragen.",
 "Apply or clear the redaction marks first.": "Wenden Sie die Schwärzungsmarkierungen zuerst an oder entfernen Sie sie.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Die Seiten haben sich geändert, daher wurden Schwärzungsmarkierungen entfernt, die ihnen nicht folgen konnten. Markieren Sie diese Bereiche erneut.",
 "Demos": "Demos",

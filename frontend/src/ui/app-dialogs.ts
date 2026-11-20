@@ -162,6 +162,7 @@ class PreferencesDialog extends Dialog {
 <label class="fs-field"><span>Claude Code folder</span><input class="fs-input fs-dlg-pref-claudefolder" type="text" spellcheck="false" placeholder="Leave empty to use the Agent folder in Formpdf"></label>
 <label class="fs-field"><span>First message</span><input class="fs-input fs-dlg-pref-claudefirst" type="text" spellcheck="false" placeholder="Optional; sent when Claude Code starts"></label>
 <div class="fs-field"><span></span><span class="fs-note fs-dlg-claude-say" aria-live="polite"></span></div>
+<p class="fs-note fs-dlg-seal-say" aria-live="polite"></p>
 </section>
 <section class="fs-prefs-group" data-in="General"><h3 class="fs-prefs-label">Network</h3>
 <p class="fs-note">Everything formpdf could connect to, and whether it does. No account, no telemetry.</p>
@@ -504,6 +505,7 @@ class PreferencesDialog extends Dialog {
     void api.get<{ clients: SeenAgent[] }>('/api/mcp/status').then((s) => this.fillSeen(s.clients)).catch(() => undefined);
     void api.settings().catch((): Settings => ({})).then((s) => {
       setValue(this.author, str(s.author));
+      setText(q(this.body, '.fs-dlg-seal-say'), s.sealBroken === true ? 'The saved agent permission was changed outside formpdf, so it is back to Ask.' : '');
       setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudebin'), str(s.claudeBin));
       setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudefolder'), str(s.claudeFolder));
       setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudefirst'), str(s.claudeFirstMessage));

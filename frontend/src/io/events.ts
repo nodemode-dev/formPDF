@@ -1,3 +1,5 @@
+import { streamTicket } from './window-key';
+
 export interface EngineEvent {
   seq?: number;
   type: string;
@@ -8,13 +10,24 @@ type Handler = (e: EngineEvent) => void;
 
 export class Events {
   private source: EventSource | null = null;
+  private started = false;
   private readonly handlers = new Map<string, Set<Handler>>();
   private lastSeq = 0;
 
   start(): void {
-    if (this.source) return;
-    const src = new EventSource('/api/events');
+    if (this.started) return;
+    this.started = true;
+    void this.open();
+  }
+
+  private async open(): Promise<void> {
+    const ticket = await streamTicket().catch(() => '');
+    const src = new EventSource(`/api/events?ticket=${encodeURIComponent(ticket)}`);
     this.source = src;
+    src.onerror = () => {
+      if (src.readyState !== EventSource.CLOSED || this.source !== src) return;
+      window.setTimeout(() => void this.open(), 1500);
+    };
     src.onmessage = (m) => {
       let e: EngineEvent;
       try { e = JSON.parse(m.data) as EngineEvent; } catch { return; }

@@ -22,11 +22,24 @@ def window_doc() -> dict | None:
     return None
 
 
-async def window_call(name: str, args: dict, timeout: float = 60) -> dict | None:
+async def tell_windows(message: dict) -> int:
+    from app.routers.live import CLIENTS
+
+    told = 0
+    for client in windows():
+        try:
+            await client.send(message)
+            told += 1
+        except Exception:
+            CLIENTS.pop(client.id, None)
+    return told
+
+
+async def window_call(name: str, args: dict, timeout: float = 60, call_id: str | None = None) -> dict | None:
     from app.routers.live import CLIENTS, TOOL_RESULTS
 
     for client in windows():
-        rid = ids.short("t", 10)
+        rid = call_id or ids.short("t", 10)
         fut = asyncio.get_running_loop().create_future()
         TOOL_RESULTS[rid] = fut
         try:

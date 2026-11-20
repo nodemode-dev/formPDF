@@ -1,4 +1,5 @@
 import { api } from '../io/api';
+import { keyHeaders } from '../io/window-key';
 import { record } from './recorder';
 
 const rec = <T>(action: string, args: unknown) => (res: T): T => { record(action, args); return res; };
@@ -77,7 +78,7 @@ const base = (id: string): string => `/api/pdf/${encodeURIComponent(id)}`;
 const q = (pages?: string): string => (pages && pages.trim() ? `?pages=${encodeURIComponent(pages.trim())}` : '');
 
 async function form<T>(url: string, fd: FormData): Promise<T> {
-  const res = await fetch(url, { method: 'POST', body: fd });
+  const res = await fetch(url, { method: 'POST', body: fd, headers: keyHeaders() });
   if (!res.ok) {
     let detail = res.statusText;
     try { const body = await res.json() as { detail?: string }; if (body.detail) detail = body.detail; } catch { detail = `${res.status} ${res.statusText}`; }
@@ -98,14 +99,14 @@ export const pdfApi = {
   forget: (key: string) => api.post<{ ok: boolean }>('/api/pdf/recent/forget', { key }),
   fileUrl: (id: string, download = false) => `${base(id)}/file${download ? '?download=1' : ''}`,
   async act<T>(id: string, name: string, body: Record<string, unknown> = {}): Promise<T> {
-    const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...keyHeaders() }, body: JSON.stringify(body) });
     if (!res.ok) { let d = res.statusText; try { d = ((await res.json()) as { detail?: string }).detail ?? d; } catch { d = `${res.status} ${res.statusText}`; } throw new Error(d); }
     const out = await res.json() as T;
     if (out && typeof out === 'object' && 'id' in out && !('text' in out) && !['run_list', 'edit_structure', 'sign', 'import_xfdf'].includes(name)) record(name, body);
     return out;
   },
   async actFile(id: string, name: string, body: Record<string, unknown> = {}): Promise<{ blob: Blob; name: string }> {
-    const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = await fetch(`${base(id)}/act/${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...keyHeaders() }, body: JSON.stringify(body) });
     if (!res.ok) { let d = res.statusText; try { d = ((await res.json()) as { detail?: string }).detail ?? d; } catch { d = `${res.status} ${res.statusText}`; } throw new Error(d); }
     const m = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '');
     return { blob: await res.blob(), name: m?.[1] ?? name };
@@ -144,9 +145,9 @@ export const pdfApi = {
     fd.append('password', password);
     return form<Identity>('/api/identities/import', fd);
   },
-  deleteIdentity: (id: string) => fetch(`/api/identities/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(() => undefined),
+  deleteIdentity: (id: string) => fetch(`/api/identities/${encodeURIComponent(id)}`, { method: 'DELETE', headers: keyHeaders() }).then(() => undefined),
   trust: (der: string) => api.post<{ fingerprint: string }>('/api/trust', { der }),
-  untrust: (fp: string) => fetch(`/api/trust/${encodeURIComponent(fp)}`, { method: 'DELETE' }).then(() => undefined),
+  untrust: (fp: string) => fetch(`/api/trust/${encodeURIComponent(fp)}`, { method: 'DELETE', headers: keyHeaders() }).then(() => undefined),
   signedVersionUrl: (id: string, index: number) => `${base(id)}/signatures/${index}/revision`,
   joinCopy(id: string, file: File): Promise<Derived> {
     const fd = new FormData();

@@ -1,4 +1,5 @@
 export const fi: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "Tallennettu agenttien lupa muutettiin formpdf:n ulkopuolella, joten se on takaisin tilassa Kysy.",
 "Apply or clear the redaction marks first.": "Ota sensurointimerkit ensin käyttöön tai tyhjennä ne.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Sivut muuttuivat, joten sensurointimerkit, jotka eivät voineet seurata niitä, poistettiin. Merkitse ne alueet uudelleen.",
 "Demos": "Esittelyt",

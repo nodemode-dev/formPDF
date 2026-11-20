@@ -8,13 +8,15 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
-from app.core import config
+from app.core import config, ids
 from app.routers import commands as cmdcat
 from app.routers import pdf as routes
 from app.routers.live import local_origin
 from app.services import bridge, claude_code, office
 from app.services import pdf as pdfsvc
 from app.services.pdf import actions, docs
+from app.services.pdf.sanitize import leftover as text_left
+from app.services.pdf.search import pattern as search_pattern
 
 router = APIRouter()
 VERSIONS = ["2026-07-28", "2025-11-25"]
@@ -34,6 +36,7 @@ EXPORT_ACTIONS = actions.EXPORT
 ACTIONS = actions.ALL
 SUFFIX = actions.SUFFIX
 LABEL = actions.LABEL
+REMOVED_WORDS = {"text": "text runs", "glyphs": "glyphs", "pictures": "pictures", "shapes": "shapes", "annotations": "comments or fields"}
 GUIDE = """# formpdf agent guide
 
 ## Loop
@@ -161,6 +164,12 @@ MAX_SEEN = 40
 INAPP_CLIENT = "Claude Code in formpdf"
 BLOCKED = "Outside agents are blocked in formpdf's Preferences, Agents, so this call was refused. Tell the person where to change it and stop; do not retry."
 NO_WINDOW = "The formpdf window is not open, so nobody can approve agents. Ask the person to open formpdf and allow agents, then retry."
+CONSENT_SECONDS = 120
+CONSENT_ANSWERS = ["deny", "once", "always"]
+CONSENT_ALWAYS = "all"
+WITHDRAWN = "consentWithdrawn"
+ASKED = {"open_pdf": "open a PDF in the window", "save": "save the open PDF to a file", "undo": "undo its last turn on the open PDF",
+         "extension_command": "run an extension's command"}
 _declined = [0.0]
 _consent_lock: list = []
 
@@ -264,8 +273,12 @@ def _clip(s: str, n: int) -> str:
     return s if len(s) <= n else s[: n - 1] + "..."
 
 
+GATED = ("open_pdf", "save", "undo", "extension_command")
+GATED_BY_ARGUMENTS = ("pdf", "run_command", "run_commands")
+
+
 def _mutating(name: str, args: dict) -> bool:
-    if name in ("open_pdf", "save", "undo", "extension_command"):
+    if name in GATED:
         return True
     if name == "pdf":
         return args.get("action") in CHANGE_ACTIONS + EXPORT_ACTIONS or (args.get("action") == "attachments" and bool(args.get("save")))
@@ -273,6 +286,16 @@ def _mutating(name: str, args: dict) -> bool:
         ids = [args.get("id")] if name == "run_command" else [s.get("id") for s in args.get("steps") or [] if isinstance(s, dict)]
         return any((c := cmdcat.find(str(i))) is not None and (c.get("mutates") or c.get("risky")) for i in ids)
     return False
+
+
+def _asked(name: str, args: dict) -> str:
+    if name == "pdf":
+        return f"run the PDF action {_clip(args.get('action') or '', 40)} on " + ("a file" if args.get("path") or args.get("paths") else "the open PDF")
+    if name == "run_command":
+        return f"run the window command {_clip(args.get('id') or '', 60)}"
+    if name == "run_commands":
+        return f"run {len([s for s in args.get('steps') or [] if isinstance(s, dict)])} window commands"
+    return ASKED.get(name, f"use {name}")
 
 
 def _agent(request: Request, params: dict) -> Agent:
@@ -286,10 +309,10 @@ def _agent(request: Request, params: dict) -> Agent:
         a = SESSIONS[key] = Agent(key, named or "agent")
     elif named:
         a.name = named
-    a.inapp = request.headers.get("x-formpdf-inapp") == claude_code.INAPP_TOKEN
+    a.inapp = claude_code.is_inapp(request.headers.get("x-formpdf-inapp"))
     a.channel = "inapp" if a.inapp else "stdio" if header else "http"
     if a.inapp:
-        a.name = INAPP_CLIENT
+        a.name = claude_code.label(request.headers.get("x-formpdf-inapp")) or INAPP_CLIENT
     return a
 
 
@@ -301,7 +324,7 @@ def _turn(a: Agent) -> str:
     return a.turn
 
 
-async def _consent(a: Agent) -> str | None:
+async def _consent(a: Agent, tool: str = "", what: str = "") -> str | None:
     if a.inapp or access() == "allowed" or any(c.agents for c in bridge.windows()):
         return None
     if not bridge.window_connected():
@@ -316,10 +339,21 @@ async def _consent(a: Agent) -> str | None:
             return None
         if state == "blocked":
             return BLOCKED
-        res = await bridge.window_call("consent", {"agent": a.name}, 120)
+        rid = ids.short("t", 10)
+        started = time.monotonic()
+        ask = {"agent": a.name, "request": rid, "tool": tool, "what": what or "change PDFs and write files for you", "answers": CONSENT_ANSWERS,
+               "alwaysCovers": CONSENT_ALWAYS, "seconds": CONSENT_SECONDS, "expiresAt": int((time.time() + CONSENT_SECONDS) * 1000)}
+        res = await bridge.window_call("consent", ask, CONSENT_SECONDS, rid)
         if res is None:
             return NO_WINDOW
-        if (res.get("structuredContent") or {}).get("allowed"):
+        answer = res.get("structuredContent") or {}
+        once = bool(answer.get("allowed")) and bool(answer.get("once"))
+        expired = "allowed" not in answer and time.monotonic() - started >= CONSENT_SECONDS
+        await bridge.tell_windows({"t": WITHDRAWN, "id": rid, "reason": "expired" if expired else "answered",
+                                   "answer": None if "allowed" not in answer else "once" if once else "always" if answer.get("allowed") else "deny"})
+        if once:
+            return None
+        if answer.get("allowed"):
             config.write_settings({"outsideAgents": "allowed"})
             return None
         _declined[0] = time.monotonic() + 120
@@ -557,6 +591,8 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages, land: b
         if action == "redact":
             positional = [kw.pop("areas")]
         res = await _derive(src, fn, *positional, protect=protect, **kw)
+        if action == "redact" and extra.get("matches"):
+            extra["left"] = await _after_redact(docs.path_of(res["id"]), args, pages, pw)
         if action == "protect":
             docs.update_meta(res["id"], protect={"password": kw["password"], "owner": kw.get("owner") or "", "permissions": kw.get("permissions")})
         detail = _detail(res, extra)
@@ -574,7 +610,9 @@ async def _change(a: Agent, src: Source, action: str, args: dict, pages, land: b
     finally:
         tmp.unlink(missing_ok=True)
     res = got if isinstance(got, dict) else {"pages": got}
-    return _ok(f"{label}: wrote {out} ({_detail(res, extra)}).", {"path": str(out), **{k: v for k, v in res.items() if isinstance(v, (int, float, str, list))}, **extra})
+    if action == "redact" and extra.get("matches"):
+        extra["left"] = await _after_redact(out, args, pages, pw)
+    return _ok(f"{label}: wrote {out} ({_detail(res, extra)}).", {"path": str(out), **{k: v for k, v in res.items() if isinstance(v, (int, float, str, list, dict))}, **extra})
 
 
 def _detail(res: dict, extra: dict) -> str:
@@ -588,9 +626,36 @@ def _detail(res: dict, extra: dict) -> str:
             bits.append(f"{v} {word}")
     if res.get("before") and res.get("after"):
         bits.append(f"{res['before'] // 1024} KB to {res['after'] // 1024} KB")
-    if res.get("removed"):
-        bits.append("removed " + ", ".join(str(x) for x in res["removed"]))
+    removed = res.get("removed")
+    if isinstance(removed, dict):
+        done = [f"{v} {REMOVED_WORDS.get(k, k)}" for k, v in removed.items() if v]
+        bits.append("removed " + ", ".join(done) if done else "removed nothing")
+    elif isinstance(res.get("found"), dict):
+        found = res["found"]
+        bits.append("found and removed " + ", ".join(f"{k.replace('_', ' ')} ({found[k]})" for k in found) if found else "found nothing to remove")
+    if extra.get("left"):
+        bits.append(str(extra["left"]))
     return ", ".join(bits) or "done"
+
+
+def _places(found: list[dict]) -> str:
+    return ", ".join(f"{f['count']} in {f['place']}" + (f" ({', '.join(f['fields'])})" if f["fields"] else "") for f in found)
+
+
+def _elsewhere(path, args: dict, pw) -> list[dict]:
+    s = _search(args, None)
+    rx, check = search_pattern(None if s["preset"] else args.get("query"), regex=s["regex"], preset=s["preset"], case_sensitive=s["case_sensitive"],
+                               whole_word=s["whole_word"])
+    return text_left(path, rx, check, pw)
+
+
+async def _after_redact(path, args: dict, pages, pw) -> str:
+    still = (await asyncio.to_thread(lambda: pdfsvc.find(path, None if args.get("preset") else args.get("query"), passwords=pw, **_search(args, pages))))["count"]
+    left = await asyncio.to_thread(_elsewhere, path, args, pw)
+    head = "page content clean" if not still else f"{still} still on the pages"
+    if not left:
+        return head + ", nothing left in metadata, bookmarks, attachments, form fields or comments"
+    return head + ", " + ", ".join(f"{f['count']} left in {f['place']}" + (f" ({', '.join(f['fields'])})" if f["fields"] else "") for f in left) + ", run sanitize"
 
 
 async def _merge(a: Agent, src: Source, args: dict) -> dict:
@@ -692,7 +757,11 @@ async def _read(src: Source, action: str, args: dict, pages) -> dict:
         got = await asyncio.to_thread(lambda: pdfsvc.find(src.path, None if args.get("preset") else args.get("query"), passwords=pw, **_search(args, pages)))
         lines = [f"p{m['page']} · {m['text']} · {m['context']}" for m in got["matches"][:200]]
         head = f"{got['count']} match{'es' if got['count'] != 1 else ''} on {got['pages']} page{'s' if got['pages'] != 1 else ''}"
-        return _ok(head + (":\n" + "\n".join(lines) if lines else "."), {"count": got["count"], "truncated": got["truncated"], "matches": got["matches"][:500]})
+        others = await asyncio.to_thread(_elsewhere, src.path, args, pw)
+        if others:
+            head += f"; also {_places(others)}, which redact does not reach (sanitize removes them)"
+        return _ok(head + (":\n" + "\n".join(lines) if lines else "."), {"count": got["count"], "truncated": got["truncated"], "matches": got["matches"][:500],
+                                                                          "elsewhere": others})
     if action == "comments":
         got = await asyncio.to_thread(pdfsvc.comments, src.path, pw)
         lines = [f"p{c['page']} · {c['label']}{' · ' + c['author'] if c.get('author') else ''} · {c['status']} · {_clip(c.get('text') or '', 120)}"
@@ -985,7 +1054,7 @@ async def call_tool(a: Agent, name: str, args: dict) -> dict:
     if access() == "blocked":
         return _fail(BLOCKED)
     if _mutating(name, args):
-        refused = await _consent(a)
+        refused = await _consent(a, name, _asked(name, args))
         if refused:
             return _fail(refused)
     try:

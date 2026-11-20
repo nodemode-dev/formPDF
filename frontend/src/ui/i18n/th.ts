@@ -1,4 +1,5 @@
 export const th: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "สิทธิ์ของเอเจนต์ที่บันทึกไว้ถูกเปลี่ยนนอก formpdf จึงกลับไปเป็น ถาม",
 "Apply or clear the redaction marks first.": "โปรดใช้หรือล้างเครื่องหมายปกปิดข้อมูลก่อน",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "หน้ามีการเปลี่ยนแปลง จึงนำเครื่องหมายปกปิดข้อมูลที่ตามไปไม่ได้ออกแล้ว โปรดทำเครื่องหมายพื้นที่เหล่านั้นอีกครั้ง",
 "Demos": "ตัวอย่างสาธิต",

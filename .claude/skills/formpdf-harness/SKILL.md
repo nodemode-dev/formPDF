@@ -4,12 +4,12 @@ description: "Does PDF work with formpdf through its MCP server. Use whenever th
 license: Apache-2.0
 metadata:
   author: formpdf
-  version: "0.60.3"
+  version: "0.62.0"
 ---
 
 # formpdf harness
 
-formpdf is a PDF editor running on this computer: an engine on 127.0.0.1:8198 and a window the person watches. Its MCP server (`formpdf`) gives you seven tools. This pack is the method: find out what is open, do the job in as few calls as possible, look at the result, and hand it back without surprising the person.
+formpdf is a PDF editor running on this computer: an engine on 127.0.0.1:8198 and a window the person watches. Its MCP server (`formpdf`) gives you fifteen tools: the seven in the table below do the PDF work, and get_agent_access, answer_question, list_commands, describe_command, run_command, run_commands, extensions_list and extension_command are covered in the references. This pack is the method: find out what is open, do the job in as few calls as possible, look at the result, and hand it back without surprising the person.
 
 ## Doctrine
 

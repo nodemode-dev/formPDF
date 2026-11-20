@@ -1,4 +1,5 @@
 export const nl: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "De opgeslagen toestemming voor agents is buiten formpdf gewijzigd en staat daarom weer op Vragen.",
 "Apply or clear the redaction marks first.": "Pas de redactiemarkeringen eerst toe of wis ze.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "De pagina’s zijn gewijzigd, dus redactiemarkeringen die ze niet konden volgen zijn verwijderd. Markeer die gebieden opnieuw.",
 "Demos": "Demo’s",

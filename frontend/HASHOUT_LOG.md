@@ -635,3 +635,257 @@ Entry 14's guard (enhance the action select in `load` only if startup had not) a
 kind: fix · logged: v0.60.3 · 2026-11-11
 
 The window test closed each demo with `Alt+Control+KeyH`, but the command's `Mod` is Cmd on macOS (`commands.ts` reads `metaKey` when `isMac`), so on a Mac the shortcut did nothing, the discard bar never showed and the click on `.fs-btn-danger` timed out after 15 s. Linux CI passed because `Mod` is Control there. The test now presses `Alt+ControlOrMeta+KeyH`, which Playwright maps to Meta on macOS and Control elsewhere. Checked on macOS arm64: before, 1 failed and 2 passed (the Locator.click timeout); after, 3 passed.
+
+## 117. The window sends its window key · _v0.61.0 (io/window-key.ts; app.ts startApp; io/api.ts post, get; pdf/api.ts form, deleteIdentity, untrust; live/socket.ts connect, setAgents; ui/terminal-dock.ts connect; io/events.ts start, open)
+
+kind: fix · logged: v0.61.0 · 2026-11-18
+
+The engine now asks for a per-launch window key on the routes only the window uses (backend entry 119). `loadWindowKey` runs once at the top of `startApp`, before anything else talks to the engine: it takes `window.__FORMPDF_WINDOW_KEY`, which the desktop shell's initialization script sets only on the engine's own origin, and deletes the global; without it (run from source) it asks `POST /api/window/key` once and keeps the answer in `sessionStorage`, so reloading the same tab still works after the engine has given the key away. The key lives in a module variable. `api.get` and `api.post` send it on every call, as do the three raw fetches in `pdf/api.ts` (uploads through `form`, deleting an identity, untrusting a certificate). The live socket puts it in each `hello`, the terminal socket sends `{type: 'key'}` before the first resize, and `Events` opens `/api/events` with a one-time ticket and, when the stream closes for good (a spent ticket after a reconnect gives 403, which an EventSource does not retry), fetches a new ticket and opens again after 1.5 s; `lastSeq` stays on the instance, so the first hello after that still reads as a resync.
+
+No node is created, changed or moved by any of this; it adds one awaited local request at boot when run from source. Checked: `npx tsc --noEmit` clean. Not run in a browser or the desktop window.
+
+## 118. Every write the window makes carries the key · _v0.61.0 (pdf/api.ts act, actFile; ui/batch.ts upload; tools/assistant.ts question delete; tools/lists.ts list delete)
+
+kind: fix · logged: v0.61.0 · 2026-11-18
+
+The engine now refuses any write without the window key (backend entry 122). `api.post`, `form`, `deleteIdentity` and `untrust` already sent it; the remaining raw `fetch` calls with a write method were `pdfApi.act` and `actFile` (POST `/act/{name}`), the Batch upload (POST with FormData), the Assistant's question delete and the action list delete (DELETE). Each now adds `keyHeaders()` to its own headers. A search of `frontend/src` for `fetch(`, `XMLHttpRequest`, `sendBeacon` and `method:` finds no other write. No DOM change. Checked: `npx tsc --noEmit` clean; not run in a browser.
+
+## 119. AMOLED Black, the profile · _v0.61.0 (ui/themes.ts THEMES, ThemeProfile, applyTheme)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+A true-black theme for OLED screens, id `amoled`, label "AMOLED Black", after High Contrast: window, panels, node and canvas `#000000`, `--bg-tertiary` `#141414` (inputs, menus and selected rows use it as their only fill), borders `#262626` and `#3a3a3a`, text `#ededed`, `#a6a6a6` and `#858585` (17.9, 8.6 and 5.7 to 1 on black); the accent is the app's own, unchanged. It also sets `--grid-color` to white at 10%, as High Contrast does, because the PDF pasteboard draws its dot grid from it and a theme that left it out would keep the previous theme's grey. `ThemeProfile` gains `oled?: boolean`; `applyTheme` sets `data-oled` on `html` for an oled profile and removes it for every other, touching the attribute only when it changes. The picker and the swatch grid are built from `THEMES`, so no control was added. No node is created or moved by a switch.
+
+## 120. AMOLED Black in the pre-paint script · _v0.61.0 (index.html pre-paint script OLED, PROFILES)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+The pre-paint script holds a second copy of the profile table, so `amoled` is added there too (28 profiles in each table before, 29 after, rows in step), with an `OLED = { 'amoled': 1 }` table and `data-oled` set beside the variables before first paint. A theme in one table and not the other would paint Studio Dark first and switch later, which is a flash. The row is `[bg, panel, tertiary, border, border-light, text, text-2, muted, canvas, grid, node]` like the Studio row; `html` background is its first value, `#000000`.
+
+## 121. AMOLED Black, the tokens and the large surfaces · _v0.61.0 (styles/tokens.css :root[data-oled]; pdf.css; dock.css; shell.css)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+`:root[data-oled]` takes the hover tint and the soft border from white at 6% and 8% to 10% and 12%, which over black gave too little contrast, and `--surface-raised` (the hover and selected fill of buttons, tabs, segments) from 8% to 12% of the text colour, because at 8% it came out `#131313`, 1.1 to 1 on black. CSS hangs on the flag, never on the theme id, so another OLED profile needs only the flag. Surfaces that mix a little of the palette into their fill and so were `#0a0a0a`: the workbench title bar, the tool ribbon and the pages side panel (`--surface-1`, pdf.css), the dock head and ask line (dock.css), the image preview of a home card (shell.css) take `--bg-primary`; the home nav hover took `--surface-1`, now `--bg-hover`. A PDF page and its thumbnails keep the document's colour. No other theme changes.
+
+## 122. A reload tries the kept window key before it asks for a new one · _v0.61.0 (io/window-key.ts loadWindowKey)
+
+kind: fix · logged: v0.61.0 · 2026-11-19
+
+Run from source, the page asked `POST /api/window/key` first on every load and only then fell back to the key kept in `sessionStorage`. The engine gives the key once, so each reload was answered 409 and the engine counted it as a second claim that never happened. `loadWindowKey` now reads the kept key first and asks `POST /api/window/ticket` with it; a ticket back means the key still works and the bootstrap route is not called. Only when there is no kept key or the engine no longer accepts it (it was restarted) does it ask the bootstrap route, and if that answers nothing it keeps the old fallback. The packaged global still comes first. No DOM change. Checked in headless Chrome against the engine from source: load and two reloads gave one bootstrap request (200, no 409), and the page's own write (opening a PDF) gave 200 after each; with the engine restarted under the same tab, the kept key was refused (403), the bootstrap answered 200 and the write gave 200. Before the change the same run gave 200, 409, 409.
+
+## 123. The shell waits at most 10 seconds for the engine's address and key line · _v0.61.0 (src-tauri/src/main.rs setup read loop; Cargo.toml, Cargo.lock)
+
+kind: fix · logged: v0.61.0 · 2026-11-19
+
+The loop that reads the engine's first lines waited without limit for the address and the key line. It now reads with `tokio::time::timeout_at` against one deadline of 10 seconds taken before the first read, so the limit is for both lines together and a line that arrives late does not restart it. When the deadline passes, or the channel closes, the loop ends. The step after it now opens the window only when it has the address and the key; otherwise it takes the existing path (close the splash, show "The formpdf engine failed to start", stop the engine, exit), so a window that cannot write is never opened. `tokio` is declared in `Cargo.toml` with the `time` feature and added to the `formpdf` entry of `Cargo.lock`; it is already in the lock at 1.53.2 and `tauri-plugin-shell` 2.4.1 already requires its `time` feature. Read against tauri 2.12.2 (`async_runtime::Receiver` is `tokio::sync::mpsc::Receiver`, so `recv` can be cancelled by the timeout and the global runtime is `Runtime::new()`, which has the time driver) and tokio 1.53.2 (`timeout_at(Instant, impl IntoFuture)`). Not compiled: the system WebKit libraries are missing here, so this was read, not built.
+
+## 124. The engine gets as long to start as before; the 10 seconds cover only the key · _v0.61.0 (src-tauri/src/main.rs setup read loop; Cargo.toml, Cargo.lock)
+
+kind: fix · logged: v0.61.0 · 2026-11-19
+
+Entry 123 put one 10 second deadline, counted from the moment the engine process is spawned, on the whole start. On `origin/main` the loop had no limit, and a first launch of a packaged engine (cold disk, a virus scan, unpacking) can take longer than 10 seconds, so a healthy app would have shown "engine failed to start". The first loop is now exactly what it was on `origin/main` (read until the address line arrives, no limit; an engine that terminates ends it) and still remembers the key line if it passes by. Only after the address has arrived does a second loop give the key at most 10 seconds, with `try_recv` and a 20 millisecond sleep through `tauri::async_runtime::spawn_blocking`, the same wait FormPath and FormTxt use; it ends at once if the engine terminates. With no key by then the existing failure path runs and no window opens, as before. Because no `tokio` call remains, the `time` feature and the `tokio` line in `Cargo.toml` and the `formpdf` entry of `Cargo.lock` that entry 123 added are taken out again, and both files are byte-identical to `origin/main`. `rx` is `tokio::sync::mpsc::Receiver<CommandEvent>` (tauri 2.12.2 `async_runtime`, tauri-plugin-shell 2.4.1 `spawn`), so `try_recv` exists. Seen running: the engine from source with the packaged-mode variable prints the key line first (line 1) and the address line later (line 5), flushed. The loop was copied into a scratch crate (tokio and regex only, outside the repo) and run against fake event streams: key then address at once opens at 0 seconds; no event for 25 seconds and then key and address opens at 25 seconds; address then key 4 seconds later opens at 4 seconds; address then nothing, whether the stream stays open or ends, fails at 10 seconds; the engine ending before an address, or right after it, fails at once. Not compiled in the real shell (the system WebKit libraries are missing here); `rustfmt --check` parses the file and reports only formatting differences that were there before.
+
+## 124. Preferences says once when the saved agent permission was reset · _v0.61.0 (ui/app-dialogs.ts PreferencesDialog body, show; styles/app-dialogs.css; ui/i18n/*.ts)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+When the engine finds that the stored agent permission was changed outside the app it answers `sealBroken: true` from `GET /api/settings` and treats the choice as Ask (backend entries 120 and 121). Nothing in the window said so. The Outside Agents group of Preferences now ends with one note, `.fs-dlg-seal-say`, filled by the settings read that `show` already makes: "The saved agent permission was changed outside formpdf, so it is back to Ask." It is empty otherwise, and it is gone the next time Preferences opens after the person has picked a choice, because that write seals it again. The note is the last node of its group and has a reserved line (`min-height: 1.45em`, the note's own line height), so filling it moves nothing; measured with and without the text, every box in the dialog had the same top and height. It is a new node only in the sense that it is built with the dialog; no node is replaced. The string is in the 23 language files that carry the full table (es-MX and fr-CA fall back to es and fr). Checked in headless Chrome against the engine from source with a stand-in keyring: a write from the page sealed the file, a hand edit to Allowed was reported as broken and Ask, and the note showed in English and, with `fs-language` set to de, in German. The Consent dialog was not changed.
+
+## 125. Open terminals follow a live theme switch · _v0.61.0 (ui/terminal-dock.ts TerminalDock constructor)
+
+kind: fix · logged: v0.61.0 · 2026-11-19
+
+The dock gave each terminal its colours once, when the terminal was mounted, from `--surface-0` and `--text-primary`. Switching theme afterwards left every open terminal in the old colours: with Studio chosen first and AMOLED Black after, the terminal body stayed `#111111` with `#f7f7f7` text in a dock that was otherwise `#000000` (measured in headless Chrome, 1440 by 900, CPU 4x slower, slow network, cache off). The dock now listens to `nm:ui-settings-changed`, which every theme and accent change already sends, and sets `term.options.theme` on each open terminal from the same `theme()` that mounting uses. No node is created or moved: xterm repaints its own canvas. Measured after the change, same setup: the xterm screen is `#000000` at four corners and the centre, text `#ededed`; the dock, its head, the Ask line, the Chat tab (bar and log) and the tool ribbon are `#000000` too. The live switch Studio, AMOLED Black, Studio with the dock open (a terminal tab, the Chat tab) and Preferences open: 5332 elements before and after each switch, none new, none removed, no box moved except the rotating spinner icon, whose box changes with its animation. The ANSI colours are xterm's own and were left alone: on `#000000` black is 1.7 to 1, bright black 2.9, blue 3.5, red 3.6, magenta 3.2 and the rest above 5, which is better than on Studio's `#111111` (1.5, 2.6, 3.2, 3.2, 2.9), so AMOLED does not make any terminal colour harder to read than the default theme does.
+
+## 126. The dock is the family's shared module 2.0.1 · _v0.61.0 (src/dock/ whole; src/dock-adapter.ts; styles/dock-tokens.css; styles/dock.css; app.ts; index.html; live/socket.ts; live/agent.ts; ui/chat-pane.ts; ui/i18n.ts SKIP; ui/terminal-dock.ts removed)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+`src/dock/` is formvis's `frontend/src/dock` at commit 1ee307fc, 15 files, copied byte for byte. Nothing in it is edited here; `./formpdf agents sync --check` fails and names the file when one does not match `MANIFEST.json` or imports from formpdf. Everything formpdf-specific is in `src/dock-adapter.ts` and `styles/dock-tokens.css`.
+
+Decisions, and why:
+
+- Storage key `formpdf.dock` (no other store used that name). The old keys were a bare number (`fs-dock-h`) and a bare word (`fs-dock-last`), so `dockLegacy.read` converts them; the module moves them once and deletes them. The pre-paint block in index.html reads only the new key: with only old keys present the dock was never open at launch, so there is nothing to reserve.
+- Chat stays formpdf's own (`chat: { pane(host) }`): Markdown replies, page buttons and pictures on tool chips, the usage meter, From Claude Code and the kept history are not in the module's Chat. The module hides its ask line for the whole dock when the app owns the Chat pane (dock.css:65), so `ChatPane` now has its own line (`.fs-chat-ask`) and `claudeLine(dock)` appends formpdf's own "Ask Claude Code" line to `dock.root` and hides it while the Chat tab is active (`dock.onTab`, `dock.activeTab()`). Both are the app's elements with the app's classes; the stage is the same height on every tab, as before.
+- The chord is the one formpdf had: Cmd+J on macOS, Ctrl+J elsewhere, never under an open dialog (`isDockChord`). Shift and Alt with the chord (Claude Code, Chat) are still taken by app.ts's capture listener, and `passKey` names exactly those two so a terminal leaves them alone. Plain Mod+J is now the module's listener; app.ts no longer handles it.
+- The question an outside agent causes no longer goes through `AgentBridge.run`: `LiveClient` hands the `consent` tool call and `consentWithdrawn` to the adapter (`onConsent`, `onWithdrawn`) and the answer goes back with `LiveClient.result(id, ...)`. Waiting questions are kept in `sessionStorage` (`formpdf.consentWaiting`) because the engine asks once and does not ask a reloaded window again; a kept question is shown again until its `expires`, and its answer still reaches the engine because the engine waits on the id. Escape is Deny, as closing the old dialog was. The old dialog's three sentences are the request's `notes`.
+- `t` returns the English: the page translator walks the DOM. `[translate="no"]` joined its skip list so terminals and whatever the module marks are left alone. The module's new sentences are not in the 25 tables yet and show in English.
+- `body:not(.app-ready) .ft-dock { visibility: hidden }`: a dock remembered open would otherwise paint before the app is revealed.
+- Head icons are the module's (owner decision E of the dock spec); the title bar keeps its own Claude Code mark.
+
+Removed, quoted. `ui/terminal-dock.ts` (398 lines, whole text: `git show 3093098:frontend/src/ui/terminal-dock.ts`); its parts that carried behaviour:
+
+```ts
+const HEIGHT_KEY = 'fs-dock-h';
+const LAST_KEY = 'fs-dock-last';
+const MIN_H = 160;
+export function isDockCombo(e: KeyboardEvent): boolean {
+  return (isMac ? e.metaKey : e.ctrlKey) && e.code === 'KeyJ';
+}
+    this.root.addEventListener('keydown', (e) => { if (!isDockCombo(e)) e.stopPropagation(); });
+  private applyHeight(): void {
+    const max = Math.max(MIN_H, Math.round(window.innerHeight * 0.75));
+    const h = Math.min(max, Math.max(MIN_H, this.height));
+    document.documentElement.style.setProperty('--fs-dock-h', `${h}px`);
+  }
+  private async openFresh(): Promise<void> {
+    const last = lastKind();
+    if (last === 'chat') { await this.showChat(); return; }
+    const installed = last === 'shell' ? false : await api.get<{ installed?: boolean }>('/api/claude/status').then((s) => !!s.installed, () => false);
+    if (installed) await this.claude();
+    else await this.terminal();
+  }
+  private async send(): Promise<void> {
+    const text = this.ask.value.trim();
+    if (!text) return;
+    const extra = this.context();
+    if (this.active === 'chat' && this.chatPane?.isBusy()) return;
+    this.ask.value = '';
+    if (this.active === 'chat' && this.chatPane) await this.chatPane.send(text, extra, this.note());
+    else await this.claude(extra ? `${text} (${extra})` : text);
+  }
+    socket.addEventListener('open', () => { socket.send(JSON.stringify({ type: 'key', key: windowKey() })); this.sendSize(t); });
+    socket.addEventListener('message', (msg) => {
+      const data = String(msg.data);
+      if (data === '{"type": "exit"}') {
+        t.term.write(`\r\n\x1b[2m[${t.kind === 'claude' ? 'Claude Code' : 'shell'} exited · Restart runs it again]\x1b[0m\r\n`);
+        return;
+      }
+      t.term.write(data);
+    });
+```
+
+From `styles/dock.css`, lines 1 to 28 (the `.fs-dock*` and `.fs-term` rules); the ones that placed the dock:
+
+```css
+html.is-dock-open .fs-pdfwb, html.is-dock-open .fs-home { bottom: var(--fs-dock-h); }
+html.is-dock-open body:not(.nm-home) #overlay-root { z-index: var(--z-modal); }
+.fs-dock { position: fixed; left: 0; right: 0; bottom: 0; height: var(--fs-dock-h, 300px); z-index: var(--z-dock); display: grid; grid-template-rows: 34px minmax(0, 1fr) 40px; min-width: 0; min-height: 0; background: var(--surface-0); color: var(--text-primary); border-top: 1px solid var(--line-1); font-family: var(--font-ui); }
+.fs-dock-rsz { position: absolute; top: -3px; left: 0; right: 0; height: 6px; cursor: row-resize; z-index: var(--z-raised); touch-action: none; }
+.fs-term { position: absolute; inset: 6px 4px 0 10px; }
+:root[data-oled] .fs-dock-head, :root[data-oled] .fs-dock-ask { background: var(--bg-primary); }
+```
+
+From `live/agent.ts`, the dialog and its branch in `run`:
+
+```ts
+class Consent extends Dialog {
+  constructor() {
+    super('Allow agents to edit?', 460);
+    this.button('Not now', 'ghost', () => this.finish(false));
+    this.allowBtn = this.button('Allow', 'primary', () => this.finish(true));
+    this.onClose = () => this.finish(false);
+  }
+  ask(agent: string): Promise<boolean> {
+    this.setTitle(`Allow ${agent} to edit your PDFs?`);
+    setText(this.lead, `${agent} is connected to formpdf and asks to change PDFs and write files for you.`);
+    this.open(this.allowBtn);
+    return new Promise((r) => { this.resolve = r; });
+  }
+}
+    if (name === 'consent') {
+      const agent = str(args.agent) || 'An agent';
+      this.consentAsk ??= this.ask(agent).finally(() => { this.consentAsk = null; });
+      const allowed = await this.consentAsk;
+      return { content: [{ type: 'text', text: allowed ? 'The person allowed agents to edit PDFs.' : 'The person did not allow agents to edit PDFs for now.' }], structuredContent: { allowed } };
+    }
+```
+
+Not kept, because the module does not serve it: the first ever open preferring Claude Code when it is installed (the module opens a shell, or Chat when Chat was last); the chord in the Claude Code button's tooltip (the Chat tooltip carries its chord through `strings.chatAbout`); the two button weights in the module's own bars. Measured in headless Chrome at 1440 by 900 against the engine from source: dock closed 0 pixels differ from before; open on a shell 795 (head icons and the four new head buttons); open on Chat about 2,000 (the same head band).
+
+## 127. One ask line under every dock tab, the module's · _v0.61.0 (src/dock/ whole, module 2.1.0; src/dock-adapter.ts claudeLine removed, strings, chat; app.ts; ui/chat-pane.ts constructor, send, ask, shown, hidden, closed, scroll; styles/dock.css)
+
+kind: feat · logged: v0.61.0 · 2026-11-19
+
+`src/dock/` is formvis's folder at commit 8bbdf61b (module 2.1.0), copied byte for byte. With it the adapter says `chat: { pane, ask: 'line' }`: the module's own line shows under every tab. On Chat the text goes to the pane's `send`; under a terminal it opens Claude Code with the text, and `terminal.open` adds where the person is, as before. `strings.askPlaceholder` and `strings.chatPlaceholder` keep formpdf's two sentences. The pane now answers `send` with whether the text was taken (false while Claude works, false when the engine refused), gives `busy()`, reads the conversation in `shown()` in place of at construction, stops pinning the log to its end while `hidden()`, and on `closed()` forgets what it drew so the next show reads the engine's state again. The guide's "how to ask" step points at the line, so formpdf's own `tourChatBody` is gone and the module's sentence shows.
+
+Removed from `src/dock-adapter.ts`, the app's own line that was appended to `dock.root` and hidden on Chat (and its call `claudeLine(dock);` in `app.ts`):
+
+```ts
+export function claudeLine(dock: Dock): void {
+  const form = el(`<form class="fs-chat-ask fs-dock-ask" autocomplete="off">
+<span class="fs-chat-ask-mark">${icon('agent', 15)}</span>
+<input class="fs-input fs-chat-ask-input" type="text" spellcheck="false" placeholder="Ask Claude Code to work on the open PDF" aria-label="Ask Claude Code">
+<button type="submit" class="fs-icon-btn is-sm" title="Send" aria-label="Send">${icon('send', 14)}</button>
+</form>`);
+  const input = q<HTMLInputElement>(form, '.fs-chat-ask-input');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    void dock.claude(text).then((sent) => { if (!sent && !input.value) input.value = text; });
+  });
+  const sync = (): void => setHidden(form, dock.activeTab() === 'chat');
+  dock.onTab = sync;
+  dock.root.appendChild(form);
+  sync();
+}
+```
+
+and from the adapter's `strings` and `chat.pane`:
+
+```ts
+      tourChatBody: 'Open Chat with the speech bubble, type what you want in its line, for example "{example}", and press Enter. Claude does it in {app}, and each turn can be undone.',
+        void chat.load();
+        return { send: (text) => { void chat.ask(text); }, focus: () => chat.focus() };
+```
+
+Removed from `ui/chat-pane.ts`, the pane's own line, its field, its listener and `focus`:
+
+```ts
+<form class="fs-chat-ask" autocomplete="off">
+<span class="fs-chat-ask-mark">${icon('agent', 15)}</span>
+<input class="fs-input fs-chat-ask-input" type="text" spellcheck="false" placeholder="Ask Claude about the open PDF (Enter to send)" aria-label="Ask Claude">
+<button type="submit" class="fs-icon-btn is-sm" title="Send" aria-label="Send">${icon('send', 14)}</button>
+</form>
+  private readonly input: HTMLInputElement;
+    this.input = q<HTMLInputElement>(this.root, '.fs-chat-ask-input');
+    q(this.root, '.fs-chat-ask').addEventListener('submit', (e) => { e.preventDefault(); const text = this.input.value; this.input.value = ''; void this.ask(text).then((sent) => { if (!sent && !this.input.value) this.input.value = text; }); });
+  focus(): void { this.input.focus({ preventScroll: true }); }
+```
+
+`send` there returned nothing and `ask` answered true whenever it had tried:
+
+```ts
+  async send(text: string, context = '', note = ''): Promise<void> {
+    try { await api.post('/api/chat/send', { text, context, note }); } catch (err) { this.onFail(err); }
+  }
+    await this.send(said, this.context(), this.note());
+    return true;
+```
+
+Removed from `styles/dock.css`, the rules for both lines, and the pane's third grid row (`grid-template-rows: 30px minmax(0, 1fr) 40px` is now `30px minmax(0, 1fr)`):
+
+```css
+.fs-chat-ask { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); background: var(--surface-1); border-top: 1px solid var(--line-0); }
+.fs-dock-ask { flex: none; height: 40px; }
+.fs-dock-ask[hidden] { display: none; }
+:root[data-oled] .fs-chat-ask { background: var(--bg-primary); }
+.fs-chat-ask-mark { display: inline-grid; place-items: center; color: var(--accent-color); }
+.fs-chat-ask-input { flex: 1; height: 28px; }
+.fs-chat-ask .fs-icon-btn { width: 28px; height: 28px; }
+```
+
+## 128. A dock layout moved from the old keys counts as seen, and the terminal keeps formpdf's inset · _v0.61.0 (src/dock-adapter.ts dockLegacy; styles/dock-tokens.css)
+
+kind: fix · logged: v0.61.0 · 2026-11-19
+
+`dockLegacy.read` now answers `seen: true` with what it read from `fs-dock-h` and `fs-dock-last`, so module 2.1.0 writes it with the moved layout and a person who already used formpdf's dock is not walked through the guide on the next open. A person with no stored layout still gets it. Replaced:
+
+```ts
+    const out: Partial<DockState> = {};
+```
+
+`--dock-stage-pad: 6px 4px 0 10px` in `styles/dock-tokens.css` gives the terminal the inset formpdf's own dock had (`.fs-term { position: absolute; inset: 6px 4px 0 10px; }`, entry 126); under module 2.0.1 the padding was the module's literal `4px 8px 0`. The Chat pane fills the stage as before; only a terminal moves, by 2 pixels.
+
+## 129. The dock folder is module 2.2.0, and Antigravity is the fourth agent tab · _v0.62.0 (src/dock/ whole, agents.ts new; src/dock-adapter.ts record, formpdfDock, tabs, terminal.open, agentStatus)
+
+kind: feat · logged: v0.62.0 · 2026-11-19
+
+`src/dock/` is formvis ddc893ae byte for byte: 16 entries with `MANIFEST.json`, `agents.ts` new, nine of the others changed. In 2.2.0 the agent kinds are data the adapter gives, so a fourth program needs no change inside the folder.
+
+The adapter is now `DockAdapter<'antigravity'>`: `tabs().builtin` lists `antigravity`, `terminal.open('antigravity', ...)` goes to `POST /api/agents/open` like Codex and Cursor, a terminal record of that kind keeps its kind, and `agentStatus()` returns the `antigravity` key. For any of the four programs that the engine did not find running, the engine's own sentence (where it looked, the install line) is passed as `note`.
+
+Checked: `tsc --noEmit` is clean and the shared folder matches its manifest. Not looked at in a browser, in the desktop window, or on macOS or Windows; the new button and row were not seen on screen here. The engine side was run with a stand-in `agy` (backend entry 129).

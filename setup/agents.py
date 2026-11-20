@@ -5,16 +5,86 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ["formpdf-harness", "formpdf-skillset"]
+MANIFEST = ROOT / "agents" / "manifest.json"
+APP = "formpdf"
+DOCK = {"present": True, "positions": ["bottom", "right"], "tabs": ["antigravity", "chat", "claude", "codex", "cursor", "shell"]}
+DOCK_DIR = ROOT / "frontend" / "src" / "dock"
+
+
+def dock_drift() -> list:
+    import hashlib
+
+    listed = json.loads((DOCK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))["files"]
+    here = {p.name for p in DOCK_DIR.iterdir() if p.is_file() and p.name != "MANIFEST.json"}
+    bad = {name for name, digest in listed.items() if not (DOCK_DIR / name).is_file() or hashlib.sha256((DOCK_DIR / name).read_bytes()).hexdigest() != digest}
+    return sorted(bad | (here - set(listed)))
+
+
+def dock_strangers() -> list:
+    found = []
+    for p in sorted(DOCK_DIR.glob("*.ts")):
+        for target in re.findall(r"""(?:from|import)\s*\(?\s*['"]([^'"]+)['"]""", p.read_text(encoding="utf-8")):
+            if target.startswith("@xterm/"):
+                continue
+            if not target.startswith("./") or "/" in target[2:]:
+                found.append(f"{p.name} imports {target}")
+    return found
+
+
+LOOKUP = ROOT / "backend" / "app" / "services" / "agent_lookup.py"
+LOOKUP_HASHES = {"1.0.0": "252ea9bb9419d4990f174f91914f09800497bc69e98f849f5643bbf4217cc3f3", "1.0.1": "62667f9b68b7d101e1896ce617240424e33b7e498c560bc79d45f0ab26c77d51"}
+
+
+def lookup_problems() -> list:
+    import hashlib
+
+    rel = LOOKUP.relative_to(ROOT).as_posix()
+    try:
+        raw = LOOKUP.read_bytes()
+    except OSError:
+        return [f"{rel}: missing (the shared finder for the agent programs)"]
+    said = re.search(rb'^VERSION = "([^"\r\n]+)"\r?$', raw, re.M)
+    version = said.group(1).decode("ascii", "replace") if said else "unknown"
+    if LOOKUP_HASHES.get(version) != hashlib.sha256(raw).hexdigest():
+        return [f"{rel}: does not match the hash recorded for version {version} (the shared finder changes only as a whole new version)"]
+    return []
+
+
+def lookup():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("formpdf_agent_lookup", LOOKUP)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+ENGINE_FACTS = """
+import json
+from app.main import app
+from app.routers import mcp
+from app.services import formext_host
+tools = [t["name"] for t in mcp.TOOLS]
+print(json.dumps({
+    "tools": tools,
+    "read_only": [t["name"] for t in mcp.TOOLS if t["annotations"]["readOnlyHint"]],
+    "approval_gated": [n for n in tools if n in mcp.GATED or n in mcp.GATED_BY_ARGUMENTS],
+    "http": "post" in app.openapi().get("paths", {}).get("/mcp", {}),
+    "host_api": formext_host.API,
+}))
+"""
 PORT = int(os.environ.get("FORMPDF_PORT") or 8198)
 PY = "python" if os.name == "nt" else "python3"
 LAUNCH = str(ROOT / ("formpdf.bat" if os.name == "nt" else "formpdf"))
-USAGE = """usage: ./formpdf agents install [--dry-run]   set up Claude Code, Codex and Cursor here and in the folder you ran it from
-       ./formpdf agents sync [--check]       write the window commands reference from the catalogue, then copy the formpdf skills again
+USAGE = """usage: ./formpdf agents install [--dry-run]   set up Claude Code, Codex and Cursor here and in the folder you ran it from, and Antigravity for this user
+       ./formpdf agents sync [--check]       write agents/manifest.json and the window commands reference from the catalogue, then copy the formpdf skills again
                                              (and mirror .claude/skills to .agents/skills)"""
 
 
@@ -95,22 +165,41 @@ def configure(folder: Path, portable: bool, dry: bool, said: list) -> None:
 
 def install_claude_user(dry: bool, said: list) -> None:
     said.append("Claude Code (all projects):")
-    claude = shutil.which("claude")
-    if not claude:
-        said.append(f"  the claude command is not installed here; once it is, run: claude mcp add --scope user formpdf -- {LAUNCH} mcp")
+    finder = lookup()
+    found = finder.check(finder.find("claude", override_vars=("FORMPDF_CLAUDE_BIN",)))
+    if found.state != "runs":
+        said.append(f"  {finder.sentence(found, finder.install('claude'))} Once it runs: claude mcp add --scope user formpdf -- {LAUNCH} mcp")
         return
-    have = subprocess.run([claude, "mcp", "get", "formpdf"], capture_output=True, text=True)
+    claude, env = found.path, finder.child_env(found.path)
+    try:
+        have = finder.run([claude, "mcp", "get", "formpdf"], env, 60)
+    except subprocess.SubprocessError:
+        said.append(f"  {claude} gave no answer in 60 seconds; run: claude mcp add --scope user formpdf -- {LAUNCH} mcp")
+        return
     if have.returncode == 0 and LAUNCH in have.stdout:
         said.append("  MCP server formpdf already set (user scope)")
         return
     said.append(f"  claude mcp add --scope user formpdf -- {LAUNCH} mcp")
     if dry:
         return
-    if have.returncode == 0:
-        subprocess.run([claude, "mcp", "remove", "formpdf", "--scope", "user"], capture_output=True)
-    done = subprocess.run([claude, "mcp", "add", "--scope", "user", "formpdf", "--", LAUNCH, "mcp"], capture_output=True, text=True)
+    try:
+        if have.returncode == 0:
+            finder.run([claude, "mcp", "remove", "formpdf", "--scope", "user"], env, 60)
+        done = finder.run([claude, "mcp", "add", "--scope", "user", "formpdf", "--", LAUNCH, "mcp"], env, 60)
+    except subprocess.SubprocessError:
+        said.append("  claude mcp add gave no answer in 60 seconds")
+        return
     if done.returncode != 0:
         said.append(f"  claude mcp add failed: {(done.stderr or done.stdout).strip()[:200]}")
+
+
+def install_antigravity_user(dry: bool, said: list) -> None:
+    said.append("Antigravity (all projects):")
+    older = home() / ".gemini" / "antigravity-cli" / "mcp_config.json"
+    path = home() / ".gemini" / "config" / "mcp_config.json"
+    if older.exists() and not path.exists():
+        said.append(f"  an older file, {older}, was seen and left alone")
+    merge_json(path, {"formpdf": {"command": PY, "args": [str(ROOT / "setup" / "mcp_stdio.py")]}}, dry, said)
 
 
 def _files(folder: Path) -> dict:
@@ -153,6 +242,7 @@ def install(dry: bool) -> int:
     if caller() != ROOT:
         configure(caller(), False, dry, said)
     install_claude_user(dry, said)
+    install_antigravity_user(dry, said)
     skills(dry, said)
     print(("Would do (dry run):\n" if dry else "") + "\n".join(said))
     if not dry:
@@ -215,9 +305,61 @@ def generated() -> dict[Path, str]:
     return {ROOT / ".claude" / "skills" / "formpdf-harness" / "references" / "commands.md": commands_reference(rows)} if rows else {}
 
 
+def engine_python() -> str:
+    for py in (ROOT / "backend" / "venv" / "bin" / "python", ROOT / "backend" / "venv" / "Scripts" / "python.exe"):
+        if py.is_file():
+            return str(py)
+    return sys.executable
+
+
+def engine_facts() -> dict:
+    with tempfile.TemporaryDirectory(prefix="formpdf-manifest-") as scratch:
+        env = {**os.environ, "FORMPDF_DATA_DIR": scratch, "PYTHONDONTWRITEBYTECODE": "1"}
+        done = subprocess.run([engine_python(), "-c", ENGINE_FACTS], cwd=ROOT / "backend", env=env, capture_output=True, text=True)
+    if done.returncode != 0:
+        raise RuntimeError("cannot read the MCP registry from the engine code (install backend/requirements.txt, then run again): " + (done.stderr.strip().splitlines() or ["no output"])[-1])
+    return json.loads(done.stdout.strip().splitlines()[-1])
+
+
+def skill_entries() -> list[dict]:
+    base = ROOT / ".claude" / "skills"
+    out = []
+    for folder in sorted(p for p in base.iterdir() if (p / "SKILL.md").is_file()) if base.is_dir() else []:
+        subs = folder / "sub-skills"
+        names = sorted(p.name for p in subs.iterdir() if (p / "SUB-SKILL.md").is_file()) if subs.is_dir() else []
+        out.append({"name": folder.name, "sub_skills": names})
+    return out
+
+
+def manifest_text() -> str:
+    facts = engine_facts()
+    transports = (["stdio"] if (ROOT / "setup" / "mcp_stdio.py").is_file() else []) + (["http"] if facts["http"] else [])
+    body = {
+        "format": "form-agent-manifest",
+        "version": 1,
+        "app": APP,
+        "mcp": {"tools": facts["tools"], "read_only": facts["read_only"], "approval_gated": facts["approval_gated"], "transports": transports},
+        "skills": skill_entries(),
+        "dock": DOCK,
+        "extensions": {"host_api": facts["host_api"]},
+    }
+    return json.dumps(body, indent=2) + "\n"
+
+
+def manifest_drift() -> bool:
+    return not MANIFEST.is_file() or MANIFEST.read_text(encoding="utf-8") != manifest_text()
+
+
 def sync(check: bool) -> int:
     said: list = []
     drift = 0
+    wanted = manifest_text()
+    if not MANIFEST.is_file() or MANIFEST.read_text(encoding="utf-8") != wanted:
+        drift += 1
+        said.append(f"  {'would write' if check else 'wrote'} {MANIFEST.relative_to(ROOT)}")
+        if not check:
+            MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+            MANIFEST.write_text(wanted, encoding="utf-8")
     made = generated()
     if not made:
         said.append(f"Commands reference: no catalogue at {catalogue_file()} yet; open formpdf once, then sync again")
@@ -228,10 +370,18 @@ def sync(check: bool) -> int:
             if not check:
                 ref.parent.mkdir(parents=True, exist_ok=True)
                 ref.write_text(want, encoding="utf-8")
-    n = skills(check, said) + drift
+    broken = [f"  frontend/src/dock/{name} does not match frontend/src/dock/MANIFEST.json; the shared dock folder is copied whole from formvis and never edited here" for name in dock_drift()]
+    broken += [f"  frontend/src/dock/{line}; the shared dock folder imports nothing from formpdf" for line in dock_strangers()]
+    broken += [f"  {line}" for line in lookup_problems()]
+    said.extend(broken)
+    if broken and not check:
+        print("\n".join(said))
+        print("agents: the shared dock folder or the shared finder is not what its record says; nothing was written for it")
+        return 1
+    n = skills(check, said) + drift + len(broken)
     print("\n".join(said))
     if check:
-        print("agents: in step" if n == 0 else "agents: skills drifted (run ./formpdf agents sync)")
+        print("agents: in step" if n == 0 else "agents: manifest, skills or references drifted (run ./formpdf agents sync)")
         return 1 if n else 0
     print(f"agents: {n} file{'s' if n != 1 else ''} and skill cop{'ies' if n != 1 else 'y'} updated")
     return 0

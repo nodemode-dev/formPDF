@@ -1,4 +1,5 @@
 export const cs: Record<string, string> = {
+"The saved agent permission was changed outside formpdf, so it is back to Ask.": "Uložené oprávnění agentů bylo změněno mimo formpdf, proto je zpět na Zeptat se.",
 "Apply or clear the redaction marks first.": "Nejprve použijte nebo vymažte značky začernění.",
 "The pages changed, so redaction marks that could not follow them were removed. Mark those areas again.": "Stránky se změnily, proto byly odstraněny značky začernění, které je nemohly následovat. Označte tyto oblasti znovu.",
 "Demos": "Ukázky",

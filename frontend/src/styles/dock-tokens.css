@@ -1,0 +1,61 @@
+:root {
+  --dock-bg: var(--surface-0);
+  --dock-bar-bg: var(--surface-1);
+  --dock-raised: var(--surface-raised);
+  --dock-hover: var(--surface-2);
+  --dock-input-bg: var(--surface-2);
+  --dock-border: var(--line-1);
+  --dock-edge: var(--line-1);
+  --dock-divider: var(--line-0);
+  --dock-tab-border: var(--line-2);
+  --dock-outline: var(--line-2);
+  --dock-scrim: var(--bg-scrim);
+  --dock-text: var(--text-primary);
+  --dock-text-dim: var(--text-secondary);
+  --dock-text-muted: var(--text-muted);
+  --dock-tab-text: var(--text-muted);
+  --dock-accent: var(--accent-color);
+  --dock-accent-line: var(--accent-color-dim);
+  --dock-accent-ink: var(--accent-ink);
+  --dock-danger: var(--danger);
+  --dock-danger-text: var(--danger-text);
+  --dock-space-1: var(--space-1);
+  --dock-space-2: var(--space-2);
+  --dock-space-3: var(--space-3);
+  --dock-space-4: var(--space-4);
+  --dock-radius-xs: var(--radius-sm);
+  --dock-radius-sm: var(--radius-sm);
+  --dock-radius: var(--radius);
+  --dock-radius-md: var(--radius-md);
+  --dock-tab-radius: var(--radius);
+  --dock-head-h: 34px;
+  --dock-tab-h: 26px;
+  --dock-ibtn: 26px;
+  --dock-ask-h: 40px;
+  --dock-stage-pad: 6px 4px 0 10px;
+  --dock-chat-bar-h: 30px;
+  --dock-ctl-h: 24px;
+  --dock-icon: 15px;
+  --dock-icon-sm: 13px;
+  --dock-icon-xs: 11px;
+  --dock-icon-note: 12px;
+  --dock-icon-send: 14px;
+  --dock-fs-xs: var(--fs-11);
+  --dock-fs-sm: var(--fs-12);
+  --dock-fs-md: var(--fs-14);
+  --dock-font-mono: var(--font-mono);
+  --dock-term-bg: var(--surface-0);
+  --dock-term-fg: var(--text-primary);
+  --dock-term-cursor: var(--accent-color);
+  --dock-term-selection: var(--accent-color-dim);
+  --dock-term-font-size: 12px;
+  --dock-term-line-height: 1.2;
+  --dock-term-contrast: 1;
+}
+:root[data-oled] { --dock-bar-bg: var(--bg-primary); }
+.ft-dock { position: fixed; left: 0; right: 0; bottom: 0; height: var(--ft-dock-size, 300px); z-index: var(--z-dock); font-family: var(--font-ui); }
+:root[data-ft-dock-side="right"] .ft-dock { left: auto; top: 0; height: auto; width: var(--ft-dock-wsize, 440px); }
+:root[data-ft-dock="open"]:not([data-ft-dock-side="right"]) .fs-pdfwb, :root[data-ft-dock="open"]:not([data-ft-dock-side="right"]) .fs-home { bottom: var(--ft-dock-size, 300px); }
+:root[data-ft-dock="open"][data-ft-dock-side="right"] .fs-pdfwb, :root[data-ft-dock="open"][data-ft-dock-side="right"] .fs-home { right: var(--ft-dock-wsize, 440px); }
+:root[data-ft-dock="open"] body:not(.nm-home) #overlay-root { z-index: var(--z-modal); }
+body:not(.app-ready) .ft-dock { visibility: hidden; }

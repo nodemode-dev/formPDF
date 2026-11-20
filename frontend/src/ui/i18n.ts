@@ -210,7 +210,7 @@ export function onLanguage(fn: () => void): () => void {
 }
 
 const ATTRS = ['title', 'aria-label', 'placeholder'] as const;
-const SKIP = 'textarea, input, script, style, canvas, svg, [contenteditable], [data-no-i18n], .textLayer, .fs-pdf-page, .xterm, .fs-chat-msg, .fs-md, .fs-pdfwb-name, .fs-pdfwb-thread .fs-row-sub, .fs-ws-note-sub, .fs-pdfwb-outline';
+const SKIP = 'textarea, input, script, style, canvas, svg, [contenteditable], [data-no-i18n], [translate="no"], .textLayer, .fs-pdf-page, .xterm, .fs-chat-msg, .fs-md, .fs-pdfwb-name, .fs-pdfwb-thread .fs-row-sub, .fs-ws-note-sub, .fs-pdfwb-outline';
 const SKIP_ATTR = SKIP.replace('textarea, input, ', '');
 const textEn = new WeakMap<Text, { en: string; shown: string }>();
 const attrEn = new WeakMap<Element, Map<string, { en: string; shown: string }>>();

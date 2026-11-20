@@ -12,7 +12,7 @@ if not exist frontend\dist\index.html ( call setup\build_frontend.bat || exit /b
 set "FONTS="
 if exist "%ROOT%\backend\app\fonts" set FONTS=--add-data "%ROOT%\backend\app\fonts;fonts"
 if exist "%ROOT%\backend\app\dict" set FONTS=%FONTS% --add-data "%ROOT%\backend\app\dict;dict"
-set "FONTS=%FONTS% --hidden-import ptyprocess"
+set "FONTS=%FONTS% --hidden-import ptyprocess --collect-submodules keyring"
 python -c "import winpty" >nul 2>nul && set FONTS=%FONTS% --hidden-import winpty
 python -c "import rapidocr, onnxruntime" >nul 2>nul && set FONTS=%FONTS% --collect-all rapidocr --collect-all onnxruntime --collect-all shapely --collect-all pyclipper
 cd backend

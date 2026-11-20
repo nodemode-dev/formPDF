@@ -1,0 +1,74 @@
+{
+  "format": "form-agent-manifest",
+  "version": 1,
+  "app": "formpdf",
+  "mcp": {
+    "tools": [
+      "get_context",
+      "get_agent_access",
+      "open_pdf",
+      "pdf",
+      "render_pages",
+      "extract",
+      "save",
+      "undo",
+      "answer_question",
+      "list_commands",
+      "describe_command",
+      "run_command",
+      "run_commands",
+      "extensions_list",
+      "extension_command"
+    ],
+    "read_only": [
+      "get_context",
+      "get_agent_access",
+      "render_pages",
+      "extract",
+      "list_commands",
+      "describe_command",
+      "extensions_list"
+    ],
+    "approval_gated": [
+      "open_pdf",
+      "pdf",
+      "save",
+      "undo",
+      "run_command",
+      "run_commands",
+      "extension_command"
+    ],
+    "transports": [
+      "stdio",
+      "http"
+    ]
+  },
+  "skills": [
+    {
+      "name": "formpdf-harness",
+      "sub_skills": []
+    },
+    {
+      "name": "formpdf-skillset",
+      "sub_skills": []
+    }
+  ],
+  "dock": {
+    "present": true,
+    "positions": [
+      "bottom",
+      "right"
+    ],
+    "tabs": [
+      "antigravity",
+      "chat",
+      "claude",
+      "codex",
+      "cursor",
+      "shell"
+    ]
+  },
+  "extensions": {
+    "host_api": "1"
+  }
+}

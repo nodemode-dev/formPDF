@@ -1,31 +1,5 @@
-html.is-dock-open .fs-pdfwb, html.is-dock-open .fs-home { bottom: var(--fs-dock-h); }
-html.is-dock-open body:not(.nm-home) #overlay-root { z-index: var(--z-modal); }
-.fs-dock { position: fixed; left: 0; right: 0; bottom: 0; height: var(--fs-dock-h, 300px); z-index: var(--z-dock); display: grid; grid-template-rows: 34px minmax(0, 1fr) 40px; min-width: 0; min-height: 0; background: var(--surface-0); color: var(--text-primary); border-top: 1px solid var(--line-1); font-family: var(--font-ui); }
-.fs-dock[hidden] { display: none; }
-.fs-dock-rsz { position: absolute; top: -3px; left: 0; right: 0; height: 6px; cursor: row-resize; z-index: var(--z-raised); touch-action: none; }
-.fs-dock-rsz:hover, .fs-dock-rsz.is-dragging { background: var(--accent-color-dim); }
-.fs-dock-head { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); background: var(--surface-1); border-bottom: 1px solid var(--line-0); min-width: 0; }
-.fs-dock-tabs { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.fs-dock-tab { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 6px 0 9px; border: 1px solid transparent; border-radius: var(--radius); background: transparent; color: var(--text-muted); font: inherit; font-size: var(--fs-12); white-space: nowrap; cursor: pointer; }
-.fs-dock-tab:hover { color: var(--text-primary); }
-.fs-dock-tab.is-on { border-color: var(--line-2); background: var(--surface-raised); color: var(--text-primary); }
-.fs-dock-tab.is-claude .icon, .fs-dock-tab.is-chat .icon { color: var(--accent-color); }
-.fs-dock-tab.is-exited .fs-dock-tab-title { text-decoration: line-through; text-decoration-color: var(--line-3); }
-.fs-dock-tab-x { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: var(--radius-sm); color: var(--text-muted); }
-.fs-dock-tab-x:hover { background: var(--surface-2); color: var(--text-primary); }
 .fs-dock-spacer { flex: 1; }
-.fs-dock-head .fs-icon-btn { width: 26px; height: 26px; }
-.fs-dock-stage { position: relative; min-height: 0; min-width: 0; overflow: hidden; }
-.fs-term { position: absolute; inset: 6px 4px 0 10px; }
-.fs-term[hidden] { display: none; }
-.fs-term .xterm-viewport { background: transparent; }
-.fs-dock-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 0 var(--space-4); text-align: center; }
-.fs-dock-empty[hidden] { display: none; }
-.fs-dock-ask { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); background: var(--surface-1); border-top: 1px solid var(--line-0); }
-.fs-dock-ask-mark { display: inline-grid; place-items: center; color: var(--accent-color); }
-.fs-dock-ask-input { flex: 1; height: 28px; }
-.fs-dock-ask .fs-icon-btn { width: 28px; height: 28px; }
-.fs-chat { position: absolute; inset: 0; display: grid; grid-template-rows: 30px minmax(0, 1fr); }
+.fs-chat { position: absolute; inset: 0; display: grid; grid-template-rows: 30px minmax(0, 1fr); background: var(--surface-0); font-family: var(--font-ui); }
 .fs-chat[hidden] { display: none; }
 .fs-chat-bar { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border-bottom: 1px solid var(--line-0); min-width: 0; }
 .fs-chat-status { color: var(--text-muted); font-size: var(--fs-12); white-space: nowrap; }

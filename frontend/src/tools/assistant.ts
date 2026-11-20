@@ -1,4 +1,5 @@
 import { api } from '../io/api';
+import { keyHeaders } from '../io/window-key';
 import { pdfApi, type Derived } from '../pdf/api';
 import { registerTool, type ToolHost } from '../pdf/tools';
 import { promptName } from '../ui/dialogs';
@@ -137,7 +138,7 @@ function onAgentAnswer(e: Event): void {
 function cancel(): void {
   const id = waitingId;
   stopWaiting();
-  if (id) void fetch(`/api/ai/questions/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => undefined);
+  if (id) void fetch(`/api/ai/questions/${encodeURIComponent(id)}`, { method: 'DELETE', headers: keyHeaders() }).catch(() => undefined);
   setStatus('Cancelled.');
 }
 

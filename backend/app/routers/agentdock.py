@@ -1,12 +1,14 @@
 import asyncio
 import json
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
+from app.core import window_key
 from app.routers.live import local_origin
-from app.services import chat, claude_code, events, terminal
+from app.services import agent_programs, chat, claude_code, events, terminal
 from app.services.claude_code import AgentError
 
 router = APIRouter(tags=["agent-dock"])
@@ -31,6 +33,13 @@ class OpenClaude(BaseModel):
     resume: str | None = None
 
 
+class OpenAgent(BaseModel):
+    kind: Literal["codex", "cursor", "antigravity"]
+    cols: int | None = None
+    rows: int | None = None
+    fresh: bool = False
+
+
 class ChatSend(BaseModel):
     text: str
     context: str = ""
@@ -44,6 +53,7 @@ class ChatAdopt(BaseModel):
 def _guard(request: Request) -> None:
     if not local_origin(request.headers.get("origin")):
         raise HTTPException(403, "Only formpdf's own window can use the agent dock")
+    window_key.require(request)
 
 
 def _session(sid: str) -> terminal.Session:
@@ -114,22 +124,40 @@ async def attach(ws: WebSocket, sid: str) -> None:
         return
     await ws.accept()
     try:
+        first = json.loads(await asyncio.wait_for(ws.receive_text(), 10))
+    except (asyncio.TimeoutError, ValueError, WebSocketDisconnect):
+        first = None
+    if not isinstance(first, dict) or first.get("type") != "key" or not window_key.valid(first.get("key")):
+        await ws.close(code=4403)
+        return
+    try:
         session = terminal.get(sid)
     except KeyError:
         await ws.close(code=4404)
         return
     q: asyncio.Queue = asyncio.Queue()
     session.subscribers.add(q)
+    typed = first.get("control") == "binary"
+
+    async def notice(kind: str) -> None:
+        if typed:
+            await ws.send_bytes(json.dumps({"type": kind, "id": sid, "alive": session.alive}).encode("utf-8"))
+        elif kind == "exit":
+            await ws.send_text(json.dumps({"type": "exit"}))
 
     async def outbound() -> None:
+        await notice("hello")
         backlog = session.scrollback()
         if backlog:
             await ws.send_text(backlog)
         if not session.alive:
-            await ws.send_text(json.dumps({"type": "exit"}))
+            await notice("exit")
         while True:
             text = await q.get()
-            await ws.send_text(json.dumps({"type": "exit"}) if text is None else text)
+            if text is None:
+                await notice("exit")
+            else:
+                await ws.send_text(text)
 
     sender = asyncio.create_task(outbound())
     try:
@@ -160,6 +188,18 @@ def claude_status(request: Request) -> dict:
 def claude_open(body: OpenClaude, request: Request) -> dict:
     _guard(request)
     return _agent(claude_code.open_tab, body.prompt, body.cols, body.rows, body.fresh, body.resume)
+
+
+@router.get("/api/agents/status")
+def agents_status(request: Request, fresh: bool = False) -> dict:
+    _guard(request)
+    return agent_programs.status(fresh)
+
+
+@router.post("/api/agents/open")
+def agents_open(body: OpenAgent, request: Request) -> dict:
+    _guard(request)
+    return _agent(agent_programs.open_tab, body.kind, body.cols, body.rows, body.fresh)
 
 
 @router.get("/api/chat/state")
@@ -200,7 +240,8 @@ def chat_adopt(body: ChatAdopt, request: Request) -> dict:
 
 @router.get("/api/chat/image/{name}")
 def chat_image(name: str, request: Request) -> FileResponse:
-    _guard(request)
+    if not local_origin(request.headers.get("origin")):
+        raise HTTPException(403, "Only formpdf's own window can use the agent dock")
     path = chat.image_path(name)
     if path is None:
         raise HTTPException(404, "No such picture")
@@ -208,8 +249,9 @@ def chat_image(name: str, request: Request) -> FileResponse:
 
 
 @router.get("/api/events")
-async def stream(request: Request) -> StreamingResponse:
-    _guard(request)
+async def stream(request: Request, ticket: str = "") -> StreamingResponse:
+    if not local_origin(request.headers.get("origin")) or not window_key.spend(ticket):
+        raise HTTPException(403, window_key.REFUSED)
     queue = events.subscribe()
 
     async def gen():

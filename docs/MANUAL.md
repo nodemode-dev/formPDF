@@ -20,7 +20,7 @@ On Windows use `formpdf.bat install` and `formpdf.bat`. The one-click installers
 | `./formpdf install-desktop`, `./formpdf desktop dev`, `./formpdf desktop build` | the Tauri desktop app (checks Rust and PyInstaller, runs it, bundles it) |
 | `./formpdf freeze` | freeze the engine into the desktop sidecar |
 | `./formpdf mcp` | the MCP server over stdio, for Claude Desktop and other stdio clients |
-| `./formpdf agents install`, `./formpdf agents sync` | set up Claude Code, Codex and Cursor; refresh the skills |
+| `./formpdf agents install`, `./formpdf agents sync` | set up Claude Code, Codex, Cursor and Antigravity; refresh the skills and `agents/manifest.json`; `agents sync --check` changes nothing and fails when they are out of date |
 | `./formpdf run ...` | a PDF job without the window (see The headless CLI) |
 | `./formpdf clean [--all]` | remove build output (`--all` also the venv and node_modules) |
 
@@ -120,13 +120,13 @@ Extensions live under FormPortal's folder, in `extensions/formpdf/` (`enabled.js
 
 ## Agents
 
-Claude Code, Codex, Cursor and Claude Desktop can work on PDFs through formpdf's MCP server. They see the PDF you have open, and their changes land in the window live.
+Claude Code, Codex, Cursor, Antigravity and Claude Desktop can work on PDFs through formpdf's MCP server. They see the PDF you have open, and their changes land in the window live.
 
 ### Setup
 
 Start formpdf first (`./formpdf`). Then pick one:
 
-- **All at once**: `./formpdf agents install` writes `.mcp.json` (Claude Code), `.codex/config.toml` (Codex) and `.cursor/mcp.json` (Cursor) in the formpdf folder and in the folder you ran it from, and installs the formpdf skills into `~/.claude/skills` and `~/.agents/skills`. `--dry-run` shows what it would do.
+- **All at once**: `./formpdf agents install` writes `.mcp.json` (Claude Code), `.codex/config.toml` (Codex) and `.cursor/mcp.json` (Cursor) in the formpdf folder and in the folder you ran it from, adds formpdf to Antigravity (Google's `agy` program) in `~/.gemini/config/mcp_config.json`, and installs the formpdf skills into `~/.claude/skills` and `~/.agents/skills`. `--dry-run` shows what it would do.
 - **Claude Code**: `claude mcp add --transport http formpdf http://127.0.0.1:8198/mcp`.
 - **Codex**: add `[mcp_servers.formpdf]` with `url = "http://127.0.0.1:8198/mcp"` to `~/.codex/config.toml`.
 - **Cursor**: add `{"mcpServers": {"formpdf": {"url": "http://127.0.0.1:8198/mcp"}}}` to `~/.cursor/mcp.json` or a project's `.cursor/mcp.json`.
@@ -140,17 +140,29 @@ The Agents dialog (the Agents button in the title bar, Help > Agents and MCP, or
 | --- | --- |
 | get_context | the open PDF, PDFs the agent opened, recent PDFs, whether agents may edit |
 | open_pdf | opens a file in the window |
-| pdf | 60 actions: info, text, images, tables, find, comments, fields, hidden, compare, links, attachments, measurements, snap_points, spell, items, signatures, accessibility, structure, print_layout, pdfa_check, preflight; header_footer, page_numbers, watermark, crop, redact, mark_redactions, organize, protect, unlock, metadata, compress, sanitize, fill, annotate, form, merge, edit_links, edit_attachments, measure, spell_fix, edit_items, ocr, sign, request_signatures, autotag, fix_accessibility, edit_structure, pdfa, pdfx, preflight_fix; split, to_docx, to_pptx, to_html, to_rtf, to_xlsx, accessibility_report, print_pdf, preflight_report |
+| pdf | 90 actions: info, text, images, tables, find, comments, fields, hidden, compare, links, attachments, measurements, snap_points, spell, items, signatures, accessibility, structure, print_layout, pdfa_check, preflight; header_footer, page_numbers, watermark, crop, redact, mark_redactions, organize, protect, unlock, metadata, compress, sanitize, fill, annotate, form, merge, edit_links, edit_attachments, measure, spell_fix, edit_items, ocr, sign, request_signatures, autotag, fix_accessibility, edit_structure, pdfa, pdfx, preflight_fix; split, to_docx, to_pptx, to_html, to_rtf, to_xlsx, accessibility_report, print_pdf, preflight_report |
 | render_pages | a contact sheet picture of up to 12 pages |
 | extract | text, tables or pictures |
 | save | writes the open PDF to a file |
 | undo | takes back the agent's last turn |
 
+The table shows the main tools. The server also has tools to read the agent access choice, to answer a question about the PDF, and to list and run window and extension commands. `agents/manifest.json`, which `./formpdf agents sync` writes, is the complete list, with the tools that only read and the tools that wait for Allow.
+
 Without a path, a changing action works on the PDF open in the window: the window switches to the result at once, and the change is labelled as the agent's in the history and the status bar. With a path, the file is left alone and a new file is written beside it.
 
 ### Consent
 
-Agents can read without asking, but the first time one tries to change a PDF or write a file formpdf asks in the window: **Allow agents to edit?** with Allow and Not now. The switch lives in Preferences > Agents and the Agents dialog; turning it off stops agent changes. The server listens on 127.0.0.1 only.
+Outside agents can read without asking. The first time one tries to change a PDF or write a file, formpdf asks in its window: **Allow [the agent's name] to edit your PDFs?** with Allow and Not now. Allow lets agents make changes from then on. Not now refuses that agent's changes, and formpdf does not ask again for two minutes.
+
+The choice is called **Agent access**. You can set it in Preferences > Plugins > Outside Agents or in the Agents dialog, and it has three values:
+
+| Value | What happens |
+| --- | --- |
+| Ask each time (the default) | Agents read freely. The first change asks in the window as above. With no window open, a change is refused. |
+| Allowed | Agents change PDFs and write files without asking. |
+| Blocked | Every agent call is refused, reads included. |
+
+Only the formpdf window can change Agent access: an agent cannot, and neither can a command run from the command line. If the saved choice is changed outside the app, formpdf treats it as Ask until you set it again in the window, and Preferences says so. The app's own command line (`./formpdf run`, `./formpdf cli`) counts as an outside agent and follows the same choice. The server listens on 127.0.0.1 only.
 
 ### Undoing an agent
 
@@ -163,6 +175,8 @@ Edit > Undo agent turn (Alt+Mod+Z), or **Undo turn** next to the agent's last ch
 ## The headless CLI
 
 `./formpdf run` does one PDF action on files without the window, through the same code the MCP tools use. Changing actions write `[name]-[action].pdf` beside the input unless `--out` is given; the input never changes.
+
+`./formpdf run` counts as an outside agent, so it follows Agent access (see Consent). Reading actions such as `info`, `text`, `find` and `render` always work, unless access is Blocked. An action that changes a PDF or writes a file (every example below except `info` and `render`) is refused while access is Ask, because the command line has no window to ask in. To script such actions, set Agent access to Allowed once in the window (Preferences > Plugins > Outside Agents), then run them as shown.
 
 ```
 ./formpdf run actions
@@ -193,7 +207,15 @@ Edit > Undo agent turn (Alt+Mod+Z), or **Undo turn** next to the agent's last ch
 
 ## Preferences
 
-Help > Preferences (Mod+,): Appearance (theme and accent colour, the same fourteen themes as the form family, light and dark), Comments and stamps (the author name written on comments you apply, units), Spelling (the dictionary language and Your words, one per line, which Check spelling accepts; more languages are Hunspell .dic and .aff pairs placed in `~/Formpdf/dictionaries/<code>/`), Signing (a timestamp server address, used only when you tick Add a timestamp while signing), Forms (run standard form calculations, formats and checks), Plug-ins (each plug-in in the plugins folder with its state and any error, and a switch to turn it on or off), AI (the provider for the Assistant tab: Off, Your agent, Anthropic or OpenAI with your API key, or a model on this computer through Ollama, LM Studio or another OpenAI-compatible server; the model, the server address, the key, which is kept in the data folder and never shown again, a picture server for local pictures, and Test the connection), Agents (let Claude Code, Codex and Cursor read and edit PDFs), and Network (every connection formpdf could make and whether it does: today the engine and the window talk only on this computer, and the desktop update check is off).
+Help > Preferences (Mod+,) has a rail of pages. Each page holds these groups:
+
+- **General**: Comments and stamps (the author name written on comments you apply), Settings Storage, Reset, and Network (every connection formpdf could make and whether it does: today the engine and the window talk only on this computer, and the desktop update check is off).
+- **Interface**: Language, and Theme (a picker of dark and light themes, including AMOLED Black, a true-black theme for OLED screens, with an accent colour).
+- **Units & Rulers**: Measurements, the units.
+- **Type**: Spelling (the dictionary language and Your words, one per line, which Check spelling accepts; more languages are Hunspell .dic and .aff pairs placed in `~/Formpdf/dictionaries/<code>/`).
+- **File Handling**: Signing (a timestamp server address, used only when you tick Add a timestamp while signing) and Forms (run standard form calculations, formats and checks).
+- **Plugins**: Plug-ins (each plug-in in the plugins folder with its state and any error, and a switch to turn it on or off) and Outside Agents (Agent access: Ask each time, Allowed or Blocked, see Consent; the agents seen since formpdf started; and the Claude Code program, folder and first message).
+- **AI**: the provider for the Assistant tab: Off, Your agent, Anthropic or OpenAI with your API key, or a model on this computer through Ollama, LM Studio or another OpenAI-compatible server; the model, the server address, the key, which is kept in the data folder and never shown again, a picture server for local pictures, and Test the connection.
 
 ## Languages
 
@@ -230,6 +252,6 @@ engine.json              the running engine's port and process, removed when it 
 - **Port in use**: another formpdf or app is on 8198 or 5198. Stop it, or set `FORMPDF_PORT`.
 - **A PDF will not open**: if it is password protected, enter the password when asked; otherwise it may be damaged.
 - **Text search or extraction finds nothing**: the page is probably a scan; formpdf has no OCR yet.
-- **An agent cannot connect**: check that formpdf is running, that the address in the Agents dialog matches your agent's config, and that Let agents read and edit PDFs is on. Claude Desktop needs the stdio entry (`./formpdf mcp`), not the URL.
+- **An agent cannot connect**: check that formpdf is running, that the address in the Agents dialog matches your agent's config, and that Agent access (Preferences > Plugins > Outside Agents) is not Blocked. Claude Desktop needs the stdio entry (`./formpdf mcp`), not the URL.
 - **An agent's change went wrong**: Edit > Undo agent turn, or Undo turn in the status bar. Your file on disk is not touched until you save.
 - **Fonts look different in PowerPoint**: the export uses the PDF's font names; PowerPoint substitutes fonts it does not have.

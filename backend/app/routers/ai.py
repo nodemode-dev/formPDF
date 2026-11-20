@@ -1,8 +1,9 @@
 import asyncio
 import time
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
+from app.core import window_key
 from app.services import ai, alttext
 from app.services.pdf import docs
 
@@ -20,7 +21,8 @@ async def get_settings() -> dict:
 
 
 @router.post("/ai/settings")
-async def set_settings(body: dict) -> dict:
+async def set_settings(body: dict, request: Request) -> dict:
+    window_key.require(request)
     try:
         return await asyncio.to_thread(ai.save_settings, body)
     except ValueError as e:

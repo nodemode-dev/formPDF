@@ -59,6 +59,7 @@
 
 .fs-pdfwb-main { display: grid; grid-template-columns: 196px minmax(0, 1fr) 320px; min-width: 0; min-height: 0; }
 .fs-pdfwb-side { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--surface-1); border-right: 1px solid var(--line-0); }
+:root[data-oled] .fs-pdfwb-title, :root[data-oled] .fs-pdfwb-tools, :root[data-oled] .fs-pdfwb-side { background: var(--bg-primary); }
 .fs-pdfwb-sidehead { display: flex; align-items: center; gap: var(--space-2); flex: none; height: 40px; padding: 0 var(--space-2); background: var(--group-head); }
 .fs-pdfwb-sidehead .fs-seg { flex: 1; gap: var(--space-1); padding: 0; border: 0; background: transparent; box-shadow: none; }
 .fs-pdfwb-sidehead .fs-seg button { flex: none; height: 28px; padding: 0 11px; border: 1px solid transparent; border-radius: var(--radius-md); background: transparent; color: var(--text-secondary); font-size: var(--fs-13); }

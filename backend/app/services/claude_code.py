@@ -1,21 +1,19 @@
+import hmac
 import json
 import os
-import re
 import secrets
-import shlex
-import shutil
-import subprocess
+import sys
 import time
 from pathlib import Path
 
 from app.core import config
-from app.services import terminal
+from app.services import agent_lookup, terminal
 
-INAPP_TOKEN = secrets.token_urlsafe(24)
-KEEP_ENV = {"CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CONFIG_DIR"}
-CANDIDATES = (".claude/local/claude", ".local/bin/claude", ".npm-global/bin/claude", ".bun/bin/claude", ".volta/bin/claude")
-SYSTEM_PATHS = ("/opt/homebrew/bin/claude", "/usr/local/bin/claude", "/usr/bin/claude")
-INSTALL = "Claude Code is not installed: install it from https://claude.com/claude-code, run claude once in a terminal to sign in, then open it here again"
+TOKENS: dict[str, Path | None] = {}
+LABELS: dict[str, str] = {}
+OVERRIDES = {"claude": ("FORMPDF_CLAUDE_BIN",), "codex": ("FORMPDF_CODEX_BIN",), "cursor": ("FORMPDF_CURSOR_BIN",), "antigravity": ("FORMPDF_ANTIGRAVITY_BIN",)}
+SETTINGS = {"claude": "claudeBin"}
+OTHERWISE = "give its path in Preferences, Agents"
 NOTE = ("You are Claude Code running in the agent dock inside formpdf, the PDF editor open on this computer. "
         "Work on PDFs with the formpdf MCP server's tools: start with get_context, open_pdf to show a file, the pdf tool for the job, "
         "render_pages to look before and after a change, and list_commands with run_command for anything the window can do (zoom, tabs, panels, dialogs). "
@@ -39,78 +37,85 @@ def pref(key: str) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
-def child_env() -> dict:
-    return {k: v for k, v in terminal.base_env().items() if not k.startswith("CLAUDE") or k in KEEP_ENV}
+def setting(kind: str) -> str | None:
+    return pref(SETTINGS[kind]) if kind in SETTINGS else None
 
 
-def _from_login_shell() -> str | None:
-    if os.name == "nt":
-        return None
-    for flags in (["-c"], ["-i", "-c"]):
-        try:
-            out = subprocess.run(terminal.login_shell() + flags + ["command -v claude"], capture_output=True, text=True, timeout=10, env=child_env(), stdin=subprocess.DEVNULL)
-        except (OSError, subprocess.SubprocessError):
-            continue
-        found = out.stdout.strip().splitlines()[-1:] if out.returncode == 0 else []
-        if found and os.path.isabs(found[0]):
-            return found[0]
-    return None
+def otherwise(kind: str) -> str:
+    return OTHERWISE if kind in SETTINGS else ""
 
 
-def _runnable(path: str) -> bool:
-    p = Path(path).expanduser()
-    return p.is_file() and os.access(p, os.X_OK)
+def child_env(path: str | None = None, extra: dict | None = None) -> dict:
+    front = [] if os.name == "nt" or getattr(sys, "frozen", False) else [config.REPO_DIR]
+    return agent_lookup.child_env(path, base=terminal.base_env(), extra=extra, front=front, shell_timeout=10.0)
 
 
-def _version_key(p: Path) -> tuple:
-    parts = re.findall(r"\d+", p.name)
-    return tuple(int(x) for x in parts) or (0,)
+def located(kind: str, fresh: bool = False) -> agent_lookup.Found:
+    found = agent_lookup.find(kind, setting=setting(kind), override_vars=OVERRIDES.get(kind, ()), shell_timeout=10.0, fresh=fresh)
+    return agent_lookup.check(found, child_env(found.path), 15.0, fresh)
 
 
-def _managed() -> list[Path]:
-    home = Path.home()
-    found: list[Path] = []
-    for base, tail in ((home / ".nvm" / "versions" / "node", "bin"), (home / ".local" / "share" / "fnm" / "node-versions", "installation/bin"),
-                       (home / "Library" / "Application Support" / "fnm" / "node-versions", "installation/bin"),
-                       (home / ".asdf" / "installs" / "nodejs", "bin"), (home / ".local" / "share" / "mise" / "installs" / "node", "bin")):
-        try:
-            versions = sorted((d for d in base.iterdir() if d.is_dir()), key=_version_key, reverse=True)
-        except OSError:
-            continue
-        found += [d / tail / "claude" for d in versions]
-    return found + [home / ".claude" / "bin" / "claude"]
+def usable(kind: str) -> agent_lookup.Found:
+    found = located(kind)
+    return found if found.state == "runs" else located(kind, fresh=True)
+
+
+def said(found: agent_lookup.Found) -> str:
+    return agent_lookup.sentence(found, agent_lookup.install(found.program), otherwise(found.program))
 
 
 def cli() -> str | None:
-    chosen = pref("claudeBin")
-    if chosen and _runnable(chosen):
-        return str(Path(chosen).expanduser())
-    found = os.environ.get("FORMPDF_CLAUDE_BIN") or shutil.which("claude")
-    if found:
-        return found
-    home = Path.home()
-    for p in [home / c for c in CANDIDATES] + [Path(s) for s in SYSTEM_PATHS] + _managed():
-        if p.is_file() and os.access(p, os.X_OK):
-            return str(p)
-    return _from_login_shell()
+    return located("claude").path
 
 
 def info(fresh: bool = False) -> dict:
     if not fresh and _cache["value"] is not None and time.time() - _cache["at"] < 60:
         return _cache["value"]
-    path, version = cli(), None
-    if path:
-        try:
-            out = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=15, env=child_env())
-            version = (out.stdout.strip().split() or [None])[0]
-        except (OSError, subprocess.SubprocessError):
-            path = None
-    _cache["value"], _cache["at"] = {"installed": bool(path), "path": path, "version": version}, time.time()
+    found = located("claude", fresh)
+    _cache["value"], _cache["at"] = agent_lookup.answer(found, agent_lookup.install("claude"), OTHERWISE), time.time()
     return _cache["value"]
 
 
-def mcp_config() -> str:
-    return json.dumps({"mcpServers": {"formpdf": {"type": "http", "url": config.engine_url() + "/mcp", "headers": {"x-formpdf-inapp": INAPP_TOKEN}}}})
+def issue() -> tuple[str, str]:
+    token = secrets.token_urlsafe(32)
+    folder = config.data_dir() / "AgentTokens"
+    folder.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path = folder / f"mcp-{secrets.token_hex(8)}.json"
+    body = json.dumps({"mcpServers": {"formpdf_tab": {"type": "http", "url": config.engine_url() + "/mcp", "headers": {"x-formpdf-inapp": token}}}})
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(body)
+    TOKENS[token] = path
+    return token, str(path)
+
+
+def issue_env(name: str) -> str:
+    token = secrets.token_urlsafe(32)
+    TOKENS[token] = None
+    LABELS[token] = name
+    return token
+
+
+def label(value) -> str:
+    if not isinstance(value, str) or not value:
+        return ""
+    return next((LABELS[t] for t in list(LABELS) if hmac.compare_digest(value.encode("utf-8"), t.encode("utf-8"))), "")
+
+
+def revoke(token: str) -> None:
+    path = TOKENS.pop(token, None)
+    LABELS.pop(token, None)
+    if path is not None:
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+
+def is_inapp(value) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    return any(hmac.compare_digest(value.encode("utf-8"), t.encode("utf-8")) for t in list(TOKENS))
 
 
 def workdir() -> Path:
@@ -124,11 +129,11 @@ def workdir() -> Path:
 
 
 def wrap(cmd: list[str]) -> list[str]:
-    return cmd if os.name == "nt" else terminal.login_shell() + ["-c", "exec " + shlex.join(cmd)]
+    return agent_lookup.start_argv(cmd)
 
 
-def argv(path: str, prompt: str | None, resume: str | None = None) -> list[str]:
-    cmd = [path, "--mcp-config", mcp_config(), "--allowedTools", "mcp__formpdf", "--append-system-prompt", NOTE]
+def argv(path: str, prompt: str | None, resume: str | None, mcp_file: str) -> list[str]:
+    cmd = [path, "--mcp-config", mcp_file, "--allowedTools", "mcp__formpdf_tab", "--append-system-prompt", NOTE]
     if resume:
         cmd += ["--resume", resume]
     if prompt:
@@ -139,7 +144,7 @@ def argv(path: str, prompt: str | None, resume: str | None = None) -> list[str]:
 def status() -> dict:
     tab = next((s.describe() for s in terminal.SESSIONS.values() if s.kind == "claude"), None)
     chosen = pref("claudeBin")
-    note = f"{chosen} is not a program formpdf can run, so it uses the one found on this computer" if chosen and not _runnable(chosen) else ""
+    note = f"{chosen} is not a program formpdf can run, so it uses the one found on this computer" if chosen and not agent_lookup.runnable(chosen) else ""
     return info(fresh=True) | {"folder": str(workdir()), "terminal": tab, "binNote": note, "firstMessage": pref("claudeFirstMessage")}
 
 
@@ -151,8 +156,14 @@ def open_tab(prompt: str | None = None, cols: int | None = None, rows: int | Non
         return running.describe()
     found = info(fresh=True)
     if not found["installed"]:
-        raise AgentError(INSTALL, 400)
+        raise AgentError(found["said"], 400)
     prompt = prompt or pref("claudeFirstMessage") or None
     title = "Claude Code (from Chat)" if resume else "Claude Code"
-    session = terminal.open_session(str(workdir()), cols or 100, rows or 30, title, argv(found["path"], prompt, resume), child_env(), "claude")
+    token, mcp_file = issue()
+    try:
+        session = terminal.open_session(str(workdir()), cols or 100, rows or 30, title, argv(found["path"], prompt, resume, mcp_file), child_env(found["path"]), "claude")
+    except BaseException:
+        revoke(token)
+        raise
+    session.on_close.append(lambda: revoke(token))
     return session.describe()

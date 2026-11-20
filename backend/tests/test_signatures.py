@@ -1,13 +1,14 @@
 import pytest
 
 from _pdfs import file_bytes, open_pdf, private_letter
+from conftest import window_headers
 
 PASSWORD = "test-id-password"
 
 
 @pytest.fixture(scope="module")
 def identity(client):
-    r = client.post("/api/identities", json={"name": "Test Signer", "password": PASSWORD})
+    r = client.post("/api/identities", json={"name": "Test Signer", "password": PASSWORD}, headers=window_headers())
     assert r.status_code == 200, r.text
     return r.json()["id"]
 
