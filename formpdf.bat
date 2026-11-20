@@ -65,7 +65,7 @@ echo   freeze              freeze the backend into the Tauri sidecar binary
 echo   desktop dev^|build   run or bundle the desktop app
 echo   doctor              check the toolchain, installs and ports
 echo   mcp                 formpdf over MCP's stdio transport, for Claude Desktop and other MCP clients
-echo   agents install^|sync set up Claude Code, Codex and Cursor (install), or refresh the skills (sync)
+echo   agents install^|sync set up Claude Code, Codex, Cursor and Antigravity (install), or refresh the skills (sync)
 echo   run ^<action^> [args] a PDF job headlessly, without the window (formpdf.bat run actions lists them)
 echo   cli list^|describe^|run  the window's commands: list them, describe one, run one in the open window
 echo   claude [args]       Claude Code in this terminal with formpdf's MCP tools attached

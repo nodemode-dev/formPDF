@@ -911,3 +911,11 @@ Entry 129's folders go when their tab closes. When the engine ends without closi
 Seen: the test opens a real tab with the stand-in `agy` beside five folders (one the app made with an entry and a half-written part file, one the app made and empty, one the app made holding a person's file, one with a name FormPDF does not use, one a link to a folder elsewhere): the two the app made are swept; the open tab's folder and file are byte for byte as they were; the person's file stays with the entry gone; the other two are untouched; a second sweep finds nothing. And at a real start: two leftover folders made with the app's functions in a scratch data folder, then `uvicorn app.main:app` started and stopped in one script: after the start the empty one was gone and the one holding `notes.txt` held only that.
 
 Ran: `tests/test_dock_contract.py` 14 passed.
+
+## 136. The terminal help names all four agent programs · _v0.66.0, logged 2026-11-20 (formpdf help; formpdf.bat help; setup/agents.py install's next steps)
+
+kind: change · logged: v0.66.0 · 2026-11-20
+
+Entry 134's wave made every sentence in the window that lists the agent programs name Claude Code, Codex, Cursor and Antigravity. Three lines printed in a terminal still named three: the `agents install|sync` line of `./formpdf help` and of its twin `formpdf.bat help`, and the second of the next steps `./formpdf agents install` prints ("Open Claude Code, Codex or Cursor in ..."). They now name the four, in that order. The install already sets up Antigravity for the user (`install_antigravity_user`), and Antigravity reads that user file wherever it is opened, so the next step is true as written. The `agents` usage text already named Antigravity ("and Antigravity for this user") and was left.
+
+Ran: `bash -n formpdf`; `./formpdf help` shows the new line; `formpdf.bat` by reading (the `^|` escape kept); `python -m py_compile setup/agents.py`; `setup/agents.py install` in a scratch copy of the tree with a scratch home and caller folder printed the new step 2.
