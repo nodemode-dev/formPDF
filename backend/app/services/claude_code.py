@@ -12,7 +12,7 @@ from app.services import agent_lookup, terminal
 TOKENS: dict[str, Path | None] = {}
 LABELS: dict[str, str] = {}
 OVERRIDES = {"claude": ("FORMPDF_CLAUDE_BIN",), "codex": ("FORMPDF_CODEX_BIN",), "cursor": ("FORMPDF_CURSOR_BIN",), "antigravity": ("FORMPDF_ANTIGRAVITY_BIN",)}
-SETTINGS = {"claude": "claudeBin"}
+SETTINGS = {"claude": "claudeBin", "codex": "codexBin", "cursor": "cursorBin", "antigravity": "antigravityBin"}
 OTHERWISE = "give its path in Preferences, Agents"
 NOTE = ("You are Claude Code running in the agent dock inside formpdf, the PDF editor open on this computer. "
         "Work on PDFs with the formpdf MCP server's tools: start with get_context, open_pdf to show a file, the pdf tool for the job, "

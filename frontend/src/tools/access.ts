@@ -447,7 +447,7 @@ async function draftAlt(ids: string[] = []): Promise<Record<string, unknown>> {
     let got: Draft[] = res.drafts ?? [];
     if (res.waiting && res.id) {
       draftAsk = res.id;
-      draftSay = 'Waiting for your agent. In Claude Code, Codex or Cursor, say: answer my formpdf question.';
+      draftSay = 'Waiting for your agent. In Claude Code, Codex, Cursor or Antigravity, say: answer my formpdf question.';
       syncAlt();
       const started = Date.now();
       for (;;) {

@@ -127,3 +127,42 @@ def test_keyring_that_will_not_import_degrades(client, monkeypatch):
     finally:
         monkeypatch.undo()
         seal.reset()
+
+
+def test_a_choice_sealed_by_0_64_0_reads_whole_after_the_update(client, keychain):
+    import hashlib
+    import hmac
+
+    from app.core import config, seal
+    from app.routers import mcp
+
+    key = seal._load(True)
+    old = {"outsideAgents": "allowed", "agentsAllowed": True, "claudeBin": "/opt/tools/claude"}
+    body = json.dumps({k: old.get(k) for k in ("outsideAgents", "agentsAllowed", "claudeBin")}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    config.settings_path().write_text(json.dumps({**old, "seal": hmac.new(key, body.encode("utf-8"), hashlib.sha256).hexdigest()}, indent=2), encoding="utf-8")
+    s = client.get("/api/settings").json()
+    assert s["seal"] == "ok" and s["sealBroken"] is False
+    assert s["outsideAgents"] == "allowed" and s["claudeBin"] == "/opt/tools/claude"
+    assert not any(s.get(k) for k in ("codexBin", "cursorBin", "antigravityBin"))
+    assert mcp.access() == "allowed"
+    r = client.post("/api/settings", json={"author": "Someone"}, headers=window_headers()).json()
+    assert r["seal"] == "ok" and r["claudeBin"] == "/opt/tools/claude" and r["outsideAgents"] == "allowed"
+    r = client.post("/api/settings", json={"codexBin": "/opt/tools/codex"}, headers=window_headers()).json()
+    assert r["seal"] == "ok" and r["claudeBin"] == "/opt/tools/claude" and r["codexBin"] == "/opt/tools/codex"
+
+
+@pytest.mark.parametrize("key,kind", [("codexBin", "codex"), ("cursorBin", "cursor"), ("antigravityBin", "antigravity")])
+def test_the_other_programs_places_are_sealed_and_given_to_the_finder_first(client, keychain, tmp_path, key, kind):
+    from app.services import agent_lookup, claude_code
+
+    program = tmp_path / kind
+    program.write_text("#!/bin/sh\n")
+    program.chmod(0o755)
+    r = client.post("/api/settings", json={key: f"  {program}  "}, headers=window_headers())
+    assert r.status_code == 200 and r.json()["seal"] == "ok" and r.json()[key] == str(program)
+    assert claude_code.setting(kind) == str(program)
+    found = agent_lookup.find(kind, setting=claude_code.setting(kind), fresh=True)
+    assert found.path == str(program) and found.how == "setting"
+    _hand_edit(**{key: "/tmp/other-program"})
+    s = client.get("/api/settings").json()
+    assert s[key] == "" and s["claudeBin"] == "" and s["sealBroken"] is True and s["outsideAgents"] == "ask"

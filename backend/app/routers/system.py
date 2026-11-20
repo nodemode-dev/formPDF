@@ -103,12 +103,12 @@ def get_settings() -> dict:
 @router.post("/settings")
 def set_settings(patch: dict, request: Request) -> dict:
     window_key.require(request)
-    allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "outsideAgents", "claudeBin", "claudeFolder", "claudeFirstMessage", "author", "units", "spellLang", "timestampUrl", "formScripts", "language"}}
+    allowed = {k: v for k, v in patch.items() if k in {"agentsAllowed", "outsideAgents", "claudeBin", "codexBin", "cursorBin", "antigravityBin", "claudeFolder", "claudeFirstMessage", "author", "units", "spellLang", "timestampUrl", "formScripts", "language"}}
     if "outsideAgents" in allowed:
         if allowed["outsideAgents"] not in ("ask", "allowed", "blocked"):
             raise HTTPException(400, "Agent access is ask, allowed or blocked")
         allowed["agentsAllowed"] = allowed["outsideAgents"] == "allowed"
-    for key in ("claudeBin", "claudeFolder", "claudeFirstMessage"):
+    for key in ("claudeBin", "codexBin", "cursorBin", "antigravityBin", "claudeFolder", "claudeFirstMessage"):
         if key in allowed:
             allowed[key] = str(allowed[key] or "").strip()[:2000]
     if "language" in allowed:

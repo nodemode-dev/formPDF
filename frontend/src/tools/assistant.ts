@@ -38,7 +38,7 @@ async function loadSettings(): Promise<AiSettings | null> {
 function syncProvider(): void {
   const p = settings?.provider ?? 'off';
   const say = p === 'off' ? 'The AI tools are off. Choose a provider in Preferences > AI: your agent, Anthropic or OpenAI with your key, or a model on this computer.'
-    : p === 'agent' ? 'Questions go to your agent. After asking, tell Claude Code, Codex or Cursor: answer my formpdf question.'
+    : p === 'agent' ? 'Questions go to your agent. After asking, tell Claude Code, Codex, Cursor or Antigravity: answer my formpdf question.'
       : `Answers come from ${settings?.label ?? p}${settings?.model ? ` (${settings.model})` : ''}. Only the pages of this PDF are sent, and only when you ask.`;
   for (const r of [askRoot, deckRoot, picRoot]) {
     const n = r?.querySelector<HTMLElement>('[data-ai="provider"]');
@@ -106,7 +106,7 @@ async function ask(kind: 'ask' | 'summary'): Promise<void> {
     if (mine !== seq) return;
     if (res.waiting && res.id) {
       waitingId = res.id;
-      setStatus('Waiting for your agent. In Claude Code, Codex or Cursor, say: answer my formpdf question.', true);
+      setStatus('Waiting for your agent. In Claude Code, Codex, Cursor or Antigravity, say: answer my formpdf question.', true);
       pollTimer = window.setInterval(() => void poll(), 3000);
       syncButtons();
       return;

@@ -148,7 +148,7 @@ class PreferencesDialog extends Dialog {
 </section>
 <section class="fs-prefs-group" data-in="AI"><h3 class="fs-prefs-label">AI</h3>
 <p class="fs-note fs-dlg-ai-note">The Assistant tab asks questions, summarises, drafts presentations and makes pictures with the provider you choose. Nothing is sent anywhere until you choose one and use it.</p>
-<label class="fs-field"><span>Provider</span><select class="fs-input fs-dlg-ai-provider"><option value="off">Off</option><option value="agent">Your agent (Claude Code, Codex or Cursor)</option><option value="anthropic">Anthropic, with your API key</option><option value="openai">OpenAI, with your API key</option><option value="local">A model on this computer (Ollama, LM Studio or similar)</option></select></label>
+<label class="fs-field"><span>Provider</span><select class="fs-input fs-dlg-ai-provider"><option value="off">Off</option><option value="agent">Your agent (Claude Code, Codex, Cursor or Antigravity)</option><option value="anthropic">Anthropic, with your API key</option><option value="openai">OpenAI, with your API key</option><option value="local">A model on this computer (Ollama, LM Studio or similar)</option></select></label>
 <label class="fs-field"><span>Model</span><input class="fs-input fs-dlg-ai-model" type="text" spellcheck="false"></label>
 <label class="fs-field"><span>Server</span><input class="fs-input fs-dlg-ai-base" type="url" spellcheck="false"></label>
 <label class="fs-field"><span>API key</span><input class="fs-input fs-dlg-ai-key" type="password" autocomplete="off" spellcheck="false"></label>
@@ -159,6 +159,9 @@ class PreferencesDialog extends Dialog {
 <label class="fs-field"><span>Agent access</span><select class="fs-input fs-dlg-pref-access">${ACCESS_OPTIONS}</select></label>
 <div class="fs-field is-stack"><span>Agents seen</span><div><p class="fs-note fs-dlg-seen-none">No agent has called since formpdf started.</p><div class="fs-dlg-seen"></div></div></div>
 <label class="fs-field"><span>Claude Code program</span><input class="fs-input fs-dlg-pref-claudebin" type="text" spellcheck="false" placeholder="Leave empty to find it automatically"></label>
+<label class="fs-field"><span>Codex program</span><input class="fs-input fs-dlg-pref-codexbin" type="text" spellcheck="false" placeholder="Leave empty to find it automatically"></label>
+<label class="fs-field"><span>Cursor program</span><input class="fs-input fs-dlg-pref-cursorbin" type="text" spellcheck="false" placeholder="Leave empty to find it automatically"></label>
+<label class="fs-field"><span>Antigravity program</span><input class="fs-input fs-dlg-pref-antigravitybin" type="text" spellcheck="false" placeholder="Leave empty to find it automatically"></label>
 <label class="fs-field"><span>Claude Code folder</span><input class="fs-input fs-dlg-pref-claudefolder" type="text" spellcheck="false" placeholder="Leave empty to use the Agent folder in Formpdf"></label>
 <label class="fs-field"><span>First message</span><input class="fs-input fs-dlg-pref-claudefirst" type="text" spellcheck="false" placeholder="Optional; sent when Claude Code starts"></label>
 <div class="fs-field"><span></span><span class="fs-note fs-dlg-claude-say" aria-live="polite"></span></div>
@@ -216,7 +219,7 @@ class PreferencesDialog extends Dialog {
     ui.addEventListener('change', () => { if (isLang(ui.value)) { this.persist({ language: ui.value }); void setLanguage(ui.value); } });
     this.words.addEventListener('change', () => this.persist({ dictionary: this.words.value.split(/\s*\n\s*/).filter(Boolean) }));
     this.access.addEventListener('change', () => this.h?.setAccess(this.access.value));
-    for (const [k, key] of [['claudebin', 'claudeBin'], ['claudefolder', 'claudeFolder'], ['claudefirst', 'claudeFirstMessage']] as const) {
+    for (const [k, key] of [['claudebin', 'claudeBin'], ['codexbin', 'codexBin'], ['cursorbin', 'cursorBin'], ['antigravitybin', 'antigravityBin'], ['claudefolder', 'claudeFolder'], ['claudefirst', 'claudeFirstMessage']] as const) {
       const f = q<HTMLInputElement>(box, `.fs-dlg-pref-${k}`);
       f.addEventListener('change', () => { this.persist({ [key]: f.value.trim() }); window.setTimeout(() => void this.loadClaude(), 300); });
     }
@@ -507,6 +510,9 @@ class PreferencesDialog extends Dialog {
       setValue(this.author, str(s.author));
       setText(q(this.body, '.fs-dlg-seal-say'), s.sealBroken === true ? 'The saved agent permission was changed outside formpdf, so it is back to Ask.' : '');
       setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudebin'), str(s.claudeBin));
+      setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-codexbin'), str(s.codexBin));
+      setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-cursorbin'), str(s.cursorBin));
+      setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-antigravitybin'), str(s.antigravityBin));
       setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudefolder'), str(s.claudeFolder));
       setValue(q<HTMLInputElement>(this.body, '.fs-dlg-pref-claudefirst'), str(s.claudeFirstMessage));
       setValue(this.tsa, str(s.timestampUrl));
@@ -541,7 +547,7 @@ export function preferencesDialog(h: AgentHooks): void {
 }
 
 const SETUP: Array<{ id: string; tab: string; title: string; note: string; text: (url: string) => string }> = [
-  { id: 'install', tab: 'All at once', title: 'In the formpdf folder', note: 'Writes the Claude Code, Codex and Cursor configs and installs the formpdf skills, so agents know the tools and the PDF actions.', text: () => './formpdf agents install' },
+  { id: 'install', tab: 'All at once', title: 'In the formpdf folder', note: 'Writes the Claude Code, Codex, Cursor and Antigravity configs and installs the formpdf skills, so agents know the tools and the PDF actions.', text: () => './formpdf agents install' },
   { id: 'claude', tab: 'Claude Code', title: 'In a terminal', note: 'Run once. Then ask Claude Code to do PDF work with formpdf.', text: (u) => `claude mcp add --transport http formpdf ${u}` },
   { id: 'codex', tab: 'Codex', title: '~/.codex/config.toml', note: 'Add this table, then restart Codex.', text: (u) => `[mcp_servers.formpdf]\nurl = "${u}"` },
   { id: 'cursor', tab: 'Cursor', title: '~/.cursor/mcp.json', note: 'Or .cursor/mcp.json inside a project. Cursor picks it up on the next chat.', text: (u) => `{\n  "mcpServers": {\n    "formpdf": { "url": "${u}" }\n  }\n}` },
@@ -650,7 +656,7 @@ class HelpDialog extends Dialog {
 <li><strong>Open a PDF.</strong> Drop it on Home, choose Open PDF, open one by path, or pick a recent one.</li>
 <li><strong>Pick a tab.</strong> View, Comment, Fill Forms and Sign, Prepare form, Edit, Organize, Extract, Protect and Convert each have their tools above the page and their settings on the right.</li>
 <li><strong>Changes build up in a working copy.</strong> Undo steps back through them; Save writes the PDF.</li>
-<li><strong>Bring in your agent.</strong> Connect Claude Code, Codex or Cursor from Help &gt; Agents and MCP. Its changes show live and every turn undoes as one step.</li>
+<li><strong>Bring in your agent.</strong> Connect Claude Code, Codex, Cursor or Antigravity from Help &gt; Agents and MCP. Its changes show live and every turn undoes as one step.</li>
 </ol></section>
 <section class="fs-dlg-section"><div class="fs-dlg-section-title">Learn more</div>
 <p class="fs-dlg-text">The full manual is docs/MANUAL.md in your formpdf folder.</p>

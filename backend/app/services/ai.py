@@ -16,7 +16,7 @@ PROVIDERS = ("off", "agent", "anthropic", "openai", "local")
 DEFAULTS = {"anthropic": {"model": "claude-sonnet-5-5", "base": "https://api.anthropic.com"},
             "openai": {"model": "gpt-4.1-mini", "base": "https://api.openai.com/v1", "imageModel": "gpt-image-1"},
             "local": {"model": "llama3.1", "base": "http://127.0.0.1:11434/v1", "imageBase": "http://127.0.0.1:7860"}}
-LABEL = {"off": "Off", "agent": "Your agent (Claude Code, Codex or Cursor)", "anthropic": "Anthropic", "openai": "OpenAI", "local": "A model on this computer"}
+LABEL = {"off": "Off", "agent": "Your agent (Claude Code, Codex, Cursor or Antigravity)", "anthropic": "Anthropic", "openai": "OpenAI", "local": "A model on this computer"}
 BUDGET = 150_000
 TIMEOUT = 180
 MAX_SLIDES = 30

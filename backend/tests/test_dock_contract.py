@@ -207,6 +207,46 @@ def test_each_antigravity_tab_has_its_own_folder_and_entry_until_it_closes(clien
     assert sorted(os.listdir(second["cwd"])) == ["notes.txt"]
 
 
+@posix
+def test_leftover_antigravity_folders_are_swept_only_when_the_app_made_them_and_no_tab_owns_them(client, tmp_path, monkeypatch):
+    programs = importlib.import_module("app.services.agent_programs")
+    config = importlib.import_module("app.core.config")
+    monkeypatch.setenv("FORMPDF_AGENT_DIR", str(tmp_path / "work"))
+    standins(tmp_path, monkeypatch, ["agy"])
+    root = config.data_dir() / "agent-tabs" / "antigravity"
+    left = programs.antigravity_folder()
+    assert programs.antigravity_entry(left, "token-of-an-engine-that-ended") == "file"
+    (left / ".agents" / "mcp_config.json.part-4242").write_text("{", encoding="utf-8")
+    bare = programs.antigravity_folder()
+    kept = programs.antigravity_folder()
+    programs.antigravity_entry(kept, "another-dead-token")
+    (kept / "notes.txt").write_text("theirs", encoding="utf-8")
+    theirs = root / "Not-made-by-formpdf"
+    (theirs / ".agents").mkdir(parents=True)
+    (theirs / ".agents" / "mcp_config.json").write_text(json.dumps({"mcpServers": {"formpdf_tab": {"serverUrl": "x"}}}), encoding="utf-8")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (elsewhere / "keep.txt").write_text("keep", encoding="utf-8")
+    linked = root / "abcdefabcdef"
+    linked.symlink_to(elsewhere, target_is_directory=True)
+    tab = client.post("/api/agents/open", json={"kind": "antigravity", "cols": 80, "rows": 20, "fresh": True}, headers=window_headers()).json()
+    try:
+        written = os.path.join(tab["cwd"], ".agents", "mcp_config.json")
+        with open(written, encoding="utf-8") as f:
+            before = f.read()
+        swept = programs.sweep_antigravity_folders()
+        assert sorted(swept) == sorted([left.name, bare.name])
+        assert not left.exists() and not bare.exists()
+        assert os.path.isdir(tab["cwd"]) and open(written, encoding="utf-8").read() == before
+        assert sorted(os.listdir(kept)) == ["notes.txt"]
+        assert json.loads((theirs / ".agents" / "mcp_config.json").read_text(encoding="utf-8"))["mcpServers"]["formpdf_tab"] == {"serverUrl": "x"}
+        assert linked.is_symlink() and (elsewhere / "keep.txt").exists()
+        assert programs.sweep_antigravity_folders() == []
+    finally:
+        client.post(f"/api/terminals/{tab['id']}/close", headers=window_headers())
+    assert not os.path.exists(tab["cwd"])
+
+
 def test_a_cursor_file_the_engine_did_not_write_is_left_alone(tmp_path):
     programs = importlib.import_module("app.services.agent_programs")
     theirs = tmp_path / ".cursor" / "mcp.json"

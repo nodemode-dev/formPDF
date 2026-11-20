@@ -46,6 +46,12 @@ async def lifespan(_: FastAPI):
     except OSError:
         pass
     _write_discovery()
+    from app.services import agent_programs
+
+    try:
+        agent_programs.sweep_antigravity_folders()
+    except OSError:
+        pass
     loop = asyncio.get_running_loop()
     events.bind(loop)
     terminal.bind(loop)

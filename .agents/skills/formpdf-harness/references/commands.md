@@ -117,7 +117,7 @@ Generated from the window's command catalogue (151 commands) by `./formpdf agent
 | `demo-pages` | Demo: Pages and search | Opens the pages and search demo, a 53 page illustrated Alice in Wonderland, as a new unsaved PDF in the View tab. | Use when the person wants to try reading, searching, organizing or page numbers on a sample. |
 | `demo-protect` | Demo: Redact, compare, convert | Opens the redact, compare and convert demo, a season report with contacts and hidden data, as a new unsaved PDF in the Protect tab. | Use when the person wants to try redaction, removing hidden information or a password on a sample. |
 | `demo-sign` | Demo: Annotate, fill and sign | Opens the annotate, fill and sign demo, a half filled loan form with four comments, as a new unsaved PDF in Fill Forms and Sign. | Use when the person wants to try comments, form filling, signatures or stamps on a sample. |
-| `pdf-agents` | Agents and MCP… | Shows how to connect Claude Code, Codex or Cursor to formpdf. | Use when the person wants an agent to work in formpdf. |
+| `pdf-agents` | Agents and MCP… | Shows how to connect Claude Code, Codex, Cursor or Antigravity to formpdf. | Use when the person wants an agent to work in formpdf. |
 | `pdf-custom-title-bar` | Custom Title Bar | Custom Title Bar |  |
 | `pdf-help` | formpdf Help | Opens formpdf Help. | Use when the person asks how something works. |
 | `pdf-menus-in-window` | Menus in Window | Menus in Window |  |
@@ -130,7 +130,7 @@ Generated from the window's command catalogue (151 commands) by `./formpdf agent
 
 | Id | Name | Does | Use when |
 | --- | --- | --- | --- |
-| `home-agents` | Agents and MCP… | Shows how to connect Claude Code, Codex or Cursor to formpdf. | Use when the person wants an agent to work in formpdf. |
+| `home-agents` | Agents and MCP… | Shows how to connect Claude Code, Codex, Cursor or Antigravity to formpdf. | Use when the person wants an agent to work in formpdf. |
 | `home-batch` | Batch: run an action on many PDFs | Runs one action or action list on many PDFs, writing new files. | Use when the same change is needed on a folder of PDFs. |
 | `home-help` | formpdf Help | Opens formpdf Help. | Use when the person asks how something works. |
 | `home-merge` | Merge PDFs… | Combines several PDFs into one. | Use to join PDFs. |
