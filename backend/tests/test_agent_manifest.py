@@ -1,3 +1,4 @@
+import hashlib
 import importlib
 import json
 import re
@@ -90,3 +91,34 @@ def test_the_dock_storage_key_and_the_old_keys_are_the_ones_the_pre_paint_script
     assert "localStorage.getItem('formpdf.dock')" in page
     assert page.index("localStorage.getItem('formpdf.dock')") < page.index('<link rel="stylesheet"')
     assert not (REPO / "frontend" / "src" / "ui" / "terminal-dock.ts").exists()
+
+
+LOOKUP = "backend/app/services/agent_lookup.py"
+
+
+def test_the_shared_finder_matches_the_hash_recorded_for_its_version():
+    sync = sync_module()
+    version = re.search(r'^VERSION = "([^"]+)"$', (REPO / LOOKUP).read_text(encoding="utf-8"), re.M).group(1)
+    assert sync.LOOKUP_HASHES[version] == hashlib.sha256((REPO / LOOKUP).read_bytes()).hexdigest()
+    assert sync.lookup_problems() == []
+
+
+def test_the_check_names_the_shared_finder_edited_in_place_or_missing(tmp_path, monkeypatch):
+    sync = sync_module()
+    copy = tmp_path / "repo"
+    (copy / "backend" / "app" / "services").mkdir(parents=True)
+    shutil.copy(REPO / LOOKUP, copy / LOOKUP)
+    monkeypatch.setattr(sync, "ROOT", copy)
+    monkeypatch.setattr(sync, "LOOKUP", copy / LOOKUP)
+    assert sync.lookup_problems() == []
+    with open(copy / LOOKUP, "a", encoding="utf-8") as f:
+        f.write("\n")
+    version = re.search(r'^VERSION = "([^"]+)"$', (REPO / LOOKUP).read_text(encoding="utf-8"), re.M).group(1)
+    assert sync.lookup_problems() == [f"{LOOKUP}: does not match the hash recorded for version {version} (the shared finder changes only as a whole new version)"]
+    (copy / LOOKUP).unlink()
+    assert sync.lookup_problems() == [f"{LOOKUP}: missing (the shared finder for the agent programs)"]
+
+
+def test_the_shared_finder_imports_nothing_from_the_app():
+    imports = set(re.findall(r"^\s*(?:from|import)\s+([\w.]+)", (REPO / LOOKUP).read_text(encoding="utf-8"), re.M))
+    assert imports == {"__future__", "dataclasses", "os", "pathlib", "re", "shutil", "signal", "subprocess", "sys", "threading", "time", "winreg"}

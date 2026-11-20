@@ -127,14 +127,15 @@ def standins(tmp_path, monkeypatch, names):
 @posix
 def test_agent_status_names_each_program_with_its_version_and_install_line(client, bare, tmp_path, monkeypatch):
     assert bare.get("/api/agents/status").status_code == 403
-    standins(tmp_path, monkeypatch, ["claude", "codex", "cursor-agent"])
+    standins(tmp_path, monkeypatch, ["claude", "codex", "cursor-agent", "agy"])
     found = client.get("/api/agents/status?fresh=true", headers=window_headers()).json()
-    assert sorted(found) == ["claude", "codex", "cursor"]
+    assert sorted(found) == ["antigravity", "claude", "codex", "cursor"]
     for kind, program in found.items():
         assert program["installed"] and program["version"] == "1.2.3" and program["install"]
         assert program["path"].startswith(str(tmp_path))
+        assert program["finding"] == "runs" and program["how"] == "path" and program["said"]
     assert found["claude"]["signedIn"] is False
-    assert found["codex"]["signedIn"] is None and found["cursor"]["signedIn"] is None
+    assert found["codex"]["signedIn"] is None and found["cursor"]["signedIn"] is None and found["antigravity"]["signedIn"] is None
 
 
 @posix
@@ -182,11 +183,11 @@ def test_a_cursor_file_the_engine_did_not_write_is_left_alone(tmp_path):
 
 
 @posix
-def test_a_missing_program_answers_with_its_install_line(client, monkeypatch):
-    programs = importlib.import_module("app.services.agent_programs")
-    monkeypatch.setattr(programs, "find", lambda kind: None)
+def test_a_missing_program_answers_with_its_install_line(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("PATH", str(tmp_path))
     r = client.post("/api/agents/open", json={"kind": "codex"}, headers=window_headers())
     assert r.status_code == 404 and "npm install -g @openai/codex" in r.json()["detail"]
+    assert r.json()["detail"].startswith("Codex was not found. Looked in: ")
 
 
 @posix

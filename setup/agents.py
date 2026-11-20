@@ -35,6 +35,37 @@ def dock_strangers() -> list:
             if not target.startswith("./") or "/" in target[2:]:
                 found.append(f"{p.name} imports {target}")
     return found
+
+
+LOOKUP = ROOT / "backend" / "app" / "services" / "agent_lookup.py"
+LOOKUP_HASHES = {"1.0.0": "252ea9bb9419d4990f174f91914f09800497bc69e98f849f5643bbf4217cc3f3", "1.0.1": "62667f9b68b7d101e1896ce617240424e33b7e498c560bc79d45f0ab26c77d51"}
+
+
+def lookup_problems() -> list:
+    import hashlib
+
+    rel = LOOKUP.relative_to(ROOT).as_posix()
+    try:
+        raw = LOOKUP.read_bytes()
+    except OSError:
+        return [f"{rel}: missing (the shared finder for the agent programs)"]
+    said = re.search(rb'^VERSION = "([^"\r\n]+)"\r?$', raw, re.M)
+    version = said.group(1).decode("ascii", "replace") if said else "unknown"
+    if LOOKUP_HASHES.get(version) != hashlib.sha256(raw).hexdigest():
+        return [f"{rel}: does not match the hash recorded for version {version} (the shared finder changes only as a whole new version)"]
+    return []
+
+
+def lookup():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("formpdf_agent_lookup", LOOKUP)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 ENGINE_FACTS = """
 import json
 from app.main import app
@@ -134,20 +165,30 @@ def configure(folder: Path, portable: bool, dry: bool, said: list) -> None:
 
 def install_claude_user(dry: bool, said: list) -> None:
     said.append("Claude Code (all projects):")
-    claude = shutil.which("claude")
-    if not claude:
-        said.append(f"  the claude command is not installed here; once it is, run: claude mcp add --scope user formpdf -- {LAUNCH} mcp")
+    finder = lookup()
+    found = finder.check(finder.find("claude", override_vars=("FORMPDF_CLAUDE_BIN",)))
+    if found.state != "runs":
+        said.append(f"  {finder.sentence(found, finder.install('claude'))} Once it runs: claude mcp add --scope user formpdf -- {LAUNCH} mcp")
         return
-    have = subprocess.run([claude, "mcp", "get", "formpdf"], capture_output=True, text=True)
+    claude, env = found.path, finder.child_env(found.path)
+    try:
+        have = finder.run([claude, "mcp", "get", "formpdf"], env, 60)
+    except subprocess.SubprocessError:
+        said.append(f"  {claude} gave no answer in 60 seconds; run: claude mcp add --scope user formpdf -- {LAUNCH} mcp")
+        return
     if have.returncode == 0 and LAUNCH in have.stdout:
         said.append("  MCP server formpdf already set (user scope)")
         return
     said.append(f"  claude mcp add --scope user formpdf -- {LAUNCH} mcp")
     if dry:
         return
-    if have.returncode == 0:
-        subprocess.run([claude, "mcp", "remove", "formpdf", "--scope", "user"], capture_output=True)
-    done = subprocess.run([claude, "mcp", "add", "--scope", "user", "formpdf", "--", LAUNCH, "mcp"], capture_output=True, text=True)
+    try:
+        if have.returncode == 0:
+            finder.run([claude, "mcp", "remove", "formpdf", "--scope", "user"], env, 60)
+        done = finder.run([claude, "mcp", "add", "--scope", "user", "formpdf", "--", LAUNCH, "mcp"], env, 60)
+    except subprocess.SubprocessError:
+        said.append("  claude mcp add gave no answer in 60 seconds")
+        return
     if done.returncode != 0:
         said.append(f"  claude mcp add failed: {(done.stderr or done.stdout).strip()[:200]}")
 
@@ -321,10 +362,11 @@ def sync(check: bool) -> int:
                 ref.write_text(want, encoding="utf-8")
     broken = [f"  frontend/src/dock/{name} does not match frontend/src/dock/MANIFEST.json; the shared dock folder is copied whole from formvis and never edited here" for name in dock_drift()]
     broken += [f"  frontend/src/dock/{line}; the shared dock folder imports nothing from formpdf" for line in dock_strangers()]
+    broken += [f"  {line}" for line in lookup_problems()]
     said.extend(broken)
     if broken and not check:
         print("\n".join(said))
-        print("agents: the shared dock folder is not what its manifest says; nothing was written for it")
+        print("agents: the shared dock folder or the shared finder is not what its record says; nothing was written for it")
         return 1
     n = skills(check, said) + drift + len(broken)
     print("\n".join(said))

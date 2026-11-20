@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -11,10 +10,22 @@ NOTE = ("You are Claude Code connected to formpdf, the PDF editor on this comput
         "list_commands and run_command reach anything in the window's menus.")
 
 
+def lookup():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("formpdf_agent_lookup", ROOT / "backend" / "app" / "services" / "agent_lookup.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def main(argv: list[str]) -> int:
-    claude = os.environ.get("FORMPDF_CLAUDE_BIN") or shutil.which("claude")
+    finder = lookup()
+    found = finder.find("claude", override_vars=("FORMPDF_CLAUDE_BIN",))
+    claude = found.path
     if not claude:
-        print("[formpdf] Claude Code is not installed: https://claude.com/claude-code", file=sys.stderr)
+        print("[formpdf] " + finder.sentence(found, finder.install("claude")), file=sys.stderr)
         return 1
     launcher = str(ROOT / ("formpdf.bat" if os.name == "nt" else "formpdf"))
     config = {"mcpServers": {"formpdf": {"type": "stdio", "command": launcher, "args": ["mcp"]}}}
