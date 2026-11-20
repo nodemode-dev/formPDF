@@ -74,6 +74,49 @@ def cursor_file(folder: Path) -> str:
     return "file"
 
 
+def antigravity_file(folder: Path) -> Path:
+    return folder / ".agents" / "mcp_config.json"
+
+
+def _servers(path: Path) -> dict:
+    data = json.loads(path.read_text(encoding="utf-8") or "{}") if path.exists() else {}
+    if not isinstance(data, dict) or not isinstance(data.get("mcpServers", {}), dict):
+        raise ValueError(f"{path} is not an MCP servers file formpdf can read")
+    return data
+
+
+def _replace(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    part = path.with_name(path.name + f".part-{os.getpid()}")
+    with os.fdopen(os.open(part, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+        f.write(json.dumps(data, indent=2) + "\n")
+    os.replace(part, path)
+
+
+def antigravity_entry(folder: Path, token: str) -> str:
+    path = antigravity_file(folder)
+    try:
+        data = _servers(path)
+        data.setdefault("mcpServers", {})["formpdf_tab"] = {"serverUrl": config.engine_url() + "/mcp", "headers": {HEADER: token}}
+        _replace(path, data)
+    except (OSError, ValueError, TypeError):
+        return "not written"
+    return "file"
+
+
+def antigravity_entry_gone(folder: Path, token: str) -> None:
+    path = antigravity_file(folder)
+    try:
+        data = _servers(path)
+        entry = data.get("mcpServers", {}).get("formpdf_tab")
+        if not isinstance(entry, dict) or (entry.get("headers") or {}).get(HEADER) != token:
+            return
+        del data["mcpServers"]["formpdf_tab"]
+        _replace(path, data)
+    except (OSError, ValueError, TypeError):
+        return
+
+
 def open_tab(kind: str, cols: int | None = None, rows: int | None = None, fresh: bool = False) -> dict:
     p = PROGRAMS[kind]
     running = next((s for s in terminal.SESSIONS.values() if s.kind == kind and s.alive), None)
@@ -84,12 +127,16 @@ def open_tab(kind: str, cols: int | None = None, rows: int | None = None, fresh:
         raise AgentError(agent_lookup.sentence(found, p["install"], claude_code.otherwise(kind)), 404)
     path = found.path
     folder = claude_code.workdir()
-    how, extra = ("arguments", codex_args()) if kind == "codex" else (cursor_file(folder), [])
     token = claude_code.issue_env(p["client"])
     try:
+        how, extra = ("arguments", codex_args()) if kind == "codex" else (cursor_file(folder), []) if kind == "cursor" else (antigravity_entry(folder, token), [])
         session = terminal.open_session(str(folder), cols or 100, rows or 30, p["title"], claude_code.wrap([path] + extra), claude_code.child_env(path, {TOKEN_ENV: token}), kind)
     except BaseException:
         claude_code.revoke(token)
+        if kind == "antigravity":
+            antigravity_entry_gone(folder, token)
         raise
     session.on_close.append(lambda: claude_code.revoke(token))
+    if kind == "antigravity":
+        session.on_close.append(lambda: antigravity_entry_gone(folder, token))
     return session.describe() | {"mcp": how}

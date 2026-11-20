@@ -34,7 +34,7 @@ class OpenClaude(BaseModel):
 
 
 class OpenAgent(BaseModel):
-    kind: Literal["codex", "cursor"]
+    kind: Literal["codex", "cursor", "antigravity"]
     cols: int | None = None
     rows: int | None = None
     fresh: bool = False

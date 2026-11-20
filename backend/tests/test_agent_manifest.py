@@ -54,7 +54,7 @@ def test_the_shared_dock_folder_is_what_its_manifest_says():
     sync = sync_module()
     assert sync.dock_drift() == []
     assert sync.dock_strangers() == []
-    assert json.loads((sync.DOCK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))["version"] == "2.1.0"
+    assert json.loads((sync.DOCK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))["version"] == "2.2.0"
 
 
 def test_an_edited_added_or_app_importing_dock_file_is_named(tmp_path, monkeypatch, capsys):
@@ -117,6 +117,24 @@ def test_the_check_names_the_shared_finder_edited_in_place_or_missing(tmp_path, 
     assert sync.lookup_problems() == [f"{LOOKUP}: does not match the hash recorded for version {version} (the shared finder changes only as a whole new version)"]
     (copy / LOOKUP).unlink()
     assert sync.lookup_problems() == [f"{LOOKUP}: missing (the shared finder for the agent programs)"]
+
+
+def test_agents_install_adds_formpdf_to_antigravity_and_keeps_what_is_there(tmp_path, monkeypatch):
+    sync = sync_module()
+    monkeypatch.setenv("HOME", str(tmp_path))
+    path = tmp_path / ".gemini" / "config" / "mcp_config.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"mcpServers": {"other": {"command": "x"}}, "keep": True}), encoding="utf-8")
+    said: list = []
+    sync.install_antigravity_user(True, said)
+    assert json.loads(path.read_text(encoding="utf-8")) == {"mcpServers": {"other": {"command": "x"}}, "keep": True}
+    sync.install_antigravity_user(False, said)
+    have = json.loads(path.read_text(encoding="utf-8"))
+    assert have["mcpServers"]["other"] == {"command": "x"} and have["keep"] is True
+    assert have["mcpServers"]["formpdf"]["args"] == [str(REPO / "setup" / "mcp_stdio.py")]
+    said = []
+    sync.install_antigravity_user(False, said)
+    assert said[-1].endswith("already set")
 
 
 def test_the_shared_finder_imports_nothing_from_the_app():

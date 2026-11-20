@@ -1,4 +1,4 @@
-import type { ConsentChoice, ConsentRequest, DockAdapter, DockAgentStatus, DockChannel, DockErrorKind, DockKind, DockLegacy, DockState, DockTerminal, PtyKind, StoredChoice, StoredChoiceState } from './dock/adapter';
+import type { ConsentChoice, ConsentRequest, DockAdapter, DockAgentStatus, DockChannel, DockErrorKind, DockKind, DockLegacy, DockProgramStatus, DockState, DockTerminal, PtyKind, StoredChoice, StoredChoiceState } from './dock/adapter';
 import { api } from './io/api';
 import { keyHeaders, windowKey } from './io/window-key';
 import type { LiveClient } from './live/socket';
@@ -68,9 +68,9 @@ export function isDockCombo(e: KeyboardEvent): boolean {
   return (isMac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey) && e.code === 'KeyJ';
 }
 
-function record(raw: { id: string; title: string; alive?: boolean; kind?: string }): DockTerminal {
-  const kind = raw.kind === 'claude' || raw.kind === 'codex' || raw.kind === 'cursor' ? raw.kind : 'shell';
-  return { id: raw.id, title: raw.title, alive: raw.alive !== false, kind: kind as PtyKind };
+function record(raw: { id: string; title: string; alive?: boolean; kind?: string }): DockTerminal<'antigravity'> {
+  const kind = raw.kind === 'claude' || raw.kind === 'codex' || raw.kind === 'cursor' || raw.kind === 'antigravity' ? raw.kind : 'shell';
+  return { id: raw.id, title: raw.title, alive: raw.alive !== false, kind: kind as PtyKind | 'antigravity' };
 }
 
 function channel(id: string): DockChannel {
@@ -122,7 +122,7 @@ function request(id: string, args: Record<string, unknown>): ConsentRequest {
   };
 }
 
-export function formpdfDock(o: DockHooks): { adapter: DockAdapter; desk: ConsentDesk } {
+export function formpdfDock(o: DockHooks): { adapter: DockAdapter<'antigravity'>; desk: ConsentDesk } {
   const open = new Map<string, ConsentRequest>();
   const early: ConsentRequest[] = [];
   let add: ((r: ConsentRequest) => void) | null = null;
@@ -144,7 +144,7 @@ export function formpdfDock(o: DockHooks): { adapter: DockAdapter; desk: Consent
     arrive: (id, args) => show(request(id, args)),
     gone: (id) => { if (open.delete(id)) { keep(); withdraw?.(id); } },
   };
-  const adapter: DockAdapter = {
+  const adapter: DockAdapter<'antigravity'> = {
     words: {
       app: 'formpdf', noun: 'PDF', example: 'find and redact every phone number', start: './formpdf boot',
       lead: "Ask Claude about the open PDF in the line below: summarise it, find and redact, fill a form, fix headers, prepare it for print. It works through formpdf's tools, every change shows in the window, and each turn can be undone.",
@@ -167,7 +167,7 @@ export function formpdfDock(o: DockHooks): { adapter: DockAdapter; desk: Consent
     isDockChord: (e) => isDockCombo(e) && !e.shiftKey && !e.altKey && !o.layerOpen(),
     chordLabel: () => `${mod}+J`,
     passKey: (e) => isDockCombo(e) && (e.shiftKey || e.altKey),
-    tabs: () => ({ builtin: ['chat', 'shell', 'claude', 'codex', 'cursor'] as DockKind[] }),
+    tabs: () => ({ builtin: ['chat', 'shell', 'claude', 'codex', 'cursor', 'antigravity'] as Array<DockKind | 'antigravity'> }),
     classes: { iconButton: 'fs-icon-btn is-sm', button: 'fs-btn fs-btn-sm', primaryButton: 'fs-btn-primary', input: 'fs-input', select: 'fs-input', note: 'fs-note' },
     t: (_key, english) => english,
     onTheme: (handler) => { document.addEventListener('nm:ui-settings-changed', handler); },
@@ -177,7 +177,7 @@ export function formpdfDock(o: DockHooks): { adapter: DockAdapter; desk: Consent
       list: async () => (await call<{ terminals: Array<{ id: string; title: string; alive?: boolean; kind?: string }> }>('GET', '/api/terminals')).terminals.map(record),
       open: async (kind, size) => {
         if (kind === 'shell') return record(await call('POST', '/api/terminals', { cols: size.cols, rows: size.rows }));
-        if (kind === 'codex' || kind === 'cursor') return record(await call('POST', '/api/agents/open', { kind, cols: size.cols, rows: size.rows }));
+        if (kind === 'codex' || kind === 'cursor' || kind === 'antigravity') return record(await call('POST', '/api/agents/open', { kind, cols: size.cols, rows: size.rows }));
         const extra = size.prompt ? o.context() : '';
         return record(await call('POST', '/api/claude/open', { prompt: size.prompt ? (extra ? `${size.prompt} (${extra})` : size.prompt) : undefined, resume: size.resume || undefined, cols: size.cols, rows: size.rows }));
       },
@@ -187,11 +187,11 @@ export function formpdfDock(o: DockHooks): { adapter: DockAdapter; desk: Consent
       scrollback: 5000,
     },
     agentStatus: async () => {
-      const now = await call<DockAgentStatus>('GET', '/api/agents/status');
-      const out: DockAgentStatus = {};
-      for (const kind of ['claude', 'codex', 'cursor'] as const) {
+      const now = await call<Partial<Record<'claude' | 'codex' | 'cursor' | 'antigravity', DockProgramStatus & { finding?: string; said?: string }>>>('GET', '/api/agents/status');
+      const out: DockAgentStatus<'antigravity'> = {};
+      for (const kind of ['claude', 'codex', 'cursor', 'antigravity'] as const) {
         const s = now[kind];
-        if (s) out[kind] = { installed: s.installed === true, version: s.version ?? null, install: s.install ?? '', signedIn: s.signedIn ?? null };
+        if (s) out[kind] = { installed: s.installed === true, version: s.version ?? null, install: s.install ?? '', signedIn: s.signedIn ?? null, ...(s.finding && s.finding !== 'runs' && typeof s.said === 'string' ? { note: s.said } : {}) };
       }
       return out;
     },

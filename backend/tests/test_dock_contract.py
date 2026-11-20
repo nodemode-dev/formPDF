@@ -169,6 +169,33 @@ def test_an_agent_tab_gets_its_own_token_outside_the_command_line_until_it_close
     assert not claude_code.is_inapp(token)
 
 
+@posix
+def test_an_antigravity_tab_has_its_entry_in_the_folder_file_until_it_closes(client, tmp_path, monkeypatch):
+    claude_code = importlib.import_module("app.services.claude_code")
+    monkeypatch.setenv("FORMPDF_AGENT_DIR", str(tmp_path / "work"))
+    standins(tmp_path, monkeypatch, ["agy"])
+    written = tmp_path / "work" / ".agents" / "mcp_config.json"
+    written.parent.mkdir(parents=True)
+    written.write_text(json.dumps({"mcpServers": {"other": {"command": "x"}}, "keep": 1}), encoding="utf-8")
+    tab = client.post("/api/agents/open", json={"kind": "antigravity", "cols": 80, "rows": 20}, headers=window_headers()).json()
+    try:
+        assert tab["kind"] == "antigravity" and tab["alive"] and tab["title"] == "Antigravity" and tab["mcp"] == "file"
+        have = json.loads(written.read_text(encoding="utf-8"))
+        token = have["mcpServers"]["formpdf_tab"]["headers"][INAPP_HEADER]
+        assert have["mcpServers"]["formpdf_tab"]["serverUrl"].endswith("/mcp") and have["mcpServers"]["other"] == {"command": "x"} and have["keep"] == 1
+        assert stat.S_IMODE(written.stat().st_mode) == 0o600
+        assert claude_code.is_inapp(token) and claude_code.label(token) == "Antigravity in formpdf"
+        note = tmp_path / "agy.txt"
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline and not (note.exists() and "token=" in note.read_text(encoding="utf-8")):
+            time.sleep(0.1)
+        assert f"token={token}" in note.read_text(encoding="utf-8").splitlines()
+    finally:
+        client.post(f"/api/terminals/{tab['id']}/close", headers=window_headers())
+    assert not claude_code.is_inapp(token)
+    assert json.loads(written.read_text(encoding="utf-8")) == {"mcpServers": {"other": {"command": "x"}}, "keep": 1}
+
+
 def test_a_cursor_file_the_engine_did_not_write_is_left_alone(tmp_path):
     programs = importlib.import_module("app.services.agent_programs")
     theirs = tmp_path / ".cursor" / "mcp.json"

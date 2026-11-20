@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ["formpdf-harness", "formpdf-skillset"]
 MANIFEST = ROOT / "agents" / "manifest.json"
 APP = "formpdf"
-DOCK = {"present": True, "positions": ["bottom", "right"], "tabs": ["chat", "claude", "codex", "cursor", "shell"]}
+DOCK = {"present": True, "positions": ["bottom", "right"], "tabs": ["antigravity", "chat", "claude", "codex", "cursor", "shell"]}
 DOCK_DIR = ROOT / "frontend" / "src" / "dock"
 
 
@@ -83,7 +83,7 @@ print(json.dumps({
 PORT = int(os.environ.get("FORMPDF_PORT") or 8198)
 PY = "python" if os.name == "nt" else "python3"
 LAUNCH = str(ROOT / ("formpdf.bat" if os.name == "nt" else "formpdf"))
-USAGE = """usage: ./formpdf agents install [--dry-run]   set up Claude Code, Codex and Cursor here and in the folder you ran it from
+USAGE = """usage: ./formpdf agents install [--dry-run]   set up Claude Code, Codex and Cursor here and in the folder you ran it from, and Antigravity for this user
        ./formpdf agents sync [--check]       write agents/manifest.json and the window commands reference from the catalogue, then copy the formpdf skills again
                                              (and mirror .claude/skills to .agents/skills)"""
 
@@ -193,6 +193,15 @@ def install_claude_user(dry: bool, said: list) -> None:
         said.append(f"  claude mcp add failed: {(done.stderr or done.stdout).strip()[:200]}")
 
 
+def install_antigravity_user(dry: bool, said: list) -> None:
+    said.append("Antigravity (all projects):")
+    older = home() / ".gemini" / "antigravity-cli" / "mcp_config.json"
+    path = home() / ".gemini" / "config" / "mcp_config.json"
+    if older.exists() and not path.exists():
+        said.append(f"  an older file, {older}, was seen and left alone")
+    merge_json(path, {"formpdf": {"command": PY, "args": [str(ROOT / "setup" / "mcp_stdio.py")]}}, dry, said)
+
+
 def _files(folder: Path) -> dict:
     return {str(p.relative_to(folder)): p.read_bytes() for p in sorted(folder.rglob("*")) if p.is_file()} if folder.is_dir() else {}
 
@@ -233,6 +242,7 @@ def install(dry: bool) -> int:
     if caller() != ROOT:
         configure(caller(), False, dry, said)
     install_claude_user(dry, said)
+    install_antigravity_user(dry, said)
     skills(dry, said)
     print(("Would do (dry run):\n" if dry else "") + "\n".join(said))
     if not dry:

@@ -879,3 +879,13 @@ kind: fix · logged: v0.61.0 · 2026-11-19
 ```
 
 `--dock-stage-pad: 6px 4px 0 10px` in `styles/dock-tokens.css` gives the terminal the inset formpdf's own dock had (`.fs-term { position: absolute; inset: 6px 4px 0 10px; }`, entry 126); under module 2.0.1 the padding was the module's literal `4px 8px 0`. The Chat pane fills the stage as before; only a terminal moves, by 2 pixels.
+
+## 129. The dock folder is module 2.2.0, and Antigravity is the fourth agent tab · _v0.62.0 (src/dock/ whole, agents.ts new; src/dock-adapter.ts record, formpdfDock, tabs, terminal.open, agentStatus)
+
+kind: feat · logged: v0.62.0 · 2026-11-19
+
+`src/dock/` is formvis ddc893ae byte for byte: 16 entries with `MANIFEST.json`, `agents.ts` new, nine of the others changed. In 2.2.0 the agent kinds are data the adapter gives, so a fourth program needs no change inside the folder.
+
+The adapter is now `DockAdapter<'antigravity'>`: `tabs().builtin` lists `antigravity`, `terminal.open('antigravity', ...)` goes to `POST /api/agents/open` like Codex and Cursor, a terminal record of that kind keeps its kind, and `agentStatus()` returns the `antigravity` key. For any of the four programs that the engine did not find running, the engine's own sentence (where it looked, the install line) is passed as `note`.
+
+Checked: `tsc --noEmit` is clean and the shared folder matches its manifest. Not looked at in a browser, in the desktop window, or on macOS or Windows; the new button and row were not seen on screen here. The engine side was run with a stand-in `agy` (backend entry 129).
