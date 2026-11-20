@@ -881,3 +881,13 @@ FormCut's macOS check found it in the same start-up file (FormCut commit c2c2e22
 `finished(pid)` asks `ps -o stat= -p <pid>` where there is no `/proc` (never on Windows, never on Linux) and answers true for a state that starts with `Z`. `gone_by` stops waiting when the process is not alive or is finished. `alive` is unchanged, so the two second watch on the shell starts no program.
 
 Seen on Linux with `PROC` pointed at a folder that does not exist: without `finished` the claim is refused with the macOS job's own sentence (a scratch run with `finished` answering false), with it the leftover is replaced. The new test does the same through `claim`. `tests/test_startup.py`: 16 passed (one of them needed a second run alone, the machine was loaded). Not run on macOS.
+
+## 133. The Windows engine is frozen with no console window · _v0.64.0, logged 2026-11-20 (setup/freeze_backend; setup/freeze_backend.bat; README.md variables)
+
+kind: change · logged: v0.64.0 · 2026-11-20
+
+The owner's decision for the family: a Windows engine is packaged with no console window, as FormWeb's is. Without it a black console window opens beside FormPDF while its engine runs. Both freeze scripts now give PyInstaller `--noconsole` on Windows unless `FORMPDF_ENGINE_WINDOWED=0`, which keeps the console for someone who wants to watch the engine. The shell reads the engine's address and key from its pipes, which a windowed program still has.
+
+With no console a Windows program can start with no standard streams; `formpdf_engine.py` puts the null device in place of a missing `sys.stdout` or `sys.stderr` (entry 131's wave), so `--selfcheck` still runs. Seen here: `formpdf_engine.py --selfcheck` with standard output and error closed exits 0. In `freeze_backend.bat` the self-check after the build counts by its exit code; its printed line may not show there with no console.
+
+Checked: `bash -n setup/freeze_backend`; the `.bat` by reading (`if not "%FORMPDF_ENGINE_WINDOWED%"=="0"` is true when the variable is unset). No Windows build has shown it.

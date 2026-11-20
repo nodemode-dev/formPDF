@@ -146,6 +146,7 @@ cd formpdf
 |---|---|
 | `FORMPDF_DATA_DIR` | Where working copies, exports and settings live (default `~/Formpdf`) |
 | `FORMPDF_NO_OCR` | Set to `1` before `./formpdf install` to leave out OCR (about 150 MB) |
+| `FORMPDF_ENGINE_WINDOWED` | On Windows the engine is frozen with no console window; set to `0` before `setup/freeze_backend` to keep the console |
 
 > [!IMPORTANT]
 > **Status:** pre-release. Gaps include hosted sharing, form JavaScript beyond the standard AcroForm functions and print production (CMYK, flattening). See [`docs/PARITY.md`](docs/PARITY.md).
