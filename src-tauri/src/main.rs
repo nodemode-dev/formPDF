@@ -140,6 +140,7 @@ fn main() {
                 .expect("sidecar binary is bundled")
                 .env("FORMPDF_PORT", "0")
                 .env("FORMPDF_WINDOW_KEY_STDOUT", "1")
+                .env("FORMPDF_SHELL_PID", std::process::id().to_string())
                 .spawn()
                 .expect("the formpdf engine failed to spawn");
             app.state::<Backend>().0.lock().unwrap().replace(child);
@@ -250,11 +251,11 @@ fn main() {
                         check_for_updates(handle.clone());
                     }
                     None => {
-                        close_splash(&handle);
                         handle
                             .dialog()
-                            .message("The formpdf engine failed to start. Please relaunch the app.")
+                            .message("FormPDF could not start its engine. If FormPDF is already open, use that window: only one copy can use its data folder at a time. Otherwise open FormPDF again. The engine's log is Logs/formpdf-engine.log in FormPDF's data folder, which is the Formpdf folder of your home folder unless you set another.")
                             .blocking_show();
+                        close_splash(&handle);
                         kill_backend(&handle);
                         std::process::exit(1);
                     }

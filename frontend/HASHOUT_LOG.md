@@ -889,3 +889,25 @@ kind: feat · logged: v0.62.0 · 2026-11-19
 The adapter is now `DockAdapter<'antigravity'>`: `tabs().builtin` lists `antigravity`, `terminal.open('antigravity', ...)` goes to `POST /api/agents/open` like Codex and Cursor, a terminal record of that kind keeps its kind, and `agentStatus()` returns the `antigravity` key. For any of the four programs that the engine did not find running, the engine's own sentence (where it looked, the install line) is passed as `note`.
 
 Checked: `tsc --noEmit` is clean and the shared folder matches its manifest. Not looked at in a browser, in the desktop window, or on macOS or Windows; the new button and row were not seen on screen here. The engine side was run with a stand-in `agy` (backend entry 129).
+
+## 130. The shell tells its engine which process it is · _v0.63.0, logged 2026-11-19 (src-tauri/src/main.rs setup, the engine start)
+
+kind: fix · logged: v0.63.0 · 2026-11-19
+
+The engine now watches the process named in `FORMPDF_SHELL_PID` and leaves when it ends, and a frozen engine that is given no such process takes itself for one started alone: it opens the app and serves nothing (backend entry 131). So the shell sets `FORMPDF_SHELL_PID` to its own process id where it starts the engine. One line; without it the app as built would not get an engine.
+
+This is the only part of the family's shell-side pattern that is in. Not built, and held for the next pass: the job object that ends the engine with the shell on Windows (`win_job.rs`), the failure text with the engine's last lines and the log's path (`engine_start.rs`), a limit on the wait for the address, and showing the failure dialog before the loading window is closed. The shell starts its engine through tauri-plugin-shell and still does.
+
+Not compiled: the desktop shell cannot be built on the machine this was written on. The line was read against the two `.env` calls above it (`std::process::id()` is a `u32`, `.to_string()` gives the `String` the call takes). Not run on Windows or macOS.
+
+## 131. A failed start says its sentence before the loading window closes · _v0.63.0, logged 2026-11-19 (src-tauri/src/main.rs setup, the branch taken when the engine gave no address and key)
+
+kind: fix · logged: v0.63.0 · 2026-11-19
+
+When the engine gave no address and key, the shell closed the loading window and then showed its message. At that moment the loading window is the only one, and on Windows an app can end when its last window closes, so the person could see nothing at all. The message is now shown first, and the loading window is closed only after it returns; then the engine is stopped and the app ends as before.
+
+The sentence is new too. Since entry 131 of the backend log only one engine can use a data folder, so the most likely reason for an engine that gives no address is another copy that is already open (the desktop app allows one copy, but an engine started from a checkout holds the folder as well). The sentence says to use that window, or to open FormPDF again, and where the engine's log is: `Logs/formpdf-engine.log` in the data folder, which is `Formpdf` in the home folder unless `FORMPDF_DATA_DIR` names another (`backend/app/core/config.py` data_dir).
+
+Still held from entry 130: the job object, the engine's last lines and exit code in the message, and a limit on the wait for the address.
+
+Not compiled: the desktop shell cannot be built on the machine this was written on. One string, and one existing statement (`close_splash(&handle);`) moved below the `blocking_show()` call it stood above; no name or type is new. Not run on any system.

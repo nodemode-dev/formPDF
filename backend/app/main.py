@@ -39,6 +39,12 @@ def _clear_discovery() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    from app.core import runtime
+
+    try:
+        runtime.start_logging(config.data_dir())
+    except OSError:
+        pass
     _write_discovery()
     loop = asyncio.get_running_loop()
     events.bind(loop)
