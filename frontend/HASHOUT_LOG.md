@@ -926,3 +926,11 @@ The rest of the shell side held in entries 130 and 131, after FormVis, whose she
 `windows-sys` 0.61.2 was already in `Cargo.lock` (through other crates); it is now also a direct dependency on Windows, with the features for job objects and processes. A copy of `src-tauri` with `cargo update --workspace --offline` locked 0 packages and left `Cargo.lock` unchanged.
 
 Checked here: a scratch crate holding these two files passes `cargo check --target x86_64-pc-windows-msvc`, and `cargo test` runs the 4 tests of `engine_start.rs` (all pass). Not compiled as part of the shell, which cannot be built here: `main.rs` was read line by line against FormVis `src-tauri/src/main.rs` for every name, type and `cfg`. Not run on Windows or macOS.
+
+## 133. The shared panel module is 2.2.1: its guide names Codex, Cursor and Antigravity · _v0.64.0, logged 2026-11-20 (dock/ from FormVis 23b01889; backend/tests/test_agent_manifest.py)
+
+kind: change · logged: v0.64.0 · 2026-11-20
+
+Every file of `frontend/src/dock/` was copied unchanged from FormVis commit `23b01889`, `MANIFEST.json` included. Three files differ from 2.2.0: `strings.ts` (the guide's two sentences for a computer that has Claude Code, `tourInstalledBody` and `tourReadyBody`, each end with "Codex, Cursor and Antigravity each get a button of their own here when they are on this computer."), `CONTRACT.md` and `MANIFEST.json`. The adapter needs no change. FormPDF carries no translations of the panel's sentences, so no table changed. The manifest test now expects 2.2.1.
+
+Ran: `setup/agents.py sync --check` in step; `tests/test_agent_manifest.py` and `tests/test_dock_contract.py` 25 passed.

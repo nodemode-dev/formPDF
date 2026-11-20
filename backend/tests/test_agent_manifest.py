@@ -54,7 +54,7 @@ def test_the_shared_dock_folder_is_what_its_manifest_says():
     sync = sync_module()
     assert sync.dock_drift() == []
     assert sync.dock_strangers() == []
-    assert json.loads((sync.DOCK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))["version"] == "2.2.0"
+    assert json.loads((sync.DOCK_DIR / "MANIFEST.json").read_text(encoding="utf-8"))["version"] == "2.2.1"
 
 
 def test_an_edited_added_or_app_importing_dock_file_is_named(tmp_path, monkeypatch, capsys):
